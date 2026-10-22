@@ -1,0 +1,28 @@
+; fish.txt - test sprite, 16 pixels wide, drawn FACING RIGHT.
+;
+;   #  = ink pixel      (opaque, drawn in the cell's INK colour)
+;   -  = paper pixel    (opaque, drawn in PAPER: punches a hole, e.g. the eye)
+;   .  = transparent    (the background shows through)
+;
+; Frames are separated by a line starting with "frame". tools/gfx2asm.py
+; mirrors these to make the left-facing frames and pre-shifts everything.
+frame 0  tail spread
+.......####.....
+.....#######....
+#...##########..
+##.######-#####.
+###############.
+##.############.
+#...##########..
+.....#######....
+.......####.....
+frame 1  tail closed
+.......####.....
+.....#######....
+....##########..
+#..######-#####.
+###############.
+#..############.
+....##########..
+.....#######....
+.......####.....

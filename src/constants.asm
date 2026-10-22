@@ -71,11 +71,23 @@ ROW_P_Y         equ $DF         ; P O I U Y
 ROW_ENT_H       equ $BF         ; ENTER L K J H
 ROW_SPC_B       equ $7F         ; SPACE SYM M N B
 
-; --- Demo block (milestone 3) ------------------------------------------------
-PLAY_TOP        equ 7           ; play area rows (inclusive) for the 2x2 block
-PLAY_BOTTOM     equ 20
-PLAY_LEFT       equ 0
-PLAY_RIGHT      equ 31
-BLOCK_SIZE      equ 2           ; block is 2x2 character cells = 16x16 pixels
-MOVE_FRAMES     equ 4           ; move one cell every N frames (power of 2)
-BG_ATTR         equ WHITE | (BLACK << 3)
+; --- Play area and scenery (milestone 4) -----------------------------------
+; Rows are character rows (0-23); the fish works in pixels (y = row * 8).
+WATER_TOP_ROW   equ 7           ; first row of water
+SEABED_ROW      equ 19          ; seabed occupies rows 19-21
+SEABED_ROWS     equ 3
+PLAY_BOTTOM_ROW equ SEABED_ROW + SEABED_ROWS - 1   ; last row the fish may enter
+
+WATER_ATTR      equ BRIGHT | WHITE | (BLUE << 3)
+SEABED_ATTR     equ BLACK | (YELLOW << 3)
+WEED_ATTR       equ BRIGHT | GREEN | (BLUE << 3)
+
+; --- Sprites -----------------------------------------------------------------
+SPRITE_BYTES    equ 3           ; a 16-pixel sprite, once shifted, spans 3 bytes
+SPRITE_MAX_H    equ 16          ; tallest sprite the background buffer can hold
+ANIM_FRAMES     equ 8           ; swap fish animation frame every N frames (power of 2)
+
+; Lookup table of the screen address of each of the 192 pixel rows, built at
+; start-up by build_row_table (screen.asm). 192 x 2 bytes = 384 bytes. It is
+; filled in at run time, so it costs nothing on tape.
+ROW_TABLE       equ $FA00       ; $FA00-$FB7F, in the "buffers" part of the map

@@ -1,10 +1,11 @@
 # DIVER ENGINE
 
 A Z80 machine code game engine for the 48K ZX Spectrum, for an underwater
-side-scrolling shooter. Milestones 1-3 are done: it loads from tape, prints a
+side-scrolling shooter. Milestones 1-4 are done: it loads from tape, prints a
 title, runs a 50 Hz IM2 interrupt with a frame counter, cycles the border
-colour every 8 frames, and moves a 16x16 block with the keyboard or a Kempston
-joystick.
+colour every 8 frames, reads keyboard/Kempston input, and steers a masked,
+pre-shifted, animated 16-pixel fish sprite pixel by pixel over an underwater
+backdrop. **New to the sprite code? Read [docs/SPRITES.md](docs/SPRITES.md).**
 
 ## Controls
 
@@ -14,7 +15,7 @@ joystick.
 | Down   | A               | 6           | down     |
 | Left   | O               | 5           | left     |
 | Right  | P               | 8           | right    |
-| Fire   | SPACE (colour)  | 0           | fire     |
+| Fire   | SPACE (unused for now) | 0    | fire     |
 
 All sources are merged into one byte, `000FUDLR` (same layout as Kempston),
 with `IN_*` constants in `src/constants.asm`. Row 23 shows it in hex for
@@ -30,20 +31,31 @@ guards against the floating bus when no interface is fitted.
 src/main.asm        entry point, main loop, output (.tap/.sna) directives
 src/constants.asm   memory map, colours, tuning constants
 src/interrupts.asm  IM2 vector table at $FE00, JP at $FDFD, frame ISR, wait_frame
-src/screen.asm      cls, border, character-cell -> screen/attribute address
+src/screen.asm      cls, border, cell -> screen/attribute address, pixel-row table
 src/text.asm        ROM-free print routines (glyphs read from the font at $3D00)
 src/input.asm       keyboard half-row tables + Kempston -> one flags byte
-src/block.asm       milestone 3 test object: 2x2-cell attribute block
+src/sprite.asm      masked pre-shifted sprite: set position, save/restore bg, draw
+src/scenery.asm     test backdrop: water, seabed, weeds
+src/fish.asm        the test fish: movement, clamping, facing, animation
 src/loader.asm      tokenised BASIC loader: CLEAR / LOAD ""CODE / RANDOMIZE USR 32768
-gfx/                sprite and tile sources (empty for now)
-tools/              helper scripts (headless screenshot + input test, ZX0 decompressor)
+gfx/fish.txt        fish art as ASCII (# ink, - paper, . transparent), 2 frames
+gfx/fish.asm        GENERATED from fish.txt: 8 shifts x 2 frames x 2 facings
+docs/SPRITES.md     how the screen layout, masking, pre-shifting and timing work
+tools/gfx2asm.py    ASCII art -> pre-shifted masked .asm (Python 3)
+tools/              also: headless screenshot / input / sprite tests, ZX0 decompressor
 build/              output: diver.tap, diver.sna, diver.lst, diver.sym
 Makefile            Linux / WSL build
 build.bat           Windows build
 ```
 
-Memory: code at `$8000`, stack grows down from `$FDFC`, `JP isr` at `$FDFD`,
-257-byte vector table of `$FD` at `$FE00-$FF00`.
+Memory: code at `$8000`, pixel-row address table (built at start-up) at
+`$FA00-$FB7F`, stack grows down from `$FDFC`, `JP isr` at `$FDFD`, 257-byte
+vector table of `$FD` at `$FE00-$FF00`.
+
+Graphics: `make` regenerates `gfx/fish.asm` from `gfx/fish.txt` with Python 3
+when the art changes. The generated file is committed, so Windows users can
+build with `build.bat` without Python. After editing the art, run
+`python tools\gfx2asm.py gfx\fish.txt gfx\fish.asm fish` first.
 
 ## Build on Ubuntu-based Linux (Zorin OS, Ubuntu, Mint, Pop!_OS)
 
@@ -77,6 +89,7 @@ make          # -> build/diver.tap (+ diver.sna snapshot)
 make run      # open in Fuse
 make shot     # headless screenshot (needs xvfb, xdotool, imagemagick)
 make input-test   # headless key presses + Kempston, screenshots in build/
+make sprite-test  # headless fish sprite test; then tools/make-sprite-montage.sh
 ```
 
 ## Set up on Windows
@@ -102,10 +115,14 @@ make input-test   # headless key presses + Kempston, screenshots in build/
 
 ## What you should see
 
-"DIVER ENGINE" in yellow on blue, a help line, a `FRAMES:` hex counter rising
-at 50 per second, the border changing colour every 8 frames, and a red 16x16
-block in the middle that moves with QAOP / 5678 / Kempston and changes colour
-on each FIRE press. See `build/diver-tap-screenshot.png` and the
+"DIVER ENGINE" in yellow on blue, a help line, a blue sea with three green
+weeds and a yellow pebbly seabed, and a white fish wagging its tail. QAOP /
+5678 / Kempston swim it one pixel per frame. It turns to face the way it's
+going and can swim down into the seabed (where it takes on the seabed's
+colours: attribute clash). Row 22 shows `FRAMES:` plus the fish's `X`, `Y`
+(pixels, hex) and `IMG` (0-1 facing right, 2-3 facing left). Row 23 shows the
+input bytes. See `build/montage-sprites.png` (`make sprite-test` then
+`tools/make-sprite-montage.sh` regenerate it) and the other
 `build/montage-*.png` test strips.
 
 Emulator tip: Fuse maps the PC arrow keys to the Spectrum cursor keys (CAPS +
