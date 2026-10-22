@@ -112,5 +112,5 @@ Emulator tip: Fuse maps the PC arrow keys to the Spectrum cursor keys (CAPS +
 5-8), so they work too. To test Kempston in Fuse, enable Options >
 Peripherals > Kempston joystick and set Options > Joysticks > Keyboard to
 Kempston (or `--kempston --joystick-keyboard-output 2`), then QAOP/SPACE drive
-the joystick. Load the `.tap` for this; loading the `.sna` resets the
-peripheral settings in Fuse.
+the joystick. Load the `.tap` for this: in testing, loading the `.sna` left the
+Kempston reading 00, apparently because the snapshot overrides the peripheral settings.
