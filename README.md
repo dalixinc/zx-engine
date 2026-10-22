@@ -51,7 +51,7 @@ make shot     # headless screenshot (needs xvfb, xdotool, imagemagick)
 2. **Emulator.** Any of these will open `build\diver.tap`:
    - Fuse for Windows: https://sourceforge.net/projects/fuse-emulator/files/fuse/
    - ZEsarUX: https://github.com/chernandezba/zesarux/releases
-   - SpecEmu: http://www.specemu.zxe.io/
+   - SpecEmu (Windows-only, very accurate; search "SpecEmu")
    Set it to a 48K machine. Dragging the `.tap` onto the window usually auto-loads it.
 3. **Editor.** VS Code with the "Z80 Macro-Assembler" extension (mborik) for
    syntax highlighting. Add "DeZog" (maziac) later for source-level debugging
