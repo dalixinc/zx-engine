@@ -1,4 +1,4 @@
 build/*
 !build/.gitkeep
 !build/diver.tap
-!build/diver-tap-screenshot*.png
+!build/*.png

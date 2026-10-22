@@ -41,3 +41,41 @@ FLASH   equ %10000000
 
 ; --- Engine tuning -----------------------------------------------------------
 BORDER_FRAMES   equ 8           ; change border colour every N frames (power of 2)
+
+; --- Input -------------------------------------------------------------------
+; One byte of flags, laid out like the Kempston joystick so a joystick read
+; can be OR-ed straight in. A set bit means "pressed".
+IN_RIGHT_BIT    equ 0
+IN_LEFT_BIT     equ 1
+IN_DOWN_BIT     equ 2
+IN_UP_BIT       equ 3
+IN_FIRE_BIT     equ 4
+IN_RIGHT        equ 1 << IN_RIGHT_BIT
+IN_LEFT         equ 1 << IN_LEFT_BIT
+IN_DOWN         equ 1 << IN_DOWN_BIT
+IN_UP           equ 1 << IN_UP_BIT
+IN_FIRE         equ 1 << IN_FIRE_BIT
+IN_MASK         equ %00011111
+
+KEMPSTON_PORT   equ $1F         ; 000FUDLR, active high
+KEMPSTON_FLOAT  equ %11100000   ; any of these set -> no interface fitted
+
+; Keyboard half-rows: the high byte put on the address bus when reading $FE.
+; A key reads as 0 in bits 0-4 (bit 0 = key nearest the outside edge).
+ROW_CAPS_V      equ $FE         ; CAPS Z X C V
+ROW_A_G         equ $FD         ; A S D F G
+ROW_Q_T         equ $FB         ; Q W E R T
+ROW_1_5         equ $F7         ; 1 2 3 4 5
+ROW_0_6         equ $EF         ; 0 9 8 7 6
+ROW_P_Y         equ $DF         ; P O I U Y
+ROW_ENT_H       equ $BF         ; ENTER L K J H
+ROW_SPC_B       equ $7F         ; SPACE SYM M N B
+
+; --- Demo block (milestone 3) ------------------------------------------------
+PLAY_TOP        equ 7           ; play area rows (inclusive) for the 2x2 block
+PLAY_BOTTOM     equ 20
+PLAY_LEFT       equ 0
+PLAY_RIGHT      equ 31
+BLOCK_SIZE      equ 2           ; block is 2x2 character cells = 16x16 pixels
+MOVE_FRAMES     equ 4           ; move one cell every N frames (power of 2)
+BG_ATTR         equ WHITE | (BLACK << 3)
