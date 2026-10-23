@@ -1,11 +1,11 @@
 # DIVER ENGINE
 
 A Z80 machine code game engine for the 48K ZX Spectrum, for an underwater
-side-scrolling shooter. Milestones 1-4 are done: it loads from tape, prints a
+side-scrolling shooter. Milestones 1-5 are done: it loads from tape, prints a
 title, runs a 50 Hz IM2 interrupt with a frame counter, cycles the border
 colour every 8 frames, reads keyboard/Kempston input, and steers a masked,
-pre-shifted, animated 16-pixel fish sprite pixel by pixel over an underwater
-backdrop. **New to the sprite code? Read [docs/SPRITES.md](docs/SPRITES.md).**
+pre-shifted, animated 24-pixel diver (with a jet unit) pixel by pixel over an
+underwater backdrop, while a 16-pixel fish swims back and forth by itself. **New to the sprite code? Read [docs/SPRITES.md](docs/SPRITES.md).**
 
 ## Controls
 
@@ -34,28 +34,36 @@ src/interrupts.asm  IM2 vector table at $FE00, JP at $FDFD, frame ISR, wait_fram
 src/screen.asm      cls, border, cell -> screen/attribute address, pixel-row table
 src/text.asm        ROM-free print routines (glyphs read from the font at $3D00)
 src/input.asm       keyboard half-row tables + Kempston -> one flags byte
-src/sprite.asm      masked pre-shifted sprite: set position, save/restore bg, draw
+src/sprite.asm      masked pre-shifted sprites of any width: set position,
+                    save/restore background (one record per sprite), draw
 src/scenery.asm     test backdrop: water, seabed, weeds
-src/fish.asm        the test fish: movement, clamping, facing, animation
+src/diver.asm       the player: movement, clamping, facing, kick animation
+src/fish.asm        the fish: swims left/right on its own (second sprite)
 src/loader.asm      tokenised BASIC loader: CLEAR / LOAD ""CODE / RANDOMIZE USR 32768
 gfx/fish.txt        fish art as ASCII (# ink, - paper, . transparent), 2 frames
 gfx/fish.asm        GENERATED from fish.txt: 8 shifts x 2 frames x 2 facings
+gfx/diver.txt       diver art, 24 x 15, 3 frames, facing right
+gfx/diver.asm       GENERATED from diver.txt: 8 shifts x 3 frames x 2 facings
 docs/SPRITES.md     how the screen layout, masking, pre-shifting and timing work
 tools/gfx2asm.py    ASCII art -> pre-shifted masked .asm (Python 3)
+tools/read-debug.py reads the X/Y/IMG hex values off a screenshot
+tools/make-diver-montage.py  build/montage-diver.png from the art + test shots
 tools/              also: headless screenshot / input / sprite tests, ZX0 decompressor
 build/              output: diver.tap, diver.sna, diver.lst, diver.sym
 Makefile            Linux / WSL build
 build.bat           Windows build
 ```
 
-Memory: code at `$8000`, pixel-row address table (built at start-up) at
+Memory: code and data at `$8000-$A365` (about 9 KB; the pre-shifted diver
+alone is 5,760 bytes, the fish 1,728), pixel-row address table (built at start-up) at
 `$FA00-$FB7F`, stack grows down from `$FDFC`, `JP isr` at `$FDFD`, 257-byte
 vector table of `$FD` at `$FE00-$FF00`.
 
-Graphics: `make` regenerates `gfx/fish.asm` from `gfx/fish.txt` with Python 3
-when the art changes. The generated file is committed, so Windows users can
-build with `build.bat` without Python. After editing the art, run
-`python tools\gfx2asm.py gfx\fish.txt gfx\fish.asm fish` first.
+Graphics: `make` regenerates `gfx/fish.asm` and `gfx/diver.asm` from the
+`.txt` art with Python 3 when the art changes. The generated files are
+committed, so Windows users can build with `build.bat` without Python. After
+editing the art, run e.g.
+`python tools\gfx2asm.py gfx\diver.txt gfx\diver.asm diver` first.
 
 ## Build on Ubuntu-based Linux (Zorin OS, Ubuntu, Mint, Pop!_OS)
 
@@ -89,7 +97,9 @@ make          # -> build/diver.tap (+ diver.sna snapshot)
 make run      # open in Fuse
 make shot     # headless screenshot (needs xvfb, xdotool, imagemagick)
 make input-test   # headless key presses + Kempston, screenshots in build/
-make sprite-test  # headless fish sprite test; then tools/make-sprite-montage.sh
+make sprite-test  # headless diver + fish test, shots build/diver-*.png;
+                  # then python3 tools/make-diver-montage.py
+make timing       # build/diver-timing.sna: border white while sprites draw
 ```
 
 ## Set up on Windows
@@ -116,14 +126,16 @@ make sprite-test  # headless fish sprite test; then tools/make-sprite-montage.sh
 ## What you should see
 
 "DIVER ENGINE" in yellow on blue, a help line, a blue sea with three green
-weeds and a yellow pebbly seabed, and a white fish wagging its tail. QAOP /
-5678 / Kempston swim it one pixel per frame. It turns to face the way it's
-going and can swim down into the seabed (where it takes on the seabed's
-colours: attribute clash). Row 22 shows `FRAMES:` plus the fish's `X`, `Y`
-(pixels, hex) and `IMG` (0-1 facing right, 2-3 facing left). Row 23 shows the
-input bytes. See `build/montage-sprites.png` (`make sprite-test` then
-`tools/make-sprite-montage.sh` regenerate it) and the other
-`build/montage-*.png` test strips.
+weeds and a yellow pebbly seabed, a white fish swimming to and fro, and the
+white diver holding his jet unit out in front. QAOP / 5678 / Kempston swim
+him one pixel per frame; he kicks his flippers only while moving and glides
+(legs together) when you let go. He turns to face the way he's going, passes
+in front of the fish, and can swim down into the seabed (where he takes on
+the seabed's colours: attribute clash). Row 22 shows `FRAMES:` plus the
+diver's `X`, `Y` (pixels, hex) and `IMG` (0-2 facing right, 3-5 facing left:
+0 legs apart, 1 half way, 2 together). Row 23 shows the input bytes. See
+`build/montage-diver.png` and the other `build/montage-*.png` test strips
+(`montage-sprites.png` is from the fish-only milestone 4).
 
 Emulator tip: Fuse maps the PC arrow keys to the Spectrum cursor keys (CAPS +
 5-8), so they work too. To test Kempston in Fuse, enable Options >

@@ -3,7 +3,8 @@
 # make run    build and launch in Fuse
 # make shot   headless screenshot via Xvfb (Linux only)
 # make input-test  headless key/Kempston test with xdotool
-# make sprite-test headless fish sprite test (then tools/make-sprite-montage.sh)
+# make sprite-test headless diver + fish test (then tools/make-diver-montage.py)
+# make timing  build/diver-timing.sna: white border while sprites draw
 # make clean
 
 ASM      ?= sjasmplus
@@ -12,9 +13,9 @@ SRC      := $(wildcard src/*.asm)
 TAP      := build/diver.tap
 SNA      := build/diver.sna
 PYTHON   ?= python3
-GFX      := gfx/fish.asm
+GFX      := gfx/fish.asm gfx/diver.asm
 
-.PHONY: all run run-sna shot input-test sprite-test clean
+.PHONY: all run run-sna shot input-test sprite-test timing clean
 
 all: $(TAP)
 
@@ -46,7 +47,11 @@ input-test: $(TAP) $(SNA)
 
 # headless sprite test (Linux only): see tools/sprite-test.sh
 sprite-test: $(SNA)
-	xvfb-run -a -s "-screen 0 1024x768x24" tools/sprite-test.sh $(SNA) build/sprite
+	xvfb-run -a -s "-screen 0 1024x768x24" tools/sprite-test.sh $(SNA) build/diver
+
+# Same program, but the border shows how long the sprite code takes
+timing: $(SRC) $(GFX) | build
+	$(ASM) --nologo --fullpath=off -DTIMING_BARS src/main.asm
 
 clean:
 	rm -f build/*.tap build/*.sna build/*.lst build/*.sym build/*.png

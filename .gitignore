@@ -2,3 +2,6 @@ build/*
 !build/.gitkeep
 !build/diver.tap
 !build/*.png
+# sjasmplus source/binary folders if unpacked here: never commit them
+sjasmplus-*
+__pycache__/

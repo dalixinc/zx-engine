@@ -83,9 +83,13 @@ SEABED_ATTR     equ BLACK | (YELLOW << 3)
 WEED_ATTR       equ BRIGHT | GREEN | (BLUE << 3)
 
 ; --- Sprites -----------------------------------------------------------------
-SPRITE_BYTES    equ 3           ; a 16-pixel sprite, once shifted, spans 3 bytes
-SPRITE_MAX_H    equ 16          ; tallest sprite the background buffer can hold
-ANIM_FRAMES     equ 8           ; swap fish animation frame every N frames (power of 2)
+; Sizes (width, bytes per shifted row, height) come from the generated
+; gfx/*.asm files, e.g. DIVER_BYTES, DIVER_HEIGHT.
+ANIM_FRAMES     equ 8           ; fish: swap animation frame every N frames (power of 2)
+DIVER_ANIM_STEP equ 4           ; diver: frames per step of the kick while moving
+
+FACE_RIGHT      equ 0           ; facing values; gfx2asm.py puts the right-facing
+FACE_LEFT       equ 1           ; images first, then the mirrored left-facing ones
 
 ; Lookup table of the screen address of each of the 192 pixel rows, built at
 ; start-up by build_row_table (screen.asm). 192 x 2 bytes = 384 bytes. It is

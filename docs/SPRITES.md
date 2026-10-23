@@ -1,9 +1,11 @@
 # Sprites on the ZX Spectrum: how DIVER ENGINE does it
 
-This walks through the techniques behind milestone 4, "Sprites": a 16-pixel
-fish that swims smoothly over scenery without flicker or damage. The code is
-in `src/screen.asm` (addressing), `src/sprite.asm` (drawing), `src/fish.asm`
-(the fish itself), `src/scenery.asm` (backdrop) and `tools/gfx2asm.py`
+This walks through the techniques behind milestones 4 and 5, "Sprites" and
+"Diver": a 16-pixel fish and a 24-pixel diver that swim smoothly over the
+scenery and each other without flicker or damage. The code is in
+`src/screen.asm` (addressing), `src/sprite.asm` (drawing, any width),
+`src/diver.asm` (the player), `src/fish.asm` (the fish, now swimming by
+itself), `src/scenery.asm` (backdrop) and `tools/gfx2asm.py`
 (graphics converter). Read this first, then the code: the comments in the
 code use the same words.
 
@@ -180,10 +182,20 @@ Each row of one shifted copy is 3 bytes of mask + 3 bytes of data = 6 bytes.
 
 versus 2 x 9 x 2 x 2 x 2 = 144 bytes unshifted: 12x the memory to save the
 CPU work. For a 48K game that's a trade worth thinking about per sprite.
-Bigger sprites cost more: a 24-pixel-wide diver is 4 bytes wide once shifted
-(8 bytes per row with the mask), so 24 rows x 8 bytes x 8 shifts = 1536 bytes
-*per frame*. Tricks to cut that (only 4 shifts and moving in 2-pixel steps,
-or shifting at start-up into spare RAM) can come later if memory gets tight.
+
+The diver (24 x 15, 3 frames) is 4 bytes wide once shifted, so 8 bytes per
+row with the mask:
+
+```
+8 bytes x 15 rows x 8 shifts x 3 frames x 2 facings = 5760 bytes
+```
+
+That is why the diver has 3 frames, not 4: the kick goes apart, half way,
+together, half way, and the "half way" frame is shown twice from a little
+table (`kick_sequence` in `src/diver.asm`) instead of being stored twice,
+which would cost another 1920 bytes. Tricks to cut memory further (only 4
+shifts and moving in 2-pixel steps, or shifting at start-up into spare RAM)
+can come later if memory gets tight.
 
 ---
 
@@ -196,28 +208,54 @@ To move a sprite we have to remove it from its old position. Options:
 * **Redraw the scenery** under the old position. Fine for a plain
   background, complicated once the ground scrolls.
 * **Save and restore**, which we use: just before drawing, copy the screen bytes
-  the sprite will cover (3 x height) into `bg_buffer`. Next frame, copy them
+  the sprite will cover (bytes per row x height) into that sprite's own
+  background record. Next frame, copy them
   back. That removes the sprite *and* repairs whatever was underneath,
   whatever it was.
 
-Each frame the fish does:
+Each frame, for each sprite:
 
 ```
-sprite_restore_bg   ; put back what was under the old fish
+sprite_restore_bg   ; put back what was under it last frame
 sprite_set_pos      ; work out column, shift and row for the new position
 sprite_save_bg      ; copy what is under the new position
 sprite_draw         ; AND mask / OR data
 ```
 
-The verification run checks this: after the fish swims down into the seabed,
-along, and back up, the seabed rows in the screenshot are pixel-for-pixel
-identical to the start. The only differences in the whole play area are where
-the fish was and is.
+The verification run checks this: after the diver swims down into the
+seabed, along, and back up, the seabed and weed rows in the screenshots
+(Spectrum lines 126-175) are pixel-for-pixel identical to the start
+(`make sprite-test`, shots `06`, `07-cross-16` and `08` against `01`).
 
-With several sprites the order matters: restore all of them in the **reverse**
-order they were drawn, then save and draw them all, and each needs its own
-buffer. Today there is only one buffer (`bg_buffer`, 48 bytes, enough for a
-16-row sprite); the "Entities" milestone will generalise it.
+### Two sprites: one record each, and erase in reverse order
+
+Each sprite has its own **background record** (`fish_bg`, `diver_bg`), a
+small header (valid flag, y, column, height, bytes per row) followed by the
+saved bytes. The routines in `src/sprite.asm` are told which record to use
+in **IY**, because `(iy+BG_COL)` and friends let them read the header fields
+by name while HL and DE are busy copying.
+
+The order in `main_loop` is:
+
+```
+diver_restore   ; erase in the REVERSE order of drawing...
+fish_restore
+fish_draw       ; ...then save + draw, back to front
+diver_draw      ; the diver is drawn last, so he is in front of the fish
+```
+
+Why reverse? The fish is drawn first, so when the diver overlaps it, the
+diver's saved background *contains part of the fish*.
+
+* Right order: restore the diver (puts back water plus that bit of fish),
+  then restore the fish (puts back the water under the fish). Clean.
+* Wrong order: restore the fish first (water), then the diver, whose saved
+  bytes still hold the old bit of fish, so a fragment of fish is painted
+  back and left behind as debris.
+
+Undo in the opposite order to do, like taking plates off a stack. The test run
+(`07-cross-*` shots) has the fish swim right behind the diver and out the
+other side with no debris left behind.
 
 ---
 
@@ -239,11 +277,23 @@ frame: no problem. The danger is when the beam passes **while** the sprite is
 half done, e.g. erased but not yet redrawn. Then you see a flicker or a torn
 sprite.
 
-So `main_loop` draws the fish **first**, straight after `wait_frame`, before
-the border/debug printing and input reading. By counting instructions, the
-restore + save + draw for a 9-row fish is about **5,000 T-states (an estimate,
-not measured)**. That's well inside the time the beam spends in the top
-border, so the fish is finished before the beam starts the picture.
+So `main_loop` does all sprite work **first**, straight after `wait_frame`,
+before the border/debug printing and input reading.
+
+### Measured: the timing build
+
+`make timing` assembles the same program with `-DTIMING_BARS` into
+`build/diver-timing.sna`. In that build the border turns **white** when the
+sprite work starts and **black** when it ends (and the colour-cycling border
+is switched off), so the height of the white band shows how long it took.
+`build/diver-timing.png` is a screenshot: the white band ends about **pixel
+line 37** (the top of the band is off the visible top border, so only the
+end can be read). That is roughly 14,336 + 37 x 224 = **about 22,600
+T-states** after the interrupt for restore + save + draw of both sprites.
+The water starts at line 56, so there are about **19 lines (4,000+
+T-states) to spare**. Counting instructions gives a similar figure
+(diver about 14,000, fish about 6,000). Adding more sprites will need the
+"chase the beam" ordering below, or less work per sprite.
 
 Rule of thumb for later: do all sprite erasing and drawing as early in the
 frame as possible, and keep the slower game logic for after. When there are
@@ -254,18 +304,47 @@ the beam is always behind you (the "chase the beam" trick).
 
 ## 6. Clipping (for now)
 
-`update_fish` clamps the fish to the play area: x 0-239 and y from the top
-of the water (56) to the bottom of the seabed minus the fish's height (167).
-x stops at 239 so that all three bytes of a shifted row stay on the same
-screen line (column 29 + 2 = 31). Partial clipping, where a sprite slides off
+`update_diver` clamps the diver to the play area: x 0-231 and y from the top
+of the water (56) to the bottom of the seabed minus his height (176 - 15 =
+161). The right limit is `256 - bytes*8 + 7`: at that x all bytes of a
+shifted row still land on the same screen line (diver: column 28 + 3 = 31;
+fish, 3 bytes: x 239, column 29 + 2 = 31). Pushing a direction against an
+edge still counts as "moving", so he kicks against the wall. Partial clipping, where a sprite slides off
 the edge of the screen and is only part drawn, needs per-row byte counts. It
 will come with scrolling and enemies entering from the edge.
 
 ---
 
-## Changing the fish
+## Changing the art
 
-Edit `gfx/fish.txt` (16 characters wide, any height up to 16, frames
-separated by `frame` lines), then run `make`. With no `make`, run
-`python3 tools/gfx2asm.py gfx/fish.txt gfx/fish.asm fish` and then
+Edit `gfx/fish.txt` or `gfx/diver.txt` (`#` ink, `-` paper, `.`
+transparent; frames separated by `frame` lines; `;` starts a comment),
+then run `make`. With no `make`, run e.g.
+`python3 tools/gfx2asm.py gfx/diver.txt gfx/diver.asm diver` and then
 `build.bat`.
+
+## Making a sprite wider
+
+The width is no longer built into the code. To make a 32-pixel sprite:
+
+1. **Draw it** 32 characters wide. The width must be a multiple of 8
+   (gfx2asm.py stops with an error otherwise). It reads the width from the
+   first row and writes `NAME_WIDTH` (32), `NAME_BYTES` (5) and
+   `NAME_HEIGHT` into the generated file.
+2. **Why `NAME_BYTES` is width/8 + 1.** Shifting a row right by 1..7 pixels
+   pushes its rightmost pixels out of the last byte and into the next one,
+   so a shifted 32-pixel row touches 5 bytes. At shift 0 that fifth byte is
+   empty (all transparent), but every copy is stored at the same size so
+   the draw loop doesn't need to know which shift it is drawing. That spare
+   column is the price of having one simple loop.
+3. **Give it a background record** big enough:
+   `my_bg: ds BG_DATA + NAME_BYTES * NAME_HEIGHT`.
+4. **Pass the size** when you position it: `D = NAME_BYTES`,
+   `E = NAME_HEIGHT` into `sprite_set_pos`; `IY = my_bg` for
+   `sprite_save_bg` / `sprite_restore_bg`. `sprite_draw` uses whatever
+   `sprite_set_pos` stored.
+5. **Clamp x** to `256 - NAME_BYTES*8 + 7` (here 223) and y to
+   `176 - NAME_HEIGHT`.
+6. **Check the cost**: memory is `2 x NAME_BYTES x height x 8 shifts x
+   frames x facings`, and the draw time grows with bytes x rows. Re-run
+   `make timing` and check the white band still ends above line 56.

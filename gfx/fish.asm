@@ -4,6 +4,8 @@
 ; Each row: db mask,data x 3 bytes. mask 1 = keep background, data 1 = ink.
 ; The comment shows the shifted row: # ink, - paper (opaque), . see-through
 
+FISH_WIDTH  equ 16       ; pixels, as drawn
+FISH_BYTES  equ 3        ; bytes per row once shifted (width/8 + 1)
 FISH_HEIGHT equ 9
 FISH_FRAMES equ 2
 
