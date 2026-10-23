@@ -18,7 +18,7 @@ burst() { xdotool keydown "$2"; for i in $(seq 1 "$3"); do shot "$1-$i"; done; x
 
 shot 01-start                     # x 60, idle: glide frame (IMG 02)
 burst 02-kick-right p 6           # swimming right: kick frames 0/1/2
-hold a 1.4;  shot 03-seabed       # down to the seabed: y clamps at 161
+hold a 1.4;  shot 03-seabed       # down to the seabed: y clamps at 153 ($99)
 burst 04-kick-left o 6            # turned left (IMG 03..05) over the weed
 hold o 1.2;  shot 05-left-edge    # left edge: x clamps at 0
 hold q 1.8;  shot 06-fish-depth   # up to the fish's depth: they cross
@@ -26,5 +26,5 @@ hold p 2.0                        # out to x ~100, then wait for the fish
 for i in $(seq -w 1 16); do shot 07-cross-$i; sleep 0.25; done
 burst 07b-kick-left o 6           # left-facing kick frames in open water
 hold p 3.5;  shot 08-right-edge   # right edge: x clamps at 231 ($E7)
-hold a 2.2;  shot 09-seabed-right # back down onto the seabed (y 161)
+hold a 2.2;  shot 09-seabed-right # back down onto the seabed (y 153)
 kill "$PID"

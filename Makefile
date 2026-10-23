@@ -4,7 +4,7 @@
 # make shot   headless screenshot via Xvfb (Linux only)
 # make input-test  headless key/Kempston test with xdotool
 # make sprite-test headless diver + fish test (then tools/make-diver-montage.py)
-# make timing  build/diver-timing.sna: white border while sprites draw
+# make timing  build/diver-timing.sna: border colour shows where the frame's time goes
 # make clean
 
 ASM      ?= sjasmplus

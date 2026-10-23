@@ -33,6 +33,14 @@
 ; matters when they overlap: the one drawn last saved a background that
 ; contained the earlier sprites, so it must be put back first.
 ;
+; The scrolling strips are copied onto the screen after every restore
+; (main_loop). A sprite that overlaps a strip is saved and drawn AFTER that
+; copy, so the record holds this frame's ground and not the sprite itself
+; (saving while it is still drawn would put its own pixels back next frame).
+; A sprite that stays in the water is drawn BEFORE the copy: the copy does
+; not touch those rows, and drawing it earlier keeps the beam from catching
+; it. docs/SCROLLING.md has the order written out.
+;
 ; BACKGROUND RECORD - one per sprite, pointed to by IY:
 ;        IY+BG_VALID   0 until the first save (so the first restore is skipped)
 ;        IY+BG_Y       pixel row it was saved from

@@ -71,16 +71,43 @@ ROW_P_Y         equ $DF         ; P O I U Y
 ROW_ENT_H       equ $BF         ; ENTER L K J H
 ROW_SPC_B       equ $7F         ; SPACE SYM M N B
 
-; --- Play area and scenery (milestone 4) -----------------------------------
-; Rows are character rows (0-23); the fish works in pixels (y = row * 8).
-WATER_TOP_ROW   equ 7           ; first row of water
-SEABED_ROW      equ 19          ; seabed occupies rows 19-21
-SEABED_ROWS     equ 3
-PLAY_BOTTOM_ROW equ SEABED_ROW + SEABED_ROWS - 1   ; last row the fish may enter
+; --- Play area and scenery -------------------------------------------------
+; Rows are character rows (0-23). Sprites work in pixels (y = row * 8).
+; The ground is two scrolling strips plus a solid black floor under them.
+; Strip heights are in pixels and a multiple of 8, so each strip is a whole
+; number of attribute rows and one colour pair covers it (see scroll.asm).
+WATER_TOP_ROW   equ 7           ; first row of open water
+BACK_ROW        equ 18          ; far strip: yellow, slow, seaweed
+BACK_PX         equ 8           ; one character row
+FRONT_ROW       equ 19          ; near strip: black, fast, rocks and silos
+FRONT_PX        equ 8           ; one character row. Two rows was measured
+                                ; to miss the next interrupt; see SCROLLING.md.
+FLOOR_ROW       equ 20          ; solid black under the strips, not scrolled
+
+; The front strip is the "seabed" the diver can swim down into. The floor
+; row is included so his lowest position still sits on ground, not on the
+; debug text (row 22).
+SEABED_ROW      equ FRONT_ROW
+SEABED_ROWS     equ FLOOR_ROW - FRONT_ROW + 1
+PLAY_BOTTOM_ROW equ SEABED_ROW + SEABED_ROWS - 1
 
 WATER_ATTR      equ BRIGHT | WHITE | (BLUE << 3)
-SEABED_ATTR     equ BLACK | (YELLOW << 3)
-WEED_ATTR       equ BRIGHT | GREEN | (BLUE << 3)
+; Far strip: green ink, yellow paper. Empty pixels show yellow sand; the
+; seaweed pixels show green. One attribute for the whole strip, so scrolling
+; the pixels does not have to scroll the attribute file.
+BACK_ATTR       equ BRIGHT | GREEN | (YELLOW << 3)
+; Near strip: white ink, black paper. Rocks and silos are white; flat ground
+; is bare black. Same reason: no attribute scroll.
+FRONT_ATTR      equ BRIGHT | WHITE | (BLACK << 3)
+FLOOR_ATTR      equ BLACK | (BLACK << 3)
+
+; Pixel buffers for the strips. Ordinary RAM, not screen RAM, so rotating
+; them is not slowed by the ULA. Filled by scroll_init, not stored on tape.
+;   BACK_BUF  8*32 = 256 bytes, FRONT_BUF 8*32 = 256, together 512.
+SCROLL_BASE     equ $F000
+BACK_BUF        equ SCROLL_BASE
+FRONT_BUF       equ BACK_BUF + BACK_PX * 32
+SCROLL_BUF_END  equ FRONT_BUF + FRONT_PX * 32
 
 ; --- Sprites -----------------------------------------------------------------
 ; Sizes (width, bytes per shifted row, height) come from the generated

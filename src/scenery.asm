@@ -1,45 +1,45 @@
 ;==============================================================================
-; scenery.asm - a static underwater backdrop for testing sprites over
+; scenery.asm - the backdrop colours, and the attribute-row filler
 ;
-; Nothing clever: we fill some character rows with a pixel pattern and an
-; attribute colour. It exists so you can see the sprite mask working (the
-; fish's see-through pixels show the pattern; its solid pixels hide it) and
-; so you can check that save/restore leaves the scenery undamaged.
-;
-; Remember colour on the Spectrum is per 8x8 cell, not per pixel: when the
-; fish swims over the seabed it takes on the seabed's INK/PAPER. That is
-; "attribute clash", and the game design will have to live with it.
+; The moving ground itself is in scroll.asm (two parallax strips). This file
+; only paints the attribute colours and then asks scroll_init to build the
+; first screen of pixels. Colour is per 8x8 cell: a sprite over the front
+; strip becomes white-on-black, over the back strip green-on-yellow, over
+; the water white-on-blue. That is attribute clash, and the strips are each
+; one colour pair so it stays predictable.
 ;==============================================================================
 
 ;------------------------------------------------------------------------------
-; draw_scenery - water, seabed and a few weeds
-; Corrupts: AF, BC, DE, HL
+; draw_scenery - colour the water and the ground, then build the strips
+; Corrupts: AF, BC, DE, HL, IX
 ;------------------------------------------------------------------------------
 draw_scenery:
-        ; water: rows WATER_TOP_ROW..SEABED_ROW-1, empty pixels, blue paper
+        ; open water: from the title down to the row above the far strip.
+        ; Pixels stay 0 (cls). Paper is blue.
         ld b,WATER_TOP_ROW
-        ld d,SEABED_ROW - WATER_TOP_ROW
+        ld d,BACK_ROW - WATER_TOP_ROW
         ld e,WATER_ATTR
         call fill_attr_rows
 
-        ; seabed: a pebbly pattern with yellow paper and black ink
-        ld b,SEABED_ROW
-        ld d,SEABED_ROWS
-        ld e,SEABED_ATTR
+        ld b,BACK_ROW
+        ld d,BACK_PX / 8
+        ld e,BACK_ATTR
         call fill_attr_rows
-        ld b,SEABED_ROW
-        ld d,SEABED_ROWS
-        ld hl,pattern_pebbles
-        call fill_pattern_rows
 
-        ; weeds: three columns of a wavy pattern, 4 cells tall, on the seabed
-        ld c,4
-        call draw_weed
-        ld c,13
-        call draw_weed
-        ld c,24
-        call draw_weed
-        ret
+        ld b,FRONT_ROW
+        ld d,FRONT_PX / 8
+        ld e,FRONT_ATTR
+        call fill_attr_rows
+
+        ; Rows 20 and 21. The front strip is only row 19; this black band
+        ; is what the diver sits in when he swims down, and it keeps the
+        ; debug text (rows 22-23) off the ground.
+        ld b,FLOOR_ROW
+        ld d,2
+        ld e,FLOOR_ATTR
+        call fill_attr_rows
+
+        jp scroll_init          ; paint both strips and copy them up once
 
 ;------------------------------------------------------------------------------
 ; fill_attr_rows - In: B = first row, D = number of rows, E = attribute
@@ -56,78 +56,3 @@ fill_attr_rows:
         jr nz,.row
         ret
 
-;------------------------------------------------------------------------------
-; fill_pattern_rows - fill whole character rows with an 8-byte pattern
-; In:  B = first row, D = number of rows, HL -> 8 bytes (one per pixel line)
-; Corrupts: AF, BC, DE, HL
-;------------------------------------------------------------------------------
-fill_pattern_rows:
-.row:   ld c,0                  ; C = column, 0..31
-.cell:  push de                 ; D = rows left: copy_cell corrupts DE
-        push hl                 ; HL = pattern start, needed for every cell
-        ex de,hl                ; DE -> pattern
-        call char_addr          ; HL -> top pixel line of cell (B,C)
-        call copy_cell          ; (corrupts B too, so save it around this)
-        pop hl
-        pop de
-        inc c
-        ld a,c
-        cp 32
-        jr nz,.cell
-        inc b                   ; next character row
-        dec d
-        jr nz,.row
-        ret
-
-;------------------------------------------------------------------------------
-; draw_weed - In: C = column. Draws 4 cells upward from the seabed.
-; Corrupts: AF, BC, DE, HL
-;------------------------------------------------------------------------------
-draw_weed:
-        ld b,SEABED_ROW - 4
-.cell:
-        call attr_addr
-        ld (hl),WEED_ATTR
-        call char_addr
-        ld de,pattern_weed
-        call copy_cell
-        inc b
-        ld a,b
-        cp SEABED_ROW
-        jr nz,.cell
-        ret
-
-;------------------------------------------------------------------------------
-; copy_cell - copy 8 pattern bytes into one character cell
-; In: HL -> top pixel line of the cell, DE -> 8 bytes. Corrupts: AF, DE, H
-; Inside a cell, each pixel line down is +256, i.e. just INC H.
-;------------------------------------------------------------------------------
-copy_cell:
-        push bc                 ; callers use B as a row counter: keep it
-        ld b,8
-.line:  ld a,(de)
-        ld (hl),a
-        inc de
-        inc h
-        djnz .line
-        pop bc
-        ret
-
-pattern_pebbles:
-        db %00000000
-        db %01100010
-        db %11110111
-        db %01100010
-        db %00000000
-        db %00011000
-        db %10111100
-        db %00011001
-pattern_weed:
-        db %00011000
-        db %00110000
-        db %00110000
-        db %00011000
-        db %00001100
-        db %00001100
-        db %00011000
-        db %00110000
