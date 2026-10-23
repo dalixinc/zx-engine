@@ -12,6 +12,15 @@
 ; It is part of the sprite, not a hole in the save/restore (that path was
 ; checked: after erase, the playfield matches the backdrop). The blade is
 ; now joined onto the jet, so it cannot sit there on its own.
+;
+; Kick, drawn to read at 1:1 (fins are at least 2 pixels thick, and every
+; ink pixel shares a full edge with another — a diagonal touch disappears
+; on a real screen):
+;   frame 0  fins apart. Upper fin on the left of rows 9-10, lower fin on
+;            rows 13-14, with an empty gap between them. Both reach column 0.
+;   frame 1  half way. One thick fin, tip at column 2, notch not a gap.
+;   frame 2  crossed and tucked. The fins make an X under the body and
+;            stay to the right of column 4, so they no longer stick out.
 frame 0  legs apart, end of kick
 ..................####..
 ............###########.
@@ -22,12 +31,12 @@ frame 0  legs apart, end of kick
 ..#####################.
 .....#################..
 .....###############....
-..#############...###...
-.####..............##...
-####..........###-#####.
-###..........####-#####-
-##...........####-#####-
-..............###-#####.
+###############...###...
+###...###..........##...
+.......####...###-#####.
+......####....###-#####-
+#######.......###-#####-
+########......###-#####.
 frame 1  legs half way
 ..................####..
 ............###########.
@@ -39,12 +48,12 @@ frame 1  legs half way
 ...###################..
 ...#################....
 .##############...###...
-###................##...
-##.............##-#####.
-............#####-#####-
-............#####-#####-
-...............##-#####.
-frame 2  legs together, glide
+..######...........##...
+...####........##-#####.
+.....#####....###-#####-
+..######......###-#####-
+..#######......##-#####.
+frame 2  legs crossed, together
 ..................####..
 ............###########.
 .........#####..####---#
@@ -55,8 +64,8 @@ frame 2  legs together, glide
 ######################..
 ####################....
 ##....#########...###...
-#..................##...
-..............###-#####.
-.............####-#####-
-.............####-#####-
-..............###-#####.
+....##....##.......##...
+....###..###..###-#####.
+.....######...###-#####-
+....###..###..###-#####-
+....##....##..###-#####.

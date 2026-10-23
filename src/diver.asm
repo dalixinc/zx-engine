@@ -9,8 +9,8 @@
 ; while going nowhere looks wrong, and it makes it obvious on screen whether
 ; input is getting through. (An idle bob could be added later.)
 ;
-; The art has 3 frames (legs apart, half way, together). A kick is
-;   apart -> half -> together -> half -> apart ...
+; The art has 3 frames (legs apart, half way, crossed). A kick is
+;   apart -> half -> crossed -> half -> apart ...
 ; so the order is kept in a 4-entry table, kick_sequence, rather than
 ; storing the "half way" frame twice. That saves 1920 bytes of pre-shifted
 ; data, at the cost of one table lookup.
@@ -143,7 +143,7 @@ diver_image_index:
         add a,e                 ; + art frame
         ret
 
-kick_sequence:  db 0, 1, 2, 1   ; apart, half, together, half
+kick_sequence:  db 0, 1, 2, 1   ; apart, half, crossed, half
 
 ; --- Diver state -------------------------------------------------------------
 diver_x:        db 60           ; pixels
