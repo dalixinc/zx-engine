@@ -4,6 +4,14 @@
 ; and the jet unit he holds out in front (torpedoes will come out of the
 ; dark mouth at its nose). Frames: a flipper kick, with the jet unit's
 ; propeller (at its back end) changing between frames.
+;
+; The propeller used to be one ink pixel that only touched the jet on a
+; diagonal (frames 0 and 2). The kick order is 0,1,2,1, and frame 1 does
+; not have that pixel, so while he is moving the speck blinks on and off
+; beside the jet. At 1:1 on a Spectrum that reads as dirt left behind him.
+; It is part of the sprite, not a hole in the save/restore (that path was
+; checked: after erase, the playfield matches the backdrop). The blade is
+; now joined onto the jet, so it cannot sit there on its own.
 frame 0  legs apart, end of kick
 ..................####..
 ............###########.
@@ -16,10 +24,10 @@ frame 0  legs apart, end of kick
 .....###############....
 ..#############...###...
 .####..............##...
-####........#..##-#####.
+####..........###-#####.
 ###..........####-#####-
 ##...........####-#####-
-............#..##-#####.
+..............###-#####.
 frame 1  legs half way
 ..................####..
 ............###########.
@@ -48,7 +56,7 @@ frame 2  legs together, glide
 ####################....
 ##....#########...###...
 #..................##...
-............#..##-#####.
+..............###-#####.
 .............####-#####-
 .............####-#####-
-............#..##-#####.
+..............###-#####.
