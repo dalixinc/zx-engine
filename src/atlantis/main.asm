@@ -267,11 +267,14 @@ SLACK_WARMUP    equ 0
         edup
     ENDIF
     IFDEF SHOT_FRAME
-        ; Not the tape. Halt at the end of one frame so a screenshot can
+        ; Not the tape. Halt at the end of one loop so a screenshot can
         ; catch the wheel at a known x. The draw for this frame has
-        ; already happened; SHOT_FRAME is the frame_count (1 on the
-        ; first loop).
-        ld hl,(frame_count)
+        ; already happened. The count is loops, not frame_count: with
+        ; the bomb on screen a loop often misses the interrupt, so the
+        ; interrupt counter runs ahead of the movement.
+        ld hl,(shot_loops)
+        inc hl
+        ld (shot_loops),hl
         ld de,SHOT_FRAME
         or a
         sbc hl,de
@@ -315,6 +318,9 @@ slack_loops:    dw 0            ; loops since entry, including the warmup
 slack_measured: dw 0            ; loops inside the measured window
 slack_base:     dw 0            ; frame_count when the window opened
 slack_armed:    db 0
+    ENDIF
+    IFDEF SHOT_FRAME
+shot_loops:     dw 0            ; main-loop passes, 1 on the first
     ENDIF
 
 code_end:

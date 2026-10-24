@@ -187,7 +187,11 @@ at half the speed of the black strip. A white fish swims to and fro at the
 old depth. A wheel bomb slides in from the right, one pixel a frame,
 bobbing as it goes, and leaves through the left edge. Its legs spin and
 the T in the hub stays upright. One is on screen at a time; the next
-appears about a second after the last one has gone. The diver holds his
+appears about a second after the last one has gone. The bomb does not
+fit in one frame: while it is on screen the loop misses the interrupt
+and the picture updates at 25 Hz, with the scroll and the sprites
+stepping twice per picture. The speeds were not changed to hide that.
+`docs/SCROLLING.md` has the measurement and the options. The diver holds his
 jet unit out in front, kicks while you hold
 a direction, and glides with his legs together when you let go. He can
 swim up to the top row, and down over the weed and the sand, until his

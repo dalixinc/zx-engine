@@ -726,12 +726,48 @@ it, a sled of 7 still dropped nothing, and a sled of 8 dropped 1 of
 512. Seven scanlines was the spare on the heavier of those two. The
 demo's heaviest frame finished about 1 scanline before the interrupt.
 
-The wheel bomb is another 16×16 masked sprite (save, restore and draw,
-every frame it is on screen). The same sled, with the bomb on screen,
-is reported with the bomb's own notes below. Clipping itself is cheap
-on that path: a fully visible bomb uses the original draw loop, and the
-test that decides so is about 70 T-states. The cost that matters is
-the sprite, not the edge test.
+The wheel bomb is another 16×16 masked sprite (save, restore and draw)
+on every loop it is on screen. Clipping itself is cheap on that path:
+a fully visible bomb uses the original draw loop, and the test that
+decides so is about 70 T-states. The cost that matters is the sprite.
+
+It does not fit in a frame. Nothing was slowed down to hide that, and
+the movement constants were not changed. A sled of 0 scanlines, digits
+off:
+
+* Open water, warmup 40 (the bomb is on screen through the window):
+  red border, `01CB`, 459 of 512 loops dropped a frame.
+* Seabed, Down held, warmup 200: red border, `0198`, 408 of 512.
+
+Those counts are the loops where the bomb is actually drawn. The pause
+between bombs still fits, and a few of the most clipped edge frames
+still fit. A bomb that is properly on screen does not. The drop is one
+extra frame, not two: the count is about one per bomb loop, not two.
+
+On `make timing` the white band (restore and draw, which is where this
+sprite sits) is about 60 scanlines longer than it was before the bomb.
+The old spare was 9 scanlines in open water and 7 on the seabed, so the
+heavy frame now finishes on the order of 50 scanlines after the
+interrupt.
+
+What that looks like on a 50 Hz machine: `wait_frame` returns as soon
+as the missed interrupt is pending, so the whole loop runs twice per
+picture while the bomb is drawn. The bomb still moves one pixel a loop,
+which is two pixels a picture, and the scroll steps twice a picture
+too. That is the machine missing the frame, not a change to the speeds.
+
+Ways to get it back inside one frame, none of them done here:
+
+* A fast path for empty water. The sea under the bomb is usually blank,
+  so the masked loop is doing work a plain copy would not. It has to
+  win back about 50 scanlines, which is most of the sprite's time, not
+  a small trim.
+* A smaller picture, if the art is redrawn that way. Cutting the sprite
+  down in code to make the timing pass was not done: `gfx/wheel.txt` is
+  the picture, and it is the owner's to change.
+* Drawing it on alternate loops. That would be a 25 Hz sprite with the
+  rest of the game still at 50 Hz. It was not done, because it would
+  change the movement without saying so.
 
 The digits are off in that measurement, which is the normal game. Drawing
 them adds the sixteen hex digits and the seven letters. That is the
@@ -762,7 +798,9 @@ whole screen, so this snapshot runs slower than the game; give it a
 couple of minutes. The two photographs (the seabed, and the title
 rows) are 768 bytes each and sit at `$F300`, which the game leaves
 empty. Keeping them out of the program is what lets this test build
-finish before `$C000`.
+finish before `$C000`. The run with the wheel bomb finished green,
+with `OK`: the five wheel situations happened, and the title rows
+still matched the first frame.
 
 ## Memory
 
@@ -820,3 +858,5 @@ and another word in that table. It is not written.
   and he is steered in screen coordinates.
 * Touching black does not kill him. The clamp only holds him off it.
 * The wheel's picture is a placeholder (`gfx/wheel.txt`).
+* The bomb fitting in one frame. A full 16×16 masked sprite misses the
+  interrupt by on the order of 50 scanlines. See "How long it takes".
