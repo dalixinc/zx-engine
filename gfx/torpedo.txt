@@ -1,0 +1,17 @@
+; torpedo.txt - the diver's torpedo, 7 x 2, drawn FACING RIGHT. A PLACEHOLDER.
+;
+;   #  = ink   -  = paper (opaque)   .  = transparent
+;
+; It leaves the dark mouth at the nose of his jet unit: rows 12 and 13 of
+; diver.txt, the two rows whose right-hand pixel is paper. That mouth is
+; two pixels tall, so the torpedo is too.
+;
+; Seven pixels wide, not eight. A width that fills whole bytes is stored
+; one byte wider on every shift. Seven fits in one byte at shifts 0 and
+; 1, and two bytes at the rest (tools/gfx2asm.py writes the table), so
+; most of the time it is the cheapest sprite on the screen.
+;
+; Mirrored for the left-facing copy.
+frame 0
+######.
+#######

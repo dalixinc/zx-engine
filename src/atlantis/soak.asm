@@ -217,9 +217,23 @@ soak_begin_play:
 
 ; After read_input. $FF would mean "don't override"; the script always sets
 ; a real value, including 0.
+; In the dive, fire is also pressed on every 16th frame, so a torpedo is
+; nearly always running: up by the surface, across the fish, through the
+; seabed, and off both edges. The checks after each restore then cover
+; its erase as well. torpedo_hit is not called on this build, so the
+; bombs keep the path the frame numbers above expect.
 soak_apply_input:
+        ld a,(soak_phase)
+        cp 1
         ld a,(soak_input)
-        ld (input_state),a
+        jr nz,.store
+        ld b,a
+        ld a,(soak_frame)
+        and 15
+        ld a,b
+        jr nz,.store
+        or IN_FIRE
+.store: ld (input_state),a
         ret
 
 ; After restore + stats_prepare, before anything is drawn.

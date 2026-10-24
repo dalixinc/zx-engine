@@ -44,7 +44,7 @@ Verification means assembling a variant build with `-D` flags and running it in 
 |------|--------------|
 | `-DSOAK` | `src/atlantis/soak.asm` plays a scripted dive and checks background restore, colours and the terrain clamp after every frame. **Green border + "OK"** = pass. Red border + reason number + frame = first failure (reasons are listed in soak.asm's header). It takes about 2 minutes. |
 | `-DTIMING_BARS` | Border colour per phase. The legend is in main.asm's header. |
-| `-DMEASURE` | Runs warmup + 512 steps, then halts and prints hex on row 2: min spare scanlines, late-step count, interrupts, loops. Options: `-DMEAS_DOWN` (hold Down, the heavy seabed case), `MEAS_RATE`, `MEAS_WARMUP`, `MEAS_WINDOW`. |
+| `-DMEASURE` | Runs warmup + 512 steps, then halts and prints hex on row 2: min spare scanlines, late-step count, interrupts, loops. Options: `-DMEAS_DOWN` (hold Down, the heavy seabed case), `-DMEAS_FIRE` (tap fire every other step, so a torpedo is nearly always running), `MEAS_RATE`, `MEAS_WARMUP`, `MEAS_WINDOW`. At 25 fps the late count is high by design; judge it by interrupts = 2 per step. |
 | `-DSLACK_LINES=n` | Adds an n-scanline NOP sled. Green/red border shows whether the frame still fits. Optional `SLACK_WARMUP`. |
 | `-DSHOT_FRAME=n` | Halts after loop n for a deterministic screenshot. |
 | `-DNO_WHEEL` | Leaves the wheel bomb out, for measurement. |

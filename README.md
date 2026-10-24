@@ -28,7 +28,7 @@ New to the scrolling ground? Read [docs/SCROLLING.md](docs/SCROLLING.md)**
 | Down   | A               | 6           | down     |
 | Left   | O               | 5           | left     |
 | Right  | P               | 8           | right    |
-| Fire   | SPACE (unused for now) | 0    | fire     |
+| Fire   | SPACE                  | 0           | fire     |
 | Stats  | Symbol Shift + S       |             |          |
 | Speed  | Symbol Shift + F       |             |          |
 | Menu   | Symbol Shift + P       |             |          |
@@ -42,6 +42,11 @@ wheel bomb that touches him costs one: the bomb vanishes and the border
 flashes red. The hit boxes are a little smaller than the pictures, so a
 graze of the flippers or the rim does not count. After the last life
 the game goes back to the menu, which says GAME OVER.
+
+Fire launches a torpedo from the nose of his jet unit, the way he is
+facing. It runs along that row until it leaves the screen, and a bomb it
+touches is gone. One at a time: a new press fires again once the last one
+has gone. It does not follow him up or down.
 
 The three Symbol Shift chords fire once, the moment both keys go down.
 Holding them does not repeat, and the letter on its own does nothing.
@@ -80,6 +85,7 @@ src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
 src/atlantis/stats.asm   the row-0 stat line, Symbol Shift + S
 src/atlantis/wheel.asm   the wheel bomb: drift, bob, spin, one at a time
 src/atlantis/hit.asm     the bomb against the diver, and the lives
+src/atlantis/torpedo.asm the diver's torpedo: fire, run, hit a bomb, its own draw
 src/atlantis/fastsprite.asm  the faster sprite walker the game uses (not the demo)
 src/atlantis/soak.asm    the background-restore check, only with -DSOAK
 src/main.asm             Engine Demo 1 entry and loop
@@ -101,6 +107,8 @@ gfx/diver.txt            diver art, 24 x 15, 3 frames, facing right
 gfx/diver.asm            GENERATED from diver.txt: 8 shifts x 3 frames x 2 facings
 gfx/wheel.txt            wheel bomb, 12 x 12, 4 frames, mirror off (the T stays a T)
 gfx/wheel.asm            GENERATED from wheel.txt: 8 shifts x 4 frames, one facing
+gfx/torpedo.txt          torpedo, 7 x 2, one frame
+gfx/torpedo.asm          GENERATED from torpedo.txt: 8 shifts x 1 frame x 2 facings
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
 tools/gfx2asm.py         ASCII art -> pre-shifted masked .asm (Python 3)
@@ -113,9 +121,9 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
 Atlantis memory: the tape has two code blocks. The instructions are at
-`$8000-$A15D` (`code_end` is `$A15E`, 8,542 bytes) and must stay below
-`$C000`. The pictures, menu words and tables are at `$C000-$E668`
-(9,833 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+`$8000-$A35A` (`code_end` is `$A35B`, 9,051 bytes) and must stay below
+`$C000`. The pictures, menu words and tables are at `$C000-$E704`
+(9,989 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
 A build prints both ends (`atlantis code_end`, `atlantis data_end`), and
 the `ASSERT`s at the end of `src/atlantis/main.asm` stop it if a block
 runs into the next. The wheel bomb is 12 by 12. A shifted row is 2 bytes for shifts 0 to 4
@@ -132,8 +140,8 @@ climb down into the row table.
 Engine Demo 1 is smaller: `code_end` is `$A928` (10,536 bytes) and its two
 buffers are `$F000-$F3FF`.
 
-Graphics: `make` regenerates `gfx/fish.asm`, `gfx/diver.asm` and
-`gfx/wheel.asm` from the `.txt` art with Python 3 when the art changes. The
+Graphics: `make` regenerates `gfx/fish.asm`, `gfx/diver.asm`,
+`gfx/wheel.asm` and `gfx/torpedo.asm` from the `.txt` art with Python 3 when the art changes. The
 generated files are committed, so Windows users can build with `build.bat`
 without Python. After editing the art, run e.g.
 `python tools\gfx2asm.py gfx\wheel.txt gfx\wheel.asm wheel` first. A line

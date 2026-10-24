@@ -205,6 +205,18 @@ SLACK_WARMUP    equ 0
         ld a,IN_DOWN
         ld (input_state),a
     ENDIF
+    IFDEF MEAS_FIRE
+        ; Measurement only. Fire goes down on every other step, so a
+        ; new torpedo leaves as soon as the last one is spent and one
+        ; is nearly always running.
+        ld a,(frame_count)
+        and 1
+        jr z,.meas_nofire
+        ld a,(input_state)
+        or IN_FIRE
+        ld (input_state),a
+.meas_nofire:
+    ENDIF
 
     IFDEF TIMING_BARS
         ld a,WHITE
@@ -217,8 +229,10 @@ SLACK_WARMUP    equ 0
         ;
         ; Draw order:
         ;   up in the water, before the seabed copy: the higher of the
-        ;       diver and the wheel, then the lower one, then the fish
-        ;   on the seabed, after the copy: diver, wheel
+        ;       diver and the wheel, then the lower one, then the fish.
+        ;       The torpedo goes straight after the diver: it is new at
+        ;       his height, so it shares his place in the race.
+        ;   on the seabed, after the copy: diver, wheel, torpedo
         ; The beam runs down the picture while this happens. A sprite is
         ; missing from the picture if the beam reaches it after it was
         ; erased and before it is drawn again. With a fixed order, the
@@ -230,7 +244,8 @@ SLACK_WARMUP    equ 0
         ; beam reaches much later, so it goes last.
         ; The order between the diver and the bomb is not about which
         ; is in front. If they overlap it is a hit and the bomb goes.
-        ; diver_late, wheel_late and wheel_first remember what was done,
+        ; diver_late, wheel_late, wheel_first and torp_vn remember what
+        ; was done,
         ; so the restore below runs in exactly the reverse order.
         ;
         ; The fish and the diver go through the tight walker. The shared
@@ -239,6 +254,9 @@ SLACK_WARMUP    equ 0
         ; SLACK_LINES. The tape does not define it. It leaves the bomb
         ; out so the spare-scanline count can be taken with no bomb
         ; on screen.
+        ld a,(torp_vn)          ; drawn after the copy: TORP_LOW is set
+        rla
+        call c,torpedo_restore
     IFNDEF NO_WHEEL
         ld a,(wheel_late)
         or a
@@ -256,12 +274,20 @@ SLACK_WARMUP    equ 0
         or a
         call z,wheel_restore
     ENDIF
+        ld a,(torp_vn)          ; 1 or 2: drawn before the copy
+        dec a
+        cp 2
+        call c,torpedo_restore
         ld a,(diver_late)
         or a
         call z,diver_restore_fast
     IFNDEF NO_WHEEL
         jr .restored
 .wheel_was_first:
+        ld a,(torp_vn)          ; 1 or 2: drawn before the copy
+        dec a
+        cp 2
+        call c,torpedo_restore
         ld a,(diver_late)
         or a
         call z,diver_restore_fast
@@ -312,6 +338,11 @@ SLACK_WARMUP    equ 0
         ld a,(diver_late)
         or a
         call z,diver_draw_fast
+        ; The torpedo, if one is running above the weed. It is drawn here
+        ; even when the diver is late: the order is the same either way.
+        ld a,(torp_on)
+        dec a                   ; TORP_HIGH is 1
+        call z,torpedo_draw
     IFNDEF NO_WHEEL
         ld a,(wheel_first)
         or a
@@ -461,8 +492,24 @@ SLACK_WARMUP    equ 0
         call update_diver
         call update_fish
 .moved:
+        ; The torpedo: move the one that is running, then launch a new
+        ; one on a fresh press, from where he is now. Each is a load and
+        ; a test when there is nothing to do.
+        ld a,(torp_on)
+        or a
+        call nz,torpedo_move
+        ld a,(input_state)
+        and IN_FIRE
+        call nz,torpedo_fire
     IFNDEF NO_WHEEL
         call update_wheel
+    IFNDEF SOAK
+        ; Before hit_check: a bomb that was shot first is already gone.
+        ; The soak fires torpedoes but keeps its bombs (see soak.asm).
+        ld a,(torp_on)
+        or a
+        call nz,torpedo_hit
+    ENDIF
     IFNDEF SOAK
         ; After everything has moved. The last life goes to the menu
         ; from here, where no call is waiting to return.
@@ -593,7 +640,8 @@ SLACK_WARMUP    equ 0
         jp main_loop
 
 ;------------------------------------------------------------------------------
-; draw_late - the diver, and the bomb, when the seabed copy would cover them
+; draw_late - the diver, the bomb and the torpedo, when the seabed copy
+; would cover them
 ; main_loop already decided which half each one is drawn in, and kept
 ; that in diver_late and wheel_late for the next restore.
 ; Corrupts: AF, BC, DE, HL, IX, IY
@@ -611,11 +659,15 @@ draw_late:
     IFNDEF NO_WHEEL
         ld a,(wheel_late)
         or a
-        ret z
+        jr z,.wheel_done
         call wheel_draw
         call wheel_colours
+.wheel_done:
     ENDIF
-        ret
+        ld a,(torp_on)
+        rla                     ; TORP_LOW is bit 7
+        ret nc
+        jp torpedo_draw
 
     IFNDEF NO_WHEEL
 ; The bomb above the seabed: the picture, then its colours.
@@ -645,6 +697,7 @@ wheel_first:    db 0
         INCLUDE "rate.asm"
         INCLUDE "wheel.asm"
         INCLUDE "hit.asm"
+        INCLUDE "torpedo.asm"
         INCLUDE "../fish.asm"
         INCLUDE "../diver.asm"
         ; After the fish and the diver, so the wrappers can call their
@@ -685,6 +738,7 @@ data_start:
         INCLUDE "../../gfx/fish.asm"
         INCLUDE "../../gfx/diver.asm"
         INCLUDE "../../gfx/wheel.asm"
+        INCLUDE "../../gfx/torpedo.asm"
 data_end:
 DATA_LENGTH     equ data_end - data_start
         DISPLAY "atlantis data_end ", data_end
@@ -720,6 +774,8 @@ DATA_LENGTH     equ data_end - data_start
         ASSERT DIVER_MIN_Y == 0, "he is allowed up onto row 0"
         ASSERT FISH_SWIM_Y == 76, "the fish stays at the demo's depth"
         ASSERT FISH_SWIM_Y + FISH_HEIGHT <= BACK_ROW * 8, "the fish reaches the seabed; it is drawn before the blit"
+        ASSERT TORPEDO_WIDTH == 7 && TORPEDO_BYTES == 2, "the torpedo is one or two bytes a row"
+        ASSERT 2 * (TORP_SPEED + WHEEL_SPEED) < TORP_X_SPAN, "at 25 a torpedo could jump over a bomb"
         ASSERT CFG_LIVES >= 1 && CFG_LIVES <= 9, "the stat line has one digit for the lives"
         ASSERT HIT_X_SPAN > 0 && HIT_Y_SPAN > 0, "a hit box has no size"
         ASSERT BORDER_FRAMES == 8, "the rrca x3 above assumes BORDER_FRAMES = 8"

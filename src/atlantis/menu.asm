@@ -71,6 +71,7 @@ enter_menu:
         ld (wheel_attr_n),a
         ld (stats_dirty),a
         ld (stats_template_up),a
+        call torpedo_reset
 
         call draw_scenery
         call menu_draw
@@ -356,6 +357,7 @@ game_reset:
         ld (fish_facing),a
 
         call wheel_reset
+        call torpedo_reset
 
         di
         ld hl,0
