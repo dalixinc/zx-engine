@@ -14,7 +14,14 @@
 ; (column x/8 + FISH_BYTES - 1) is still column 31. With 3 bytes: 239.
 FISH_MIN_X      equ 0
 FISH_MAX_X      equ 256 - FISH_BYTES * 8 + 7
-FISH_SWIM_Y     equ WATER_TOP_ROW * 8 + 20      ; fixed depth: pixel row 76
+; Fixed depth, pixel row 76: below the demo title, above either seabed.
+; Atlantis (DEFINE ATLANTIS, before this file) sets FISH_SWIM_Y itself.
+; Its water starts at row 0, and WATER_TOP_ROW * 8 + 20 would park the
+; fish on the title. The number is still 76, so he crosses the diver
+; in open water either way. IFNDEF only sees DEFINE, not an EQU.
+        IFNDEF ATLANTIS
+FISH_SWIM_Y     equ WATER_TOP_ROW * 8 + 20
+        ENDIF
 
 ;------------------------------------------------------------------------------
 ; update_fish - swim one pixel in the facing direction; turn at the edges

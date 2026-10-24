@@ -1,10 +1,26 @@
-# Scrolling ground (v0.5, silhouettes)
+# Scrolling ground
+
+Two programs share this engine.
+
+* **Engine Demo 1** is the parallax seabed that was merged and tagged
+  `engine-demo-1`. `make demo` still builds it as `build/diver.tap`
+  (that name was kept, so the old tape name still means the demo).
+  `make run-demo` launches it. Everything from here down to
+  "Atlantis" describes that demo, and it behaves as it did on the tag.
+* **Atlantis** is the game. `make` builds `build/atlantis.tap` and
+  `make run` launches it. Its seabed is the last section of this file.
+  The demo's scroll code was not rewritten to serve both: Atlantis has
+  its own `src/atlantis/scroll.asm`, because the strips are different
+  and the demo has to stay byte-for-byte the tagged build.
+
+## Engine Demo 1
 
 The seabed is two strips that move past at different speeds while the
 diver and the fish swim over them. They are not flat bars. Each one is
 16 pixels tall, so the skyline can rise and fall. This file is the why.
 The code is `src/scroll.asm`, called from `main_loop` in `src/main.asm`.
-The colours are painted by `src/scenery.asm`.
+The colours are painted by `src/scenery.asm`. The row numbers and the
+buffer addresses live in `src/layout.asm`.
 
 Read this first, then the code, in this order:
 
@@ -438,7 +454,7 @@ completely, so nothing is left to clear.
 
 ---
 
-## Not in this version
+## Not in Engine Demo 1
 
 * Trigon missiles, and anything that reads the silo table yet. The ids,
   the heights and the position formula are there so that code has
@@ -451,3 +467,301 @@ completely, so nothing is left to clear.
 * No vertical scroll.
 * The seaweed colour is one cell behind the plant by up to 7 pixels.
   That is the attribute file, not a bug to be fine-scrolled away.
+
+---
+
+# Atlantis
+
+The game uses the same sprites, the same input, the same clamp and the
+same rotate. What changed is the seabed, where the debug digits go, and
+that the diver may now swim up to the top row. The code is
+`src/atlantis/scroll.asm`, called from `src/atlantis/main.asm`. Colours
+are `src/atlantis/scenery.asm`. The row numbers are
+`src/atlantis/layout.asm`. `src/scroll.asm` is the demo and is not used
+by this build.
+
+## What you see
+
+Character rows are 0 to 23, top to bottom.
+
+```
+rows  0-20   open water. White ink, blue paper, painted once.
+             Row 0 is also where the stat overlay goes (off until asked).
+row   21     seaweed, 8 pixels. Green ink, blue paper, and only in the
+             cells a plant is actually in. Part of the slow layer.
+row   22     yellow sand, 8 pixels. Yellow ink, blue paper, every column,
+             painted once. The other half of the slow layer.
+             A silo is 16 pixels tall, so its top half stands in this row
+             and is drawn in THIS row's colours.
+row   23     black ground, 8 pixels. Black ink, yellow paper, every
+             column, painted once. The fast layer. Rocks stay inside
+             these 8 pixels. The bottom half of a silo is here.
+```
+
+The slow layer moves 1 pixel every 2 frames. The ground moves 1 pixel
+every frame. Same speeds as the demo, shorter strips.
+
+The strips are shorter than the demo's, and that is most of why the
+frame has more room. It is not enough room to copy the whole slow
+strip, repaint the seaweed, and rotate both strips in the same frame.
+The slow strip only changes every other frame, so the pair is split
+on that beat. It is the demo's show frame / prepare frame idea, with
+less work on each side:
+
+* Show frame (`slow_phase` = 1). Copy all 16 slow rows and the 8
+  ground rows, stamp the silo tops, and repaint the seaweed colours.
+  Rotate the ground. Do not rotate the slow strip. The picture just
+  copied is the one the previous frame's rotate produced.
+* Prepare frame (`slow_phase` = 0). The weed on screen is still that
+  picture, and the sprites have already been restored on top of it,
+  so those 8 rows are not copied again. The sand is copied, because
+  the silo tops were drawn over it and the ground has moved: those 8
+  rows wipe the old tops, and the stamp draws the new ones. Then
+  rotate the ground and the slow strip. The colours are left alone.
+  They already match the pixels still showing. The beam has gone past
+  row 21 by the time this rotate finishes, so the new colours are
+  painted on the next show frame, in the same breath as the new
+  pixels, before the beam reaches that row.
+
+`scroll_init` draws the first picture as a show frame and leaves the
+phase at 0, so the loop starts on a prepare frame. The spare time is
+in "How long it takes" below.
+
+## Why the silo top is stamped
+
+A silo is 16 pixels. Its bottom 8 travel in the ground buffer, so they
+stay nailed to that column. The top 8 are not given their own buffer.
+A full-width rotate of another 8 rows was timed out on paper (it is
+the same cost as the ground rotate, about 27 scanlines) and did not
+leave a whole frame. `stamp_silos` ORs those 8 bytes onto row 22 after
+the sand has been copied, shifted by the same `front_fine` the ground
+buffer just used, so the two halves stay one column.
+
+Worked example, hatch byte `%00100100`, fine scroll 4:
+
+```
+bits that fell off the left   %00000010   column n-1
+bits that remain              %01000000   column n
+```
+
+Fine 0 stays entirely in column n. Column 32 is the one still sliding
+in: only its spill, in column 31, is on screen. Column 0 with a
+non-zero fine has its spill off the left edge.
+
+Row 22's attributes are not touched by the stamp. Every cell stays
+yellow ink on blue paper. The silo top is therefore drawn yellow on
+blue, not black on yellow. That is the clash, and it is left on
+purpose so it can be seen. The hatch holes show the blue paper, which
+reads as water. The sand profile is only 2 pixels at the columns a
+gap-24 silo lands on (0, 24, 48, ... are profile indexes 0, 8, 0, 8),
+so the yellow top stands up out of the dune instead of disappearing
+into an 8-pixel sand fill.
+
+The black body of the silo, on row 23, is black on yellow, like the
+ground. Only the half that pokes into the sand changes colour.
+
+## Seaweed
+
+A plant is only placed on a column whose sand is the full 8 pixels, so
+the bottom of the graphic sits on the dune and does not float. The
+countdown is the demo's (first try at column 3, then every 11). A try
+that lands on a short dune waits for the next full one. With this
+profile the plants are on columns 4, 20, 36, 52, ... The plant and the
+sand are the same 16-pixel buffer, so scrolling cannot separate them.
+
+The graphic is inset: 2 clear pixels on the left, 1 on the right
+(`pat_weed`). The attribute byte cannot scroll by a pixel, so the cell
+is recoloured from the fine scroll on the show frame, which is the
+frame the pixels move:
+
+* fine 0, 1, 2: the plant is still inside its own cell. That cell is
+  green on blue. The cell to its left is water.
+* fine 3, 4, 5, 6: a set pixel has crossed into the left cell, and a
+  set pixel is still in its own cell. Both cells are green on blue.
+  One plant, two cells, for those four steps.
+* fine 7: nothing of the plant remains in its own cell. Only the left
+  cell is green.
+
+Green ink on blue paper means a clear pixel in that cell is still the
+blue water. The spare cell does not turn into a green block. It looks
+like water until a sprite swims into it, and then that sprite is drawn
+green on blue for as long as it overlaps the cell. A stray 8x8 of that,
+now and then, is the clash that is accepted. A set pixel is never left
+in a water-coloured cell, and a green cell always contains a plant
+pixel. The soak checks both.
+
+## The diver and the black
+
+He may sink over the sand and the seaweed. They are behind him. He may
+not touch a black pixel: the ground, a rock, or a silo, including the
+part of the silo that stands in the sand row. The clamp is the demo's
+`clamp_to_terrain`, unchanged. Atlantis reports a silo as height 16
+and sets `NEAR_BOTTOM` to 192 (the bottom of the screen), so the same
+sum stops his lowest pixel one pixel above that black. A rising column
+lifts him, as before. Touching black does not kill him yet.
+
+His top may be y = 0. The water starts at row 0, so `DIVER_MIN_Y` is 0.
+The fish stays at pixel row 76, the demo's depth, so he still crosses
+the diver in open water. Atlantis defines `FISH_SWIM_Y` itself;
+`fish.asm` would otherwise compute it from `WATER_TOP_ROW` and park
+the fish on the title.
+
+## Stat overlay
+
+The demo's debug digits sat on rows 22 and 23. Those rows are the
+ground now. The same digits are an overlay on row 0, over the water,
+and they are off until Symbol Shift and S are pressed together. The
+chord is edge-triggered: the moment it goes down, the overlay flips.
+Holding the keys does not flip it again. S on its own is not the chord.
+
+When it is on, row 0 reads:
+
+```
+F frame   K keys   J joystick   I combined   X diver x   Y diver y   M image
+```
+
+Picture only. The row's attributes stay white on blue, which is the
+water. `print_char` would have recoloured the cells.
+
+The sprite background record is a photograph. If the digits were in
+that photograph, the next restore would paint them back wherever the
+sprite had moved. So the photograph is taken with the digits off:
+
+* No sprite on row 0. The digits stay up for the whole frame. The beam
+  reads row 0 near the start, long before the loop finishes, so wiping
+  them at the start would wipe them before the beam saw them. They are
+  erased and redrawn at the end, after the beam has left the row.
+* A sprite is on row 0 (the diver at the surface, or the fish if it is
+  ever up there). The digits are wiped after the old sprite is restored
+  and before the new one is saved. The photograph is water. The digits
+  are drawn again on top of the sprite. Restoring later puts the water
+  back, which also removes the digits that were on the sprite; the wipe
+  clears the digits the sprite did not cover.
+
+Turning the overlay off leaves row 0 as water. Zero pixels are the
+water; nothing else is drawn on that row.
+
+The beam can still catch row 0 while a sprite is up there, between the
+wipe and the redraw. The digits may shimmer for that frame. They are
+not left behind. Waiting for the beam to finish row 0 before drawing
+the sprite does not fit: the restore writes the row at the start of
+the frame, which is when the beam is there.
+
+## Order inside the frame
+
+```
+wait_frame
+stats_poll                ; Symbol Shift + S, rising edge
+read the keys
+diver_restore, fish_restore
+if a sprite is on row 0 and the digits are up: wipe the digits
+fish_draw
+if the diver's feet are still above row 21: diver_draw
+if a sprite is on row 0: draw the digits on top of him
+scroll_blit
+    show frame:    16 slow rows, weed colours, silo tops, ground
+    prepare frame: sand only, silo tops, ground
+if his feet are on the seabed: diver_draw
+scroll_shift_ground       ; every frame
+if this was a prepare frame: scroll_shift_slow
+if no sprite is on row 0: erase and redraw the digits
+move the diver, move the fish
+```
+
+The copy still happens after the restore, for the same reason as the
+demo. A sprite on the seabed is saved after the copy. The fish is above
+the seabed (pixel 76, height 9, seabed at 168), so he is always drawn
+before it.
+
+## Silos, for later
+
+Same ring as the demo. Missiles are not in this version. The lookup is:
+
+```
+screen x of aligned column i   =  i*8 - front_fine
+tile of aligned column i       =  front_tiles[(front_head + i) & 31]
+solid height                   =  front_h[(front_head + i) & 31]
+world column of screen column i = front_origin + i
+```
+
+`front_fine` is 0..7. Aligned column 32 is `front_pending` /
+`front_h_pending`. `TILE_SILO` is 2. Its height is 16, hatch included:
+the clear bits in the picture are not a gap the diver can enter. The
+top of that column is pixel y = 192 - 16 = 176, the top of row 22.
+The bytes are `pat_silo`, top byte first. The art is the demo's
+placeholder.
+
+`level_silo_gap` and `level_index` are the demo's table. Column N is a
+silo when N mod gap = 0. Rocks are column mod 10 = 4, unless that
+column was already a silo.
+
+## How long it takes
+
+`make timing` builds `build/atlantis-timing.sna`. The border is a clock:
+
+| colour  | what it covers |
+|---------|----------------|
+| white   | restore, wipe the overlay if a sprite is on row 0, draw sprites that are still above the seabed |
+| cyan    | copy the seabed and stamp the silo tops. The show frame (no green band) also copies the weed and recolours it. The prepare frame only recopies the sand |
+| magenta | the diver, if his feet are on the seabed. Absent while he is up in the water: he was drawn in the white band |
+| red     | rotate the ground buffer, every frame |
+| green   | rotate the slow buffer. This is the prepare frame. Absent on the show frame, which is the one that just copied the new sand |
+| yellow  | the overlay (when it is on), then move both sprites |
+| black   | this frame's work is done |
+
+The spare time was measured the same way as the demo: a nop sled after
+the real work, 56 NOPs per scanline (224 T-states), 512 loops, and the
+frame counter checked against a counter in the loop. The build is not
+the tape (`-DSLACK_LINES=n`). One extra interrupt in that window turns
+the border red and prints the extra count.
+
+With the digits off and the diver in open water, a sled of 9 scanlines
+(56 NOPs each) dropped nothing in 512 loops: green border, count
+`0000`. A sled of 10 dropped 8 of those 512. Held on the seabed, where
+his draw happens after the copy instead of before it, a sled of 7
+still dropped nothing, and a sled of 8 dropped 1 of 512. Seven
+scanlines is the spare on the heavier of those two. The demo's
+heaviest frame finished about 1 scanline before the interrupt.
+
+The digits are off in that measurement, which is the normal game. Drawing
+them adds the sixteen hex digits and the seven letters. That is the
+demo's debug line, which cost a few scanlines, and it is not on the
+heavy path unless the overlay has been turned on.
+
+## The soak
+
+`make soak` builds `build/atlantis-soak.sna` (`-DSOAK`). It is not on
+the tape. For 1024 frames it scripts the dive: Up until he is on row 0,
+Symbol Shift + S on, held, off, a plain S that must not toggle, on and
+off again while the fish is parked on row 0, then Down for the rest so
+he rides the sand and at least one silo. After every restore it checks
+that the open water is blank (title rows apart, and row 0 when the
+digits are meant to be up and no sprite is covering them), that rows
+21-23 match the previous copy, that a sprite on row 0 photographed
+water, that his feet are not inside the black, and that the weed
+colours match the weed pixels. Green border and `OK` means all of that
+happened. Red border, `FAIL`, a reason byte and the frame number means
+it stopped at the first miss. The reasons are listed at the top of
+`src/atlantis/soak.asm`. The checks walk the whole screen, so this
+snapshot runs slower than the game; give it a couple of minutes.
+
+## Memory
+
+| region            | address        | what |
+|-------------------|----------------|------|
+| code and data     | `$8000-$AAC3`  | `code_end` is `$AAC4` (10,948 bytes) |
+| slow buffer       | `$F000-$F1FF`  | weed then sand, 16 x 32, not on the tape |
+| ground buffer     | `$F200-$F2FF`  | 8 x 32 |
+| (free)            | `$F300-$F9FF`  | |
+| row address table | `$FA00-$FB7F`  | built at start-up |
+| stack             | grows down from `$FDFC` | must not reach `$FB80` |
+| `JP isr`          | `$FDFD`        | |
+| IM2 vectors       | `$FE00-$FF00`  | 257 bytes of `$FD` |
+
+## Not in Atlantis yet
+
+* Wheel bombs, missiles, collision, death, sound.
+* A real silo picture. The placeholder is the demo's.
+* Scrolling that follows the diver. The world still scrolls on its own
+  and he is steered in screen coordinates.
+* Touching black does not kill him. The clamp only holds him off it.

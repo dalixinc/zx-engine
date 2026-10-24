@@ -34,14 +34,16 @@
 ; contained the earlier sprites, so it must be put back first.
 ;
 ; The scrolling strips are copied onto the screen after every restore
-; (main_loop). The far strip's copy is skipped on a prepare frame: the
-; buffer was not rotated after the last copy, so the screen already
-; matches it. A sprite that overlaps a strip is saved and drawn AFTER the
+; (main_loop). A sprite that overlaps a strip is saved and drawn AFTER the
 ; copy, so the record holds this frame's ground and not the sprite itself
 ; (saving while it is still drawn would put its own pixels back next frame).
 ; A sprite that stays in the water is drawn BEFORE the copy: the copy does
 ; not touch those rows, and drawing it earlier keeps the beam from catching
-; it. docs/SCROLLING.md has the order written out.
+; it. The demo skips the far strip's copy on a prepare frame, because that
+; buffer was not rotated after the previous copy and the screen already
+; matches it. Atlantis copies its (shorter) strips every frame. Either way
+; the save is after the copy when the sprite overlaps a strip.
+; docs/SCROLLING.md has both orders.
 ;
 ; BACKGROUND RECORD - one per sprite, pointed to by IY:
 ;        IY+BG_VALID   0 until the first save (so the first restore is skipped)
