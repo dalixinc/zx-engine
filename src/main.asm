@@ -34,6 +34,7 @@
         DEVICE ZXSPECTRUM48
 
         INCLUDE "constants.asm"
+        INCLUDE "layout.asm"    ; Engine Demo 1 seabed (rows, colours, buffers)
 
         ORG CODE_START
 code_start:

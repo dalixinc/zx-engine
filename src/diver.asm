@@ -162,10 +162,16 @@ kick_sequence:  db 0, 1, 2, 1   ; apart, half, crossed, half
 ; edge. The incoming column is number 32 (front_h_pending).
 ;
 ; max y = NEAR_BOTTOM - height - DIVER_HEIGHT. NEAR_BOTTOM is the pixel
-; just under the strip. A valley (the shortest step in near_profile) lets
-; him down the furthest; a silo is the full 16 pixels, so he stops with
-; his feet on the pixel above the tip. He is allowed to overlap the far
-; yellow hills. Those are behind him. Only the black strip stops him.
+; just under the black. A valley (the shortest step in the near profile)
+; lets him down the furthest; a silo is 16 pixels, so he stops with his
+; feet on the pixel above the tip. He is allowed to overlap the sand and
+; the seaweed. Those are behind him. Only black stops him.
+;
+; In the demo the black strip is itself 16 pixels, so a silo fills it and
+; does not stick out. In Atlantis the black row is 8 pixels and a silo
+; still reports height 16, so the same sum holds him above the part of
+; the silo that stands up into the sand row. A height of 0..16 still fits
+; in the SUB below: NEAR_BOTTOM - DIVER_HEIGHT is at least 161.
 ;
 ; In:  B = input flags, preserved. Corrupts: AF, C, DE, HL
 ;------------------------------------------------------------------------------

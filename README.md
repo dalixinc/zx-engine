@@ -1,21 +1,24 @@
-# DIVER ENGINE
+# ATLANTIS
 
-A Z80 machine code game engine for the 48K ZX Spectrum, for an underwater
-side-scrolling shooter. Milestones 1-5 are done (v0.4): it loads from tape,
-prints a title, runs a 50 Hz IM2 interrupt with a frame counter, cycles the
-border colour every 8 frames, reads keyboard/Kempston input, and steers a
-masked, pre-shifted, animated 24-pixel diver (with a jet unit) pixel by
-pixel, while a 16-pixel fish swims back and forth by itself.
+A Z80 game for the 48K ZX Spectrum, built on the diver engine. The engine's
+parallax demo is frozen as **Engine Demo 1** (git tag `engine-demo-1`):
+`make demo` still builds it, as `build/diver.tap`, and `make run-demo`
+still runs it. `make` and `make run` are the game.
 
-**v0.5** replaces the static seabed with two parallax silhouettes. The far
-one is yellow sand on the blue water, with a green seaweed column now and
-then, 16 pixels tall, scrolling a pixel every other frame. The near one is
-a black landscape on yellow, rocks and missile silos included, also 16
-pixels tall, scrolling a pixel every frame, and it sits directly under the
-far one. The diver is still steered in screen coordinates; the world
-scrolls on its own, and he can swim down until his feet are one pixel
-above the black ground. **New to the sprite code? Read [docs/SPRITES.md](docs/SPRITES.md).
-New to the scrolling ground? Read [docs/SCROLLING.md](docs/SCROLLING.md).**
+Atlantis is the same diver, the same fish, and the same scroll, with a
+different seabed. The bottom row is black ground, 8 pixels tall, one pixel
+per frame. Above it is yellow sand, 8 pixels, one pixel every other frame.
+Above the sand, now and then, a green seaweed plant that scrolls with the
+sand. Everything above that is open water. A silo is still 16 pixels tall,
+so it pokes up into the sand and is drawn in the sand's colours there.
+That clash is left visible. The diver can sink over the sand and the weed.
+He cannot touch the black: his lowest pixel stays one pixel above the
+ground, a rock, or a silo, including the part of the silo that stands in
+the sand.
+
+**New to the sprite code? Read [docs/SPRITES.md](docs/SPRITES.md).
+New to the scrolling ground? Read [docs/SCROLLING.md](docs/SCROLLING.md)**
+(the demo's seabed first, then the Atlantis section).
 
 ## Controls
 
@@ -26,54 +29,73 @@ New to the scrolling ground? Read [docs/SCROLLING.md](docs/SCROLLING.md).**
 | Left   | O               | 5           | left     |
 | Right  | P               | 8           | right    |
 | Fire   | SPACE (unused for now) | 0    | fire     |
+| Stats  | Symbol Shift + S       |             |          |
+
+Symbol Shift + S toggles the debug digits on row 0. They are off at the
+start. One press is one toggle; holding the keys does not flicker, and S
+on its own does nothing. The digits are `F` frame, `K` keys, `J` joystick,
+`I` combined, `X` and `Y` in pixels, `M` image (0-2 facing right, 3-5
+facing left). While they are hidden, that row is water again.
 
 All sources are merged into one byte, `000FUDLR` (same layout as Kempston),
-with `IN_*` constants in `src/constants.asm`. Row 23 shows it in hex for
-debugging: `KEY` (keyboard only), `JOY` (Kempston only), `IN` (combined).
+with `IN_*` constants in `src/constants.asm`. The overlay shows it in hex
+when it is on: `K` (keyboard only), `J` (Kempston only), `I` (combined).
 Keys are redefinable: overwrite the `keys_primary` table in `src/input.asm`
 (5 entries of half-row byte + bit mask, order FIRE, UP, DOWN, LEFT, RIGHT).
 A Kempston read with any of bits 5-7 set is treated as "no joystick", which
 guards against the floating bus when no interface is fitted.
 
+The demo still prints its digits on rows 22 and 23. It has no overlay.
+
 ## Layout
 
 ```
-src/main.asm        entry point, main loop, output (.tap/.sna) directives
-src/constants.asm   memory map, colours, tuning constants
-src/interrupts.asm  IM2 vector table at $FE00, JP at $FDFD, frame ISR, wait_frame
-src/screen.asm      cls, border, cell -> screen/attribute address, pixel-row table
-src/text.asm        ROM-free print routines (glyphs read from the font at $3D00)
-src/input.asm       keyboard half-row tables + Kempston -> one flags byte
-src/sprite.asm      masked pre-shifted sprites of any width: set position,
-                    save/restore background (one record per sprite), draw
-src/scenery.asm     water and strip colours, then asks scroll_init to draw the ground
-src/scroll.asm      two parallax silhouettes: buffers, blit, shift, silo ring
-src/diver.asm       the player: movement, clamping, facing, kick animation
-src/fish.asm        the fish: swims left/right on its own (second sprite)
-src/loader.asm      tokenised BASIC loader: CLEAR / LOAD ""CODE / RANDOMIZE USR 32768
-gfx/fish.txt        fish art as ASCII (# ink, - paper, . transparent), 2 frames
-gfx/fish.asm        GENERATED from fish.txt: 8 shifts x 2 frames x 2 facings
-gfx/diver.txt       diver art, 24 x 15, 3 frames, facing right
-gfx/diver.asm       GENERATED from diver.txt: 8 shifts x 3 frames x 2 facings
-docs/SPRITES.md     how the screen layout, masking, pre-shifting and timing work
-docs/SCROLLING.md   the two strips: why a buffer, the draw order, the timing
-tools/gfx2asm.py    ASCII art -> pre-shifted masked .asm (Python 3)
-tools/read-debug.py reads the X/Y/IMG hex values off a screenshot
+src/atlantis/main.asm    Atlantis entry, main loop, output directives
+src/atlantis/layout.asm  the game's rows, colours, buffer addresses
+src/atlantis/scenery.asm water, sand and ground colours
+src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
+src/atlantis/stats.asm   the row-0 overlay, Symbol Shift + S
+src/atlantis/soak.asm    the background-restore check, only with -DSOAK
+src/main.asm             Engine Demo 1 entry and loop
+src/layout.asm           the demo's rows and buffer addresses
+src/constants.asm        memory map, colours, tuning constants
+src/interrupts.asm       IM2 vector table at $FE00, JP at $FDFD, frame ISR
+src/screen.asm           cls, border, cell address, pixel-row table
+src/text.asm             ROM-free print routines (glyphs from the font at $3D00)
+src/input.asm            keyboard half-row tables + Kempston -> one flags byte
+src/sprite.asm           masked pre-shifted sprites of any width
+src/scenery.asm          the demo's water and strip colours
+src/scroll.asm           the demo's two 16-pixel silhouettes
+src/diver.asm            the player: movement, clamping, facing, kick animation
+src/fish.asm             the fish: swims left/right on its own (second sprite)
+src/loader.asm           BASIC loader: CLEAR / LOAD ""CODE / RANDOMIZE USR 32768
+gfx/fish.txt             fish art as ASCII (# ink, - paper, . transparent)
+gfx/fish.asm             GENERATED from fish.txt: 8 shifts x 2 frames x 2 facings
+gfx/diver.txt            diver art, 24 x 15, 3 frames, facing right
+gfx/diver.asm            GENERATED from diver.txt: 8 shifts x 3 frames x 2 facings
+docs/SPRITES.md          screen layout, masking, pre-shifting, timing
+docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
+tools/gfx2asm.py         ASCII art -> pre-shifted masked .asm (Python 3)
+tools/read-debug.py      reads the demo's X/Y/IMG hex off a screenshot
 tools/make-diver-montage.py  build/montage-diver.png from the art + test shots
-tools/              also: headless screenshot / input / sprite tests, ZX0 decompressor
-build/              output: diver.tap, diver.sna, diver.lst, diver.sym
-Makefile            Linux / WSL build
-build.bat           Windows build
+tools/                   also: headless screenshot / input / sprite tests
+build/                   atlantis.tap, diver.tap, snapshots, listings
+Makefile                 Linux / WSL build
+build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
-Memory: code and data at `$8000-$A927` (`code_end` is `$A928`, 10,536 bytes;
-the pre-shifted diver alone is 5,760 bytes, the fish 1,728). The two scroll
-buffers are ordinary RAM at `$F000-$F3FF` (1,024 bytes, 16 rows each, built
-at start-up, not stored on the tape). The pixel-row address table (also
-built at start-up) is at `$FA00-$FB7F`. The stack grows down from `$FDFC`,
-`JP isr` is at `$FDFD`, and the 257-byte vector table of `$FD` is at
-`$FE00-$FF00`. Nothing here may grow into the next region: the buffers must
-stop before `$FA00`, and the stack must not climb down into the row table.
+Atlantis memory: code and data at `$8000-$AAC3` (`code_end` is `$AAC4`,
+10,948 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+The scroll buffers are ordinary RAM at `$F000-$F2FF` (768 bytes: 16 slow
+rows, then 8 ground rows, built at start-up, not stored on the tape). The
+pixel-row address table (also built at start-up) is at `$FA00-$FB7F`. The
+stack grows down from `$FDFC`, `JP isr` is at `$FDFD`, and the 257-byte
+vector table of `$FD` is at `$FE00-$FF00`. Nothing here may grow into the
+next region: the buffers must stop before `$FA00`, and the stack must not
+climb down into the row table.
+
+Engine Demo 1 is smaller: `code_end` is `$A928` (10,536 bytes) and its two
+buffers are `$F000-$F3FF`.
 
 Graphics: `make` regenerates `gfx/fish.asm` and `gfx/diver.asm` from the
 `.txt` art with Python 3 when the art changes. The generated files are
@@ -109,13 +131,14 @@ sudo apt install fuse-emulator-sdl      # Debian has no spectrum-roms package;
                                         # tarball's roms/ folder) into
                                         # /usr/share/spectrum-roms/
 
-make          # -> build/diver.tap (+ diver.sna snapshot)
-make run      # open in Fuse
-make shot     # headless screenshot (needs xvfb, xdotool, imagemagick)
-make input-test   # headless key presses + Kempston, screenshots in build/
-make sprite-test  # headless diver + fish test, shots build/diver-*.png;
-                  # then python3 tools/make-diver-montage.py
-make timing       # build/diver-timing.sna: border colour shows the frame's time
+make          # -> build/atlantis.tap (+ atlantis.sna snapshot)
+make run      # open Atlantis in Fuse. EMU=fuse if you use the GTK front end's name
+make demo     # -> build/diver.tap, Engine Demo 1, unchanged
+make run-demo # open that tape
+make shot     # headless screenshot of Atlantis (needs xvfb, xdotool, imagemagick)
+make timing   # build/atlantis-timing.sna: border colour shows the frame's time
+make input-test   # headless key presses of the DEMO (it reads row 22)
+make sprite-test  # headless diver + fish test of the DEMO, shots build/diver-*.png
 ```
 
 ## Set up on Windows
@@ -125,7 +148,7 @@ make timing       # build/diver-timing.sna: border colour shows the frame's time
    `C:\zx\sjasmplus`, and add that folder to your PATH
    (Start > "Edit the system environment variables" > Environment Variables > Path).
    Check with `sjasmplus --version` in a new terminal.
-2. **Emulator.** Any of these will open `build\diver.tap`:
+2. **Emulator.** Any of these will open `build\atlantis.tap`:
    - Fuse for Windows: https://sourceforge.net/projects/fuse-emulator/files/fuse/
    - ZEsarUX: https://github.com/chernandezba/zesarux/releases
    - SpecEmu (Windows-only, very accurate; search "SpecEmu")
@@ -141,24 +164,30 @@ make timing       # build/diver-timing.sna: border colour shows the frame's time
 
 ## What you should see
 
-"DIVER ENGINE" in yellow on blue, a help line, a blue sea, and along the
-bottom two moving silhouettes: yellow sand dunes with a green seaweed
-column now and then, and under them a black landscape on yellow with rocks
-and the occasional missile silo. A white fish swims to and fro, and the
-white diver holds his jet unit out in front. QAOP / 5678 / Kempston swim
-him one pixel per frame; he kicks his flippers only while moving (legs
-apart, then half way, then crossed, then half way) and glides with his
-legs together when you let go. He turns to face the way he's going, passes
-in front of the fish, and can swim down until his feet are one pixel above
-the black ground (a hill lifts him). Over the strips he takes on their
-colours: attribute clash, including turning black-on-yellow over the near
-strip, where he vanishes into a black hill. The strips keep scrolling
-whether or not he moves. Row 22 shows `FRAMES:` plus the diver's `X`, `Y`
-(pixels, hex) and `IMG` (0-2 facing right, 3-5 facing left: 0 legs apart,
-1 half way, 2 together). Row 23 shows the input bytes. See
-`build/scroll-a.png`, `build/scroll-b.png`, `build/scroll-c.png` and
-`build/montage-diver.png` (`montage-sprites.png` is from the fish-only
-milestone 4).
+**Atlantis** (`make run`). "ATLANTIS" in yellow on blue, a help line, and
+the line "Symbol Shift + S: stats". Open water from the top of the screen
+down to three thin bands at the bottom: a green seaweed plant now and
+then, yellow sand on blue, and a black strip on yellow with rocks and a
+missile silo. The silo's top half stands in the sand and is drawn yellow
+on blue, because that cell's colours are the sand's. The hatch holes show
+blue. That is the colour clash, left visible. The sand and the weed drift
+at half the speed of the black strip. A white fish swims to and fro at the
+old depth. The diver holds his jet unit out in front, kicks while you hold
+a direction, and glides with his legs together when you let go. He can
+swim up to the top row, and down over the weed and the sand, until his
+feet are one pixel above the black under him. A silo or a rising hill
+lifts him. Over a coloured cell he takes on its colours. The strips keep
+scrolling whether or not he moves. The debug digits are hidden until
+Symbol Shift + S; the border cycles every 8 frames so the loop is still
+obvious. See `build/atlantis-seabed.png`, `build/atlantis-low.png`,
+`build/atlantis-stats.png` and `build/atlantis-stats-off.png`. The
+timing border is `build/atlantis-timing-water.png` (he is up in the
+water) and `build/atlantis-timing-low.png` (he is down on the seabed).
+
+**Engine Demo 1** (`make run-demo`) is the previous picture: "DIVER ENGINE",
+two 16-pixel strips (yellow sand, then black ground), and the debug digits
+fixed on rows 22 and 23. See `build/scroll-a.png`, `build/scroll-b.png`,
+`build/scroll-c.png` and `build/montage-diver.png`.
 
 Emulator tip: Fuse maps the PC arrow keys to the Spectrum cursor keys (CAPS +
 5-8), so they work too. To test Kempston in Fuse, enable Options >
