@@ -12,6 +12,12 @@
 # make clean
 
 ASM       ?= sjasmplus
+# Fuse opens in a small window. Pass a graphics filter to scale it, for
+# example: make run EMU="fuse -g 3x". -g is short for --graphics-filter.
+# Choices include 2x, 3x, 4x, hq3x and advmame3x. To make it permanent, add
+# export EMU="fuse -g 3x" to ~/.bashrc, or set the filter in Fuse's Options
+# menu and choose Options > Save, which writes ~/.fuserc. --full-screen
+# works only with the SDL build (fuse-sdl).
 EMU       ?= fuse-sdl
 PYTHON    ?= python3
 GFX       := gfx/fish.asm gfx/diver.asm
