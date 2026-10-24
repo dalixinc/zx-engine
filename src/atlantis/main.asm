@@ -58,7 +58,7 @@ entry:
         ; The title is painted after the water, so its cells keep the
         ; colours print_char writes. Row 0 is left as water: that is
         ; where the stat overlay goes, and it is blank until asked for.
-        ld a,BRIGHT | YELLOW | (BLUE << 3)
+        ld a,TITLE_ATTR
         ld (text_attr),a
         ld hl,str_title
         ld bc,(2 << 8) | 12
@@ -184,6 +184,10 @@ SLACK_WARMUP    equ 0
         call fish_draw_fast
     IFNDEF NO_WHEEL
         call wheel_draw         ; always above the seaweed, so always here
+        ; Ink while the beam is still in the top border, so the attribute
+        ; writes are not slowed by the display. The strip is only the cells
+        ; that changed, which is small enough to stay ahead of the copy.
+        call wheel_colours
     ENDIF
         ld a,(diver_y)
         add a,DIVER_HEIGHT - 1  ; his lowest pixel
@@ -379,7 +383,18 @@ CODE_LENGTH     equ code_end - code_start
         ASSERT FISH_SWIM_Y == 76, "the fish stays at the demo's depth"
         ASSERT FISH_SWIM_Y + FISH_HEIGHT <= BACK_ROW * 8, "the fish reaches the seabed; it is drawn before the blit"
         ASSERT BORDER_FRAMES == 8, "the rrca x3 above assumes BORDER_FRAMES = 8"
+        ; The spare-scanline build plants a nop sled after this, so that
+        ; build is allowed past $C000. The soak build includes the
+        ; checker, which is not on the tape, and that checker sits past
+        ; $C000 as well. On a 48K the bytes there are not slowed by the
+        ; display, so a nop is still 4 T-states. The tape itself stays
+        ; at or below $C000. The row table at $FA00 is still the hard
+        ; stop, and that assert is above.
+    IFNDEF SLACK_LINES
+    IFNDEF SOAK
         ASSERT code_end <= $C000, "engine code has outgrown $8000-$BFFF"
+    ENDIF
+    ENDIF
     IFDEF SOAK
         ASSERT SOAK_BUF_END <= ROW_TABLE, "soak photographs run into the row table"
     ENDIF

@@ -369,22 +369,27 @@ blit_rows:
 ; on the right.
 ; In:  HL = buffer, DE = feed (one byte per row), B = rows
 ; Out: HL = just past the buffer, DE = just past the feed
-; Corrupts: AF, BC
+; Corrupts: AF, B
 ;
-; Also the demo's routine. RL (HL) / DEC L is 19 T-states a byte. DEC L
-; stays on the page because every row is 32 bytes on a 32-byte boundary
-; and SCROLL_BASE is $F000. A DJNZ around the same RL dropped the demo
-; to 25 Hz, which is why this is unrolled.
+; The rotate itself is the demo's: RL (HL) then DEC L is 19 T-states a
+; byte, and it is written out 32 times because a loop around one RL
+; dropped the demo to 25 Hz. DEC L stays on the page because every row
+; is 32 bytes on a 32-byte boundary and SCROLL_BASE is $F000.
+;
+; The demo calls a one-row block and saves the row count around that
+; call. Nothing in the row uses the row count, so the save was only
+; there to protect it from the call. Putting the row in line with the
+; count removes the call, the return, and that save: 42 T-states a row
+; on the common row (one less on the row that steps into the next page).
+; The ground is 8 rows, every frame: 336 T-states, a scanline and a
+; half. The weed and the sand are 16 more rows, every other frame:
+; another 672 T-states. Both are after the screen copy, so the copy
+; starts at the same moment as before. The seabed frame that draws the
+; bomb while it is two bytes wide and half off the left was the one
+; frame with no scanline to spare. This is where that time went.
 ;------------------------------------------------------------------------------
 shift_rows_left:
-.row:   push bc
-        call shift_one_row
-        pop bc
-        djnz .row
-        ret
-
-shift_one_row:
-        push hl
+.row:   push hl
         ld a,l
         add a,31
         ld l,a
@@ -401,8 +406,11 @@ shift_one_row:
         ld a,l
         add a,32
         ld l,a
-        ret nc
-        inc h
+        jr c,.page              ; the next row starts on the next page
+        djnz .row
+        ret
+.page:  inc h
+        djnz .row
         ret
 
 ;------------------------------------------------------------------------------

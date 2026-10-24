@@ -74,7 +74,7 @@ gfx/fish.txt             fish art as ASCII (# ink, - paper, . transparent)
 gfx/fish.asm             GENERATED from fish.txt: 8 shifts x 2 frames x 2 facings
 gfx/diver.txt            diver art, 24 x 15, 3 frames, facing right
 gfx/diver.asm            GENERATED from diver.txt: 8 shifts x 3 frames x 2 facings
-gfx/wheel.txt            wheel bomb, 16 x 16, 4 frames, mirror off (the T stays a T)
+gfx/wheel.txt            wheel bomb, 12 x 12, 4 frames, mirror off (the T stays a T)
 gfx/wheel.asm            GENERATED from wheel.txt: 8 shifts x 4 frames, one facing
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
@@ -87,9 +87,11 @@ Makefile                 Linux / WSL build
 build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
-Atlantis memory: code and data at `$8000-$B959` (`code_end` is `$B95A`,
-14,682 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728,
-the wheel bomb 3,072).
+Atlantis memory: code and data at `$8000-$BF92` (`code_end` is `$BF93`,
+16,275 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+The wheel bomb is 12 by 12. A shifted row is 2 bytes for shifts 0 to 4
+and 3 bytes for shifts 5 to 7, so the picture is smaller than a 16 by 16
+sprite stored at one width.
 The scroll buffers are ordinary RAM at `$F000-$F2FF` (768 bytes: 16 slow
 rows, then 8 ground rows, built at start-up, not stored on the tape). The
 pixel-row address table (also built at start-up) is at `$FA00-$FB7F`. The

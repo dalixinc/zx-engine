@@ -231,8 +231,7 @@ wheel_rng:
 ;------------------------------------------------------------------------------
 wheel_restore:
         ld iy,wheel_bg
-        call fast_restore
-        jp wheel_restore_attrs
+        jp fast_restore
 
 wheel_draw:
         ld a,(wheel_phase)
@@ -277,8 +276,21 @@ wheel_draw:
         call sprite_image
         call fast_pick          ; HL -> image for this shift
 
-        ; Row 0 may start part way along, when the left bytes are off
-        ; the screen. Later rows get the same skip from spr_gap2.
+        ; Fully on screen: every stored byte is drawn, and the gap
+        ; between rows is zero. That is the slow case (a shift of 5, 6
+        ; or 7 is three bytes, and all three are on the screen). Skip
+        ; the "add the gap" step, which would be adding zero.
+        ; Clipped: step over the pairs hanging off the left, then
+        ; fast_draw_gap skips the hidden pairs after each row.
+        ld a,(spr_skip2)
+        or a
+        jr nz,.clipped
+        ld a,(spr_gap2)
+        or a
+        jr nz,.clipped
+        call fast_draw
+        ret
+.clipped:
         ld a,(spr_skip2)
         add a,l
         ld l,a
@@ -286,65 +298,309 @@ wheel_draw:
         inc h
 .noskip:
         call fast_draw_gap
-        jp wheel_paint_attrs
+        ret
 
-.off:   ; Fully off, or waiting. The restore already ran, including the
-        ; attribute bytes. Drop the record so the next restore does not
-        ; paint the old photograph again.
+.off:   ; Fully off, or waiting. wheel_colours, which runs next and
+        ; still before the seabed copy, puts the water colour back on
+        ; the rectangle. Drop the pixel record so the next restore
+        ; does not paint the old photograph.
+
         ld iy,wheel_bg
         ld (iy+BG_VALID),0
         ret
 
+
 ;------------------------------------------------------------------------------
-; wheel_restore_attrs - write back the attribute bytes saved last frame
-; A cell the bomb covered (title, diver, fish, digits) gets its own
-; colour back. The count is cleared, so a second call does nothing.
+; wheel_colours - keep the bomb's ink on its rectangle
+;
+; The bomb moves one pixel a frame, so it usually stays inside the same
+; character cells. Those cells are already the right colour. Writing
+; them again, and putting the old bytes back first, was a few scanlines
+; on every frame, and the frames where the rectangle was three cells
+; tall missed the interrupt.
+;
+; The common frame finds the same rectangle as last time and returns.
+; While the whole bomb is on the screen, the column that changed is
+; read from the shift instead of from a second compare: shift 7 paints
+; the new left column, shift 4 puts the old right column back. A frame
+; that is clipped compares the rectangle and updates the strip that
+; moved. The strip is written in the bomb's ink, or back to the water
+; colour. It does not read the old bytes. Everything above the seaweed
+; is the water colour, apart from the title word, which is put back
+; when a strip that covered it is given back to the sea.
+;
+; A store to wheel_colour is picked up on this frame even when the
+; rectangle has not moved: the byte last written is wheel_shown.
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+wheel_colours:
+    IFDEF NO_INK
+        ; Measurement only. The tape does not define this. It leaves the
+        ; ink out so the spare-scanline count can be taken without the
+        ; attribute fill.
+        ret
+    ENDIF
+        call wheel_attr_box
+        jp z,wheel_colours_clear
+        ld a,(wheel_attr_n)
+        or a
+        jp z,wheel_paint_attrs
+        ld a,(wheel_ink)
+        ld hl,wheel_shown
+        cp (hl)
+        jp nz,wheel_full_recolour
+
+        ; Partly or wholly on the screen. The box already returned
+        ; otherwise, and that case was the clear above. Past the left
+        ; edge the right-hand column shrinks; the shift is not used
+        ; there (wheel_colours_fast.column). Repainting the whole
+        ; rectangle on the way out was the seabed frame that missed.
+        jp wheel_colours_fast
+
+;------------------------------------------------------------------------------
+; wheel_colours_fast - the bomb is wholly on screen and the ink is the
+; same as last frame
+; A one-pixel slide to the left changes a column only on two shifts.
+; Shift 7: the left pixel has entered a new cell, so that column is
+; painted. Shift 4: the right pixel has left a cell, so the old column
+; is put back to the water colour. Any other shift is the same columns.
+; The bob moves one pixel up, one down, or not at all, so at most one
+; row edge changes, and only by one cell.
+; Working out which edge from the two column numbers, then checking the
+; difference was exactly one, was most of the time on the frame that
+; also draws the three-byte picture.
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+wheel_colours_fast:
+        ; The row test comes first. Most frames do not cross a row, and
+        ; then only the shift is looked at. The accumulator holds the
+        ; new row while HL points at the old one, so a difference of one
+        ; does not have to be loaded again.
+        ld a,(wheel_r0)
+        ld hl,wheel_pr0
+        cp (hl)
+        jr nz,.top
+        inc hl                      ; the old bottom row sits next to it
+        ld a,(wheel_r1)
+        cp (hl)
+        jr nz,.bottom
+        call .column
+        ret z                       ; same rectangle: nothing to write
+        jp wheel_remember_edges
+
+.top:   sub (hl)                    ; new top minus the old top
+        cp 1
+        jr z,.drop_top              ; moved down: the old top row is left
+        cp $FF
+        jr nz,.odd                  ; not a one-cell step
+        ld a,(wheel_r0)
+        ld b,a
+        ld a,(wheel_ink)
+        ld d,a
+        call wheel_paint_row        ; the new top row, current columns
+        jr .both
+.drop_top:
+        ld a,(wheel_pr0)
+        ld b,a
+        call wheel_water_row
+        jr .both
+
+.bottom:sub (hl)
+        cp 1
+        jr z,.add_bot
+        cp $FF
+        jr nz,.odd
+        ld a,(wheel_pr1)
+        ld b,a
+        call wheel_water_row
+        jr .both
+.add_bot:
+        ld a,(wheel_r1)
+        ld b,a
+        ld a,(wheel_ink)
+        ld d,a
+        call wheel_paint_row
+
+.both:  call .column
+        jp wheel_remember_edges
+
+.odd:   ; The bob only ever steps one pixel, so this is a safety net
+        ; (a height change that is not a single cell). Repaint. Nothing
+        ; has been written yet on this path.
+        jp wheel_full_recolour
+
+; Shift 7 paints the new left column. Shift 4 puts the old right column
+; back. Anything else leaves the columns alone and returns with the zero
+; flag set. A column that is written returns with the zero flag clear.
+.column:
+        ; Off the left, a pixel is still showing (the box said so). The
+        ; left edge stays column 0, so only the right edge can move, and
+        ; a one-pixel step moves it by one cell. The low byte of a
+        ; negative x is not a shift we can trust.
+        ld a,(wheel_x+1)
+        or a
+        jr z,.by_shift
+        ld a,(wheel_c0)
+        ld hl,wheel_pc0
+        cp (hl)
+        jr nz,.odd_col
+        ld a,(wheel_c1)
+        inc hl                      ; the old right column
+        cp (hl)
+        jr z,.none
+        ld b,a
+        ld a,(hl)
+        sub b
+        cp 1
+        jr nz,.odd_col
+        ld c,(hl)
+        ld a,(wheel_pr0)
+        ld b,a
+        ld a,(wheel_pr1)
+        sub b
+        inc a
+        ld e,a
+        call wheel_water_cells_col
+        or 1
+        ret
+.odd_col:
+        pop af                      ; drop the return from call .column
+        jp wheel_full_recolour
+.by_shift:
+        ld a,(wheel_x)
+        and 7
+        cp 7
+        jr z,.add_left
+        cp 4
+        jr nz,.none
+        ; Shift 4 is a right-hand column left behind only once the right
+        ; pixel is on the screen (x <= 243). While the bomb is still
+        ; clipped on the right, that column was never painted: x = 244
+        ; is shift 4 and the old right edge is still column 31.
+        ld a,(wheel_x)
+        cp 244
+        jr c,.drop_right
+.none:  xor a
+        ret
+.add_left:
+        ld a,(wheel_c0)
+        ld c,a
+        ld a,(wheel_ink)
+        ld d,a
+        ld a,(wheel_r0)
+        ld b,a
+        ld a,(wheel_r1)
+        sub b
+        inc a
+        ld e,a                      ; how many rows the new column covers
+        call wheel_solid_col
+        or 1
+        ret
+.drop_right:
+        ld a,(wheel_pc1)            ; the column just left behind
+        ld c,a
+        ld a,(wheel_pr0)
+        ld b,a
+        ld a,(wheel_pr1)
+        sub b
+        inc a
+        ld e,a
+        call wheel_water_cells_col
+        or 1
+        ret
+
+wheel_colours_clear:
+    IFDEF NO_INK
+        ret
+    ENDIF
+        ld a,(wheel_attr_n)
+        or a
+        ret z
+        call wheel_restore_attrs
+        ret
+
+;------------------------------------------------------------------------------
+; wheel_restore_attrs - water colour back on the rectangle from last frame
+; The address and the size were saved when it was painted, so this does
+; not work them out again. The title word is yellow, so any cell of it
+; inside that rectangle is put back afterwards. The count is cleared.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 wheel_restore_attrs:
         ld a,(wheel_attr_n)
         or a
         ret z
+        ; The rectangle last painted. The fast path does not keep a
+        ; second copy of its address: rebuilding it here happens once,
+        ; when the bomb has left, not on the frame that draws it.
+        ld a,(wheel_pr0)
         ld b,a
-        ld hl,wheel_attrs
-.cell:  ld e,(hl)
-        inc hl
-        ld d,(hl)               ; DE = attribute address
-        inc hl
-        ld a,(hl)               ; the byte that was there before the bomb
-        inc hl
-        ld (de),a
-        djnz .cell
+        ld a,(wheel_pc0)
+        ld c,a
+        call attr_addr
+        ld a,(wheel_pc1)
+        sub c
+        inc a
+        ld c,a                      ; width in cells
+        ld a,(wheel_pr1)
+        sub b
+        inc a
+        ld b,a                      ; height in cells
+        ld d,WATER_ATTR
+        call wheel_fill_hl
+        call wheel_fix_title
         xor a
         ld (wheel_attr_n),a
+        ld (wheel_shown),a
         ret
 
 ;------------------------------------------------------------------------------
 ; wheel_attr_box - the character cells this bomb covers
 ; Out: Z if it is waiting, or fully off the screen.
-;      NZ, and wheel_c0..wheel_c1, wheel_r0..wheel_r1 are inclusive
-;      column and row numbers. The bottom row is never the seaweed:
-;      pixel 168 is character row 21, and the box stops at row 20.
+;      NZ, and wheel_c0..wheel_c1, wheel_r0..wheel_r1 are inclusive.
+;      The bottom row is never the seaweed. Pixel 168 is the first
+;      pixel of character row 21, and the box stops at row 20.
+; x between 0 and 255 is the short path. That is every frame where the
+; whole bomb is on the screen, which is the slow frame. Hanging off
+; the left or the right is the longer path under it.
 ; Corrupts: AF, DE, HL
 ;------------------------------------------------------------------------------
 wheel_attr_box:
         ld a,(wheel_phase)
         or a
-        ret z                   ; waiting
+        ret z
 
         ld hl,(wheel_x)
         bit 7,h
         jr nz,.negative
         ld a,h
         or a
-        jr z,.left_ready        ; x is 0..255, so HL is the first pixel
-        xor a                   ; x >= 256: still off the right
+        jr z,.on_screen
+        xor a                   ; x >= 256, still off the right
         ret
 
+.on_screen:
+        ld a,l
+        rrca
+        rrca
+        rrca
+        and 31
+        ld (wheel_c0),a
+        ld a,l
+        add a,WHEEL_WIDTH - 1
+        jr nc,.last_ok
+        ld a,255
+.last_ok:
+        rrca
+        rrca
+        rrca
+        and 31
+        ld (wheel_c1),a
+        jr .rows
+
 .negative:
-        ; Off the left. x + width > 0 means at least one pixel is on.
         ld de,WHEEL_WIDTH
-        add hl,de
+        add hl,de               ; x + width. Positive: a pixel is on.
         bit 7,h
         jr z,.some_left
         xor a
@@ -352,48 +608,28 @@ wheel_attr_box:
 .some_left:
         ld a,h
         or l
-        ret z                   ; x + width = 0: the last pixel just left
-        ld hl,0                 ; first visible pixel is column 0
-.left_ready:
-        ld a,l                  ; first visible pixel / 8
-        rrca
-        rrca
-        rrca
-        and 31
+        ret z
+        xor a
         ld (wheel_c0),a
-
         ld hl,(wheel_x)
         ld de,WHEEL_WIDTH - 1
-        add hl,de               ; last pixel, possibly past 255
-        bit 7,h
-        jr z,.last_pos
-        xor a                   ; should not happen: the left test passed
-        ret
-.last_pos:
-        ld a,h
-        or a
-        jr z,.last_byte
-        ld a,255                ; past the right edge: last on-screen pixel
-        jr .last_col
-.last_byte:
+        add hl,de
         ld a,l
-.last_col:
         rrca
         rrca
         rrca
         and 31
         ld (wheel_c1),a
 
-        ld a,(wheel_y)
+.rows:  ld a,(wheel_y)
         rrca
         rrca
         rrca
         and 31
         ld (wheel_r0),a
-
         ld a,(wheel_y)
         add a,WHEEL_HEIGHT - 1
-        cp BACK_ROW * 8         ; pixel 168 is the first seaweed pixel
+        cp BACK_ROW * 8
         jr c,.bottom_ok
         ld a,BACK_ROW * 8 - 1
 .bottom_ok:
@@ -402,60 +638,309 @@ wheel_attr_box:
         rrca
         and 31
         ld (wheel_r1),a
-        or 1                    ; NZ: there is a box (row 0 would be A = 0)
+        or 1                    ; NZ. Row 0 alone would leave A = 0.
         ret
 
 ;------------------------------------------------------------------------------
-; wheel_paint_attrs - colour every cell in the box, remembering the old
-;                     byte so the next frame can put it back
-; Paper stays blue, because that is what the palette entries use. The
-; old byte is saved rather than assuming the cell was water: a title
-; cell is yellow, and it has to come back yellow.
-; Corrupts: AF, BC, DE, HL, IX
+; wheel_paint_attrs - ink across the rectangle worked out just above
+; The rectangle is already in wheel_c0..wheel_r1. Paper stays blue,
+; because that is what the palette entries use. The title word is
+; covered in the same ink for as long as the bomb sits on it, and
+; wheel_fix_title brings the yellow back when the bomb moves off.
+; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 wheel_paint_attrs:
-        call wheel_attr_box
-        ret z
-        xor a
-        ld (wheel_attr_n),a
-        ld ix,wheel_attrs
+        ; Attribute address of the top-left cell. Same arithmetic as
+        ; attr_addr, written here so the repaint does not pay for a call.
         ld a,(wheel_r0)
-.row:   ld (wheel_row),a
-        ld b,a
+        rrca
+        rrca
+        rrca
+        ld l,a
+        and %00000011
+        or high ATTRS
+        ld h,a
+        ld a,l
+        and %11100000
+        ld c,a
         ld a,(wheel_c0)
-        ld c,a
-        call attr_addr          ; HL = first cell of this row. Corrupts AF.
+        or c
+        ld l,a
+        ld (wheel_pat),hl
+
         ld a,(wheel_c1)
-        sub c
-        inc a                   ; how many columns, inclusive
-        ld b,a
-.col:   ld e,(hl)               ; old attribute
-        ld a,(wheel_ink)
-        ld (hl),a
-        ld (ix+0),l
-        ld (ix+1),h
-        ld (ix+2),e
-        inc hl                  ; attributes run left to right
-        inc ix
-        inc ix
-        inc ix
-        ld a,(wheel_attr_n)
-        inc a
-        ld (wheel_attr_n),a
-        djnz .col
-        ld a,(wheel_row)
         ld c,a
-        ld a,(wheel_r1)
-        cp c
-        ret z
+        ld a,(wheel_c0)
+        ld b,a
         ld a,c
+        sub b
         inc a
-        jr .row
+        ld (wheel_pcols),a
+        ld c,a                  ; C = columns
+
+        ld a,(wheel_r1)
+        ld b,a
+        ld a,(wheel_r0)
+        ld e,a
+        ld a,b
+        sub e
+        inc a
+        ld (wheel_prows),a
+        ld b,a                  ; B = rows
+
+        ld hl,(wheel_pat)       ; the width math used A, not HL, but be sure
+        ld a,(wheel_ink)
+        ld d,a
+        call wheel_fill_hl
+        jp wheel_remember
+
+; Colour changed: the whole old rectangle goes back to water, then the
+; whole new one is painted. This is rare (the drifting bomb does not
+; change colour mid-flight). A one-pixel move uses wheel_delta instead.
+wheel_full_recolour:
+        call wheel_restore_attrs
+        jp wheel_paint_attrs
 
 ;------------------------------------------------------------------------------
-; wheel_on_row0 - NZ if this bomb covers pixel rows 0..7 and is on screen
-; Used by the stat overlay: a bomb up there has to photograph water, not
-; the digits. Z if it does not. Corrupts: AF, DE, HL
+; wheel_remember - the rectangle just painted is the one to compare next
+; Corrupts: AF, HL
+;------------------------------------------------------------------------------
+wheel_remember_fast:
+        ld a,(wheel_ink)
+        ld (wheel_shown),a
+        ld a,1
+        ld (wheel_attr_n),a
+        ; Fall through. The fast path, which already knows the ink has
+        ; not changed and a rectangle is on screen, enters here.
+wheel_remember_edges:
+        ; The new rectangle is four bytes in a row, and so is the copy
+        ; kept for next frame, in the same order. Two word stores move
+        ; all four. The order of the bytes inside the word does not
+        ; matter: the same pair is written back.
+        ld hl,(wheel_c0)
+        ld (wheel_pc0),hl
+        ld hl,(wheel_r0)
+        ld (wheel_pr0),hl
+        ret
+
+wheel_remember:
+        call wheel_remember_fast
+        ; Address and size, for a later full restore.
+        ld a,(wheel_r0)
+        rrca
+        rrca
+        rrca
+        ld l,a
+        and %00000011
+        or high ATTRS
+        ld h,a
+        ld a,l
+        and %11100000
+        ld c,a
+        ld a,(wheel_c0)
+        or c
+        ld l,a
+        ld (wheel_pat),hl
+        ld a,(wheel_c1)
+        ld c,a
+        ld a,(wheel_c0)
+        ld b,a
+        ld a,c
+        sub b
+        inc a
+        ld (wheel_pcols),a
+        ld a,(wheel_r1)
+        ld b,a
+        ld a,(wheel_r0)
+        ld c,a
+        ld a,b
+        sub c
+        inc a
+        ld (wheel_prows),a
+        ret
+
+; Paint one new row. B = row, D = ink.
+wheel_paint_row:
+        ld a,(wheel_c0)
+        ld c,a
+        ld a,(wheel_c1)
+        sub c
+        inc a
+        ld e,a
+        call wheel_solid_row
+        ret
+
+; Water back one old row. B = row.
+wheel_water_row:
+        ld a,(wheel_pc0)
+        ld c,a
+        ld a,(wheel_pc1)
+        sub c
+        inc a
+        ld e,a
+        call wheel_water_cells_row
+        ret
+
+; B = top row, C = column, E = number of rows, D = byte.
+wheel_solid_col:
+        call attr_addr
+.cell:  ld (hl),d
+        dec e
+        ret z
+        ld a,l
+        add a,32
+        ld l,a
+        jr nc,.cell
+        inc h
+        jr .cell
+
+; B = top row, C = column, E = number of rows. Water, or the title colour.
+; The title word is the only cell above the seaweed that is not the
+; water colour, so a strip that misses row 2 is a plain fill.
+wheel_water_cells_col:
+        ld a,b
+        cp 3
+        jr nc,.plain
+        add a,e
+        dec a                   ; bottom row
+        cp 2
+        jr c,.plain
+        call attr_addr
+        jr .titled
+.plain: ld d,WATER_ATTR
+        jp wheel_solid_col
+.titled:
+.cell:  ld a,b
+        cp 2
+        jr nz,.sea
+        ld a,c
+        cp TITLE_COL
+        jr c,.sea
+        cp TITLE_COL + TITLE_LEN
+        jr nc,.sea
+        ld (hl),TITLE_ATTR
+        jr .step
+.sea:   ld (hl),WATER_ATTR
+.step:  dec e
+        ret z
+        inc b
+        ld a,l
+        add a,32
+        ld l,a
+        jr nc,.cell
+        inc h
+        jr .cell
+
+; B = row, C = left column, E = number of columns, D = byte.
+wheel_solid_row:
+        call attr_addr
+.cell:  ld (hl),d
+        dec e
+        ret z
+        inc c
+        inc l
+        jr .cell
+
+; B = row, C = left column, E = number of columns.
+wheel_water_cells_row:
+        ld a,b
+        cp 2
+        jr nz,.plain
+        ld d,WATER_ATTR
+        ; Fall into the titled loop only for row 2. Any other row is water.
+        call attr_addr
+        jr .titled
+.plain: ld d,WATER_ATTR
+        jp wheel_solid_row
+.titled:
+.cell:  ld a,b
+        cp 2
+        jr nz,.sea
+        ld a,c
+        cp TITLE_COL
+        jr c,.sea
+        cp TITLE_COL + TITLE_LEN
+        jr nc,.sea
+        ld (hl),TITLE_ATTR
+        jr .step
+.sea:   ld (hl),WATER_ATTR
+.step:  dec e
+        ret z
+        inc c
+        inc l
+        jr .cell
+
+;------------------------------------------------------------------------------
+; wheel_fill_hl - write D across the rectangle
+; In:  HL = first cell, B = rows, C = columns, D = the byte.
+; Used for the first paint and for a colour change. A one-pixel move
+; does not come here: it recolours the strip that changed, which is
+; wheel_delta. A counted loop is fine on this rare path.
+; A row of attributes can cross into the next page, so the carry is kept.
+; Corrupts: AF, BC, HL
+;------------------------------------------------------------------------------
+wheel_fill_hl:
+.row:   push bc
+        push hl
+.col:   ld (hl),d
+        inc l
+        dec c
+        jr nz,.col
+        pop hl
+        ld a,l
+        add a,32
+        ld l,a
+        jr nc,.next
+        inc h
+.next:  pop bc
+        djnz .row
+        ret
+
+;------------------------------------------------------------------------------
+; wheel_fix_title - the title word's colour, if the old rectangle covered it
+; The word is row 2, columns 12 to 19 ("ATLANTIS" printed at column 12).
+; The water fill has already run, so those cells are blue-and-white
+; until this puts the yellow back. No other cell above the seaweed
+; has a different colour: the help line and the hint are the water
+; colour, and the digits do not change attributes.
+; Corrupts: AF, BC, HL
+;------------------------------------------------------------------------------
+wheel_fix_title:
+        ld a,(wheel_pr0)
+        cp 3
+        ret nc                  ; old rectangle starts below the title
+        ld a,(wheel_pr1)
+        cp 2
+        ret c                   ; old rectangle ends above the title
+        ld a,(wheel_pc1)
+        cp TITLE_COL
+        ret c                   ; entirely to the left of the word
+        ld a,(wheel_pc0)
+        cp TITLE_COL + TITLE_LEN
+        ret nc                  ; entirely to the right of the word
+        ld b,2
+        ld a,(wheel_pc0)
+        cp TITLE_COL
+        jr nc,.colok
+        ld a,TITLE_COL
+.colok: ld c,a
+        call attr_addr          ; HL = first title cell we overwrote
+        ld a,(wheel_pc1)
+        cp TITLE_COL + TITLE_LEN
+        jr c,.endok
+        ld a,TITLE_COL + TITLE_LEN - 1
+.endok: sub c
+        inc a
+        ld b,a
+        ld a,TITLE_ATTR
+.cell:  ld (hl),a
+        inc l
+        djnz .cell
+        ret
+
+TITLE_COL       equ 12          ; column where "ATLANTIS" is printed
+TITLE_LEN       equ 8
+
 ;------------------------------------------------------------------------------
 wheel_on_row0:
         ld a,(wheel_phase)
@@ -545,17 +1030,27 @@ wheel_palette:
 ; resolves a new index.
 wheel_ink:      db BRIGHT | RED | (BLUE << 3)
 
-; Cells recoloured last frame. Each entry is the address, then the byte
-; that was there. Nine is the most a 12 pixel box can cover: three
-; columns by three rows, when the box straddles a character boundary.
+; Non-zero once a rectangle has been painted. The bytes on screen are
+; not stored: open water is put back as the water colour, and the title
+; word is put back as TITLE_ATTR. wheel_pc0..wheel_pr1 is that rectangle.
+; wheel_shown is the ink byte last written, so a change of wheel_colour
+; is seen on the next frame even when the rectangle stays put.
 wheel_attr_n:   db 0
-wheel_attrs:    ds 9 * 3
+wheel_shown:    db 0
+wheel_pc0:      db 0
+wheel_pc1:      db 0
+wheel_pr0:      db 0
+wheel_pr1:      db 0
+; Address and size of that rectangle, so putting the water back does
+; not work the address out a second time.
+wheel_pat:      dw 0
+wheel_prows:    db 0
+wheel_pcols:    db 0
 
-; Scratch for the attribute box. Not needed once the cells are painted.
+; Scratch for the attribute box of the bomb as it is this frame.
 wheel_c0:       db 0
 wheel_c1:       db 0
 wheel_r0:       db 0
 wheel_r1:       db 0
-wheel_row:      db 0
 
 wheel_bg:       ds BG_DATA + WHEEL_BYTES * WHEEL_HEIGHT

@@ -716,63 +716,55 @@ The spare time was measured the same way as the demo: a nop sled after
 the real work, 56 NOPs per scanline (224 T-states), 512 loops, and the
 frame counter checked against a counter in the loop. The build is not
 the tape (`-DSLACK_LINES=n`). One extra interrupt in that window turns
-the border red and prints the extra count.
+the border red and prints the extra count. Passing at N scanlines and
+failing at N+1 means the spare is exactly N.
 
 Before the wheel bomb, with the digits off and the diver in open water,
-a sled of 9 scanlines (56 NOPs each) dropped nothing in 512 loops:
-green border, count `0000`. A sled of 10 dropped 8 of those 512. Held
-on the seabed, where his draw happens after the copy instead of before
-it, a sled of 7 still dropped nothing, and a sled of 8 dropped 1 of
-512. Seven scanlines was the spare on the heavier of those two. The
-demo's heaviest frame finished about 1 scanline before the interrupt.
+a sled of 9 scanlines dropped nothing in 512 loops: green border, count
+`0000`. A sled of 10 dropped 8 of those 512. Held on the seabed, where
+his draw happens after the copy instead of before it, a sled of 7 still
+dropped nothing, and a sled of 8 dropped 1 of 512. The demo's heaviest
+frame finished about 1 scanline before the interrupt.
 
-The wheel bomb is another 16×16 masked sprite (save, restore and draw)
-on every loop it is on screen. Clipping itself is cheap on that path:
-a fully visible bomb uses the original draw loop, and the test that
-decides so is about 70 T-states. The cost that matters is the sprite.
+The first wheel was 16 by 16, drawn by the shared sprite loop. A masked
+byte in that loop is about 57 T-states, and the bomb pays it three times
+(put the background back, photograph the new background, draw) across
+16 rows. That came to about 60 scanlines. The seabed frame only had 7
+to spare, so the picture missed the interrupt. `wait_frame` then
+returns at once, the loop runs twice per picture, and the bomb flickers.
+A sled of 0 scanlines dropped 459 of 512 loops in open water and 408 of
+512 with the diver held on the seabed.
 
-It does not fit in a frame. Nothing was slowed down to hide that, and
-the movement constants were not changed. A sled of 0 scanlines, digits
-off:
+The picture is now 12 by 12 (`gfx/wheel.txt`). Shifted by 0 to 4 it is
+two bytes wide; shifted by 5, 6 or 7 it is three. The three-byte copy
+is written out in full in `fastsprite.asm`, and the fish and the diver
+on this build use that walker too. The shared loop is what Engine Demo
+1 still calls.
 
-* Open water, warmup 40 (the bomb is on screen through the window):
-  red border, `01CB`, 459 of 512 loops dropped a frame.
-* Seabed, Down held, warmup 200: red border, `0198`, 408 of 512.
+One seabed frame still had no scanline to spare after that. It is the
+frame that copies the weed as well as the sand, while the bomb is two
+bytes wide and half off the left. The time was not in the sprite. The
+scroll rotate called a one-row routine and saved the row count around
+the call, and the row never uses that count. That is 42 T-states a row:
+336 on the ground's 8 rows, every frame, and another 672 on the weed
+and sand's 16 rows, every other frame. The row is now in line with the
+count. The screen copy starts at the same moment as before, because
+this work is after the copy.
 
-Those counts are the loops where the bomb is actually drawn. The pause
-between bombs still fits, and a few of the most clipped edge frames
-still fit. A bomb that is properly on screen does not. The drop is one
-extra frame, not two: the count is about one per bomb loop, not two.
+Digits off, which is the normal game. With the bomb on screen:
 
-On `make timing` the white band (restore and draw, which is where this
-sprite sits) is about 60 scanlines longer than it was before the bomb.
-The old spare was 9 scanlines in open water and 7 on the seabed, so the
-heavy frame now finishes on the order of 50 scanlines after the
-interrupt.
+* Open water, warmup 40. Before the rotate change: 2 scanlines (a sled
+  of 2 dropped nothing, a sled of 3 dropped 6). After: 3 scanlines (a
+  sled of 3 dropped nothing, a sled of 4 dropped 22, count `0016`).
+* Seabed, Down held, warmup 200. Before: 0 (a sled of 0 dropped nothing,
+  a sled of 1 dropped 1, the frame above). After: 4 scanlines (a sled
+  of 4 dropped nothing, a sled of 5 dropped 1).
 
-What that looks like on a 50 Hz machine: `wait_frame` returns as soon
-as the missed interrupt is pending, so the whole loop runs twice per
-picture while the bomb is drawn. The bomb still moves one pixel a loop,
-which is two pixels a picture, and the scroll steps twice a picture
-too. That is the machine missing the frame, not a change to the speeds.
-
-Ways to get it back inside one frame, none of them done here:
-
-* A fast path for empty water. The sea under the bomb is usually blank,
-  so the masked loop is doing work a plain copy would not. It has to
-  win back about 50 scanlines, which is most of the sprite's time, not
-  a small trim.
-* A smaller picture, if the art is redrawn that way. Cutting the sprite
-  down in code to make the timing pass was not done: `gfx/wheel.txt` is
-  the picture, and it is the owner's to change.
-* Drawing it on alternate loops. That would be a 25 Hz sprite with the
-  rest of the game still at 50 Hz. It was not done, because it would
-  change the movement without saying so.
-
-The digits are off in that measurement, which is the normal game. Drawing
-them adds the sixteen hex digits and the seven letters. That is the
-demo's debug line, which cost a few scanlines, and it is not on the
-heavy path unless the overlay has been turned on.
+With the bomb left out of the build (`-DNO_WHEEL`), after the same
+rotate change: 41 scanlines in open water (a sled of 41 dropped nothing,
+a sled of 42 dropped 4), and 44 on the seabed (a sled of 44 dropped
+nothing, a sled of 45 dropped 7). Before that change the open-water
+figure was 36, 37, 38 or 39, and the seabed figure was at least 32.
 
 ## The soak
 
@@ -797,16 +789,19 @@ are listed at the top of `src/atlantis/soak.asm`. The checks walk the
 whole screen, so this snapshot runs slower than the game; give it a
 couple of minutes. The two photographs (the seabed, and the title
 rows) are 768 bytes each and sit at `$F300`, which the game leaves
-empty. Keeping them out of the program is what lets this test build
-finish before `$C000`. The run with the wheel bomb finished green,
-with `OK`: the five wheel situations happened, and the title rows
-still matched the first frame.
+empty. The checker itself is not on the tape. With the 12 by 12 wheel
+in the program it no longer fits under `$C000` (the soak build's
+`code_end` is `$C4EF`), so that build is allowed past `$C000` the same
+way the spare-scanline sled is. The bytes there are not slowed by the
+display. The tape build is still checked, and it stops at `$BF93`.
+The run with the wheel bomb finished green, with `OK`: the five wheel
+situations happened, and the title rows still matched the first frame.
 
 ## Memory
 
 | region            | address        | what |
 |-------------------|----------------|------|
-| code and data     | `$8000-$B959`  | `code_end` is `$B95A` (14,682 bytes) |
+| code and data     | `$8000-$BF92`  | `code_end` is `$BF93` (16,275 bytes) |
 | slow buffer       | `$F000-$F1FF`  | weed then sand, 16 x 32, not on the tape |
 | ground buffer     | `$F200-$F2FF`  | 8 x 32 |
 | (free)            | `$F300-$F9FF`  | |
@@ -819,14 +814,30 @@ still matched the first frame.
 
 The first Trigon enemy. One at a time. It enters from the right, a
 pixel a frame, and leaves through the left, clipped the same way. The
-hub is a serif capital T and it stays upright; the legs around the rim
-are the only thing that rotates, a quarter turn counter-clockwise per
-frame, which is the direction a wheel rolls when it travels left. Four
-frames rather than eight: the diagonal positions would be another 3072
-bytes and would push `code_end` past `$C000`. The wide leg is what
-shows the spin. A symmetric cross would look the same after a quarter
-turn. The art is `gfx/wheel.txt`, a placeholder, `mirror off` so the T
-is not flipped. `build/montage-wheel.png` is the four frames enlarged.
+picture is 12 by 12. The hub is a serif capital T and it stays upright;
+the legs around the rim are the only thing that rotates, a quarter turn
+counter-clockwise per frame, which is the direction a wheel rolls when
+it travels left. Four frames rather than eight: the diagonal positions
+would be another copy of the whole sprite. The wide leg is what shows
+the spin. A symmetric cross would look the same after a quarter turn.
+The art is `gfx/wheel.txt`, a placeholder, `mirror off` so the T is not
+flipped. The stem is one pixel wide. The top bar is five pixels,
+including the serifs (the end pixels drop down one row). The foot is
+three pixels. There is a one-pixel gap of water between the T and the
+rim, except on the right of the bar, where the 12-pixel grid leaves two.
+`build/montage-wheel.png` is the four frames enlarged.
+
+Each bomb has an ink colour. `wheel_colour` is an index into
+`wheel_palette` in `src/atlantis/wheel.asm`. The paper stays the blue
+of the water. The default entry is bright red. White is the diver, the
+fish and the open water, so a white bomb would disappear into them. A
+later level, or a homing bomb, stores a different index. One cell has
+one ink, so a cell the bomb covers (the title, the help line, the stat
+digits, the diver, the fish) is drawn in the bomb's ink until the bomb
+moves on. The sand and the seaweed are not recoloured. The lowest pixel
+of the lowest bob is pixel 167, the last pixel of character row 20, and
+the attribute walk stops there. Row 21 is the seaweed and row 22 is the
+sand.
 
 It bobs on a 32-step rounded sine, amplitude `WHEEL_BOB` (6 pixels). A
 triangle wave would be a shorter routine and no table, and it snaps
@@ -858,5 +869,3 @@ and another word in that table. It is not written.
   and he is steered in screen coordinates.
 * Touching black does not kill him. The clamp only holds him off it.
 * The wheel's picture is a placeholder (`gfx/wheel.txt`).
-* The bomb fitting in one frame. A full 16×16 masked sprite misses the
-  interrupt by on the order of 50 scanlines. See "How long it takes".

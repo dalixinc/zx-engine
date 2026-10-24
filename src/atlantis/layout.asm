@@ -40,6 +40,10 @@ ROCK_H          equ 6           ; a rock stays inside the ground row
 NEAR_BOTTOM     equ 24 * 8
 
 WATER_ATTR      equ BRIGHT | WHITE | (BLUE << 3)
+; The title word on row 2. Same ink and paper as the sand, but it is
+; not the sand: it is the eight letters printed at column 12. The wheel
+; puts this byte back when it moves off those cells.
+TITLE_ATTR      equ BRIGHT | YELLOW | (BLUE << 3)
 SAND_ATTR       equ BRIGHT | YELLOW | (BLUE << 3)
 WEED_ATTR       equ BRIGHT | GREEN | (BLUE << 3)
 GROUND_ATTR     equ BRIGHT | BLACK | (YELLOW << 3)

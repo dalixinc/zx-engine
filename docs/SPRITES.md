@@ -369,11 +369,20 @@ inc h             ;  4, only on that cross
 
 33 T-states on a normal row. A 16-row sprite pays 16 × 33 = 528
 T-states, 528 / 224 = 2.4 scanlines, and the byte loop is shorter by
-every byte that is off screen (one masked byte is about 57 T-states).
-Skipping the hidden bytes is cheaper than the other approach, an
-off-screen margin: that would draw the whole sprite into a wider buffer
-and then copy the visible part, so the hidden bytes would still be
-drawn.
+every byte that is off screen (one masked byte in the shared loop is
+about 57 T-states). Skipping the hidden bytes is cheaper than the other
+approach, an off-screen margin: that would draw the whole sprite into a
+wider buffer and then copy the visible part, so the hidden bytes would
+still be drawn.
+
+Atlantis does not draw the wheel, the fish or the diver with that shared
+loop. `src/atlantis/fastsprite.asm` steps down the screen by adding to
+the high byte, and writes each width out in full. The wheel is 12 by 12.
+A shift of 0 to 4 is two bytes wide and a shift of 5, 6 or 7 is three,
+which is what `gfx/wheel.txt` asks for. The three-byte copy is the slow
+one, so those twelve rows are written out with no per-byte loop. The
+spare this leaves, and the one seabed frame that was still short, are
+in `docs/SCROLLING.md`.
 
 Vertical clipping is not done. Callers keep y on the screen. A sprite
 wider than the screen, clipped on the left and the right at the same

@@ -10,11 +10,16 @@
 ; scanlines to spare, so the picture missed the interrupt, the loop ran
 ; twice per picture, and the bomb flickered.
 ;
-; This file does the same three jobs with less bookkeeping.
+; This file does the same three jobs with less bookkeeping. The 12 by
+; 12 wheel below, and the fish and the diver on this build, are what
+; brought the frame back inside one interrupt. One seabed frame was
+; still short by less than a scanline after that. The time was in the
+; scroll rotate (a call and a saved row count on every row), which is
+; fixed in scroll.asm. The measured spare is in docs/SCROLLING.md.
 ;
 ;   * The next pixel line down, inside one character cell, is one add
 ;     to the high byte of the screen address. The row-address table is
-;     read once per sprite, not once per line. See fast_next_line.
+;     read once per sprite, not once per line. See NEXT_LINE.
 ;   * Each width (1, 2, 3 or 4 bytes) is written out in full, so there
 ;     is no per-byte loop.
 ;   * The fish and the diver on this build use it too. They are on
@@ -32,13 +37,14 @@
 ; part that is visible, so this walker never writes past column 31.
 ;
 ; The interrupt handler only saves the accumulator and HL. These
-; routines keep the screen pointer in DE, and they push DE around a
-; row, which is safe: the handler does not touch DE or the index
-; registers.
+; routines keep the screen pointer in DE. C holds the low byte of that
+; address across a row: the byte copy increments E, and copying E back
+; from C puts the column back. A push and a pop would do the same and
+; costs more. The handler does not touch C or DE.
 ;==============================================================================
 
 ;------------------------------------------------------------------------------
-; fast_next_line - DE = the next pixel row down, same column
+; NEXT_LINE - DE = the next pixel row down, same column
 ;
 ; The eight pixel lines of a character cell sit 256 bytes apart, so
 ; adding 1 to D steps to the next line inside the cell. After the
@@ -53,24 +59,35 @@
 ; means we are still in the same third, and 8 is subtracted from D to
 ; undo the bump.
 ;
-; E must be the column we started the row on. The byte copy increments
-; E, so the caller pushes DE first and pops it before this is called.
-; Corrupts: AF. HL and BC are kept.
+; E must be the column we started the row on. The caller copies it to
+; C before the byte copy and copies it back before this runs.
+; Written out at each row, rather than called: a call and a return are
+; most of the cost of the common case, which is the seven lines that
+; stay inside the cell. Corrupts: AF.
 ;------------------------------------------------------------------------------
-fast_next_line:
+        MACRO NEXT_LINE
         inc d
         ld a,d
         and 7
-        ret nz                  ; still inside this character cell
+        jr nz,.cell@
         ld a,e
-        add a,32                ; next character row, same column
+        add a,32
         ld e,a
-        ret c                   ; wrapped into the next third: D is right
+        jr c,.cell@
         ld a,d
-        sub 8                   ; undo the bump; same third, next row
+        sub 8
         ld d,a
-        ret
+.cell@:
+        ENDM
 
+; A full-width wheel is 3 bytes by 12 rows. That is the frame that was
+; missing the interrupt: the two-byte shifts already fitted. The fish
+; is 3 bytes too, but only 9 rows, so it keeps the counted loop below.
+;
+; The full-width wheel is written out twelve times, further down. A
+; line that stays inside its character cell pays for the next-line test
+; and nothing else. A jump into a shared block was tried, and the
+; arithmetic to find the entry cost more than the test it removed.
 ;------------------------------------------------------------------------------
 ; fast_screen_de - DE = screen address of spr_y, spr_col
 ; Corrupts: AF, HL, C
@@ -118,7 +135,17 @@ fast_save:
         call fast_screen_de
         pop hl                  ; HL = record, DE = screen
 
+        ; A full-width wheel is 3 bytes by 12 rows. That copy is written
+        ; out in full, further down, because it was the one missing the
+        ; interrupt. Every other size stays in the counted loops here,
+        ; which are short enough for a relative jump.
+        ld a,(spr_bytes)
+        cp 3
+        jr nz,.width
         ld a,(spr_height)
+        cp 12
+        jp z,fast_save_wheel3
+.width: ld a,(spr_height)
         ld b,a
         ld a,(spr_bytes)
         cp 2
@@ -129,49 +156,49 @@ fast_save:
         jr z,.four
 
         ; One byte across. A wheel clipped to a single column.
-.one:   push de
+.one:   ld c,e
         ld a,(de)
         ld (hl),a
         inc hl
         inc e
-        pop de
-        call fast_next_line
+        ld e,c
+        NEXT_LINE
         djnz .one
         jr .done
 
-.two:   push de
+.two:   ld c,e
         dup 2
         ld a,(de)
         ld (hl),a
         inc hl
         inc e
         edup
-        pop de
-        call fast_next_line
+        ld e,c
+        NEXT_LINE
         djnz .two
         jr .done
 
-.three: push de
+.three: ld c,e
         dup 3
         ld a,(de)
         ld (hl),a
         inc hl
         inc e
         edup
-        pop de
-        call fast_next_line
+        ld e,c
+        NEXT_LINE
         djnz .three
         jr .done
 
-.four:  push de
+.four:  ld c,e
         dup 4
         ld a,(de)
         ld (hl),a
         inc hl
         inc e
         edup
-        pop de
-        call fast_next_line
+        ld e,c
+        NEXT_LINE
         djnz .four
 
 .done:  ld (iy+BG_VALID),1
@@ -198,7 +225,13 @@ fast_restore:
         call fast_screen_de
         pop hl                  ; HL = record, DE = screen
 
-        ld b,(iy+BG_HEIGHT)
+        ld a,(iy+BG_BYTES)
+        cp 3
+        jr nz,.width
+        ld a,(iy+BG_HEIGHT)
+        cp 12
+        jp z,fast_restore_wheel3
+.width: ld b,(iy+BG_HEIGHT)
         ld a,(iy+BG_BYTES)
         cp 2
         jr z,.two
@@ -207,49 +240,49 @@ fast_restore:
         cp 4
         jr z,.four
 
-.one:   push de
+.one:   ld c,e
         ld a,(hl)
         ld (de),a
         inc hl
         inc e
-        pop de
-        call fast_next_line
+        ld e,c
+        NEXT_LINE
         djnz .one
         ret
 
-.two:   push de
+.two:   ld c,e
         dup 2
         ld a,(hl)
         ld (de),a
         inc hl
         inc e
         edup
-        pop de
-        call fast_next_line
+        ld e,c
+        NEXT_LINE
         djnz .two
         ret
 
-.three: push de
+.three: ld c,e
         dup 3
         ld a,(hl)
         ld (de),a
         inc hl
         inc e
         edup
-        pop de
-        call fast_next_line
+        ld e,c
+        NEXT_LINE
         djnz .three
         ret
 
-.four:  push de
+.four:  ld c,e
         dup 4
         ld a,(hl)
         ld (de),a
         inc hl
         inc e
         edup
-        pop de
-        call fast_next_line
+        ld e,c
+        NEXT_LINE
         djnz .four
         ret
 
@@ -285,7 +318,13 @@ fast_draw:
         push hl
         call fast_screen_de
         pop hl
+        ld a,(spr_bytes)
+        cp 3
+        jr nz,.width
         ld a,(spr_height)
+        cp 12
+        jp z,fast_draw_wheel3
+.width: ld a,(spr_height)
         ld b,a
         ld a,(spr_bytes)
         cp 2
@@ -295,7 +334,7 @@ fast_draw:
         cp 4
         jr z,.four
 
-.one:   push de
+.one:   ld c,e
         ld a,(de)
         and (hl)
         inc hl
@@ -303,12 +342,12 @@ fast_draw:
         inc hl
         ld (de),a
         inc e
-        pop de
-        call fast_next_line
+        ld e,c
+        NEXT_LINE
         djnz .one
         ret
 
-.two:   push de
+.two:   ld c,e
         dup 2
         ld a,(de)
         and (hl)
@@ -318,12 +357,12 @@ fast_draw:
         ld (de),a
         inc e
         edup
-        pop de
-        call fast_next_line
+        ld e,c
+        NEXT_LINE
         djnz .two
         ret
 
-.three: push de
+.three: ld c,e
         dup 3
         ld a,(de)
         and (hl)
@@ -333,12 +372,12 @@ fast_draw:
         ld (de),a
         inc e
         edup
-        pop de
-        call fast_next_line
+        ld e,c
+        NEXT_LINE
         djnz .three
         ret
 
-.four:  push de
+.four:  ld c,e
         dup 4
         ld a,(de)
         and (hl)
@@ -348,8 +387,8 @@ fast_draw:
         ld (de),a
         inc e
         edup
-        pop de
-        call fast_next_line
+        ld e,c
+        NEXT_LINE
         djnz .four
         ret
 
@@ -360,14 +399,20 @@ fast_draw:
 ;      visible count. spr_gap2 is how many image bytes to skip after
 ;      each visible row: the pairs off the right of this row, plus the
 ;      pairs off the left of the next one. sprite_set_pos_x fills both.
-; A fully visible wheel has a gap of 0 and still comes through here,
-; because its stored width changes with the shift (2 bytes, or 3).
-; Corrupts: AF, BC, DE, HL
+; A fully visible wheel does not come through here: adding a gap of
+; zero still costs a memory read, and that wheel is the slow one.
+; wheel_draw calls fast_draw instead. Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 fast_draw_gap:
         push hl
         call fast_screen_de
         pop hl
+        ; The gap is the same on every row. Kept in the alternate
+        ; accumulator so the copy can use the ordinary one. The
+        ; interrupt handler does not touch the alternate pair.
+        ; The last row does not step: nothing follows it.
+        ld a,(spr_gap2)
+        ex af,af'
         ld a,(spr_height)
         ld b,a
         ld a,(spr_bytes)
@@ -376,7 +421,7 @@ fast_draw_gap:
         cp 3
         jr z,.three
 
-.one:   push de
+.one:   ld c,e
         ld a,(de)
         and (hl)
         inc hl
@@ -384,17 +429,19 @@ fast_draw_gap:
         inc hl
         ld (de),a
         inc e
-        pop de
-        ld a,(spr_gap2)
+        ld e,c
+        djnz .more1
+        ret
+.more1: ex af,af'
         add a,l
         ld l,a
         jr nc,.gap1
         inc h
-.gap1:  call fast_next_line
-        djnz .one
-        ret
+.gap1:  ex af,af'
+        NEXT_LINE
+        jr .one
 
-.two:   push de
+.two:   ld c,e
         dup 2
         ld a,(de)
         and (hl)
@@ -404,17 +451,19 @@ fast_draw_gap:
         ld (de),a
         inc e
         edup
-        pop de
-        ld a,(spr_gap2)
+        ld e,c
+        djnz .more2
+        ret
+.more2: ex af,af'
         add a,l
         ld l,a
         jr nc,.gap2
         inc h
-.gap2:  call fast_next_line
-        djnz .two
-        ret
+.gap2:  ex af,af'
+        NEXT_LINE
+        jr .two
 
-.three: push de
+.three: ld c,e
         dup 3
         ld a,(de)
         and (hl)
@@ -424,15 +473,17 @@ fast_draw_gap:
         ld (de),a
         inc e
         edup
-        pop de
-        ld a,(spr_gap2)
+        ld e,c
+        djnz .more3
+        ret
+.more3: ex af,af'
         add a,l
         ld l,a
         jr nc,.gap3
         inc h
-.gap3:  call fast_next_line
-        djnz .three
-        ret
+.gap3:  ex af,af'
+        NEXT_LINE
+        jr .three
 
 ;------------------------------------------------------------------------------
 ; Atlantis copies of the fish and diver draw. The originals in fish.asm
@@ -483,3 +534,78 @@ diver_draw_fast:
         call sprite_image
         call fast_pick
         jp fast_draw
+
+;------------------------------------------------------------------------------
+; The full-width wheel, 3 bytes by 12 rows.
+; Reached only when the byte count is 3 and the height is 12. HL is the
+; buffer or the image, DE is the screen, IY is the background record
+; (the save uses it to mark the photograph valid).
+;
+; Twelve copies of the row. The next line inside a character cell is one
+; added to the high byte, and NEXT_LINE does that add and then checks
+; whether the cell was crossed. Writing the rows out costs less than
+; finding an entry point in a shared block: that arithmetic was measured
+; and the frame missed the interrupt again.
+;------------------------------------------------------------------------------
+        MACRO WHEEL_SAVE_ROW
+        ld c,e
+        dup 3
+        ld a,(de)
+        ld (hl),a
+        inc hl
+        inc e
+        edup
+        ld e,c
+        ENDM
+
+        MACRO WHEEL_RESTORE_ROW
+        ld c,e
+        dup 3
+        ld a,(hl)
+        ld (de),a
+        inc hl
+        inc e
+        edup
+        ld e,c
+        ENDM
+
+        MACRO WHEEL_DRAW_ROW
+        ld c,e
+        dup 3
+        ld a,(de)
+        and (hl)
+        inc hl
+        or (hl)
+        inc hl
+        ld (de),a
+        inc e
+        edup
+        ld e,c
+        ENDM
+
+fast_save_wheel3:
+        dup 11
+        WHEEL_SAVE_ROW
+        NEXT_LINE
+        edup
+        ; The twelfth line is the last. Stepping past it is wasted:
+        ; nothing reads the address afterwards.
+        WHEEL_SAVE_ROW
+        ld (iy+BG_VALID),1
+        ret
+
+fast_restore_wheel3:
+        dup 11
+        WHEEL_RESTORE_ROW
+        NEXT_LINE
+        edup
+        WHEEL_RESTORE_ROW
+        ret
+
+fast_draw_wheel3:
+        dup 11
+        WHEEL_DRAW_ROW
+        NEXT_LINE
+        edup
+        WHEEL_DRAW_ROW
+        ret
