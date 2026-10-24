@@ -759,7 +759,10 @@ and `OK` means all of that happened. Red border, `FAIL`, a reason byte
 and the frame number means it stopped at the first miss. The reasons
 are listed at the top of `src/atlantis/soak.asm`. The checks walk the
 whole screen, so this snapshot runs slower than the game; give it a
-couple of minutes.
+couple of minutes. The two photographs (the seabed, and the title
+rows) are 768 bytes each and sit at `$F300`, which the game leaves
+empty. Keeping them out of the program is what lets this test build
+finish before `$C000`.
 
 ## Memory
 

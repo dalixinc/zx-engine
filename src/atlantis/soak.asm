@@ -67,9 +67,16 @@ soak_saw_wheel_diver: db 0
 soak_saw_wheel_stats: db 0      ; on row 0 while the digits were on
 soak_have_title: db 0
 soak_title_mode: db 0           ; 0 compare, 1 capture
-soak_snap:      ds 24 * 32      ; rows 21-23 as they were after the last blit
-soak_title:     ds 3 * 8 * 32   ; rows 2, 4 and 5, taken on frame 1
 soak_wx:        dw 0            ; scratch for soak_hit
+
+; The two photographs are 768 bytes each. Leaving them in the program
+; pushed this test build past $C000 (the shipping game does not include
+; them, and it still ends at the code_end printed by the tape build).
+; $F300 is the first byte the scroll buffers do not use. $F900 is still
+; short of the row table at $FA00.
+SOAK_SNAP       equ $F300               ; rows 21-23 after the last blit
+SOAK_TITLE      equ SOAK_SNAP + 24 * 32 ; rows 2, 4 and 5, taken on frame 1
+SOAK_BUF_END    equ SOAK_TITLE + 3 * 8 * 32
 soak_ox:        db 0
 soak_oy:        db 0
 soak_ow:        db 0
@@ -354,7 +361,7 @@ soak_check_strips:
         ret z
         ld a,BACK_ROW * 8
         call row_table_entry
-        ld hl,soak_snap
+        ld hl,SOAK_SNAP
         ld c,24
 .line:  ld e,(ix+0)
         ld d,(ix+1)
@@ -378,7 +385,7 @@ soak_take_snap:
         ld (soak_have_snap),a
         ld a,BACK_ROW * 8
         call row_table_entry
-        ld de,soak_snap
+        ld de,SOAK_SNAP
         ld c,24
 .line:  ld l,(ix+0)
         ld h,(ix+1)
@@ -752,7 +759,7 @@ soak_title_check:
 .compare:
         xor a
         ld (soak_title_mode),a
-.rows:  ld hl,soak_title
+.rows:  ld hl,SOAK_TITLE
         ld a,2
         call soak_one_title_row
         jr nz,.bad

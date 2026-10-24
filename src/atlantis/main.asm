@@ -359,6 +359,9 @@ CODE_LENGTH     equ code_end - code_start
         ASSERT FISH_SWIM_Y + FISH_HEIGHT <= BACK_ROW * 8, "the fish reaches the seabed; it is drawn before the blit"
         ASSERT BORDER_FRAMES == 8, "the rrca x3 above assumes BORDER_FRAMES = 8"
         ASSERT code_end <= $C000, "engine code has outgrown $8000-$BFFF"
+    IFDEF SOAK
+        ASSERT SOAK_BUF_END <= ROW_TABLE, "soak photographs run into the row table"
+    ENDIF
 
         INCLUDE "../loader.asm"
 
