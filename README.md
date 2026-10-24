@@ -113,7 +113,7 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
 Atlantis memory: the tape has two code blocks. The instructions are at
-`$8000-$A101` (`code_end` is `$A102`, 8,450 bytes) and must stay below
+`$8000-$A15D` (`code_end` is `$A15E`, 8,542 bytes) and must stay below
 `$C000`. The pictures, menu words and tables are at `$C000-$E668`
 (9,833 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
 A build prints both ends (`atlantis code_end`, `atlantis data_end`), and

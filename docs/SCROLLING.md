@@ -653,16 +653,15 @@ the frame, which is when the beam is there.
 wait_frame
 stats_poll                ; Symbol Shift + S, rising edge
 read the keys
-diver_restore, wheel_restore, fish_restore
+restore the sprites, the reverse of last step's draw order
 if a sprite is on row 0 and the digits are up: wipe the digits
+the higher of diver and wheel, then the other, if above row 21
 fish_draw
-wheel_draw                ; always above the seaweed
-if the diver's feet are still above row 21: diver_draw
 if a sprite is on row 0: draw the digits on top
 scroll_blit
     show frame:    16 slow rows, weed colours, silo tops, ground
     prepare frame: sand only, silo tops, ground
-if his feet are on the seabed: diver_draw
+if his feet are on the seabed: diver_draw, then a low wheel
 scroll_shift_ground       ; every frame
 if this was a prepare frame: scroll_shift_slow
 if no sprite is on row 0: erase and redraw the digits
@@ -672,9 +671,15 @@ move the diver, move the fish, move the wheel
 The copy still happens after the restore, for the same reason as the
 demo. A sprite on the seabed is saved after the copy. The fish is above
 the seabed (pixel 76, height 9, seabed at 168), and so is the wheel
-bomb, so both are drawn before it. Draw order is fish, wheel, diver.
-Restore is the reverse, so a photograph that contains another sprite
-is put back before that sprite's own photograph.
+bomb, so both are drawn before it. Up in the water the draw order is
+the higher of the diver and the wheel, then the other, then the fish:
+the beam runs down the picture during this work, and a sprite near the
+top that is drawn second can be erased when the beam reaches it. (With
+the order fixed as fish, wheel, diver, the diver vanished near the top
+whenever a bomb was flying.) Restore is the reverse of the previous
+step's order, kept in `diver_late`, `wheel_late` and `wheel_first`, so
+a photograph that contains another sprite is put back before that
+sprite's own photograph.
 
 ## Silos, for later
 

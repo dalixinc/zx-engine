@@ -328,37 +328,36 @@ soak_row_is_blank:
         ret
 
 ; A sprite on row 0 must have photographed water, not the digits.
-; Draw order is fish, then wheel, then diver. The back-most of those that
-; covers row 0 photographed the water. A later one may have photographed
-; the sprite behind it, so only the back-most is checked. (The old check
-; stepped aside when the fish and the diver were both up there, for the
-; same reason.)
+; Draw order in the water is the higher of the diver and the wheel,
+; then the other, then the fish (main_loop says why). wheel_first still
+; holds the order of the step that took these photographs. The
+; back-most of those that covers row 0 photographed the water. A later
+; one may have photographed the sprite behind it, so only the back-most
+; is checked. A sprite drawn after the seabed copy is far below row 0.
 soak_check_bg:
-        ld a,(fish_bg + BG_VALID)
+        ld a,(wheel_first)
         or a
-        jr z,.try_wheel
-        ld a,(fish_bg + BG_Y)
-        cp 8
-        jr nc,.try_wheel
-        ld iy,fish_bg
+        jr nz,.wheel
+        ld iy,diver_bg
+        call soak_one_bg
+        jr nz,.saw_diver
+        ld iy,wheel_bg
+        call soak_one_bg        ; fails inside if a byte is not water
+        ret nz
+        jr .fish
+.wheel: ld iy,wheel_bg
+        call soak_one_bg
+        ret nz
+        ld iy,diver_bg
+        call soak_one_bg
+        jr nz,.saw_diver
+.fish:  ld iy,fish_bg
         call soak_one_bg
         ret z
         ld a,1
         ld (soak_saw_fish_bg),a
         ret
-.try_wheel:
-        ld a,(wheel_bg + BG_VALID)
-        or a
-        jr z,.try_diver
-        ld a,(wheel_bg + BG_Y)
-        cp 8
-        jr nc,.try_diver
-        ld iy,wheel_bg
-        jp soak_one_bg          ; fail inside if a byte is not water
-.try_diver:
-        ld iy,diver_bg
-        call soak_one_bg
-        ret z
+.saw_diver:
         ld a,1
         ld (soak_saw_diver_bg),a
         ret

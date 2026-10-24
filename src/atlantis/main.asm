@@ -211,21 +211,65 @@ SLACK_WARMUP    equ 0
         out (ULA_PORT),a
     ENDIF
         ; Restore first, while the screen still matches the photographs.
-        ; Draw order is fish, wheel, diver (back to front), so restore is
-        ; the reverse: diver, wheel, fish. The wheel is drawn after the
-        ; fish, so where they overlap its photograph contains the fish
-        ; and has to be put back before the fish's is.
+        ; Restore is the reverse of last step's draw order, so where two
+        ; sprites overlap, the one drawn later (whose photograph holds
+        ; the other) is put back first.
+        ;
+        ; Draw order:
+        ;   up in the water, before the seabed copy: the higher of the
+        ;       diver and the wheel, then the lower one, then the fish
+        ;   on the seabed, after the copy: diver, wheel
+        ; The beam runs down the picture while this happens. A sprite is
+        ; missing from the picture if the beam reaches it after it was
+        ; erased and before it is drawn again. With a fixed order, the
+        ; one drawn second lost that race whenever it was near the top:
+        ; first the diver, behind a bomb, and then, the other way round,
+        ; a bomb at the surface. Drawing the higher one first, and
+        ; restoring it last, gives each the shortest gap where the beam
+        ; reaches it soonest. The fish swims at pixel row 76, which the
+        ; beam reaches much later, so it goes last.
+        ; The order between the diver and the bomb is not about which
+        ; is in front. If they overlap it is a hit and the bomb goes.
+        ; diver_late, wheel_late and wheel_first remember what was done,
+        ; so the restore below runs in exactly the reverse order.
+        ;
         ; The fish and the diver go through the tight walker. The shared
         ; routines are what Engine Demo 1 still calls.
         ; NO_WHEEL is a measurement switch, the same kind of thing as
         ; SLACK_LINES. The tape does not define it. It leaves the bomb
         ; out so the spare-scanline count can be taken with no bomb
         ; on screen.
-        call diver_restore_fast
     IFNDEF NO_WHEEL
-        call wheel_restore
+        ld a,(wheel_late)
+        or a
+        call nz,wheel_restore
     ENDIF
+        ld a,(diver_late)
+        or a
+        call nz,diver_restore_fast
         call fish_restore_fast
+    IFNDEF NO_WHEEL
+        ld a,(wheel_first)
+        or a
+        jr nz,.wheel_was_first
+        ld a,(wheel_late)
+        or a
+        call z,wheel_restore
+    ENDIF
+        ld a,(diver_late)
+        or a
+        call z,diver_restore_fast
+    IFNDEF NO_WHEEL
+        jr .restored
+.wheel_was_first:
+        ld a,(diver_late)
+        or a
+        call z,diver_restore_fast
+        ld a,(wheel_late)       ; set only with wheel_late clear,
+        or a                    ; but the test keeps the rule simple
+        call z,wheel_restore
+.restored:
+    ENDIF
         call stats_prepare      ; drop the digits if a sprite is about to
                                 ; photograph row 0. Otherwise leave them:
                                 ; the beam is about to read that row.
@@ -233,23 +277,51 @@ SLACK_WARMUP    equ 0
         call soak_after_restore
     ENDIF
 
-        call fish_draw_fast
-    IFNDEF NO_WHEEL
-        ; Above the weed the ink is written while the beam is still in
-        ; the top border. A bomb that reaches the weed is drawn after
-        ; the seabed copy, or the copy would paint over it.
-        call wheel_is_low
-        jr nc,.wheel_later
-        call wheel_draw
-        call wheel_colours
-.wheel_later:
-    ENDIF
+        ; Which half each is drawn in. Once the diver's feet reach the
+        ; weed he is drawn after the copy (draw_late), or the copy would
+        ; paint over him. The same for the bomb. SBC A,A turns the
+        ; carry into 0 (up in the water) or $FF (drawn late).
         ld a,(diver_y)
         add a,DIVER_HEIGHT - 1  ; his lowest pixel
         cp BACK_ROW * 8         ; seabed starts at row 21
-        jr nc,.low
-        call diver_draw_fast    ; still in open water: the copy will not touch him
-.low:
+        ccf
+        sbc a,a
+        ld (diver_late),a
+    IFNDEF NO_WHEEL
+        call wheel_is_low       ; carry set: up in the water, or not shown
+        ccf
+        sbc a,a
+        ld (wheel_late),a
+        ; The bomb goes first if it is in the water and its top is
+        ; above the diver's. A diver on the seabed is drawn late
+        ; anyway, so that order does not matter there.
+        ld b,0
+        or a
+        jr nz,.order
+        ld a,(diver_y)
+        ld c,a
+        ld a,(wheel_y)
+        cp c
+        jr nc,.order
+        dec b                   ; $FF: the bomb first
+.order: ld a,b
+        ld (wheel_first),a
+        or a
+        call nz,wheel_draw_early
+    ENDIF
+        ld a,(diver_late)
+        or a
+        call z,diver_draw_fast
+    IFNDEF NO_WHEEL
+        ld a,(wheel_first)
+        or a
+        jr nz,.wheel_drawn
+        ld a,(wheel_late)
+        or a
+        call z,wheel_draw_early
+.wheel_drawn:
+    ENDIF
+        call fish_draw_fast
         ; If a sprite is on row 0, the digits go back on top now,
         ; after the photograph and before we spend the frame on the seabed.
         ; The wheel is included: it can bob up to y = 0.
@@ -522,14 +594,14 @@ SLACK_WARMUP    equ 0
 
 ;------------------------------------------------------------------------------
 ; draw_late - the diver, and the bomb, when the seabed copy would cover them
-; The bomb that is still up in the water was drawn before the copy.
+; main_loop already decided which half each one is drawn in, and kept
+; that in diver_late and wheel_late for the next restore.
 ; Corrupts: AF, BC, DE, HL, IX, IY
 ;------------------------------------------------------------------------------
 draw_late:
-        ld a,(diver_y)
-        add a,DIVER_HEIGHT - 1
-        cp BACK_ROW * 8
-        jr c,.diver_done
+        ld a,(diver_late)
+        or a
+        jr z,.diver_done
     IFDEF TIMING_BARS
         ld a,MAGENTA
         out (ULA_PORT),a
@@ -537,12 +609,27 @@ draw_late:
         call diver_draw_fast
 .diver_done:
     IFNDEF NO_WHEEL
-        call wheel_is_low
-        ret c
+        ld a,(wheel_late)
+        or a
+        ret z
         call wheel_draw
         call wheel_colours
     ENDIF
         ret
+
+    IFNDEF NO_WHEEL
+; The bomb above the seabed: the picture, then its colours.
+wheel_draw_early:
+        call wheel_draw
+        jp wheel_colours
+    ENDIF
+
+; Which half of the step each sprite was drawn in: 0 before the seabed
+; copy, $FF after it. wheel_first is $FF when the bomb was drawn before
+; the diver. Read by the next step's restore.
+diver_late:     db 0
+wheel_late:     db 0
+wheel_first:    db 0
 
 ;------------------------------------------------------------------------------
 ; Engine, then the Atlantis-only pieces, then the shared actors.
