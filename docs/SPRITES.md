@@ -70,7 +70,8 @@ ANDs and rotates.
 Two useful consequences:
 
 * Inside one character cell, moving down a pixel line is just `INC H`
-  (+256). `copy_cell` in `scenery.asm` uses this.
+  (+256). The ground copy in `scroll.asm` uses that: it looks the first
+  line of a strip up in the row table, then `INC D` for the other seven.
 * Crossing a cell boundary or a third needs a different adjustment each
   time. Getting that right in every drawing loop is fiddly and slow.
 
@@ -132,11 +133,13 @@ Masks also give a third kind of pixel. In `gfx/fish.txt`:
 In the montage you can see the seabed pebbles through the gaps in the
 fish's tail while its body hides them.
 
-**Attribute clash.** Colour is per 8x8 cell, not per pixel, so the fish has
+**Attribute clash.** Colour is per 8x8 cell, not per pixel, so a sprite has
 whatever INK and PAPER the cells it covers have: white on blue in the water,
-black on yellow over the seabed, green over a weed. That is the famous
-Spectrum "clash". We leave it alone for now; the game design can work with it
-(e.g. keep sprites mostly over water of one colour).
+yellow on blue over the far hills, green on yellow on a seaweed cell, and
+black on yellow over the near hills. That is the famous Spectrum "clash".
+On the near strip his ink is black, so he reads as a silhouette in a yellow
+valley and disappears into a black hill. A seaweed cell cannot also be
+yellow-on-blue; the trade-off is written out in docs/SCROLLING.md.
 
 ---
 
@@ -222,10 +225,15 @@ sprite_save_bg      ; copy what is under the new position
 sprite_draw         ; AND mask / OR data
 ```
 
-The verification run checks this: after the diver swims down into the
-seabed, along, and back up, the seabed and weed rows in the screenshots
-(Spectrum lines 126-175) are pixel-for-pixel identical to the start
-(`make sprite-test`, shots `06`, `07-cross-16` and `08` against `01`).
+The ground now scrolls, so those rows are not the same pixels as at the
+start: they have moved. What has to stay true is that restoring a sprite
+puts back exactly the bytes it saved, and that the save happened after
+this frame's ground was copied up. A headless run of 1024 frames (the
+diver climbing through the fish, then holding Down and riding the near
+hills) checked the open water was blank after every restore, and that
+both silhouette strips matched the off-screen buffers from the moment
+the sprites were saved. There is no separate blank floor: rows 20-21
+are the near strip. The order that makes that true is in docs/SCROLLING.md.
 
 ### Two sprites: one record each, and erase in reverse order
 
@@ -235,7 +243,10 @@ saved bytes. The routines in `src/sprite.asm` are told which record to use
 in **IY**, because `(iy+BG_COL)` and friends let them read the header fields
 by name while HL and DE are busy copying.
 
-The order in `main_loop` is:
+The order in `main_loop` is restore both, then draw whoever is still in
+open water, then copy the scrolling strips, then draw the diver if his
+feet are on a strip. Full diagram in docs/SCROLLING.md. The part that
+matters for overlap is unchanged:
 
 ```
 diver_restore   ; erase in the REVERSE order of drawing...
@@ -243,6 +254,9 @@ fish_restore
 fish_draw       ; ...then save + draw, back to front
 diver_draw      ; the diver is drawn last, so he is in front of the fish
 ```
+
+(When the diver is on the ground, his draw is the one that moves to after
+the strip copy. The fish is never that low.)
 
 Why reverse? The fish is drawn first, so when the diver overlaps it, the
 diver's saved background *contains part of the fish*.
@@ -283,17 +297,12 @@ before the border/debug printing and input reading.
 ### Measured: the timing build
 
 `make timing` assembles the same program with `-DTIMING_BARS` into
-`build/diver-timing.sna`. In that build the border turns **white** when the
-sprite work starts and **black** when it ends (and the colour-cycling border
-is switched off), so the height of the white band shows how long it took.
-`build/diver-timing.png` is a screenshot: the white band ends about **pixel
-line 37** (the top of the band is off the visible top border, so only the
-end can be read). That is roughly 14,336 + 37 x 224 = **about 22,600
-T-states** after the interrupt for restore + save + draw of both sprites.
-The water starts at line 56, so there are about **19 lines (4,000+
-T-states) to spare**. Counting instructions gives a similar figure
-(diver about 14,000, fish about 6,000). Adding more sprites will need the
-"chase the beam" ordering below, or less work per sprite.
+`build/diver-timing.sna`. The border changes colour as the frame goes, so
+the bands show which part of the work the beam has reached. v0.4 (sprites
+only, no scrolling ground) finished both sprites around pixel line 37.
+v0.5 has more to do; the bands and the T-state sums are in
+docs/SCROLLING.md. The rule is the same: finish writing a row before the
+beam gets there.
 
 Rule of thumb for later: do all sprite erasing and drawing as early in the
 frame as possible, and keep the slower game logic for after. When there are
@@ -304,14 +313,18 @@ the beam is always behind you (the "chase the beam" trick).
 
 ## 6. Clipping (for now)
 
-`update_diver` clamps the diver to the play area: x 0-231 and y from the top
-of the water (56) to the bottom of the seabed minus his height (176 - 15 =
-161). The right limit is `256 - bytes*8 + 7`: at that x all bytes of a
-shifted row still land on the same screen line (diver: column 28 + 3 = 31;
-fish, 3 bytes: x 239, column 29 + 2 = 31). Pushing a direction against an
-edge still counts as "moving", so he kicks against the wall. Partial clipping, where a sprite slides off
-the edge of the screen and is only part drawn, needs per-row byte counts. It
-will come with scrolling and enemies entering from the edge.
+`update_diver` clamps the diver to the play area: x 0-231, and y from the
+top of the water (56) down to one pixel above the near silhouette.
+`clamp_to_terrain` reads the height of every near column under his 24
+pixels and lifts him when a hill scrolls underneath. The right limit is
+`256 - bytes*8 + 7`: at that x all
+bytes of a shifted row still land on the same screen line (diver: column
+28 + 3 = 31; fish, 3 bytes: x 239, column 29 + 2 = 31). Pushing a direction
+against an edge still counts as "moving", so he kicks against the wall.
+Partial clipping, where a sprite slides off the edge of the screen and is
+only part drawn, needs per-row byte counts. The ground scrolls under him;
+he himself stays on the screen. Enemies entering from the edge will need
+that clipping.
 
 ---
 
@@ -347,4 +360,4 @@ The width is no longer built into the code. To make a 32-pixel sprite:
    `176 - NAME_HEIGHT`.
 6. **Check the cost**: memory is `2 x NAME_BYTES x height x 8 shifts x
    frames x facings`, and the draw time grows with bytes x rows. Re-run
-   `make timing` and check the white band still ends above line 56.
+   `make timing` and read the border bands against docs/SCROLLING.md.

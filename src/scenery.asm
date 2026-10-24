@@ -1,45 +1,50 @@
 ;==============================================================================
-; scenery.asm - a static underwater backdrop for testing sprites over
+; scenery.asm - the backdrop colours, and the attribute-row filler
 ;
-; Nothing clever: we fill some character rows with a pixel pattern and an
-; attribute colour. It exists so you can see the sprite mask working (the
-; fish's see-through pixels show the pattern; its solid pixels hide it) and
-; so you can check that save/restore leaves the scenery undamaged.
+; The moving ground itself is in scroll.asm (two parallax silhouettes).
+; This file paints the attribute colours that do not change as the world
+; scrolls, then asks scroll_init to build the pixels and the seaweed row.
 ;
-; Remember colour on the Spectrum is per 8x8 cell, not per pixel: when the
-; fish swims over the seabed it takes on the seabed's INK/PAPER. That is
-; "attribute clash", and the game design will have to live with it.
+; Colour is one byte per 8x8 cell, shared by every pixel in that cell,
+; sprites included:
+;   water            white ink, blue paper
+;   far hills        yellow ink, blue paper (both far rows, to start)
+;   near hills       black ink, yellow paper (both near rows, forever)
+; scroll_init then recolours the bottom far row per column, because a
+; seaweed cell is green on yellow instead of yellow on blue. That row is
+; the only one whose attributes move, and only when a column lines up.
+; A sprite picks up whatever pair it is standing on. docs/SCROLLING.md.
 ;==============================================================================
 
 ;------------------------------------------------------------------------------
-; draw_scenery - water, seabed and a few weeds
-; Corrupts: AF, BC, DE, HL
+; draw_scenery - colour the water and the ground, then build the strips
+; Corrupts: AF, BC, DE, HL, IX
 ;------------------------------------------------------------------------------
 draw_scenery:
-        ; water: rows WATER_TOP_ROW..SEABED_ROW-1, empty pixels, blue paper
+        ; open water: from the title down to the row above the far strip.
+        ; Pixels stay 0 (cls). Paper is blue.
         ld b,WATER_TOP_ROW
-        ld d,SEABED_ROW - WATER_TOP_ROW
+        ld d,BACK_ROW - WATER_TOP_ROW
         ld e,WATER_ATTR
         call fill_attr_rows
 
-        ; seabed: a pebbly pattern with yellow paper and black ink
-        ld b,SEABED_ROW
-        ld d,SEABED_ROWS
-        ld e,SEABED_ATTR
+        ; Both far rows start as yellow-on-blue. The bottom row's seaweed
+        ; columns are repainted by scroll_init (and again each time a far
+        ; column scrolls fully on).
+        ld b,BACK_ROW
+        ld d,BACK_PX / 8
+        ld e,BACK_HILL_ATTR
         call fill_attr_rows
-        ld b,SEABED_ROW
-        ld d,SEABED_ROWS
-        ld hl,pattern_pebbles
-        call fill_pattern_rows
 
-        ; weeds: three columns of a wavy pattern, 4 cells tall, on the seabed
-        ld c,4
-        call draw_weed
-        ld c,13
-        call draw_weed
-        ld c,24
-        call draw_weed
-        ret
+        ; Both near rows, every column, for the whole run. Black ink on
+        ; yellow paper: the silhouette pixels are the ink, the background
+        ; is the paper. Nothing in this strip is any other colour.
+        ld b,FRONT_ROW
+        ld d,FRONT_PX / 8
+        ld e,FRONT_ATTR
+        call fill_attr_rows
+
+        jp scroll_init          ; pixels, seaweed colours, first copy up
 
 ;------------------------------------------------------------------------------
 ; fill_attr_rows - In: B = first row, D = number of rows, E = attribute
@@ -56,78 +61,3 @@ fill_attr_rows:
         jr nz,.row
         ret
 
-;------------------------------------------------------------------------------
-; fill_pattern_rows - fill whole character rows with an 8-byte pattern
-; In:  B = first row, D = number of rows, HL -> 8 bytes (one per pixel line)
-; Corrupts: AF, BC, DE, HL
-;------------------------------------------------------------------------------
-fill_pattern_rows:
-.row:   ld c,0                  ; C = column, 0..31
-.cell:  push de                 ; D = rows left: copy_cell corrupts DE
-        push hl                 ; HL = pattern start, needed for every cell
-        ex de,hl                ; DE -> pattern
-        call char_addr          ; HL -> top pixel line of cell (B,C)
-        call copy_cell          ; (corrupts B too, so save it around this)
-        pop hl
-        pop de
-        inc c
-        ld a,c
-        cp 32
-        jr nz,.cell
-        inc b                   ; next character row
-        dec d
-        jr nz,.row
-        ret
-
-;------------------------------------------------------------------------------
-; draw_weed - In: C = column. Draws 4 cells upward from the seabed.
-; Corrupts: AF, BC, DE, HL
-;------------------------------------------------------------------------------
-draw_weed:
-        ld b,SEABED_ROW - 4
-.cell:
-        call attr_addr
-        ld (hl),WEED_ATTR
-        call char_addr
-        ld de,pattern_weed
-        call copy_cell
-        inc b
-        ld a,b
-        cp SEABED_ROW
-        jr nz,.cell
-        ret
-
-;------------------------------------------------------------------------------
-; copy_cell - copy 8 pattern bytes into one character cell
-; In: HL -> top pixel line of the cell, DE -> 8 bytes. Corrupts: AF, DE, H
-; Inside a cell, each pixel line down is +256, i.e. just INC H.
-;------------------------------------------------------------------------------
-copy_cell:
-        push bc                 ; callers use B as a row counter: keep it
-        ld b,8
-.line:  ld a,(de)
-        ld (hl),a
-        inc de
-        inc h
-        djnz .line
-        pop bc
-        ret
-
-pattern_pebbles:
-        db %00000000
-        db %01100010
-        db %11110111
-        db %01100010
-        db %00000000
-        db %00011000
-        db %10111100
-        db %00011001
-pattern_weed:
-        db %00011000
-        db %00110000
-        db %00110000
-        db %00011000
-        db %00001100
-        db %00001100
-        db %00011000
-        db %00110000
