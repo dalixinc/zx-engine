@@ -163,9 +163,17 @@ SLACK_WARMUP    equ 0
         ; the reverse: diver, wheel, fish. The wheel is drawn after the
         ; fish, so where they overlap its photograph contains the fish
         ; and has to be put back before the fish's is.
-        call diver_restore
+        ; The fish and the diver go through the tight walker. The shared
+        ; routines are what Engine Demo 1 still calls.
+        ; NO_WHEEL is a measurement switch, the same kind of thing as
+        ; SLACK_LINES. The tape does not define it. It leaves the bomb
+        ; out so the spare-scanline count can be taken with no bomb
+        ; on screen.
+        call diver_restore_fast
+    IFNDEF NO_WHEEL
         call wheel_restore
-        call fish_restore
+    ENDIF
+        call fish_restore_fast
         call stats_prepare      ; drop the digits if a sprite is about to
                                 ; photograph row 0. Otherwise leave them:
                                 ; the beam is about to read that row.
@@ -173,13 +181,15 @@ SLACK_WARMUP    equ 0
         call soak_after_restore
     ENDIF
 
-        call fish_draw
+        call fish_draw_fast
+    IFNDEF NO_WHEEL
         call wheel_draw         ; always above the seaweed, so always here
+    ENDIF
         ld a,(diver_y)
         add a,DIVER_HEIGHT - 1  ; his lowest pixel
         cp BACK_ROW * 8         ; seabed starts at row 21
         jr nc,.low
-        call diver_draw         ; still in open water: the copy will not touch him
+        call diver_draw_fast    ; still in open water: the copy will not touch him
 .low:
         ; If a sprite is on row 0, the digits go back on top now,
         ; after the photograph and before we spend the frame on the seabed.
@@ -203,7 +213,7 @@ SLACK_WARMUP    equ 0
         ld a,MAGENTA
         out (ULA_PORT),a
     ENDIF
-        call diver_draw         ; feet on the seabed: photograph THIS ground
+        call diver_draw_fast    ; feet on the seabed: photograph THIS ground
 .diver_done:
 
     IFDEF TIMING_BARS
@@ -248,7 +258,9 @@ SLACK_WARMUP    equ 0
 
         call update_diver
         call update_fish
+    IFNDEF NO_WHEEL
         call update_wheel
+    ENDIF
     IFDEF SOAK
         call soak_after_update
     ENDIF
@@ -269,9 +281,8 @@ SLACK_WARMUP    equ 0
     IFDEF SHOT_FRAME
         ; Not the tape. Halt at the end of one loop so a screenshot can
         ; catch the wheel at a known x. The draw for this frame has
-        ; already happened. The count is loops, not frame_count: with
-        ; the bomb on screen a loop often misses the interrupt, so the
-        ; interrupt counter runs ahead of the movement.
+        ; already happened. The count is loops, not frame_count, so the
+        ; picture matches a movement step even on a build that drops one.
         ld hl,(shot_loops)
         inc hl
         ld (shot_loops),hl
@@ -301,6 +312,9 @@ SLACK_WARMUP    equ 0
         INCLUDE "wheel.asm"
         INCLUDE "../fish.asm"
         INCLUDE "../diver.asm"
+        ; After the fish and the diver, so the wrappers can call their
+        ; image-index routines. The demo does not include this file.
+        INCLUDE "fastsprite.asm"
     IFDEF SOAK
         INCLUDE "soak.asm"
     ENDIF
@@ -334,13 +348,14 @@ CODE_LENGTH     equ code_end - code_start
         ASSERT FISH_FRAMES == 2, "fish_image_index multiplies facing by 2"
         ASSERT WHEEL_FRAMES == 4, "wheel_drift masks the frame with 3"
         ASSERT (WHEEL_FRAMES & (WHEEL_FRAMES - 1)) == 0, "wheel frame mask"
-        ASSERT WHEEL_BYTES == 3, "a 16px sprite shifts to 3 bytes"
-        ASSERT WHEEL_HEIGHT == 16
+        ASSERT WHEEL_WIDTH == 12
+        ASSERT WHEEL_BYTES == 3, "the widest shift of the 12px wheel is 3 bytes"
+        ASSERT WHEEL_HEIGHT == 12
         ASSERT WHEEL_SPEED == 1, "the soak's frame numbers assume 1px/frame"
         ASSERT WHEEL_GAP == 48, "the soak's frame numbers assume this pause"
         ASSERT WHEEL_BOB == 6
         ASSERT WHEEL_TOP_BASE == 6
-        ASSERT WHEEL_LOW_BASE == 146, "lowest base must sit one bob above the weed"
+        ASSERT WHEEL_LOW_BASE == 150, "lowest base must sit one bob above the weed"
         ASSERT WHEEL_LOW_BASE + WHEEL_BOB + WHEEL_HEIGHT <= BACK_ROW * 8, "wheel enters the seaweed"
         ASSERT 36 >= WHEEL_TOP_BASE
         ASSERT 70 >= WHEEL_TOP_BASE

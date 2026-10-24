@@ -2,11 +2,11 @@
 """
 make-wheel-montage.py - build/montage-wheel.png from gfx/wheel.txt.
 
-The four rotation frames, enlarged, so the hub T and the moving legs
-can be judged without a Spectrum. Same colours the game uses: white
-ink, blue paper in the hub, dark blue where the sea shows through.
-Red lines mark the 8-pixel byte boundaries. This is the art only;
-the emulator shots are separate.
+The four rotation frames, enlarged, so the T and the moving legs
+can be judged without a Spectrum. Ink is bright red, the colour the
+game uses. There is no solid hub: the gaps are the sea. Red lines
+mark the 8-pixel byte boundaries. This is the art only; the emulator
+shots are separate.
 """
 import os
 import sys
@@ -15,9 +15,9 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, os.path.dirname(__file__))
 from gfx2asm import load_frames
 
-INK = (255, 255, 255)
+INK = (255, 0, 0)
 PAPER = (0, 0, 205)
-SEA = (0, 0, 90)
+SEA = (0, 0, 160)
 GRID = (255, 60, 60)
 LABEL = (0, 0, 0)
 
@@ -58,7 +58,7 @@ out = Image.new("RGB", (W, H), (255, 255, 255))
 d = ImageDraw.Draw(out)
 d.text(
     (pad, 8),
-    "Trigon wheel bomb  (placeholder)   white = ink   blue = hub   dark = sea   red = byte grid",
+    "Trigon wheel bomb  (placeholder)   red = ink   blue = sea   red lines = byte grid",
     fill=LABEL,
 )
 x = pad

@@ -12,8 +12,9 @@
 ;   * a sprite that was on row 0 photographed water, not the digits
 ;   * the diver's top y is never below the black column under him
 ;   * row 22 stays yellow-on-blue, row 23 stays black-on-yellow, row 0
-;     stays white-on-blue, and a set seaweed pixel is never left in a
-;     water-coloured cell
+;     stays white-on-blue except where the wheel bomb is painting it
+;     (those cells are the bomb's ink), and a set seaweed pixel is
+;     never left in a water-coloured cell
 ;   * the title and the two help lines (rows 2, 4 and 5) still match the
 ;     copy taken on the first frame. The wheel flies through them. The
 ;     blank-water check skips those rows, so this is what catches a
@@ -35,7 +36,8 @@
 ;   3 his feet are inside the black
 ;   4 a sprite on row 0 saved something other than water
 ;   5 row 21's colours do not match its pixels
-;   6 row 22 or row 23 changed colour, or row 0 did
+;   6 row 22 or row 23 changed colour, or row 0 was a colour it
+;     should not be (water, or the bomb's ink on a cell it covers)
 ;   7 the overlay did not stay on while the chord was held,
 ;     or plain S toggled it, or it did not end off
 ;   8 the run never actually rested him on sand and on a silo,
@@ -68,6 +70,8 @@ soak_saw_wheel_stats: db 0      ; on row 0 while the digits were on
 soak_have_title: db 0
 soak_title_mode: db 0           ; 0 compare, 1 capture
 soak_wx:        dw 0            ; scratch for soak_hit
+soak_wc0:       db 0            ; wheel columns on row 0, inclusive
+soak_wc1:       db 0
 
 ; The two photographs are 768 bytes each. Leaving them in the program
 ; pushed this test build past $C000 (the shipping game does not include
@@ -402,12 +406,60 @@ soak_take_snap:
         ret
 
 soak_check_attrs:
-        ; Row 0 stays water-coloured. The digits do not write attributes.
+        ; Row 0 stays water-coloured, except the columns the wheel bomb
+        ; is painting: those are the bomb's ink until it leaves and the
+        ; old byte is put back. The digits do not write attributes.
+        ; The sand and the ground are not part of this exception. The
+        ; bomb's lowest pixel is the last pixel of row 20, so it never
+        ; recolours them.
+        call wheel_attr_box
+        jr z,.row0_water
+        ld a,(wheel_r0)
+        or a
+        jr nz,.row0_water       ; the top of the bomb is below row 0
+        ld a,(wheel_c0)
+        ld (soak_wc0),a
+        ld a,(wheel_c1)
+        ld (soak_wc1),a
+        ld b,0
+        ld c,0
+        call attr_addr
+        ld c,0
+.row0mix:
+        ld a,(soak_wc0)
+        cp c
+        jr z,.row0ink
+        jr nc,.row0sea          ; first column is still to the right of c
+        ld a,c
+        ld e,a
+        ld a,(soak_wc1)
+        cp e
+        jr c,.row0sea           ; c is past the last column
+.row0ink:
+        ld a,(hl)
+        ld e,a
+        ld a,(wheel_ink)
+        cp e
+        jp nz,.bad6
+        jr .row0step
+.row0sea:
+        ld a,(hl)
+        cp WATER_ATTR
+        jp nz,.bad6
+.row0step:
+        inc hl
+        inc c
+        ld a,c
+        cp 32
+        jr nz,.row0mix
+        jr .rows_sand
+.row0_water:
         ld b,0
         ld e,WATER_ATTR
         call soak_row_is_attr
         ld a,6
         call nz,soak_fail
+.rows_sand:
         ; Sand and ground are painted once and never touched again.
         ld b,SAND_ROW
         ld e,SAND_ATTR
@@ -468,6 +520,8 @@ soak_check_attrs:
         jr nz,.col
         ret
 .bad:   ld a,5
+        jp soak_fail
+.bad6:  ld a,6
         jp soak_fail
 
 ; In: B = row, E = expected attribute. Out: Z if all 32 match.
