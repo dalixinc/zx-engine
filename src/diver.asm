@@ -38,7 +38,15 @@ update_diver:
         ld a,FACE_RIGHT         ; turn even if we're already at the edge
         ld (diver_facing),a
         ld a,(diver_x)
+        ; Atlantis stops him at the forward limit in config.asm, an
+        ; invisible wall in the water. The demo stops him at the edge
+        ; of the screen. Both are a compare with a single number, so
+        ; the demo's bytes do not move.
+        IFDEF ATLANTIS
+        cp CFG_DIVER_MAX_X
+        ELSE
         cp DIVER_MAX_X
+        ENDIF
         jr nc,.not_right        ; at the right edge (x >= max)
         inc a
         ld (diver_x),a

@@ -45,6 +45,21 @@
 ;   9 the wheel was never seen clipped on the right, clipped on the
 ;     left, crossing the fish, crossing the diver, and under the digits
 ;  10 the title or a help line changed
+;  11 the menu did not show the title, or key 2 did not settle on 50
+;  12 Symbol Shift + F did not flip the speed, or F alone flipped it,
+;     or holding the chord flipped it again
+;  13 Symbol Shift + P did not return to the menu, or P alone did,
+;     or starting again did not put the game back to its first frame
+;
+; The run is four phases.
+;   0  the menu. Key 2 is pressed, held, and pressed again, so the
+;      speed goes to 25 and back to 50. A hold must not flip twice.
+;      Key 1 then starts the game.
+;   1  the original 1024 frames.
+;   2  he swims right. F alone does nothing. Symbol Shift + F flips to
+;      25, a hold does not flip again, and a second press returns to 50.
+;      P alone stays in the game. Symbol Shift + P returns to the menu.
+;   3  the menu is back, the title is on it, and key 1 starts a clean game.
 ;==============================================================================
 
 SOAK_FRAMES     equ 1024
@@ -73,6 +88,16 @@ soak_wx:        dw 0            ; scratch for soak_hit
 soak_wc0:       db 0            ; wheel columns on row 0, inclusive
 soak_wc1:       db 0
 
+; The menu and the two extra chords. Phase 0 is the menu before the
+; 1024 frames. See the note at the top of this file.
+soak_phase:     db 0
+soak_allow_leave: db 0         ; 1 = Symbol Shift + P is allowed to leave
+soak_p2:        db 0            ; which step of the chord test
+soak_menu_step: db 0
+soak_f:         db 0            ; 0 up, 1 down. Not $FF: the soak never
+soak_p:         db 0            ; reads the real keyboard for these
+soak_keys:      db 0            ; the 1-2-3-4-5 row, as a mask
+
 ; The two photographs are 768 bytes each. Leaving them in the program
 ; pushed this test build past $C000 (the shipping game does not include
 ; them, and it still ends at the code_end printed by the tape build).
@@ -86,9 +111,21 @@ soak_oy:        db 0
 soak_ow:        db 0
 soak_oh:        db 0
 
-; Called at the top of the frame, before stats_poll.
-; Sets the two chord keys and remembers the input byte to force.
+; Called at the top of the frame, before the chords are read.
+; Phase 1 is the 1024-frame dive. Phase 2 is the speed and menu chords.
+; The menu phases are driven by soak_on_menu, not from here.
 soak_begin:
+        ld a,(soak_phase)
+        cp 1
+        jr z,soak_begin_play
+        cp 2
+        jp z,soak_begin_chords
+        ret
+
+; Sets the two stat-line keys and remembers the input byte to force.
+; F and P are held up for the whole dive, so the real keyboard cannot
+; flip the speed or leave for the menu in the middle of the script.
+soak_begin_play:
         ld hl,(soak_frame)
         inc hl
         ld (soak_frame),hl
@@ -96,6 +133,9 @@ soak_begin:
         xor a
         ld (soak_sym),a
         ld (soak_s),a
+        ld (soak_f),a
+        ld (soak_p),a
+        ld (soak_keys),a
         ld (soak_input),a
 
         ; Frames count from 1 (we incremented first).
@@ -198,6 +238,11 @@ soak_after_blit:
 
 ; After the sprites have moved. The clamp has run.
 soak_after_update:
+        ld a,(soak_phase)
+        cp 2
+        jp z,soak_after_chords
+        cp 1
+        ret nz
         call soak_check_clamp
         call soak_note_wheel
         call soak_count_toggles
@@ -245,11 +290,16 @@ soak_check_water:
 ; blank check should skip it. NZ if row 0 must be entirely water.
 ; Digits survive prepare only when they are up AND no sprite covers them.
 soak_row0_may_hold_digits:
+        ; Z means the blank check should skip row 0. The line only wipes
+        ; the columns a sprite covers, so the rest of the row still holds
+        ; digits even when a sprite is up there. The photograph check is
+        ; what still requires water under that sprite. The line being off
+        ; means the whole row has to be water.
         ld a,(stats_dirty)
         or a
-        jr z,.blank             ; overlay is not on the screen
-        call stats_sprite_on_row0
-        ret z                   ; no sprite: the digits were left for the beam
+        jr z,.blank
+        xor a                   ; line is on: skip the whole-row check
+        ret
 .blank: ld a,1
         or a                    ; NZ: require a blank row
         ret
@@ -894,16 +944,14 @@ soak_finish:
         ld a,(soak_saw_wheel_stats)
         or a
         jr z,.bad_wheel
-        ld a,GREEN
-        call set_border
-        ld a,BRIGHT | WHITE | (BLUE << 3)
-        ld (text_attr),a
-        ld hl,soak_ok
-        ld bc,(8 << 8) | 12
-        call print_string
-        di
-.hang:  halt
-        jr .hang
+        ; The 1024 frames held. The chord test runs next, and the
+        ; green border waits until a new game has started cleanly.
+        ld a,2
+        ld (soak_phase),a
+        xor a
+        ld (soak_p2),a
+        ld (soak_allow_leave),a
+        ret
 .bad_keys:
         ld a,7
         jp soak_fail
@@ -934,6 +982,261 @@ soak_fail:
         di
 .stop:  halt
         jr .stop
+
+;------------------------------------------------------------------------------
+; Phase 2. The 1024 frames have passed. F alone must not change the
+; speed. Symbol Shift + F flips it, a hold does not flip it again, and
+; a second press flips it back. P alone must not leave. Symbol Shift + P
+; must leave. He swims right first, so the restart can be seen to put
+; him back.
+;------------------------------------------------------------------------------
+soak_begin_chords:
+        xor a
+        ld (soak_sym),a
+        ld (soak_s),a
+        ld (soak_f),a
+        ld (soak_p),a
+        ld (soak_input),a
+        ld (soak_allow_leave),a
+        ld a,(soak_p2)
+        cp 5
+        jr z,.f_alone
+        cp 7
+        jr z,.both
+        cp 8
+        jr z,.both
+        cp 9
+        jr z,.both
+        cp 11
+        jr z,.both
+        cp 13
+        jr z,.p_alone
+        cp 15
+        jr z,.leave
+        cp 4
+        ret nc
+        ld a,IN_RIGHT
+        ld (soak_input),a
+        ret
+.f_alone:
+        ld a,1
+        ld (soak_f),a
+        ret
+.both:  ld a,1
+        ld (soak_sym),a
+        ld (soak_f),a
+        ret
+.p_alone:
+        ld a,1
+        ld (soak_p),a
+        ret
+.leave: ld a,1
+        ld (soak_allow_leave),a
+        ld (soak_sym),a
+        ld (soak_p),a
+        ret
+
+soak_after_chords:
+        ld a,(soak_p2)
+        cp 4
+        jr z,.moved
+        cp 5
+        jr z,.want50
+        cp 6
+        jr z,.want50
+        cp 10
+        jr z,.want25
+        cp 7
+        jr c,.step
+        cp 11
+        jr c,.want25
+        cp 15
+        jr z,.stuck
+        cp 16
+        jr nc,.stuck
+        jr .want50
+.moved: ld a,(diver_x)
+        cp 60
+        jr nz,.step
+        ld a,12
+        jp soak_fail
+.want25:
+        ld a,(game_rate)
+        cp 25
+        jr nz,.bad12
+        ld a,(step_ticks)
+        cp 2
+        jr z,.step
+        jr .bad12
+.want50:
+        ld a,(game_rate)
+        cp 50
+        jr nz,.bad12
+        ld a,(step_ticks)
+        cp 1
+        jr nz,.bad12
+        jr .step
+.stuck: ld a,13
+        jp soak_fail
+.bad12: ld a,12
+        jp soak_fail
+.step:  ld hl,soak_p2
+        inc (hl)
+        ret
+
+;------------------------------------------------------------------------------
+; The menu. Phase 0 before the dive, phase 3 after Symbol Shift + P.
+; Called at the top of the menu loop, before the keys are read, so the
+; mask set here is the mask the menu sees this frame.
+;------------------------------------------------------------------------------
+soak_on_menu:
+        ld a,(soak_phase)
+        cp 3
+        jp z,soak_menu_back
+        or a
+        ret nz
+        ld a,(soak_menu_step)
+        cp 2
+        jr z,.want25
+        cp 3
+        jr z,.want25
+        cp 4
+        jr z,.want25
+        cp 6
+        jr z,.want50
+        cp 7
+        jr z,.want50
+        jr .keys
+.want25:
+        ld a,(game_rate)
+        cp 25
+        jr z,.keys
+        ld a,11
+        jp soak_fail
+.want50:
+        ld a,(game_rate)
+        cp 50
+        jr z,.keys
+        ld a,11
+        jp soak_fail
+.keys:  xor a
+        ld (soak_keys),a
+        ld a,(soak_menu_step)
+        cp 1
+        jr z,.key2
+        cp 2
+        jr z,.key2
+        cp 3
+        jr z,.key2
+        cp 5
+        jr z,.key2
+        cp 7
+        jr z,.key1
+        jr .inc
+.key2:  ld a,2
+        ld (soak_keys),a
+        jr .inc
+.key1:  ld a,1
+        ld (soak_keys),a
+.inc:   ld hl,soak_menu_step
+        inc (hl)
+        ret
+
+; Back on the menu. The title has to be there, then key 1 starts again.
+soak_menu_back:
+        ld a,(soak_menu_step)
+        or a
+        jr nz,.press
+        ld b,2
+        ld c,12
+        call char_addr
+        ld c,8
+        xor a
+.glyph: or (hl)
+        inc h
+        dec c
+        jr nz,.glyph
+        or a
+        jr nz,.titled
+        ld a,11
+        jp soak_fail
+.titled:
+        xor a
+        ld (soak_keys),a
+        ld hl,soak_menu_step
+        inc (hl)
+        ret
+.press: ld a,1
+        ld (soak_keys),a
+        ret
+
+; The second start. game_reset has just put everything back, and
+; interrupts are still off so the frame counter is still zero.
+; Does not return: green and OK, or red and reason 13.
+soak_check_restart:
+        ld a,(diver_x)
+        cp 60
+        jp nz,.bad
+        ld a,(diver_y)
+        cp 110
+        jp nz,.bad
+        ld a,(fish_x)
+        cp 180
+        jp nz,.bad
+        ld a,(fish_y)
+        cp FISH_SWIM_Y
+        jp nz,.bad
+        ld a,(fish_facing)
+        cp FACE_LEFT
+        jp nz,.bad
+        ld hl,(wheel_x)
+        ld de,256
+        or a
+        sbc hl,de
+        jp nz,.bad
+        ld a,(wheel_y)
+        cp 36
+        jp nz,.bad
+        ld a,(wheel_base)
+        cp 36
+        jp nz,.bad
+        ld a,(wheel_seed)
+        cp 42
+        jp nz,.bad
+        ld a,(wheel_phase)
+        cp WHEEL_FLY
+        jp nz,.bad
+        ld a,(wheel_bob_i)
+        or a
+        jp nz,.bad
+        ld a,(wheel_frame)
+        or a
+        jp nz,.bad
+        ld a,(stats_on)
+        or a
+        jp nz,.bad
+        ld hl,(frame_count)
+        ld a,h
+        or l
+        jp nz,.bad
+        ld a,(game_rate)
+        cp 50
+        jp nz,.bad
+        ld a,(step_ticks)
+        cp 1
+        jp nz,.bad
+        ld a,GREEN
+        call set_border
+        ld a,BRIGHT | WHITE | (BLUE << 3)
+        ld (text_attr),a
+        ld hl,soak_ok
+        ld bc,(8 << 8) | 12
+        call print_string
+        di
+.hang:  halt
+        jr .hang
+.bad:   ld a,13
+        jp soak_fail
 
 soak_ok:        db "OK",0
 soak_bad:       db "FAIL",0

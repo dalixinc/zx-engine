@@ -91,3 +91,12 @@ FACE_LEFT       equ 1           ; images first, then the mirrored left-facing on
 ; start-up by build_row_table (screen.asm). 192 x 2 bytes = 384 bytes. It is
 ; filled in at run time, so it costs nothing on tape.
 ROW_TABLE       equ $FA00       ; $FA00-$FB7F, in the "buffers" part of the map
+
+; Atlantis (and only Atlantis) splits the program in two. The instructions
+; stay below DATA_START, in the one block the demo also uses. The pictures,
+; the menu words and the lookup tables are assembled at DATA_START and
+; loaded as a second block, so the instruction area has room to grow.
+; The demo does not mention DATA_START: its pictures stay inside the one
+; code block, and that tape is unchanged. The scroll buffers at $F000,
+; the row table, the stack and the interrupt table stay where they are.
+DATA_START      equ $C000

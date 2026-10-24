@@ -5,6 +5,12 @@
 ; engine with the old two-strip seabed; this file is the Atlantis seabed,
 ; the frame loop, and the stat overlay. Shared code is included from src/.
 ;
+; The tape opens on the start screen (menu.asm). Play has no words on it.
+; Distances are per 1/50 second. At 25 frames a second the loop waits for
+; a second interrupt and every distance is applied twice, so a minute of
+; swimming covers the same water. The pictures and the tables live at
+; DATA_START ($C000), above the instructions.
+;
 ; Assemble with -DTIMING_BARS for build/atlantis-timing.sna. The border is
 ; a clock for that build:
 ;   white    restore, wipe the overlay if a sprite is on row 0, draw
@@ -35,6 +41,26 @@
 
         INCLUDE "../constants.asm"
         INCLUDE "layout.asm"
+        INCLUDE "config.asm"
+
+    IFDEF MEASURE
+        IFNDEF MEAS_STATS
+MEAS_STATS      equ 0
+        ENDIF
+        IFNDEF MEAS_RATE
+MEAS_RATE       equ CFG_START_RATE
+        ENDIF
+        IFNDEF MEAS_WARMUP
+MEAS_WARMUP     equ 40
+        ENDIF
+        IFNDEF MEAS_WINDOW
+        ; Steps after the warmup whose spare count is kept. 512 is the
+        ; same window the nop sled uses, so a rare heavy frame (the
+        ; weed copy, with the bomb three bytes wide) is not missed.
+        ; 64 steps can land entirely on the cheaper copies.
+MEAS_WINDOW     equ 512
+        ENDIF
+    ENDIF
 
         ORG CODE_START
 code_start:
@@ -48,36 +74,56 @@ entry:
         call im2_init
         call build_row_table
 
-        ld a,BLACK
-        call set_border
-        ld a,WATER_ATTR         ; the whole screen starts as open water
-        call cls
+        call rate_init
 
-        call draw_scenery       ; seabed colours and the first copy of the strips
-
-        ; The title is painted after the water, so its cells keep the
-        ; colours print_char writes. Row 0 is left as water: that is
-        ; where the stat overlay goes, and it is blank until asked for.
-        ld a,TITLE_ATTR
-        ld (text_attr),a
-        ld hl,str_title
-        ld bc,(2 << 8) | 12
-        call print_string
-
-        ld a,WATER_ATTR
-        ld (text_attr),a
-        ld hl,str_help
-        ld bc,(4 << 8) | 6
-        call print_string
-        ld hl,str_stats
-        ld bc,(5 << 8) | 4
-        call print_string
+        ; A measurement build, the timing border and the spare-scanline
+        ; sled start straight in the water. They would sit on the menu
+        ; forever, because nothing presses key 1 for them. The tape, and
+        ; the soak, open on the menu.
+    IFDEF SLACK_LINES
+        jp game_reset
+    ELSE
+    IFDEF TIMING_BARS
+        jp game_reset
+    ELSE
+    IFDEF SHOT_FRAME
+        jp game_reset
+    ELSE
+    IFDEF MEASURE
+        jp game_reset
+    ELSE
+        jp enter_menu
+    ENDIF
+    ENDIF
+    ENDIF
+    ENDIF
 
 ;------------------------------------------------------------------------------
-; main_loop - one pass per 50 Hz frame
+; main_loop - one step
+; At 50 frames a second that is one television frame. At 25 it is two:
+; the work runs, then the game waits for one more interrupt with the
+; picture held still.
 ;------------------------------------------------------------------------------
 main_loop:
+        ; The spare-scanline count already waited for the interrupt at
+        ; the end of the previous step. Clear the flag now, so this
+        ; step can see whether its own work runs past the next one.
+        ; The sled and the timing border keep the old wait instead:
+        ; the count would swallow the interrupt those builds are timing.
+    IFDEF SLACK_LINES
         call wait_frame
+    ELSE
+    IFDEF TIMING_BARS
+        call wait_frame
+    ELSE
+    IFDEF SHOT_FRAME
+        call wait_frame
+    ELSE
+        xor a
+        ld (vsync_flag),a
+    ENDIF
+    ENDIF
+    ENDIF
 
     IFDEF SLACK_LINES
         ; Not in the tape. Count loops against interrupts so a nop sled
@@ -148,10 +194,16 @@ SLACK_WARMUP    equ 0
     IFDEF SOAK
         call soak_begin         ; scripted keys / fish depth for this frame
     ENDIF
-        call stats_poll         ; Symbol Shift + S, edge-triggered
+        ; Before anything moves, so the whole step is one speed and a
+        ; return to the menu does not swim a frame on the way out.
+        call chords_poll        ; Symbol Shift with P, F or S. One read of Shift.
         call read_input
     IFDEF SOAK
         call soak_apply_input   ; the script wins over the real keyboard
+    ENDIF
+    IFDEF MEAS_DOWN
+        ld a,IN_DOWN
+        ld (input_state),a
     ENDIF
 
     IFDEF TIMING_BARS
@@ -183,11 +235,14 @@ SLACK_WARMUP    equ 0
 
         call fish_draw_fast
     IFNDEF NO_WHEEL
-        call wheel_draw         ; always above the seaweed, so always here
-        ; Ink while the beam is still in the top border, so the attribute
-        ; writes are not slowed by the display. The strip is only the cells
-        ; that changed, which is small enough to stay ahead of the copy.
+        ; Above the weed the ink is written while the beam is still in
+        ; the top border. A bomb that reaches the weed is drawn after
+        ; the seabed copy, or the copy would paint over it.
+        call wheel_is_low
+        jr nc,.wheel_later
+        call wheel_draw
         call wheel_colours
+.wheel_later:
     ENDIF
         ld a,(diver_y)
         add a,DIVER_HEIGHT - 1  ; his lowest pixel
@@ -200,6 +255,16 @@ SLACK_WARMUP    equ 0
         ; The wheel is included: it can bob up to y = 0.
         call stats_overlay_if_row0
 
+        ; 50: one pixel of ground, and one pixel of sand on every other
+        ; step. 25: the same real-time speed in one coarser step. The
+        ; sand moves one pixel either way (its speed is one pixel per
+        ; two television frames, which is exactly one pixel per 25-step).
+        ; The ground moves one pixel per television frame, so the 25-step
+        ; moves it twice.
+        ld a,(step_ticks)
+        cp 2
+        jr z,.scroll25
+
     IFDEF TIMING_BARS
         ld a,CYAN
         out (ULA_PORT),a
@@ -208,17 +273,7 @@ SLACK_WARMUP    equ 0
     IFDEF SOAK
         call soak_after_blit    ; the picture the next restore must match
     ENDIF
-
-        ld a,(diver_y)
-        add a,DIVER_HEIGHT - 1
-        cp BACK_ROW * 8
-        jr c,.diver_done        ; he was drawn with the fish
-    IFDEF TIMING_BARS
-        ld a,MAGENTA
-        out (ULA_PORT),a
-    ENDIF
-        call diver_draw_fast    ; feet on the seabed: photograph THIS ground
-.diver_done:
+        call draw_late
 
     IFDEF TIMING_BARS
         ld a,RED
@@ -226,19 +281,65 @@ SLACK_WARMUP    equ 0
     ENDIF
         call scroll_shift_ground
 
-        ; Slow layer: every other frame. The phase flips here, not inside
-        ; the shift, so the green border can be turned on only when the
-        ; rotate actually runs.
+        ; Phase 0 means the screen matches the slow buffer. Flipping it
+        ; and rotating only when the result is 1 leaves the buffer one
+        ; pixel ahead, which the next full copy shows.
         ld a,(slow_phase)
         xor 1
         ld (slow_phase),a
-        jr z,.slow_done
+        jr z,.scrolled
     IFDEF TIMING_BARS
         ld a,GREEN
         out (ULA_PORT),a
     ENDIF
         call scroll_shift_slow
-.slow_done:
+        jr .scrolled
+
+.scroll25:
+        ; Phase 0: the screen matches the buffer. Rotate one pixel, show
+        ; that picture, and leave them matching.
+        ; Phase 1: the buffer is already a pixel ahead (50 mode leaves it
+        ; that way on the odd frame). Show that pixel, then rotate one
+        ; more, so the buffer is a pixel ahead again. Either way the
+        ; screen advances one pixel, and switching back to 50 does not
+        ; skip a pixel or show the same one twice.
+        ld a,(slow_phase)
+        or a
+        jr nz,.phase1
+        call scroll_shift_slow
+        ld a,1
+        ld (slow_phase),a
+    IFDEF TIMING_BARS
+        ld a,CYAN
+        out (ULA_PORT),a
+    ENDIF
+        call scroll_blit
+        xor a
+        ld (slow_phase),a
+        jr .late25
+.phase1:
+    IFDEF TIMING_BARS
+        ld a,CYAN
+        out (ULA_PORT),a
+    ENDIF
+        call scroll_blit
+    IFDEF TIMING_BARS
+        ld a,GREEN
+        out (ULA_PORT),a
+    ENDIF
+        call scroll_shift_slow
+.late25:
+    IFDEF SOAK
+        call soak_after_blit
+    ENDIF
+        call draw_late
+    IFDEF TIMING_BARS
+        ld a,RED
+        out (ULA_PORT),a
+    ENDIF
+        call scroll_shift_ground
+        call scroll_shift_ground
+.scrolled:
 
     IFDEF TIMING_BARS
         ld a,YELLOW
@@ -260,8 +361,20 @@ SLACK_WARMUP    equ 0
         ; left the row. A sprite on row 0 was already handled above.
         call stats_overlay_if_clear
 
+        ; The diver and the fish move one pixel per call. A second call
+        ; is the second 1/50 second when the step stands for two. The
+        ; routines themselves are shared with the demo, so the second
+        ; step lives here and the demo's bytes stay put. The bomb applies
+        ; the step inside its own routine: calling it twice would count
+        ; the pause between bombs twice.
         call update_diver
         call update_fish
+        ld a,(step_ticks)
+        cp 2
+        jr nz,.moved
+        call update_diver
+        call update_fish
+.moved:
     IFNDEF NO_WHEEL
         call update_wheel
     ENDIF
@@ -300,7 +413,116 @@ SLACK_WARMUP    equ 0
         jr .shot_halt
 .shot_go:
     ENDIF
+        ; Not the sled, and not the timing border. Count the scanlines
+        ; left in this television frame. That wait IS the sync. At 25
+        ; frames a second, wait for one more interrupt with nothing moving.
+    IFNDEF SLACK_LINES
+    IFNDEF TIMING_BARS
+    IFNDEF SHOT_FRAME
+        call spare_count
+        ld a,(step_ticks)
+        cp 2
+        jr nz,.synced
+        call wait_frame
+.synced:
+    IFDEF MEASURE
+        ; The warmup is not counted. The window after it keeps the
+        ; smallest spare, because the sand-only copy is much cheaper
+        ; than the copy that also moves the weed. A single step can
+        ; land on the cheap one and look fine while the other misses.
+        ld hl,(meas_loops)
+        inc hl
+        ld (meas_loops),hl
+        ld de,MEAS_WARMUP
+        or a
+        sbc hl,de
+        jp c,.meas_go          ; still warming up
+        jr nz,.meas_sample
+        ld hl,(frame_count)    ; end of the warmup: the window starts now
+        ld (meas_base),hl
+        jp .meas_go
+.meas_sample:
+        ld a,(spare_lines)
+        ld b,a
+        ld a,(meas_min)
+        cp b
+        jr c,.meas_kept        ; the stored one is already smaller
+        ld a,b
+        ld (meas_min),a
+.meas_kept:
+        ; spare_late is set only when the work had already passed the
+        ; interrupt. A spare of 0 with this clear means the step still
+        ; finished inside the frame: no whole scanline was left, but it
+        ; did fit. The hex field printed as "zeros" is this late count.
+        ld a,(spare_late)
+        or a
+        jr z,.meas_notzero
+        ld hl,(meas_zeros)
+        inc hl
+        ld (meas_zeros),hl
+.meas_notzero:
+        ld hl,(meas_loops)
+        ld de,MEAS_WARMUP + MEAS_WINDOW
+        or a
+        sbc hl,de
+        jr nz,.meas_go
+        ld hl,(frame_count)
+        ld de,(meas_base)
+        or a
+        sbc hl,de
+        ld (meas_frames),hl
+        ; Printing is after the timed work, with interrupts off.
+        di
+        ; Row 2 is open water on this build: the title is not drawn
+        ; during play, and neither sprite reaches it. Row 10 is the
+        ; fish, and his pixels were being read as the digits.
+        ld a,(meas_min)
+        ld bc,(2 << 8) | 0
+        call print_hex8
+        ld hl,(meas_zeros)
+        ld bc,(2 << 8) | 2
+        call print_hex16
+        ld hl,(meas_frames)
+        ld bc,(2 << 8) | 7
+        call print_hex16
+        ld hl,(meas_loops)
+        ld bc,(2 << 8) | 12
+        call print_hex16
+        ld a,GREEN
+        out (ULA_PORT),a
+.meas_halt:
+        halt
+        jr .meas_halt
+.meas_go:
+    ENDIF
+    ENDIF
+    ENDIF
+    ENDIF
         jp main_loop
+
+;------------------------------------------------------------------------------
+; draw_late - the diver, and the bomb, when the seabed copy would cover them
+; The bomb that is still up in the water was drawn before the copy.
+; Corrupts: AF, BC, DE, HL, IX, IY
+;------------------------------------------------------------------------------
+draw_late:
+        ld a,(diver_y)
+        add a,DIVER_HEIGHT - 1
+        cp BACK_ROW * 8
+        jr c,.diver_done
+    IFDEF TIMING_BARS
+        ld a,MAGENTA
+        out (ULA_PORT),a
+    ENDIF
+        call diver_draw_fast
+.diver_done:
+    IFNDEF NO_WHEEL
+        call wheel_is_low
+        ret c
+        call wheel_draw
+        call wheel_colours
+    ENDIF
+        ret
 
 ;------------------------------------------------------------------------------
 ; Engine, then the Atlantis-only pieces, then the shared actors.
@@ -313,23 +535,17 @@ SLACK_WARMUP    equ 0
         INCLUDE "scenery.asm"
         INCLUDE "scroll.asm"
         INCLUDE "stats.asm"
+        INCLUDE "rate.asm"
         INCLUDE "wheel.asm"
         INCLUDE "../fish.asm"
         INCLUDE "../diver.asm"
         ; After the fish and the diver, so the wrappers can call their
         ; image-index routines. The demo does not include this file.
         INCLUDE "fastsprite.asm"
+        INCLUDE "menu.asm"
     IFDEF SOAK
         INCLUDE "soak.asm"
     ENDIF
-
-        INCLUDE "../../gfx/fish.asm"
-        INCLUDE "../../gfx/diver.asm"
-        INCLUDE "../../gfx/wheel.asm"
-
-str_title:      db "ATLANTIS",0
-str_help:       db "QAOP or 5678 to swim",0
-str_stats:      db "Symbol Shift + S: stats",0
 
     IFDEF SLACK_LINES
 slack_loops:    dw 0            ; loops since entry, including the warmup
@@ -340,11 +556,31 @@ slack_armed:    db 0
     IFDEF SHOT_FRAME
 shot_loops:     dw 0            ; main-loop passes, 1 on the first
     ENDIF
+    IFDEF MEASURE
+meas_loops:     dw 0
+meas_base:      dw 0            ; frame_count when the window opened
+meas_frames:    dw 0            ; interrupts across the window
+meas_min:       db 255          ; smallest spare in the window
+meas_zeros:     dw 0            ; steps in the window that missed the interrupt
+    ENDIF
 
 code_end:
 CODE_LENGTH     equ code_end - code_start
 
         DISPLAY "atlantis code_end ", code_end
+
+        ; Pictures, words and tables. Above the instructions, below the
+        ; scroll buffers. Loaded as the second CODE block on the tape.
+        ORG DATA_START
+data_start:
+        INCLUDE "data.asm"
+        INCLUDE "../../gfx/fish.asm"
+        INCLUDE "../../gfx/diver.asm"
+        INCLUDE "../../gfx/wheel.asm"
+data_end:
+DATA_LENGTH     equ data_end - data_start
+        DISPLAY "atlantis data_end ", data_end
+        DISPLAY "atlantis data bytes ", DATA_LENGTH
 
         ASSERT (ANIM_FRAMES & (ANIM_FRAMES - 1)) == 0, "ANIM_FRAMES must be a power of 2"
         ASSERT DIVER_ANIM_STEP == 4, "diver_image_index divides by 4 with two RRCAs"
@@ -355,19 +591,13 @@ CODE_LENGTH     equ code_end - code_start
         ASSERT WHEEL_WIDTH == 12
         ASSERT WHEEL_BYTES == 3, "the widest shift of the 12px wheel is 3 bytes"
         ASSERT WHEEL_HEIGHT == 12
-        ASSERT WHEEL_SPEED == 1, "the soak's frame numbers assume 1px/frame"
+        ASSERT WHEEL_SPEED == 1, "the soak's frame numbers assume 1px per 1/50 second"
         ASSERT WHEEL_GAP == 48, "the soak's frame numbers assume this pause"
-        ASSERT WHEEL_BOB == 6
-        ASSERT WHEEL_TOP_BASE == 6
-        ASSERT WHEEL_LOW_BASE == 150, "lowest base must sit one bob above the weed"
-        ASSERT WHEEL_LOW_BASE + WHEEL_BOB + WHEEL_HEIGHT <= BACK_ROW * 8, "wheel enters the seaweed"
-        ASSERT 36 >= WHEEL_TOP_BASE
-        ASSERT 70 >= WHEEL_TOP_BASE
-        ASSERT 100 <= WHEEL_LOW_BASE
-        ASSERT 120 <= WHEEL_LOW_BASE
-        ASSERT 50 <= WHEEL_LOW_BASE
-        ASSERT 24 >= WHEEL_TOP_BASE
-        ASSERT code_end <= ROW_TABLE, "code has run into the row table"
+        ASSERT WHEEL_BOB == 6, "the sine table is drawn for a swing of 6"
+        ASSERT WHEEL_TOP_BASE == CFG_WHEEL_BOB, "the surface spawn is one swing below the top"
+        ASSERT WHEEL_LOW_BASE + CFG_WHEEL_BOB + WHEEL_HEIGHT <= BACK_ROW * 8, "the lowest spawn enters the seaweed"
+        ASSERT code_end <= DATA_START, "instructions have run into the pictures"
+        ASSERT data_end <= SCROLL_BASE, "pictures have run into the scroll buffers"
         ASSERT SCROLL_BUF_END <= ROW_TABLE, "scroll buffers run into the row table"
         ASSERT (SCROLL_BASE & 255) == 0, "shift_one_row uses DEC L, so a row must not cross a page"
         ASSERT (BACK_BUF & 31) == 0, "each slow row must be 32-byte aligned"
@@ -383,19 +613,11 @@ CODE_LENGTH     equ code_end - code_start
         ASSERT FISH_SWIM_Y == 76, "the fish stays at the demo's depth"
         ASSERT FISH_SWIM_Y + FISH_HEIGHT <= BACK_ROW * 8, "the fish reaches the seabed; it is drawn before the blit"
         ASSERT BORDER_FRAMES == 8, "the rrca x3 above assumes BORDER_FRAMES = 8"
-        ; The spare-scanline build plants a nop sled after this, so that
-        ; build is allowed past $C000. The soak build includes the
-        ; checker, which is not on the tape, and that checker sits past
-        ; $C000 as well. On a 48K the bytes there are not slowed by the
-        ; display, so a nop is still 4 T-states. The tape itself stays
-        ; at or below $C000. The row table at $FA00 is still the hard
-        ; stop, and that assert is above.
-    IFNDEF SLACK_LINES
-    IFNDEF SOAK
-        ASSERT code_end <= $C000, "engine code has outgrown $8000-$BFFF"
-    ENDIF
-    ENDIF
     IFDEF SOAK
+        ASSERT CFG_START_RATE == 50, "the soak starts at 50 frames a second"
+        ASSERT CFG_WHEEL_WOBBLE == 0, "the soak expects a smooth bob"
+        ASSERT CFG_WHEEL_BOB == 6, "the soak expects a swing of 6"
+        ASSERT CFG_WHEEL_BOB_SPEED == 1, "the soak expects one sine step per frame"
         ASSERT SOAK_BUF_END <= ROW_TABLE, "soak photographs run into the row table"
     ENDIF
 
@@ -405,10 +627,13 @@ CODE_LENGTH     equ code_end - code_start
     IFNDEF SOAK
     IFNDEF SLACK_LINES
     IFNDEF SHOT_FRAME
+    IFNDEF MEASURE
         EMPTYTAP "build/atlantis.tap"
         SAVETAP  "build/atlantis.tap", BASIC, "atlantis", basic_start, BASIC_LENGTH, 10
         SAVETAP  "build/atlantis.tap", CODE, "atlantc", code_start, CODE_LENGTH
+        SAVETAP  "build/atlantis.tap", CODE, "atlantd", data_start, DATA_LENGTH
         SAVESNA  "build/atlantis.sna", entry
+    ENDIF
     ENDIF
     ENDIF
     ENDIF
@@ -425,4 +650,7 @@ CODE_LENGTH     equ code_end - code_start
     ENDIF
     IFDEF SHOT_FRAME
         SAVESNA "build/atlantis-shot.sna", entry
+    ENDIF
+    IFDEF MEASURE
+        SAVESNA "build/atlantis-measure.sna", entry
     ENDIF
