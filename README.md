@@ -37,6 +37,12 @@ The tape opens on a start screen: `1` starts the game, `2` swaps between
 50 and 25 frames a second. The choice is kept when you come back to the
 menu.
 
+The diver has three lives (`CFG_LIVES` in `src/atlantis/config.asm`). A
+wheel bomb that touches him costs one: the bomb vanishes and the border
+flashes red. The hit boxes are a little smaller than the pictures, so a
+graze of the flippers or the rim does not count. After the last life
+the game goes back to the menu, which says GAME OVER.
+
 The three Symbol Shift chords fire once, the moment both keys go down.
 Holding them does not repeat, and the letter on its own does nothing.
 
@@ -44,12 +50,12 @@ Symbol Shift + S toggles the stat line on row 0. It is off at the start.
 While it is hidden, that row is water again. It reads
 
 ```
-scan 12 50/s x 160 y 090 f 65535
+scan 12 50/s x160 y090 L3 f65535
 ```
 
 `scan` is the number of scanlines left over after the last step (99 at
-most), `50/s` the speed, `x` and `y` the diver in pixels, and `f` the
-television frames since the game started. The digits are reprinted every
+most), `50/s` the speed, `x` and `y` the diver in pixels, `L` the lives
+left, and `f` the television frames since the game started. The digits are reprinted every
 eight steps.
 
 All sources are merged into one byte, `000FUDLR` (same layout as Kempston),
@@ -73,6 +79,7 @@ src/atlantis/scenery.asm water, sand and ground colours
 src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
 src/atlantis/stats.asm   the row-0 stat line, Symbol Shift + S
 src/atlantis/wheel.asm   the wheel bomb: drift, bob, spin, one at a time
+src/atlantis/hit.asm     the bomb against the diver, and the lives
 src/atlantis/fastsprite.asm  the faster sprite walker the game uses (not the demo)
 src/atlantis/soak.asm    the background-restore check, only with -DSOAK
 src/main.asm             Engine Demo 1 entry and loop
@@ -106,9 +113,9 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
 Atlantis memory: the tape has two code blocks. The instructions are at
-`$8000-$A06B` (`code_end` is `$A06C`, 8,300 bytes) and must stay below
-`$C000`. The pictures, menu words and tables are at `$C000-$E65E`
-(9,823 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+`$8000-$A101` (`code_end` is `$A102`, 8,450 bytes) and must stay below
+`$C000`. The pictures, menu words and tables are at `$C000-$E668`
+(9,833 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
 A build prints both ends (`atlantis code_end`, `atlantis data_end`), and
 the `ASSERT`s at the end of `src/atlantis/main.asm` stop it if a block
 runs into the next. The wheel bomb is 12 by 12. A shifted row is 2 bytes for shifts 0 to 4

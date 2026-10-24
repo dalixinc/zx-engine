@@ -27,6 +27,16 @@ CFG_DIVER_MAX_X     equ 160
 ; switches it during play. Only 50 and 25 are allowed.
 CFG_START_RATE      equ 50
 
+; --- Lives ---------------------------------------------------------------------
+; How many times the wheel bomb can hit the diver. The last hit ends the
+; game and the menu says GAME OVER. 1 to 9: the stat line has one digit.
+CFG_LIVES           equ 3
+
+; After a hit the border flashes red and black for this many game
+; steps. 32 is about two thirds of a second at 50 frames a second, and
+; twice that at 25. 0 turns the flash off.
+CFG_HIT_FLASH       equ 32
+
 ; --- The wheel bomb, the first enemy type ------------------------------------
 ; Bob height: how many pixels the bomb swings above its middle, and the
 ; same number below. 6 is a gentle bob. A bigger number is a taller swing.

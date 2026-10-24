@@ -348,11 +348,25 @@ SLACK_WARMUP    equ 0
     IFNDEF SOAK
         ; Heartbeat. The digits are hidden by default, so the border is
         ; what shows the frame loop is alive. rrca x3 is / BORDER_FRAMES.
-        ld hl,(frame_count)
+        ; After a hit, hit_flash counts down and the border flashes red
+        ; and black instead, four steps each. With no flash this costs
+        ; 29 T-states more than the heartbeat did.
+        ld a,(hit_flash)
+        or a
+        jr z,.beat
+        dec a
+        ld (hit_flash),a
+        and 4
+        ld a,RED
+        jr nz,.border
+        xor a                   ; BLACK
+        jr .border
+.beat:  ld hl,(frame_count)
         ld a,l
         rrca
         rrca
         rrca
+.border:
         call set_border
     ENDIF
     ENDIF
@@ -377,6 +391,12 @@ SLACK_WARMUP    equ 0
 .moved:
     IFNDEF NO_WHEEL
         call update_wheel
+    IFNDEF SOAK
+        ; After everything has moved. The last life goes to the menu
+        ; from here, where no call is waiting to return.
+        call hit_check
+        jp c,game_over
+    ENDIF
     ENDIF
     IFDEF SOAK
         call soak_after_update
@@ -537,6 +557,7 @@ draw_late:
         INCLUDE "stats.asm"
         INCLUDE "rate.asm"
         INCLUDE "wheel.asm"
+        INCLUDE "hit.asm"
         INCLUDE "../fish.asm"
         INCLUDE "../diver.asm"
         ; After the fish and the diver, so the wrappers can call their
@@ -612,6 +633,8 @@ DATA_LENGTH     equ data_end - data_start
         ASSERT DIVER_MIN_Y == 0, "he is allowed up onto row 0"
         ASSERT FISH_SWIM_Y == 76, "the fish stays at the demo's depth"
         ASSERT FISH_SWIM_Y + FISH_HEIGHT <= BACK_ROW * 8, "the fish reaches the seabed; it is drawn before the blit"
+        ASSERT CFG_LIVES >= 1 && CFG_LIVES <= 9, "the stat line has one digit for the lives"
+        ASSERT HIT_X_SPAN > 0 && HIT_Y_SPAN > 0, "a hit box has no size"
         ASSERT BORDER_FRAMES == 8, "the rrca x3 above assumes BORDER_FRAMES = 8"
     IFDEF SOAK
         ASSERT CFG_START_RATE == 50, "the soak starts at 50 frames a second"

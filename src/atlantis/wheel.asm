@@ -223,11 +223,7 @@ wheel_drift:
         ld a,h
         or l
         ret nz                  ; still a pixel on the screen, or more
-.leave: xor a
-        ld (wheel_phase),a
-        ld a,WHEEL_GAP
-        ld (wheel_delay),a
-        ret
+.leave: jp wheel_remove
 
 .waiting:
         ; Subtract the whole step. A delay of 1 at 50, or 2 at 25, is the
@@ -253,6 +249,21 @@ wheel_drift:
         call wheel_place
         ld a,WHEEL_FLY
         ld (wheel_phase),a
+        ret
+
+;------------------------------------------------------------------------------
+; wheel_remove - this bomb is over: start the pause before the next one
+; Used when it leaves through the left edge, and when it hits the diver.
+; Nothing is wiped here. The next wheel_draw sees the pause, the restore
+; before it has already put the last photograph back, and
+; wheel_colours_clear gives the cells back their own colour.
+; Corrupts: AF
+;------------------------------------------------------------------------------
+wheel_remove:
+        xor a
+        ld (wheel_phase),a
+        ld a,WHEEL_GAP
+        ld (wheel_delay),a
         ret
 
 ;------------------------------------------------------------------------------

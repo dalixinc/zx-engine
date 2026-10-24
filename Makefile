@@ -30,7 +30,7 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/config.asm src/atlantis/data.asm \
              src/atlantis/scenery.asm src/atlantis/scroll.asm \
              src/atlantis/stats.asm src/atlantis/rate.asm \
-             src/atlantis/menu.asm src/atlantis/wheel.asm \
+             src/atlantis/menu.asm src/atlantis/wheel.asm src/atlantis/hit.asm \
              src/atlantis/fastsprite.asm \
              src/atlantis/soak.asm $(SHARED)
 

@@ -20,6 +20,7 @@ str_ctrl_stats: db "Symbol Shift + S  stats",0
 str_ctrl_speed: db "Symbol Shift + F  speed",0
 str_ctrl_menu:  db "Symbol Shift + P  menu",0
 str_opt_start:  db "1  Start game",0
+str_game_over:  db "GAME OVER",0
 
 ; The speed line is one of these two. They are the same length, so
 ; reprinting one on top of the other does not leave a stray letter.
@@ -31,10 +32,12 @@ str_rate25:     db "2  25 frames a second",0
 ;   scan   spare scanlines in the last frame (two digits)
 ;   50/s   the speed, 50 or 25 frames a second
 ;   x y    the diver, in pixels
+;   L      lives left
 ;   f      the television frame counter
-; The digits are written over the zeros. The words stay put.
+; The digits are written over the zeros. The words stay put. The x and
+; y digits sit against their letters, to make room for the lives.
 stats_template:
-        db "scan 00 50/s x 000 y 000 f 00000"
+        db "scan 00 50/s x000 y000 L0 f00000"
 STATS_TEMPLATE_LEN equ $ - stats_template
         ASSERT STATS_TEMPLATE_LEN == 32, "the stat line has to be one row"
 
