@@ -141,6 +141,13 @@ make input-test   # headless key presses of the DEMO (it reads row 22)
 make sprite-test  # headless diver + fish test of the DEMO, shots build/diver-*.png
 ```
 
+Fuse opens in a small window. Scale it with a graphics filter, for example
+`make run EMU="fuse -g 3x"`. `-g` is short for `--graphics-filter`, and the
+choices include 2x, 3x, 4x, hq3x and advmame3x. To make that permanent, add
+`export EMU="fuse -g 3x"` to `~/.bashrc`, or set the filter in Fuse's Options
+menu and choose Options > Save, which writes `~/.fuserc`. `--full-screen`
+works only with the SDL build (`fuse-sdl`).
+
 ## Set up on Windows
 
 1. **Assembler.** Download `sjasmplus-1.24.0.win.zip` from
