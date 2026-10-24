@@ -35,13 +35,23 @@ import sys
 
 
 
-def load_frames(path):
-    """Read the art: returns a list of frames, each a list of row strings."""
+def load_art(path):
+    """Read the art.
+
+    Returns (frames, mirror). frames is a list of frames, each a list of
+    row strings. mirror is False when the file says "mirror off": the
+    wheel bomb's T must not be flipped, so it has no left-facing copy.
+    Anything else (the fish, the diver) is mirrored, as before.
+    """
     frames, cur = [], None
     width = None
+    mirror = True
     for line in open(path):
         line = line.rstrip("\n")
         if not line or line.startswith(";"):
+            continue
+        if line.strip() == "mirror off":
+            mirror = False
             continue
         if line.startswith("frame"):
             cur = []
@@ -57,6 +67,12 @@ def load_frames(path):
     heights = {len(f) for f in frames}
     if len(heights) != 1:
         sys.exit("all frames must have the same height")
+    return frames, mirror
+
+
+def load_frames(path):
+    """Frames only. tools/make-diver-montage.py imports this."""
+    frames, _mirror = load_art(path)
     return frames
 
 
@@ -87,11 +103,16 @@ def shifted_row(row, shift):
 
 def main():
     src, dst, name = sys.argv[1], sys.argv[2], sys.argv[3]
-    frames = load_frames(src)
+    frames, mirror = load_art(src)
     height = len(frames[0])
     width = len(frames[0][0])
     nbytes = width // 8 + 1
-    facings = [("right", frames), ("left", [[r[::-1] for r in f] for f in frames])]
+    if mirror:
+        facings = [("right", frames),
+                   ("left", [[r[::-1] for r in f] for f in frames])]
+    else:
+        # One facing. Index in the image table is just the frame number.
+        facings = [("right", frames)]
 
     out = []
     w = out.append

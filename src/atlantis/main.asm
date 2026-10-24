@@ -8,13 +8,14 @@
 ; Assemble with -DTIMING_BARS for build/atlantis-timing.sna. The border is
 ; a clock for that build:
 ;   white    restore, wipe the overlay if a sprite is on row 0, draw
-;            sprites that are still above the seabed
+;            sprites that are still above the seabed (fish, wheel bomb,
+;            and the diver while he is up in the water)
 ;   cyan     copy the seabed. The full-copy frame also repaints the weed
 ;            colours here, before the beam reaches that row.
 ;   magenta  the diver, if his feet are on the seabed
 ;   red      rotate the ground buffer (every frame)
 ;   green    rotate the slow buffer. Absent on the frames it does not move.
-;   yellow   stat overlay, then move the diver and the fish
+;   yellow   stat overlay, then move the diver, the fish and the wheel bomb
 ;   black    this frame's work is done
 ; A frame with no green band is the one that shows a new sand position:
 ; it copies all 16 slow rows and recolours the weed. The green frame
@@ -158,8 +159,12 @@ SLACK_WARMUP    equ 0
         out (ULA_PORT),a
     ENDIF
         ; Restore first, while the screen still matches the photographs.
-        ; Draw order is fish, then diver, so restore is diver, then fish.
+        ; Draw order is fish, wheel, diver (back to front), so restore is
+        ; the reverse: diver, wheel, fish. The wheel is drawn after the
+        ; fish, so where they overlap its photograph contains the fish
+        ; and has to be put back before the fish's is.
         call diver_restore
+        call wheel_restore
         call fish_restore
         call stats_prepare      ; drop the digits if a sprite is about to
                                 ; photograph row 0. Otherwise leave them:
@@ -169,14 +174,16 @@ SLACK_WARMUP    equ 0
     ENDIF
 
         call fish_draw
+        call wheel_draw         ; always above the seaweed, so always here
         ld a,(diver_y)
         add a,DIVER_HEIGHT - 1  ; his lowest pixel
         cp BACK_ROW * 8         ; seabed starts at row 21
         jr nc,.low
         call diver_draw         ; still in open water: the copy will not touch him
 .low:
-        ; If he (or the fish) is on row 0, the digits go back on top now,
+        ; If a sprite is on row 0, the digits go back on top now,
         ; after the photograph and before we spend the frame on the seabed.
+        ; The wheel is included: it can bob up to y = 0.
         call stats_overlay_if_row0
 
     IFDEF TIMING_BARS
@@ -241,6 +248,7 @@ SLACK_WARMUP    equ 0
 
         call update_diver
         call update_fish
+        call update_wheel
     IFDEF SOAK
         call soak_after_update
     ENDIF
@@ -258,6 +266,22 @@ SLACK_WARMUP    equ 0
         edup
         edup
     ENDIF
+    IFDEF SHOT_FRAME
+        ; Not the tape. Halt at the end of one frame so a screenshot can
+        ; catch the wheel at a known x. The draw for this frame has
+        ; already happened; SHOT_FRAME is the frame_count (1 on the
+        ; first loop).
+        ld hl,(frame_count)
+        ld de,SHOT_FRAME
+        or a
+        sbc hl,de
+        jr nz,.shot_go
+        di
+.shot_halt:
+        halt
+        jr .shot_halt
+.shot_go:
+    ENDIF
         jp main_loop
 
 ;------------------------------------------------------------------------------
@@ -271,6 +295,7 @@ SLACK_WARMUP    equ 0
         INCLUDE "scenery.asm"
         INCLUDE "scroll.asm"
         INCLUDE "stats.asm"
+        INCLUDE "wheel.asm"
         INCLUDE "../fish.asm"
         INCLUDE "../diver.asm"
     IFDEF SOAK
@@ -279,6 +304,7 @@ SLACK_WARMUP    equ 0
 
         INCLUDE "../../gfx/fish.asm"
         INCLUDE "../../gfx/diver.asm"
+        INCLUDE "../../gfx/wheel.asm"
 
 str_title:      db "ATLANTIS",0
 str_help:       db "QAOP or 5678 to swim",0
@@ -300,6 +326,22 @@ CODE_LENGTH     equ code_end - code_start
         ASSERT DIVER_ANIM_STEP == 4, "diver_image_index divides by 4 with two RRCAs"
         ASSERT DIVER_FRAMES == 3, "diver_image_index multiplies facing by 3"
         ASSERT FISH_FRAMES == 2, "fish_image_index multiplies facing by 2"
+        ASSERT WHEEL_FRAMES == 4, "wheel_drift masks the frame with 3"
+        ASSERT (WHEEL_FRAMES & (WHEEL_FRAMES - 1)) == 0, "wheel frame mask"
+        ASSERT WHEEL_BYTES == 3, "a 16px sprite shifts to 3 bytes"
+        ASSERT WHEEL_HEIGHT == 16
+        ASSERT WHEEL_SPEED == 1, "the soak's frame numbers assume 1px/frame"
+        ASSERT WHEEL_GAP == 48, "the soak's frame numbers assume this pause"
+        ASSERT WHEEL_BOB == 6
+        ASSERT WHEEL_TOP_BASE == 6
+        ASSERT WHEEL_LOW_BASE == 146, "lowest base must sit one bob above the weed"
+        ASSERT WHEEL_LOW_BASE + WHEEL_BOB + WHEEL_HEIGHT <= BACK_ROW * 8, "wheel enters the seaweed"
+        ASSERT 36 >= WHEEL_TOP_BASE
+        ASSERT 70 >= WHEEL_TOP_BASE
+        ASSERT 100 <= WHEEL_LOW_BASE
+        ASSERT 120 <= WHEEL_LOW_BASE
+        ASSERT 50 <= WHEEL_LOW_BASE
+        ASSERT 24 >= WHEEL_TOP_BASE
         ASSERT code_end <= ROW_TABLE, "code has run into the row table"
         ASSERT SCROLL_BUF_END <= ROW_TABLE, "scroll buffers run into the row table"
         ASSERT (SCROLL_BASE & 255) == 0, "shift_one_row uses DEC L, so a row must not cross a page"
@@ -323,10 +365,12 @@ CODE_LENGTH     equ code_end - code_start
     IFNDEF TIMING_BARS
     IFNDEF SOAK
     IFNDEF SLACK_LINES
+    IFNDEF SHOT_FRAME
         EMPTYTAP "build/atlantis.tap"
         SAVETAP  "build/atlantis.tap", BASIC, "atlantis", basic_start, BASIC_LENGTH, 10
         SAVETAP  "build/atlantis.tap", CODE, "atlantc", code_start, CODE_LENGTH
         SAVESNA  "build/atlantis.sna", entry
+    ENDIF
     ENDIF
     ENDIF
     ENDIF
@@ -339,4 +383,7 @@ CODE_LENGTH     equ code_end - code_start
     ENDIF
     IFDEF SLACK_LINES
         SAVESNA "build/atlantis-slack.sna", entry
+    ENDIF
+    IFDEF SHOT_FRAME
+        SAVESNA "build/atlantis-shot.sna", entry
     ENDIF

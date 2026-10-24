@@ -311,29 +311,84 @@ the beam is always behind you (the "chase the beam" trick).
 
 ---
 
-## 6. Clipping (for now)
+## 6. Clipping
 
 `update_diver` clamps the diver to the play area: x 0-231, and y from the
-top of the water (56) down to one pixel above the near silhouette.
+top of the water down to one pixel above the ground.
 `clamp_to_terrain` reads the height of every near column under his 24
 pixels and lifts him when a hill scrolls underneath. The right limit is
 `256 - bytes*8 + 7`: at that x all
 bytes of a shifted row still land on the same screen line (diver: column
 28 + 3 = 31; fish, 3 bytes: x 239, column 29 + 2 = 31). Pushing a direction
 against an edge still counts as "moving", so he kicks against the wall.
-Partial clipping, where a sprite slides off the edge of the screen and is
-only part drawn, needs per-row byte counts. The ground scrolls under him;
-he himself stays on the screen. Enemies entering from the edge will need
-that clipping.
+The fish uses the same kind of limit and turns round there. Both of them,
+and Engine Demo 1, call `sprite_set_pos` / `sprite_draw`, which still
+require the whole sprite on the screen.
+
+### Sliding off the edge
+
+A wheel bomb has to enter from the right and leave through the left, a
+pixel at a time, so part of it is off the screen for a while. That is
+`sprite_set_pos_x` and `sprite_draw_clip` in `src/sprite.asm`. They are
+assembled only when `ATLANTIS` is defined. The demo does not define it,
+the routines above those two are unchanged, and `build/diver.tap` is the
+same file it was at tag `engine-demo-1`.
+
+x is a signed 16-bit pixel. Negative means "this many pixels past the
+left", 256 and above means "not yet on the right". The pre-shifted copies
+are the same ones as before. The copy is still chosen by the low 3 bits
+of x, and the column is still floor(x / 8), only now that divide keeps
+the sign (three `SRA`/`RR` pairs). So x = -1 is column -1, shift 7, which
+is the copy whose first pixel sits in the right-hand bit of the first
+byte: one pixel off the left, the rest on screen.
+
+Bytes that would land in a column below 0 or past 31 are not written.
+`spr_col` and `spr_bytes` are set to the visible column and the visible
+count, and `sprite_save_bg` stores those in the background record. Restore
+is the ordinary routine. It puts back exactly the bytes that were saved,
+so a half-drawn sprite does not wrap onto the next screen line and does
+not leave a copy of itself behind. When the sprite is completely off
+screen, `spr_hidden` is set. The caller skips the save and the draw and
+clears `BG_VALID`. The restore at the start of the frame has already
+erased the old position; leaving the flag set would paint that old
+photograph a second time.
+
+If the sprite is fully on screen, `sprite_draw_clip` jumps straight to
+`sprite_draw`. The test is about 70 T-states, a third of a scanline, and
+the byte loop is the original one. While it is actually clipped, each row
+adds the hidden image bytes onto HL so the next row starts in the right
+place:
+
+```
+ld a,(spr_gap2)   ; 13
+add a,l           ;  4
+ld l,a            ;  4
+jr nc             ; 12, or 7 when the add crosses a 256-byte boundary
+inc h             ;  4, only on that cross
+```
+
+33 T-states on a normal row. A 16-row sprite pays 16 × 33 = 528
+T-states, 528 / 224 = 2.4 scanlines, and the byte loop is shorter by
+every byte that is off screen (one masked byte is about 57 T-states).
+Skipping the hidden bytes is cheaper than the other approach, an
+off-screen margin: that would draw the whole sprite into a wider buffer
+and then copy the visible part, so the hidden bytes would still be
+drawn.
+
+Vertical clipping is not done. Callers keep y on the screen. A sprite
+wider than the screen, clipped on the left and the right at the same
+time, is not handled either. Nothing in the game is that wide.
 
 ---
 
 ## Changing the art
 
-Edit `gfx/fish.txt` or `gfx/diver.txt` (`#` ink, `-` paper, `.`
-transparent; frames separated by `frame` lines; `;` starts a comment),
-then run `make`. With no `make`, run e.g.
-`python3 tools/gfx2asm.py gfx/diver.txt gfx/diver.asm diver` and then
+Edit `gfx/fish.txt`, `gfx/diver.txt` or `gfx/wheel.txt` (`#` ink, `-` paper,
+`.` transparent; frames separated by `frame` lines; `;` starts a comment),
+then run `make`. A line that says `mirror off` skips the left-facing copy.
+The wheel bomb uses that, because its T must not be mirrored. The fish
+and the diver do not, so they still get both facings. With no `make`, run
+e.g. `python3 tools/gfx2asm.py gfx/diver.txt gfx/diver.asm diver` and then
 `build.bat`.
 
 ## Making a sprite wider

@@ -1,0 +1,119 @@
+; wheel.txt - the Trigon wheel bomb, 16x16, drawn as a PLACEHOLDER.
+;
+;   #  = ink pixel       (the rim, the legs, and the T)
+;   -  = paper pixel     (the hub: solid, so the T stays readable when
+;                         the bomb passes over the diver or the fish)
+;   .  = transparent     (the sea shows through, outside the wheel)
+;
+; Edit any row. Every frame must stay 16 characters wide and 16 rows
+; tall, using only those three characters. Blank lines and lines that
+; start with ; are comments. Then run make (it calls tools/gfx2asm.py).
+;
+; mirror off
+;   The fish and the diver are mirrored to face left. This sprite is
+;   not: the T has to stay a T, not a backwards one. Only the legs
+;   change from frame to frame.
+;
+; What is fixed in every frame
+;   The rim, the blue hub, and the Trigon mark. The mark is a serif
+;   capital T, the same in all four frames:
+;       ######      top bar
+;       # ## #      a one-pixel serif dropping from each end, and the
+;         ##        stem (two pixels wide, so it sits on the centre)
+;         ##
+;         ##
+;        ####       foot serif
+;   On the 16x16 grid the bar is columns 5-10 of row 5, the dropped
+;   serifs are row 6 columns 5 and 10, the stem is columns 7-8 of rows
+;   6-9, and the foot is row 10 columns 6-9. Columns and rows count
+;   from 0 at the top left.
+;
+; What rotates
+;   The legs around the rim, 90 degrees counter-clockwise each frame.
+;   That is the way a wheel turns when it rolls to the left. Four
+;   frames, not eight: the other four would be the diagonal positions,
+;   and eight frames of this sprite are 6144 bytes, which would push
+;   the program past $C000 into contended RAM. Ninety degrees is the
+;   smallest step that still lands on whole pixels and fits. One leg
+;   is a wide block (the tread); the other three are short, and there
+;   is a one-pixel nub on each diagonal. Watching the wide block go
+;   up -> left -> down -> right is the spin. A symmetric plus-sign
+;   would look the same after a quarter turn.
+;
+;   There is only one pixel of margin at the middle of each edge, so
+;   the legs are short. A bigger wheel would need a bigger sprite.
+;
+; Frame 0  wide leg up
+; Frame 1  wide leg to the left
+; Frame 2  wide leg down
+; Frame 3  wide leg to the right
+;
+mirror off
+frame 0  wide leg up
+......####......
+......####......
+.....######.....
+..###------###..
+..#----------#..
+..#--######--#..
+.#---#-##-#---#.
+##-----##-----##
+##-----##-----##
+.#-----##-----#.
+..#---####---#..
+..#----------#..
+..###------###..
+.....######.....
+.......##.......
+.......##.......
+frame 1  wide leg left
+.......##.......
+................
+...#.######.#...
+...##------##...
+..#----------#..
+..#--######--#..
+##---#-##-#---#.
+##-----##-----##
+##-----##-----##
+##-----##-----#.
+..#---####---#..
+..#----------#..
+...##------##...
+...#.######.#...
+................
+.......##.......
+frame 2  wide leg down
+.......##.......
+.......##.......
+.....######.....
+..###------###..
+..#----------#..
+..#--######--#..
+.#---#-##-#---#.
+##-----##-----##
+##-----##-----##
+.#-----##-----#.
+..#---####---#..
+..#----------#..
+..###------###..
+.....######.....
+......####......
+......####......
+frame 3  wide leg right
+.......##.......
+................
+...#.######.#...
+...##------##...
+..#----------#..
+..#--######--#..
+.#---#-##-#---##
+##-----##-----##
+##-----##-----##
+.#-----##-----##
+..#---####---#..
+..#----------#..
+...##------##...
+...#.######.#...
+................
+.......##.......

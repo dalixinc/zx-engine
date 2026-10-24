@@ -653,11 +653,12 @@ the frame, which is when the beam is there.
 wait_frame
 stats_poll                ; Symbol Shift + S, rising edge
 read the keys
-diver_restore, fish_restore
+diver_restore, wheel_restore, fish_restore
 if a sprite is on row 0 and the digits are up: wipe the digits
 fish_draw
+wheel_draw                ; always above the seaweed
 if the diver's feet are still above row 21: diver_draw
-if a sprite is on row 0: draw the digits on top of him
+if a sprite is on row 0: draw the digits on top
 scroll_blit
     show frame:    16 slow rows, weed colours, silo tops, ground
     prepare frame: sand only, silo tops, ground
@@ -665,13 +666,15 @@ if his feet are on the seabed: diver_draw
 scroll_shift_ground       ; every frame
 if this was a prepare frame: scroll_shift_slow
 if no sprite is on row 0: erase and redraw the digits
-move the diver, move the fish
+move the diver, move the fish, move the wheel
 ```
 
 The copy still happens after the restore, for the same reason as the
 demo. A sprite on the seabed is saved after the copy. The fish is above
-the seabed (pixel 76, height 9, seabed at 168), so he is always drawn
-before it.
+the seabed (pixel 76, height 9, seabed at 168), and so is the wheel
+bomb, so both are drawn before it. Draw order is fish, wheel, diver.
+Restore is the reverse, so a photograph that contains another sprite
+is put back before that sprite's own photograph.
 
 ## Silos, for later
 
@@ -701,12 +704,12 @@ column was already a silo.
 
 | colour  | what it covers |
 |---------|----------------|
-| white   | restore, wipe the overlay if a sprite is on row 0, draw sprites that are still above the seabed |
+| white   | restore, wipe the overlay if a sprite is on row 0, draw the fish, the wheel bomb, and the diver if he is still above the seabed |
 | cyan    | copy the seabed and stamp the silo tops. The show frame (no green band) also copies the weed and recolours it. The prepare frame only recopies the sand |
 | magenta | the diver, if his feet are on the seabed. Absent while he is up in the water: he was drawn in the white band |
 | red     | rotate the ground buffer, every frame |
 | green   | rotate the slow buffer. This is the prepare frame. Absent on the show frame, which is the one that just copied the new sand |
-| yellow  | the overlay (when it is on), then move both sprites |
+| yellow  | the overlay (when it is on), then move the diver, the fish and the wheel |
 | black   | this frame's work is done |
 
 The spare time was measured the same way as the demo: a nop sled after
@@ -715,13 +718,20 @@ frame counter checked against a counter in the loop. The build is not
 the tape (`-DSLACK_LINES=n`). One extra interrupt in that window turns
 the border red and prints the extra count.
 
-With the digits off and the diver in open water, a sled of 9 scanlines
-(56 NOPs each) dropped nothing in 512 loops: green border, count
-`0000`. A sled of 10 dropped 8 of those 512. Held on the seabed, where
-his draw happens after the copy instead of before it, a sled of 7
-still dropped nothing, and a sled of 8 dropped 1 of 512. Seven
-scanlines is the spare on the heavier of those two. The demo's
-heaviest frame finished about 1 scanline before the interrupt.
+Before the wheel bomb, with the digits off and the diver in open water,
+a sled of 9 scanlines (56 NOPs each) dropped nothing in 512 loops:
+green border, count `0000`. A sled of 10 dropped 8 of those 512. Held
+on the seabed, where his draw happens after the copy instead of before
+it, a sled of 7 still dropped nothing, and a sled of 8 dropped 1 of
+512. Seven scanlines was the spare on the heavier of those two. The
+demo's heaviest frame finished about 1 scanline before the interrupt.
+
+The wheel bomb is another 16×16 masked sprite (save, restore and draw,
+every frame it is on screen). The same sled, with the bomb on screen,
+is reported with the bomb's own notes below. Clipping itself is cheap
+on that path: a fully visible bomb uses the original draw loop, and the
+test that decides so is about 70 T-states. The cost that matters is
+the sprite, not the edge test.
 
 The digits are off in that measurement, which is the normal game. Drawing
 them adds the sixteen hex digits and the seven letters. That is the
@@ -734,22 +744,28 @@ heavy path unless the overlay has been turned on.
 the tape. For 1024 frames it scripts the dive: Up until he is on row 0,
 Symbol Shift + S on, held, off, a plain S that must not toggle, on and
 off again while the fish is parked on row 0, then Down for the rest so
-he rides the sand and at least one silo. After every restore it checks
-that the open water is blank (title rows apart, and row 0 when the
-digits are meant to be up and no sprite is covering them), that rows
-21-23 match the previous copy, that a sprite on row 0 photographed
-water, that his feet are not inside the black, and that the weed
-colours match the weed pixels. Green border and `OK` means all of that
-happened. Red border, `FAIL`, a reason byte and the frame number means
-it stopped at the first miss. The reasons are listed at the top of
-`src/atlantis/soak.asm`. The checks walk the whole screen, so this
-snapshot runs slower than the game; give it a couple of minutes.
+he rides the sand and at least one silo. The wheel bomb flies through
+that on its own. Around frame 650 it is at the surface and the chord
+is pressed twice more, so the digits sit on it. After every restore it
+checks that the open water is blank (title rows apart, and row 0 when
+the digits are meant to be up and no sprite is covering them), that
+rows 21-23 match the previous copy, that a sprite on row 0 photographed
+water, that the title and the help lines still match the first frame,
+that his feet are not inside the black, and that the weed colours match
+the weed pixels. At the end it also requires that the bomb was seen
+clipped on the right, clipped on the left, overlapping the fish,
+overlapping the diver, and on row 0 with the digits on. Green border
+and `OK` means all of that happened. Red border, `FAIL`, a reason byte
+and the frame number means it stopped at the first miss. The reasons
+are listed at the top of `src/atlantis/soak.asm`. The checks walk the
+whole screen, so this snapshot runs slower than the game; give it a
+couple of minutes.
 
 ## Memory
 
 | region            | address        | what |
 |-------------------|----------------|------|
-| code and data     | `$8000-$AAC3`  | `code_end` is `$AAC4` (10,948 bytes) |
+| code and data     | `$8000-$B959`  | `code_end` is `$B95A` (14,682 bytes) |
 | slow buffer       | `$F000-$F1FF`  | weed then sand, 16 x 32, not on the tape |
 | ground buffer     | `$F200-$F2FF`  | 8 x 32 |
 | (free)            | `$F300-$F9FF`  | |
@@ -758,10 +774,46 @@ snapshot runs slower than the game; give it a couple of minutes.
 | `JP isr`          | `$FDFD`        | |
 | IM2 vectors       | `$FE00-$FF00`  | 257 bytes of `$FD` |
 
+## The wheel bomb
+
+The first Trigon enemy. One at a time. It enters from the right, a
+pixel a frame, and leaves through the left, clipped the same way. The
+hub is a serif capital T and it stays upright; the legs around the rim
+are the only thing that rotates, a quarter turn counter-clockwise per
+frame, which is the direction a wheel rolls when it travels left. Four
+frames rather than eight: the diagonal positions would be another 3072
+bytes and would push `code_end` past `$C000`. The wide leg is what
+shows the spin. A symmetric cross would look the same after a quarter
+turn. The art is `gfx/wheel.txt`, a placeholder, `mirror off` so the T
+is not flipped. `build/montage-wheel.png` is the four frames enlarged.
+
+It bobs on a 32-step rounded sine, amplitude `WHEEL_BOB` (6 pixels). A
+triangle wave would be a shorter routine and no table, and it snaps
+round at the top. The sine eases off. Horizontal speed is `WHEEL_SPEED`
+(1 pixel a frame, the diver's speed). After it has gone, `WHEEL_GAP`
+(48 frames, just under a second) passes and the next one spawns.
+
+The height comes from an 8-bit LFSR, not the R register. R counts
+instructions, so a long frame would change the height and the soak
+could not predict it. The polynomial is x^8 + x^6 + x^5 + x^4 + 1,
+period 255, seed 42. The first bomb does not roll the LFSR: its base
+is 36, so it meets the diver on his way down from the surface. The
+first roll picks the fish's depth (70). The second picks the surface
+(base 6), where the bob reaches y = 0 and the stat digits may cover
+it. Every base stays between 6 and 146, so the bob never goes above
+the screen and never into the seaweed (row 21, pixel 168).
+
+Movement is `wheel_kind` and `wheel_kind_tab` in `src/atlantis/wheel.asm`.
+The only entry is the straight drift. A homing bomb is another routine
+and another word in that table. It is not written.
+
 ## Not in Atlantis yet
 
-* Wheel bombs, missiles, collision, death, sound.
+* A wheel bomb that homes in on the diver. The kind byte is there; the
+  routine is not.
+* More than one bomb at a time, missiles, collision, death, sound.
 * A real silo picture. The placeholder is the demo's.
 * Scrolling that follows the diver. The world still scrolls on its own
   and he is steered in screen coordinates.
 * Touching black does not kill him. The clamp only holds him off it.
+* The wheel's picture is a placeholder (`gfx/wheel.txt`).

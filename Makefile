@@ -21,13 +21,15 @@ ASM       ?= sjasmplus
 EMU       ?= fuse-sdl
 PYTHON    ?= python3
 GFX       := gfx/fish.asm gfx/diver.asm
+ATL_GFX   := $(GFX) gfx/wheel.asm
 SHARED    := src/constants.asm src/interrupts.asm src/screen.asm src/text.asm \
              src/input.asm src/sprite.asm src/fish.asm src/diver.asm \
              src/loader.asm
 DEMO_SRC  := src/main.asm src/layout.asm src/scenery.asm src/scroll.asm $(SHARED)
 ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/scenery.asm src/atlantis/scroll.asm \
-             src/atlantis/stats.asm src/atlantis/soak.asm $(SHARED)
+             src/atlantis/stats.asm src/atlantis/wheel.asm \
+             src/atlantis/soak.asm $(SHARED)
 
 TAP       := build/atlantis.tap
 SNA       := build/atlantis.sna
@@ -38,7 +40,7 @@ DEMO_SNA  := build/diver.sna
 
 all: $(TAP)
 
-$(TAP) $(SNA): $(ATL_SRC) $(GFX) | build
+$(TAP) $(SNA): $(ATL_SRC) $(ATL_GFX) | build
 	$(ASM) --nologo --fullpath=off --lst=build/atlantis.lst --sym=build/atlantis.sym src/atlantis/main.asm
 
 demo: $(DEMO_TAP)
@@ -79,12 +81,12 @@ sprite-test: $(DEMO_SNA)
 
 # Same program as `make`, but the border shows how long each part of the
 # frame takes. Launch the snapshot with $(EMU) --machine 48 build/atlantis-timing.sna
-timing: $(ATL_SRC) $(GFX) | build
+timing: $(ATL_SRC) $(ATL_GFX) | build
 	$(ASM) --nologo --fullpath=off -DTIMING_BARS --lst=build/atlantis-timing.lst src/atlantis/main.asm
 
 # Background-restore soak. Not part of the tape. Green border and "OK" after
 # 1024 scripted frames; the checks themselves are slow, so give it two minutes.
-soak: $(ATL_SRC) $(GFX) | build
+soak: $(ATL_SRC) $(ATL_GFX) | build
 	$(ASM) --nologo --fullpath=off -DSOAK --lst=build/atlantis-soak.lst src/atlantis/main.asm
 
 clean:
