@@ -30,8 +30,8 @@
 ;       erased and redrawn at the END, after the beam has passed row 0.
 ;       Nothing saved a background on row 0, so the digits cannot get
 ;       into a record.
-;   a sprite is on row 0 (the diver at the surface, or the fish if its
-;       depth is ever up there)
+;   a sprite is on row 0 (the diver at the surface, the fish if its
+;       depth is ever up there, or the wheel bomb bobbing up to y = 0)
 ;       The digits are wiped AFTER the old sprite is restored and BEFORE
 ;       the new one is saved. The photograph is water. The digits are
 ;       drawn again as soon as that sprite is on screen, so they sit on
@@ -164,9 +164,11 @@ stats_finish:
         ret
 
 ;------------------------------------------------------------------------------
-; stats_sprite_on_row0 - Z set if neither sprite intersects pixel rows 0..7
-; A sprite of any height intersects row 0 when its top y is 0..7.
-; Corrupts: AF
+; stats_sprite_on_row0 - Z set if no sprite intersects pixel rows 0..7
+; A sprite intersects row 0 when its top y is 0..7. The wheel also has
+; to be on screen: during the pause, or while it is still off the right
+; edge, its y may be up there without a pixel to photograph.
+; Corrupts: AF, DE, HL
 ;------------------------------------------------------------------------------
 stats_sprite_on_row0:
         ld a,(diver_y)
@@ -175,7 +177,9 @@ stats_sprite_on_row0:
         ld a,(fish_y)
         cp 8
         jr c,.hit
-        xor a                   ; Z set: row 0 is clear of sprites
+        call wheel_on_row0      ; Z if the bomb is not on row 0
+        ret nz
+        xor a
         ret
 .hit:   ld a,1                  ; Z clear
         or a

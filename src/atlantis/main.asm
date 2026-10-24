@@ -8,13 +8,14 @@
 ; Assemble with -DTIMING_BARS for build/atlantis-timing.sna. The border is
 ; a clock for that build:
 ;   white    restore, wipe the overlay if a sprite is on row 0, draw
-;            sprites that are still above the seabed
+;            sprites that are still above the seabed (fish, wheel bomb,
+;            and the diver while he is up in the water)
 ;   cyan     copy the seabed. The full-copy frame also repaints the weed
 ;            colours here, before the beam reaches that row.
 ;   magenta  the diver, if his feet are on the seabed
 ;   red      rotate the ground buffer (every frame)
 ;   green    rotate the slow buffer. Absent on the frames it does not move.
-;   yellow   stat overlay, then move the diver and the fish
+;   yellow   stat overlay, then move the diver, the fish and the wheel bomb
 ;   black    this frame's work is done
 ; A frame with no green band is the one that shows a new sand position:
 ; it copies all 16 slow rows and recolours the weed. The green frame
@@ -57,7 +58,7 @@ entry:
         ; The title is painted after the water, so its cells keep the
         ; colours print_char writes. Row 0 is left as water: that is
         ; where the stat overlay goes, and it is blank until asked for.
-        ld a,BRIGHT | YELLOW | (BLUE << 3)
+        ld a,TITLE_ATTR
         ld (text_attr),a
         ld hl,str_title
         ld bc,(2 << 8) | 12
@@ -158,9 +159,21 @@ SLACK_WARMUP    equ 0
         out (ULA_PORT),a
     ENDIF
         ; Restore first, while the screen still matches the photographs.
-        ; Draw order is fish, then diver, so restore is diver, then fish.
-        call diver_restore
-        call fish_restore
+        ; Draw order is fish, wheel, diver (back to front), so restore is
+        ; the reverse: diver, wheel, fish. The wheel is drawn after the
+        ; fish, so where they overlap its photograph contains the fish
+        ; and has to be put back before the fish's is.
+        ; The fish and the diver go through the tight walker. The shared
+        ; routines are what Engine Demo 1 still calls.
+        ; NO_WHEEL is a measurement switch, the same kind of thing as
+        ; SLACK_LINES. The tape does not define it. It leaves the bomb
+        ; out so the spare-scanline count can be taken with no bomb
+        ; on screen.
+        call diver_restore_fast
+    IFNDEF NO_WHEEL
+        call wheel_restore
+    ENDIF
+        call fish_restore_fast
         call stats_prepare      ; drop the digits if a sprite is about to
                                 ; photograph row 0. Otherwise leave them:
                                 ; the beam is about to read that row.
@@ -168,15 +181,23 @@ SLACK_WARMUP    equ 0
         call soak_after_restore
     ENDIF
 
-        call fish_draw
+        call fish_draw_fast
+    IFNDEF NO_WHEEL
+        call wheel_draw         ; always above the seaweed, so always here
+        ; Ink while the beam is still in the top border, so the attribute
+        ; writes are not slowed by the display. The strip is only the cells
+        ; that changed, which is small enough to stay ahead of the copy.
+        call wheel_colours
+    ENDIF
         ld a,(diver_y)
         add a,DIVER_HEIGHT - 1  ; his lowest pixel
         cp BACK_ROW * 8         ; seabed starts at row 21
         jr nc,.low
-        call diver_draw         ; still in open water: the copy will not touch him
+        call diver_draw_fast    ; still in open water: the copy will not touch him
 .low:
-        ; If he (or the fish) is on row 0, the digits go back on top now,
+        ; If a sprite is on row 0, the digits go back on top now,
         ; after the photograph and before we spend the frame on the seabed.
+        ; The wheel is included: it can bob up to y = 0.
         call stats_overlay_if_row0
 
     IFDEF TIMING_BARS
@@ -196,7 +217,7 @@ SLACK_WARMUP    equ 0
         ld a,MAGENTA
         out (ULA_PORT),a
     ENDIF
-        call diver_draw         ; feet on the seabed: photograph THIS ground
+        call diver_draw_fast    ; feet on the seabed: photograph THIS ground
 .diver_done:
 
     IFDEF TIMING_BARS
@@ -241,6 +262,9 @@ SLACK_WARMUP    equ 0
 
         call update_diver
         call update_fish
+    IFNDEF NO_WHEEL
+        call update_wheel
+    ENDIF
     IFDEF SOAK
         call soak_after_update
     ENDIF
@@ -258,6 +282,24 @@ SLACK_WARMUP    equ 0
         edup
         edup
     ENDIF
+    IFDEF SHOT_FRAME
+        ; Not the tape. Halt at the end of one loop so a screenshot can
+        ; catch the wheel at a known x. The draw for this frame has
+        ; already happened. The count is loops, not frame_count, so the
+        ; picture matches a movement step even on a build that drops one.
+        ld hl,(shot_loops)
+        inc hl
+        ld (shot_loops),hl
+        ld de,SHOT_FRAME
+        or a
+        sbc hl,de
+        jr nz,.shot_go
+        di
+.shot_halt:
+        halt
+        jr .shot_halt
+.shot_go:
+    ENDIF
         jp main_loop
 
 ;------------------------------------------------------------------------------
@@ -271,14 +313,19 @@ SLACK_WARMUP    equ 0
         INCLUDE "scenery.asm"
         INCLUDE "scroll.asm"
         INCLUDE "stats.asm"
+        INCLUDE "wheel.asm"
         INCLUDE "../fish.asm"
         INCLUDE "../diver.asm"
+        ; After the fish and the diver, so the wrappers can call their
+        ; image-index routines. The demo does not include this file.
+        INCLUDE "fastsprite.asm"
     IFDEF SOAK
         INCLUDE "soak.asm"
     ENDIF
 
         INCLUDE "../../gfx/fish.asm"
         INCLUDE "../../gfx/diver.asm"
+        INCLUDE "../../gfx/wheel.asm"
 
 str_title:      db "ATLANTIS",0
 str_help:       db "QAOP or 5678 to swim",0
@@ -290,6 +337,9 @@ slack_measured: dw 0            ; loops inside the measured window
 slack_base:     dw 0            ; frame_count when the window opened
 slack_armed:    db 0
     ENDIF
+    IFDEF SHOT_FRAME
+shot_loops:     dw 0            ; main-loop passes, 1 on the first
+    ENDIF
 
 code_end:
 CODE_LENGTH     equ code_end - code_start
@@ -300,6 +350,23 @@ CODE_LENGTH     equ code_end - code_start
         ASSERT DIVER_ANIM_STEP == 4, "diver_image_index divides by 4 with two RRCAs"
         ASSERT DIVER_FRAMES == 3, "diver_image_index multiplies facing by 3"
         ASSERT FISH_FRAMES == 2, "fish_image_index multiplies facing by 2"
+        ASSERT WHEEL_FRAMES == 4, "wheel_drift masks the frame with 3"
+        ASSERT (WHEEL_FRAMES & (WHEEL_FRAMES - 1)) == 0, "wheel frame mask"
+        ASSERT WHEEL_WIDTH == 12
+        ASSERT WHEEL_BYTES == 3, "the widest shift of the 12px wheel is 3 bytes"
+        ASSERT WHEEL_HEIGHT == 12
+        ASSERT WHEEL_SPEED == 1, "the soak's frame numbers assume 1px/frame"
+        ASSERT WHEEL_GAP == 48, "the soak's frame numbers assume this pause"
+        ASSERT WHEEL_BOB == 6
+        ASSERT WHEEL_TOP_BASE == 6
+        ASSERT WHEEL_LOW_BASE == 150, "lowest base must sit one bob above the weed"
+        ASSERT WHEEL_LOW_BASE + WHEEL_BOB + WHEEL_HEIGHT <= BACK_ROW * 8, "wheel enters the seaweed"
+        ASSERT 36 >= WHEEL_TOP_BASE
+        ASSERT 70 >= WHEEL_TOP_BASE
+        ASSERT 100 <= WHEEL_LOW_BASE
+        ASSERT 120 <= WHEEL_LOW_BASE
+        ASSERT 50 <= WHEEL_LOW_BASE
+        ASSERT 24 >= WHEEL_TOP_BASE
         ASSERT code_end <= ROW_TABLE, "code has run into the row table"
         ASSERT SCROLL_BUF_END <= ROW_TABLE, "scroll buffers run into the row table"
         ASSERT (SCROLL_BASE & 255) == 0, "shift_one_row uses DEC L, so a row must not cross a page"
@@ -316,17 +383,33 @@ CODE_LENGTH     equ code_end - code_start
         ASSERT FISH_SWIM_Y == 76, "the fish stays at the demo's depth"
         ASSERT FISH_SWIM_Y + FISH_HEIGHT <= BACK_ROW * 8, "the fish reaches the seabed; it is drawn before the blit"
         ASSERT BORDER_FRAMES == 8, "the rrca x3 above assumes BORDER_FRAMES = 8"
+        ; The spare-scanline build plants a nop sled after this, so that
+        ; build is allowed past $C000. The soak build includes the
+        ; checker, which is not on the tape, and that checker sits past
+        ; $C000 as well. On a 48K the bytes there are not slowed by the
+        ; display, so a nop is still 4 T-states. The tape itself stays
+        ; at or below $C000. The row table at $FA00 is still the hard
+        ; stop, and that assert is above.
+    IFNDEF SLACK_LINES
+    IFNDEF SOAK
         ASSERT code_end <= $C000, "engine code has outgrown $8000-$BFFF"
+    ENDIF
+    ENDIF
+    IFDEF SOAK
+        ASSERT SOAK_BUF_END <= ROW_TABLE, "soak photographs run into the row table"
+    ENDIF
 
         INCLUDE "../loader.asm"
 
     IFNDEF TIMING_BARS
     IFNDEF SOAK
     IFNDEF SLACK_LINES
+    IFNDEF SHOT_FRAME
         EMPTYTAP "build/atlantis.tap"
         SAVETAP  "build/atlantis.tap", BASIC, "atlantis", basic_start, BASIC_LENGTH, 10
         SAVETAP  "build/atlantis.tap", CODE, "atlantc", code_start, CODE_LENGTH
         SAVESNA  "build/atlantis.sna", entry
+    ENDIF
     ENDIF
     ENDIF
     ENDIF
@@ -339,4 +422,7 @@ CODE_LENGTH     equ code_end - code_start
     ENDIF
     IFDEF SLACK_LINES
         SAVESNA "build/atlantis-slack.sna", entry
+    ENDIF
+    IFDEF SHOT_FRAME
+        SAVESNA "build/atlantis-shot.sna", entry
     ENDIF

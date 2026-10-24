@@ -55,6 +55,7 @@ src/atlantis/layout.asm  the game's rows, colours, buffer addresses
 src/atlantis/scenery.asm water, sand and ground colours
 src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
 src/atlantis/stats.asm   the row-0 overlay, Symbol Shift + S
+src/atlantis/wheel.asm   the wheel bomb: drift, bob, spin, one at a time
 src/atlantis/soak.asm    the background-restore check, only with -DSOAK
 src/main.asm             Engine Demo 1 entry and loop
 src/layout.asm           the demo's rows and buffer addresses
@@ -63,7 +64,7 @@ src/interrupts.asm       IM2 vector table at $FE00, JP at $FDFD, frame ISR
 src/screen.asm           cls, border, cell address, pixel-row table
 src/text.asm             ROM-free print routines (glyphs from the font at $3D00)
 src/input.asm            keyboard half-row tables + Kempston -> one flags byte
-src/sprite.asm           masked pre-shifted sprites of any width
+src/sprite.asm           masked pre-shifted sprites; Atlantis adds edge clipping
 src/scenery.asm          the demo's water and strip colours
 src/scroll.asm           the demo's two 16-pixel silhouettes
 src/diver.asm            the player: movement, clamping, facing, kick animation
@@ -73,6 +74,8 @@ gfx/fish.txt             fish art as ASCII (# ink, - paper, . transparent)
 gfx/fish.asm             GENERATED from fish.txt: 8 shifts x 2 frames x 2 facings
 gfx/diver.txt            diver art, 24 x 15, 3 frames, facing right
 gfx/diver.asm            GENERATED from diver.txt: 8 shifts x 3 frames x 2 facings
+gfx/wheel.txt            wheel bomb, 12 x 12, 4 frames, mirror off (the T stays a T)
+gfx/wheel.asm            GENERATED from wheel.txt: 8 shifts x 4 frames, one facing
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
 tools/gfx2asm.py         ASCII art -> pre-shifted masked .asm (Python 3)
@@ -84,8 +87,11 @@ Makefile                 Linux / WSL build
 build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
-Atlantis memory: code and data at `$8000-$AAC3` (`code_end` is `$AAC4`,
-10,948 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+Atlantis memory: code and data at `$8000-$BF92` (`code_end` is `$BF93`,
+16,275 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+The wheel bomb is 12 by 12. A shifted row is 2 bytes for shifts 0 to 4
+and 3 bytes for shifts 5 to 7, so the picture is smaller than a 16 by 16
+sprite stored at one width.
 The scroll buffers are ordinary RAM at `$F000-$F2FF` (768 bytes: 16 slow
 rows, then 8 ground rows, built at start-up, not stored on the tape). The
 pixel-row address table (also built at start-up) is at `$FA00-$FB7F`. The
@@ -97,11 +103,12 @@ climb down into the row table.
 Engine Demo 1 is smaller: `code_end` is `$A928` (10,536 bytes) and its two
 buffers are `$F000-$F3FF`.
 
-Graphics: `make` regenerates `gfx/fish.asm` and `gfx/diver.asm` from the
-`.txt` art with Python 3 when the art changes. The generated files are
-committed, so Windows users can build with `build.bat` without Python. After
-editing the art, run e.g.
-`python tools\gfx2asm.py gfx\diver.txt gfx\diver.asm diver` first.
+Graphics: `make` regenerates `gfx/fish.asm`, `gfx/diver.asm` and
+`gfx/wheel.asm` from the `.txt` art with Python 3 when the art changes. The
+generated files are committed, so Windows users can build with `build.bat`
+without Python. After editing the art, run e.g.
+`python tools\gfx2asm.py gfx\wheel.txt gfx\wheel.asm wheel` first. A line
+`mirror off` in the text file skips the left-facing copy.
 
 ## Build on Ubuntu-based Linux (Zorin OS, Ubuntu, Mint, Pop!_OS)
 
@@ -179,7 +186,15 @@ missile silo. The silo's top half stands in the sand and is drawn yellow
 on blue, because that cell's colours are the sand's. The hatch holes show
 blue. That is the colour clash, left visible. The sand and the weed drift
 at half the speed of the black strip. A white fish swims to and fro at the
-old depth. The diver holds his jet unit out in front, kicks while you hold
+old depth. A wheel bomb slides in from the right, one pixel a frame,
+bobbing as it goes, and leaves through the left edge. Its legs spin and
+the T in the hub stays upright. One is on screen at a time; the next
+appears about a second after the last one has gone. The bomb does not
+fit in one frame: while it is on screen the loop misses the interrupt
+and the picture updates at 25 Hz, with the scroll and the sprites
+stepping twice per picture. The speeds were not changed to hide that.
+`docs/SCROLLING.md` has the measurement and the options. The diver holds his
+jet unit out in front, kicks while you hold
 a direction, and glides with his legs together when you let go. He can
 swim up to the top row, and down over the weed and the sand, until his
 feet are one pixel above the black under him. A silo or a rising hill
