@@ -12,16 +12,21 @@
 ;   Milestone 5 "Diver": the player is now a 24-pixel diver with a jet unit;
 ;                the fish swims by itself as a second sprite. Row 22 shows
 ;                the diver's X, Y and image number.
-;   v0.5 "Parallax": the seabed is two scrolling strips (far yellow seaweed,
-;                near black rocks and missile silos). See docs/SCROLLING.md.
+;   v0.5 "Parallax": the seabed is two scrolling silhouettes. Far: yellow
+;                hills on the blue, green seaweed, 1 pixel every 2 frames.
+;                Near: black hills on yellow, rocks and missile silos,
+;                1 pixel a frame. See docs/SCROLLING.md.
 ;
 ; Assemble with -DTIMING_BARS to get build/diver-timing.sna. Border colours:
-;   white   restore, then draw sprites that are still in open water
-;   cyan    copy the two strips up to the screen
-;   magenta draw the diver if he is on the ground, then scroll the buffers
+;   white   restore, then draw sprites that are still above the far strip
+;   cyan    copy the strips (both on a show frame, near only on prepare)
+;   magenta draw the diver if he overlaps a strip
+;   red     rotate the near buffer (every frame)
+;   green   rotate the far buffer (prepare frames only; absent on show frames)
 ;   yellow  debug text, input, move the diver and the fish
 ;   black   the frame's work is done
-; See docs/SCROLLING.md.
+; See docs/SCROLLING.md. A show frame has no green band. A prepare frame has
+; a shorter cyan band (near strip only) and a green band after the red.
 ;
 ; Build:  make          (writes build/diver.tap and build/diver.sna)
 ;==============================================================================
@@ -109,9 +114,17 @@ main_loop:
 .blit:
     IFDEF TIMING_BARS
         ld a,CYAN
-        out (ULA_PORT),a        ; cyan: copy both strips
+        out (ULA_PORT),a        ; cyan: copy the strips
     ENDIF
-        call scroll_blit
+        ; Far strip, show frames only (back_phase = 0). On a prepare frame
+        ; the screen already shows it and this frame rotates the buffer
+        ; instead. Copying and rotating both 16-pixel strips every frame
+        ; does not fit; the split keeps the near strip at 1 pixel a frame
+        ; and the far strip at 1 pixel every 2. See docs/SCROLLING.md.
+        ld a,(back_phase)
+        or a
+        call z,scroll_blit_back
+        call scroll_blit_front
         ; Same test as above. If his feet are on a strip he was not drawn
         ; yet; drawing him now saves the ground the copy just put up.
         ld a,(diver_y)
@@ -125,10 +138,22 @@ main_loop:
         call diver_draw
 .diver_done:
     IFDEF TIMING_BARS
-        ld a,MAGENTA
-        out (ULA_PORT),a        ; magenta: off-screen buffer scroll
+        ld a,RED
+        out (ULA_PORT),a        ; red: rotate the near buffer
     ENDIF
-        call scroll_world
+        call scroll_front
+        ld a,(back_phase)
+        or a
+        jr z,.far_shown         ; show frame: far buffer already matches
+    IFDEF TIMING_BARS
+        ld a,GREEN
+        out (ULA_PORT),a        ; green: rotate the far buffer
+    ENDIF
+        call scroll_back
+.far_shown:
+        ld a,(back_phase)       ; 0,1,0,1... next frame is the other half
+        xor 1
+        ld (back_phase),a
     IFDEF TIMING_BARS
         ld a,YELLOW
         out (ULA_PORT),a        ; yellow: debug text, input, game update
@@ -167,7 +192,7 @@ main_loop:
         ld a,(diver_y)
         ld bc,(22 << 8) | 22
         call print_hex8
-        call diver_image_index  ; the image drawn this frame
+        call diver_image_index  ; A = facing*3 + art frame
         ld bc,(22 << 8) | 29
         call print_hex8
 
@@ -219,6 +244,10 @@ CODE_LENGTH     equ code_end - code_start
         ASSERT (FRONT_PX % 8) == 0, "front strip must be whole character rows"
         ASSERT (SCROLL_BASE & 255) == 0, "shift_one_row uses DEC L, so rows must not cross a page"
         ASSERT (FRONT_BUF & 31) == 0, "each front row must be 32-byte aligned"
+        ASSERT BACK_PX == FRONT_PX, "fill_column uses FRONT_PX for both strips"
+        ASSERT BACK_PX == 16, "weed pixels are written at column_pat+8"
+        ASSERT FRONT_ROW * 8 == BACK_ROW * 8 + BACK_PX, "near strip must sit against the far one"
+        ASSERT FRONT_ROW * 8 + FRONT_PX == 22 * 8, "near strip must stop at the debug rows"
         ASSERT BORDER_FRAMES == 8, "main_loop's rrca x3 assumes BORDER_FRAMES = 8"
         ASSERT code_end <= $C000, "engine code has outgrown $8000-$BFFF"
         ASSERT FISH_SWIM_Y + FISH_HEIGHT <= BACK_ROW * 8, "fish reaches the strips; main_loop draws it before the blit"

@@ -1,12 +1,19 @@
 ;==============================================================================
 ; scenery.asm - the backdrop colours, and the attribute-row filler
 ;
-; The moving ground itself is in scroll.asm (two parallax strips). This file
-; only paints the attribute colours and then asks scroll_init to build the
-; first screen of pixels. Colour is per 8x8 cell: a sprite over the front
-; strip becomes white-on-black, over the back strip green-on-yellow, over
-; the water white-on-blue. That is attribute clash, and the strips are each
-; one colour pair so it stays predictable.
+; The moving ground itself is in scroll.asm (two parallax silhouettes).
+; This file paints the attribute colours that do not change as the world
+; scrolls, then asks scroll_init to build the pixels and the seaweed row.
+;
+; Colour is one byte per 8x8 cell, shared by every pixel in that cell,
+; sprites included:
+;   water            white ink, blue paper
+;   far hills        yellow ink, blue paper (both far rows, to start)
+;   near hills       black ink, yellow paper (both near rows, forever)
+; scroll_init then recolours the bottom far row per column, because a
+; seaweed cell is green on yellow instead of yellow on blue. That row is
+; the only one whose attributes move, and only when a column lines up.
+; A sprite picks up whatever pair it is standing on. docs/SCROLLING.md.
 ;==============================================================================
 
 ;------------------------------------------------------------------------------
@@ -21,25 +28,23 @@ draw_scenery:
         ld e,WATER_ATTR
         call fill_attr_rows
 
+        ; Both far rows start as yellow-on-blue. The bottom row's seaweed
+        ; columns are repainted by scroll_init (and again each time a far
+        ; column scrolls fully on).
         ld b,BACK_ROW
         ld d,BACK_PX / 8
-        ld e,BACK_ATTR
+        ld e,BACK_HILL_ATTR
         call fill_attr_rows
 
+        ; Both near rows, every column, for the whole run. Black ink on
+        ; yellow paper: the silhouette pixels are the ink, the background
+        ; is the paper. Nothing in this strip is any other colour.
         ld b,FRONT_ROW
         ld d,FRONT_PX / 8
         ld e,FRONT_ATTR
         call fill_attr_rows
 
-        ; Rows 20 and 21. The front strip is only row 19; this black band
-        ; is what the diver sits in when he swims down, and it keeps the
-        ; debug text (rows 22-23) off the ground.
-        ld b,FLOOR_ROW
-        ld d,2
-        ld e,FLOOR_ATTR
-        call fill_attr_rows
-
-        jp scroll_init          ; paint both strips and copy them up once
+        jp scroll_init          ; pixels, seaweed colours, first copy up
 
 ;------------------------------------------------------------------------------
 ; fill_attr_rows - In: B = first row, D = number of rows, E = attribute

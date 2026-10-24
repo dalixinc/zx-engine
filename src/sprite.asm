@@ -34,7 +34,9 @@
 ; contained the earlier sprites, so it must be put back first.
 ;
 ; The scrolling strips are copied onto the screen after every restore
-; (main_loop). A sprite that overlaps a strip is saved and drawn AFTER that
+; (main_loop). The far strip's copy is skipped on a prepare frame: the
+; buffer was not rotated after the last copy, so the screen already
+; matches it. A sprite that overlaps a strip is saved and drawn AFTER the
 ; copy, so the record holds this frame's ground and not the sprite itself
 ; (saving while it is still drawn would put its own pixels back next frame).
 ; A sprite that stays in the water is drawn BEFORE the copy: the copy does

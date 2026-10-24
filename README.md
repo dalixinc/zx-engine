@@ -7,11 +7,14 @@ border colour every 8 frames, reads keyboard/Kempston input, and steers a
 masked, pre-shifted, animated 24-pixel diver (with a jet unit) pixel by
 pixel, while a 16-pixel fish swims back and forth by itself.
 
-**v0.5** replaces the static seabed with two parallax strips: a far yellow
-one with green seaweed, scrolling a pixel every other frame, and a near
-black one with white rocks and missile silos, scrolling a pixel every
-frame. The diver is still steered in screen coordinates; the world scrolls
-on its own. **New to the sprite code? Read [docs/SPRITES.md](docs/SPRITES.md).
+**v0.5** replaces the static seabed with two parallax silhouettes. The far
+one is yellow sand on the blue water, with a green seaweed column now and
+then, 16 pixels tall, scrolling a pixel every other frame. The near one is
+a black landscape on yellow, rocks and missile silos included, also 16
+pixels tall, scrolling a pixel every frame, and it sits directly under the
+far one. The diver is still steered in screen coordinates; the world
+scrolls on its own, and he can swim down until his feet are one pixel
+above the black ground. **New to the sprite code? Read [docs/SPRITES.md](docs/SPRITES.md).
 New to the scrolling ground? Read [docs/SCROLLING.md](docs/SCROLLING.md).**
 
 ## Controls
@@ -44,7 +47,7 @@ src/input.asm       keyboard half-row tables + Kempston -> one flags byte
 src/sprite.asm      masked pre-shifted sprites of any width: set position,
                     save/restore background (one record per sprite), draw
 src/scenery.asm     water and strip colours, then asks scroll_init to draw the ground
-src/scroll.asm      two parallax strips: buffers, blit, shift, silo table
+src/scroll.asm      two parallax silhouettes: buffers, blit, shift, silo ring
 src/diver.asm       the player: movement, clamping, facing, kick animation
 src/fish.asm        the fish: swims left/right on its own (second sprite)
 src/loader.asm      tokenised BASIC loader: CLEAR / LOAD ""CODE / RANDOMIZE USR 32768
@@ -63,14 +66,14 @@ Makefile            Linux / WSL build
 build.bat           Windows build
 ```
 
-Memory: code and data at `$8000-$A701` (`code_end` is `$A702`, about 10 KB;
+Memory: code and data at `$8000-$A927` (`code_end` is `$A928`, 10,536 bytes;
 the pre-shifted diver alone is 5,760 bytes, the fish 1,728). The two scroll
-buffers are ordinary RAM at `$F000-$F1FF` (512 bytes, built at start-up, not
-stored on the tape). The pixel-row address table (also built at start-up) is
-at `$FA00-$FB7F`. The stack grows down from `$FDFC`, `JP isr` is at `$FDFD`,
-and the 257-byte vector table of `$FD` is at `$FE00-$FF00`. Nothing here may
-grow into the next region: the buffers must stop before `$FA00`, and the
-stack must not climb down into the row table.
+buffers are ordinary RAM at `$F000-$F3FF` (1,024 bytes, 16 rows each, built
+at start-up, not stored on the tape). The pixel-row address table (also
+built at start-up) is at `$FA00-$FB7F`. The stack grows down from `$FDFC`,
+`JP isr` is at `$FDFD`, and the 257-byte vector table of `$FD` is at
+`$FE00-$FF00`. Nothing here may grow into the next region: the buffers must
+stop before `$FA00`, and the stack must not climb down into the row table.
 
 Graphics: `make` regenerates `gfx/fish.asm` and `gfx/diver.asm` from the
 `.txt` art with Python 3 when the art changes. The generated files are
@@ -139,19 +142,23 @@ make timing       # build/diver-timing.sna: border colour shows the frame's time
 ## What you should see
 
 "DIVER ENGINE" in yellow on blue, a help line, a blue sea, and along the
-bottom two moving strips: yellow sand with green seaweed above a black bed
-with white rocks and the occasional missile silo. A white fish swims to and
-fro, and the white diver holds his jet unit out in front. QAOP / 5678 /
-Kempston swim him one pixel per frame; he kicks his flippers only while
-moving (legs apart, then half way, then crossed, then half way) and glides
-with his legs together when you let go. He turns to face the way he's going,
-passes in front of the fish, and can swim down onto the strips (where he
-takes on their colours: attribute clash). The strips keep scrolling whether
-or not he moves. Row 22 shows `FRAMES:` plus the diver's `X`, `Y` (pixels,
-hex) and `IMG` (0-2 facing right, 3-5 facing left: 0 legs apart, 1 half way,
-2 together). Row 23 shows the input bytes. See `build/montage-diver.png`
-and the other `build/montage-*.png` test strips (`montage-sprites.png` is
-from the fish-only milestone 4).
+bottom two moving silhouettes: yellow sand dunes with a green seaweed
+column now and then, and under them a black landscape on yellow with rocks
+and the occasional missile silo. A white fish swims to and fro, and the
+white diver holds his jet unit out in front. QAOP / 5678 / Kempston swim
+him one pixel per frame; he kicks his flippers only while moving (legs
+apart, then half way, then crossed, then half way) and glides with his
+legs together when you let go. He turns to face the way he's going, passes
+in front of the fish, and can swim down until his feet are one pixel above
+the black ground (a hill lifts him). Over the strips he takes on their
+colours: attribute clash, including turning black-on-yellow over the near
+strip, where he vanishes into a black hill. The strips keep scrolling
+whether or not he moves. Row 22 shows `FRAMES:` plus the diver's `X`, `Y`
+(pixels, hex) and `IMG` (0-2 facing right, 3-5 facing left: 0 legs apart,
+1 half way, 2 together). Row 23 shows the input bytes. See
+`build/scroll-a.png`, `build/scroll-b.png`, `build/scroll-c.png` and
+`build/montage-diver.png` (`montage-sprites.png` is from the fish-only
+milestone 4).
 
 Emulator tip: Fuse maps the PC arrow keys to the Spectrum cursor keys (CAPS +
 5-8), so they work too. To test Kempston in Fuse, enable Options >

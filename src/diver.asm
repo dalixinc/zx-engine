@@ -17,17 +17,17 @@
 ;==============================================================================
 
 ; Clamps. Rightmost x keeps all DIVER_BYTES bytes of a shifted row on the
-; screen line: 256 - 4*8 + 7 = 231. Bottom: last row of the seabed.
+; screen line: 256 - 4*8 + 7 = 231. The bottom is not a fixed row any more:
+; clamp_to_terrain holds his feet one pixel above the near silhouette.
 DIVER_MIN_X     equ 0
 DIVER_MAX_X     equ 256 - DIVER_BYTES * 8 + 7
 DIVER_MIN_Y     equ WATER_TOP_ROW * 8
-DIVER_MAX_Y     equ (PLAY_BOTTOM_ROW + 1) * 8 - DIVER_HEIGHT
 
 DIVER_GLIDE     equ 2           ; art frame shown when not moving
 
 ;------------------------------------------------------------------------------
 ; update_diver - move from input_state (000FUDLR), clamp, step the animation
-; Corrupts: AF, B
+; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 update_diver:
         ld a,(input_state)
@@ -56,10 +56,8 @@ update_diver:
         bit IN_DOWN_BIT,b
         jr z,.not_down
         ld a,(diver_y)
-        cp DIVER_MAX_Y
-        jr nc,.not_down
-        inc a
-        ld (diver_y),a
+        inc a                   ; the terrain clamp below pulls this back
+        ld (diver_y),a          ; if it went into the hill
 .not_down:
         bit IN_UP_BIT,b
         jr z,.not_up
@@ -69,6 +67,10 @@ update_diver:
         dec a
         ld (diver_y),a
 .not_up:
+        ; Every frame, including when he is still. The ground scrolls
+        ; whether or not he is swimming, and a hill has to be able to
+        ; lift him. B still holds the input bits; the clamp gives them back.
+        call clamp_to_terrain
         ; animation: count frames only while a direction is held
         ld a,b
         and IN_UP | IN_DOWN | IN_LEFT | IN_RIGHT
@@ -144,6 +146,98 @@ diver_image_index:
         ret
 
 kick_sequence:  db 0, 1, 2, 1   ; apart, half, crossed, half
+
+;------------------------------------------------------------------------------
+; clamp_to_terrain - feet one pixel above the tallest near column he covers
+;
+; The near strip is a height per column (front_h), plus the column still
+; sliding in on the right (front_h_pending). His 24 pixels can cover up to
+; four columns, five when the right-hand one is that incoming column.
+;
+;   column under screen x  =  (x + front_fine) / 8
+;   height of that column  =  front_h[(front_head + column) & 31]
+;
+; front_fine is how far the strip has moved since the columns last lined
+; up with the screen. front_head is which slot of the ring is the left
+; edge. The incoming column is number 32 (front_h_pending).
+;
+; max y = NEAR_BOTTOM - height - DIVER_HEIGHT. NEAR_BOTTOM is the pixel
+; just under the strip. A valley (the shortest step in near_profile) lets
+; him down the furthest; a silo is the full 16 pixels, so he stops with
+; his feet on the pixel above the tip. He is allowed to overlap the far
+; yellow hills. Those are behind him. Only the black strip stops him.
+;
+; In:  B = input flags, preserved. Corrupts: AF, C, DE, HL
+;------------------------------------------------------------------------------
+clamp_to_terrain:
+        push bc
+        ld a,(diver_x)
+        ld hl,front_fine
+        add a,(hl)              ; left edge. diver_x + fine is at most 238.
+        ld l,a
+        rrca
+        rrca
+        rrca
+        and %00011111
+        ld b,a                  ; B = first column
+
+        ld a,l
+        add a,DIVER_BYTES * 8 - 1
+        ld c,a                  ; low byte of the right edge (wraps at 256)
+        ld a,0
+        adc a,0                 ; LD does not clear the carry, so this is 1
+        ld h,a                  ; when the right edge is past the last pixel
+        ld a,c
+        rrca
+        rrca
+        rrca
+        and %00011111
+        ld c,a                  ; column within that low byte
+        ld a,h
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        add a,a                 ; bit 8 of the pixel becomes 32 columns
+        or c
+        ld c,a                  ; C = last column (0..32)
+
+        ld e,0                  ; tallest height so far
+.scan:  ld a,b
+        cp 32
+        jr nc,.pending          ; column 32 is front_h_pending, not the table
+        ld a,(front_head)       ; ring: screen column B lives at this slot
+        add a,b
+        and 31
+        push bc                 ; C is the last column; E is the tallest so far
+        ld c,a
+        ld b,0
+        ld hl,front_h
+        add hl,bc
+        pop bc
+        ld a,(hl)
+        cp e
+        jr c,.shorter
+        ld e,a
+.shorter:
+        ld a,b
+        cp c
+        jr z,.apply
+        inc b
+        jr .scan
+.pending:
+        ld a,(front_h_pending)
+        cp e
+        jr c,.apply
+        ld e,a
+.apply: ld a,NEAR_BOTTOM - DIVER_HEIGHT
+        sub e                   ; E is 0..16, so this does not borrow
+        ld hl,diver_y
+        cp (hl)
+        jr nc,.done             ; already at or above the skyline
+        ld (hl),a
+.done:  pop bc
+        ret
 
 ; --- Diver state -------------------------------------------------------------
 diver_x:        db 60           ; pixels

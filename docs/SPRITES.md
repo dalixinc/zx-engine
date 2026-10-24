@@ -135,10 +135,11 @@ fish's tail while its body hides them.
 
 **Attribute clash.** Colour is per 8x8 cell, not per pixel, so a sprite has
 whatever INK and PAPER the cells it covers have: white on blue in the water,
-green on yellow over the far strip, white on black over the near strip.
-That is the famous Spectrum "clash". The strips are each one colour pair
-on purpose, so a sprite sliding along the ground changes colour once, at
-the boundary, instead of flickering between cells. See docs/SCROLLING.md.
+yellow on blue over the far hills, green on yellow on a seaweed cell, and
+black on yellow over the near hills. That is the famous Spectrum "clash".
+On the near strip his ink is black, so he reads as a silhouette in a yellow
+valley and disappears into a black hill. A seaweed cell cannot also be
+yellow-on-blue; the trade-off is written out in docs/SCROLLING.md.
 
 ---
 
@@ -228,10 +229,11 @@ The ground now scrolls, so those rows are not the same pixels as at the
 start: they have moved. What has to stay true is that restoring a sprite
 puts back exactly the bytes it saved, and that the save happened after
 this frame's ground was copied up. A headless run of 1024 frames (the
-diver crossing the fish, then riding the strips) checked the open water
-and the black floor were empty after every restore, and that both strips
-matched the off-screen buffers from the moment the sprites were saved.
-The order that makes that true is in docs/SCROLLING.md.
+diver climbing through the fish, then holding Down and riding the near
+hills) checked the open water was blank after every restore, and that
+both silhouette strips matched the off-screen buffers from the moment
+the sprites were saved. There is no separate blank floor: rows 20-21
+are the near strip. The order that makes that true is in docs/SCROLLING.md.
 
 ### Two sprites: one record each, and erase in reverse order
 
@@ -311,9 +313,11 @@ the beam is always behind you (the "chase the beam" trick).
 
 ## 6. Clipping (for now)
 
-`update_diver` clamps the diver to the play area: x 0-231 and y from the top
-of the water (56) to the bottom of the black floor minus his height
-(168 - 15 = 153). The right limit is `256 - bytes*8 + 7`: at that x all
+`update_diver` clamps the diver to the play area: x 0-231, and y from the
+top of the water (56) down to one pixel above the near silhouette.
+`clamp_to_terrain` reads the height of every near column under his 24
+pixels and lifts him when a hill scrolls underneath. The right limit is
+`256 - bytes*8 + 7`: at that x all
 bytes of a shifted row still land on the same screen line (diver: column
 28 + 3 = 31; fish, 3 bytes: x 239, column 29 + 2 = 31). Pushing a direction
 against an edge still counts as "moving", so he kicks against the wall.
