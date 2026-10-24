@@ -41,6 +41,20 @@ stats_template:
 STATS_TEMPLATE_LEN equ $ - stats_template
         ASSERT STATS_TEMPLATE_LEN == 32, "the stat line has to be one row"
 
+; --- A life ------------------------------------------------------------------
+; One heart for each life left, on row 1 (hit.asm). The eight zero bytes
+; after it are an empty cell, for a life that has gone.
+lives_heart:
+        db %00000000
+        db %01101100
+        db %11111110
+        db %11111110
+        db %01111100
+        db %00111000
+        db %00010000
+        db %00000000
+        ds 8, 0
+
 ; --- Menu options ------------------------------------------------------------
 ; One row per option. menu.asm walks this list to draw the menu and to
 ; notice a key. To add an option later:

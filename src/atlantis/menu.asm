@@ -336,6 +336,8 @@ game_reset:
 
         ld a,CFG_LIVES
         ld (lives),a
+        ld a,1
+        ld (lives_dirty),a
         xor a
         ld (hit_flash),a
         ld (menu_game_over),a

@@ -299,6 +299,9 @@ SLACK_WARMUP    equ 0
         call stats_prepare      ; drop the digits if a sprite is about to
                                 ; photograph row 0. Otherwise leave them:
                                 ; the beam is about to read that row.
+        ld a,(lives_dirty)      ; the hearts, while no sprite is on screen
+        or a
+        call nz,lives_draw
     IFDEF SOAK
         call soak_after_restore
     ENDIF

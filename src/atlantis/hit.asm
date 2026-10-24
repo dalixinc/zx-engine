@@ -45,7 +45,16 @@ HIT_Y_LO        equ HIT_DIVER_T - HIT_WHEEL_B
 HIT_Y_SPAN      equ HIT_DIVER_B - HIT_WHEEL_T - HIT_Y_LO + 1
 
 lives:          db CFG_LIVES
+lives_dirty:    db 1            ; 1 = the hearts on row 1 need drawing again
 hit_flash:      db 0            ; steps of red border left; 0 = the heartbeat
+
+; The hearts sit at the right-hand end of row 1, one cell each. Row 0 is
+; the stat line's, and that line rewrites its digits under the sprites;
+; row 1 only changes on a hit, so the sprites can photograph it like
+; water. Lost lives go from the right.
+LIVES_ROW       equ 1
+LIVES_COL       equ 32 - CFG_LIVES
+LIVES_SCREEN    equ SCREEN + LIVES_ROW * 32 + LIVES_COL
 
 ;------------------------------------------------------------------------------
 ; hit_check - the bomb against the diver
@@ -88,10 +97,52 @@ hit_check:
         call wheel_remove
         ld a,CFG_HIT_FLASH
         ld (hit_flash),a
+        ld a,1
+        ld (lives_dirty),a
         ld hl,lives
         dec (hl)
         jr z,.over
         or a                    ; lives left: carry clear
         ret
 .over:  scf
+        ret
+
+;------------------------------------------------------------------------------
+; lives_draw - the hearts on row 1, one for each life left
+; main_loop calls this only when lives_dirty is set, straight after the
+; restores and before any sprite photographs the screen. Every sprite is
+; off the screen then, so no photograph holds the old hearts, and the
+; next restore cannot paint one back.
+; It runs at the start of a game and once a hit: about 4 scanlines,
+; on a step whose bomb has just been taken away.
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+lives_draw:
+        xor a
+        ld (lives_dirty),a
+        ld a,(lives)
+        ld c,a                  ; hearts still to draw
+        ld hl,LIVES_SCREEN
+        ld b,CFG_LIVES
+.cell:  push bc
+        push hl
+        ld de,lives_heart
+        ld a,c
+        or a
+        jr nz,.glyph
+        ld de,lives_heart + 8   ; eight zero bytes: water
+.glyph: ld b,8
+.line:  ld a,(de)
+        ld (hl),a
+        inc de
+        inc h                   ; next pixel line of the cell
+        djnz .line
+        pop hl
+        pop bc
+        inc l
+        ld a,c
+        or a
+        jr z,.next
+        dec c
+.next:  djnz .cell
         ret

@@ -37,8 +37,9 @@ The tape opens on a start screen: `1` starts the game, `2` swaps between
 50 and 25 frames a second. The choice is kept when you come back to the
 menu.
 
-The diver has three lives (`CFG_LIVES` in `src/atlantis/config.asm`). A
-wheel bomb that touches him costs one: the bomb vanishes and the border
+The diver has three lives (`CFG_LIVES` in `src/atlantis/config.asm`),
+shown as hearts at the top right of the screen. A wheel bomb that
+touches him costs one: the bomb vanishes, a heart goes, and the border
 flashes red. The hit boxes are a little smaller than the pictures, so a
 graze of the flippers or the rim does not count. After the last life
 the game goes back to the menu, which says GAME OVER.
@@ -121,9 +122,9 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
 Atlantis memory: the tape has two code blocks. The instructions are at
-`$8000-$A35A` (`code_end` is `$A35B`, 9,051 bytes) and must stay below
-`$C000`. The pictures, menu words and tables are at `$C000-$E704`
-(9,989 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+`$8000-$A398` (`code_end` is `$A399`, 9,113 bytes) and must stay below
+`$C000`. The pictures, menu words and tables are at `$C000-$E714`
+(10,005 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
 A build prints both ends (`atlantis code_end`, `atlantis data_end`), and
 the `ASSERT`s at the end of `src/atlantis/main.asm` stop it if a block
 runs into the next. The wheel bomb is 12 by 12. A shifted row is 2 bytes for shifts 0 to 4
