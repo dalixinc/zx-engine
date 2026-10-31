@@ -198,6 +198,18 @@ choices include 2x, 3x, 4x, hq3x and advmame3x. To make that permanent, add
 menu and choose Options > Save, which writes `~/.fuserc`. `--full-screen`
 works only with the SDL build (`fuse-sdl`).
 
+`make run` loads the tape in a moment, so the loading screen only flashes
+past. To watch it build up line by line at real tape speed, about 100
+seconds, turn off Fuse's tape traps and fast loading:
+
+```
+# Linux
+fuse --machine 48 --no-traps --no-fastload -g 3x build/atlantis.tap
+
+# Windows
+windows-tools/fuse/fuse.exe --machine 48 --no-traps --no-fastload --graphics-filter 3x build/atlantis.tap
+```
+
 ## Set up on Windows
 
 1. **Assembler.** Download `sjasmplus-1.24.0.win.zip` from
