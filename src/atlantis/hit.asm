@@ -66,7 +66,7 @@ LIVES_SCREEN    equ SCREEN + LIVES_ROW * 32 + LIVES_COL
 hit_check:
         ld a,(wheel_phase)
         or a
-        ret z                   ; between flights. OR cleared the carry.
+        jp z,fish_hit           ; no bomb: the fish, on this cheap frame
 
         ; x is 16 bits: the bomb can hang off either edge.
         ld hl,(wheel_x)
@@ -95,6 +95,7 @@ hit_check:
         ret nc                  ; not level with him
 
         call wheel_remove
+        call boom_at_bomb
         ld a,CFG_HIT_FLASH
         ld (hit_flash),a
         ld a,1

@@ -355,6 +355,7 @@ SLACK_WARMUP    equ 0
         call z,wheel_draw_early
 .wheel_drawn:
     ENDIF
+fish_draw_call:
         call fish_draw_fast
         ; If a sprite is on row 0, the digits go back on top now,
         ; after the photograph and before we spend the frame on the seabed.
@@ -814,6 +815,7 @@ wheel_first:    db 0
         ; After the fish and the diver, so the wrappers can call their
         ; image-index routines. The demo does not include this file.
         INCLUDE "fastsprite.asm"
+        INCLUDE "boom.asm"
         INCLUDE "menu.asm"
     IFDEF SOAK
         INCLUDE "soak.asm"

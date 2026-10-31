@@ -367,6 +367,7 @@ game_reset:
 
         call wheel_reset
         call torpedo_reset
+        call boom_reset
 
         di
         ld hl,0

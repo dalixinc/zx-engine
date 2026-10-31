@@ -51,6 +51,13 @@ Fire launches one torpedo, along the row he is facing. It destroys a
 wheel bomb it touches, and is spent. Another cannot be launched until
 `CFG_FIRE_COOLDOWN` television frames have passed (48, about a second).
 
+A hit on a bomb, from the torpedo or from the diver, plays a short
+explosion where the bomb was. The bomb is already gone, so the
+explosion is drawn instead of it. The fish bursts the same way if it
+meets the diver or a torpedo, and the diver does not lose a life for
+that. The burst is four pictures, lined up on a byte, and it stays
+put while the sea scrolls.
+
 The tape starts at 25 frames a second. The picture frame does the
 same draw and the same one tick as 50. The next television frame
 moves again and does not draw. Key 2 on the menu switches to 50,
