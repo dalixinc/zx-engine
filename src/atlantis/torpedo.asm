@@ -208,10 +208,10 @@ torpedo_hit:
         add hl,de
         ld a,h
         or a
-        ret nz
+        jp nz,torpedo_fish
         ld a,l
         cp TORP_X_SPAN
-        ret nc
+        jp nc,torpedo_fish
 
         ld a,(torp_y)
         ld b,a
@@ -219,7 +219,7 @@ torpedo_hit:
         sub b
         add a,-TORP_Y_LO
         cp TORP_Y_SPAN
-        ret nc
+        jp nc,torpedo_fish
 
         call wheel_remove
         call boom_at_bomb

@@ -16,7 +16,8 @@ BOOM_HOLD       equ 8           ; 4 shapes, 2 draws each
 boom_t:         db 0            ; 0 = nothing to draw
 boom_left:      db 0            ; draws still to show
 boom_got:       db 0            ; 1 = boom_bg holds the screen under it
-boom_fish:      db 0            ; 1 = the fish draw was turned off
+boom_fish:      db 0            ; 1 = the fish draw was turned off for a burst
+fish_dead:      db 0            ; 1 = vanished while a bomb was on screen
 boom_col:       db 0            ; screen column, 0..30
 boom_y:         db 0
 boom_bg:        ds BOOM_ROWS * 2
@@ -29,6 +30,7 @@ boom_reset:
         ld (boom_t),a
         ld (boom_got),a
         ld (boom_fish),a
+        ld (fish_dead),a
         ld hl,fish_draw_fast
         ld (fish_draw_call+1),hl
         ret
@@ -104,6 +106,9 @@ boom_arm:
         ret
 
 boom_show_fish:
+        ld a,(fish_dead)
+        or a
+        ret nz                  ; a cheap death stays dead until the next game
         ld a,(boom_fish)
         or a
         ret z
@@ -116,28 +121,54 @@ boom_show_fish:
 ;------------------------------------------------------------------------------
 ; fish_hit - the fish against the diver. No life is lost.
 ; torpedo_fish - a running torpedo against the fish. The torpedo is spent.
-; Both are reached only when the bomb is not on screen.
+; fish_hit is the burst, and it is only reached when the bomb is away.
+; fish_cheap is the same touch while a bomb is on screen: the fish
+; vanishes, which is cheaper than drawing the burst on that frame.
 ;------------------------------------------------------------------------------
 fish_hit:
+        ld a,(fish_dead)
+        or a
+        ret nz
         ld a,(boom_t)
         or a
         ret nz
+        call fish_touch
+        ret nc
+        jp boom_at_fish
+
+; Out: carry set if the diver overlaps the fish. Corrupts AF, B.
+fish_touch:
+        ld a,(diver_y)
+        sub FISH_SWIM_Y
+        add a,14                ; -14..8 overlaps the two heights
+        cp 23
+        ret nc
         ld a,(fish_x)
         ld b,a
         ld a,(diver_x)
         sub b
         add a,23                ; -23..15 overlaps the two widths
         cp 39
-        ret nc
+        ret
+
+fish_cheap:
         ld a,(diver_y)
-        sub FISH_SWIM_Y
-        add a,14                ; -14..8 overlaps the two heights
-        cp 23
+        cp FISH_SWIM_Y + FISH_HEIGHT
+        ret nc                  ; he is below the fish; the usual heavy frame
+        ld a,(fish_dead)
+        or a
+        ret nz
+        call fish_touch
         ret nc
-        jp boom_at_fish
+        ld a,1
+        ld (fish_dead),a
+        ld hl,fish_draw_skip
+        ld (fish_draw_call+1),hl
+        or a
+        ret
 
 torpedo_fish:
-        ld a,(boom_t)
+        ld a,(fish_dead)
         or a
         ret nz
         ld a,(torp_y)
@@ -160,7 +191,14 @@ torpedo_fish:
         cp 22                   ; 15 + TORPEDO_WIDTH
         ret nc
         call torpedo_spent
-        jp boom_at_fish
+        ld a,(wheel_phase)
+        or a
+        jp z,boom_at_fish       ; bomb is away: the full burst
+        ld a,1
+        ld (fish_dead),a
+        ld hl,fish_draw_skip
+        ld (fish_draw_call+1),hl
+        ret
 
 ;------------------------------------------------------------------------------
 ; boom_service - erase the last picture, then draw the next, or finish

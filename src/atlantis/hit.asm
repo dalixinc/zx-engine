@@ -79,10 +79,10 @@ hit_check:
         add hl,de
         ld a,h
         or a
-        ret nz                  ; far left or far right. OR cleared the carry.
+        jp nz,fish_cheap        ; missed the bomb; the fish is still fair game
         ld a,l
         cp HIT_X_SPAN
-        ret nc                  ; not across him
+        jp nc,fish_cheap
 
         ; y is 8 bits. Both are 0..191, so a difference that wraps is
         ; 73 or more after the add, never inside the span.
@@ -92,10 +92,11 @@ hit_check:
         sub b
         add a,-HIT_Y_LO
         cp HIT_Y_SPAN
-        ret nc                  ; not level with him
+        jp nc,fish_cheap
 
         call wheel_remove
         call boom_at_bomb
+        call fish_cheap         ; a fish in the same place goes too
         ld a,CFG_HIT_FLASH
         ld (hit_flash),a
         ld a,1
