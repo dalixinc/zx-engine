@@ -66,7 +66,7 @@ LIVES_SCREEN    equ SCREEN + LIVES_ROW * 32 + LIVES_COL
 hit_check:
         ld a,(wheel_phase)
         or a
-        ret z                   ; between flights. OR cleared the carry.
+        jp z,fish_hit           ; no bomb: the fish, on this cheap frame
 
         ; x is 16 bits: the bomb can hang off either edge.
         ld hl,(wheel_x)
@@ -79,10 +79,10 @@ hit_check:
         add hl,de
         ld a,h
         or a
-        ret nz                  ; far left or far right. OR cleared the carry.
+        jp nz,fish_cheap        ; missed the bomb; the fish is still fair game
         ld a,l
         cp HIT_X_SPAN
-        ret nc                  ; not across him
+        jp nc,fish_cheap
 
         ; y is 8 bits. Both are 0..191, so a difference that wraps is
         ; 73 or more after the add, never inside the span.
@@ -92,9 +92,20 @@ hit_check:
         sub b
         add a,-HIT_Y_LO
         cp HIT_Y_SPAN
-        ret nc                  ; not level with him
+        jp nc,fish_cheap
 
         call wheel_remove
+        call boom_at_bomb
+        call fish_aside         ; a fish in the same place goes too
+        jp diver_hurt
+
+; One column in from the left edge. DIVER_MIN_X is 0.
+DIVER_HIT_X     equ DIVER_MIN_X + 8
+
+; Out: carry set if that was the last life.
+diver_hurt:
+        ld a,DIVER_HIT_X
+        ld (diver_x),a
         ld a,CFG_HIT_FLASH
         ld (hit_flash),a
         ld a,1
@@ -102,7 +113,7 @@ hit_check:
         ld hl,lives
         dec (hl)
         jr z,.over
-        or a                    ; lives left: carry clear
+        or a
         ret
 .over:  scf
         ret

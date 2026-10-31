@@ -196,7 +196,7 @@ torpedo_spent:
 torpedo_hit:
         ld a,(wheel_phase)
         or a
-        ret z
+        jp z,torpedo_fish       ; no bomb: the fish, if it is in the way
 
         ; The same compare as hit_check: the bomb's x minus the torpedo's,
         ; moved so the overlap is 0 .. span-1. Both are 16 bits here.
@@ -208,10 +208,10 @@ torpedo_hit:
         add hl,de
         ld a,h
         or a
-        ret nz
+        jp nz,torpedo_fish
         ld a,l
         cp TORP_X_SPAN
-        ret nc
+        jp nc,torpedo_fish
 
         ld a,(torp_y)
         ld b,a
@@ -219,9 +219,10 @@ torpedo_hit:
         sub b
         add a,-TORP_Y_LO
         cp TORP_Y_SPAN
-        ret nc
+        jp nc,torpedo_fish
 
         call wheel_remove
+        call boom_at_bomb
         jr torpedo_spent
 
 ;------------------------------------------------------------------------------

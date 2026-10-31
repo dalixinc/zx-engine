@@ -265,6 +265,7 @@ SLACK_WARMUP    equ 0
         ld a,(diver_late)
         or a
         call nz,diver_restore_fast
+fish_rest_call:
         call fish_restore_fast
     IFNDEF NO_WHEEL
         ld a,(wheel_first)
@@ -355,6 +356,7 @@ SLACK_WARMUP    equ 0
         call z,wheel_draw_early
 .wheel_drawn:
     ENDIF
+fish_draw_call:
         call fish_draw_fast
         ; If a sprite is on row 0, the digits go back on top now,
         ; after the photograph and before we spend the frame on the seabed.
@@ -441,6 +443,7 @@ SLACK_WARMUP    equ 0
 
         ; One pixel each. The second pixel, at 25, is the idle frame.
         call update_diver
+fish_mv:
         call update_fish
         ; The wheel and the torpedo apply step_ticks themselves. This
         ; frame always does one fast tick. 50 already has step_ticks = 1.
@@ -710,6 +713,7 @@ idle_tick:
         call scroll_shift_slow
 .noslow:
         call update_diver
+fish_mv2:
         call update_fish
         ld a,(torp_on)
         or a
@@ -814,6 +818,7 @@ wheel_first:    db 0
         ; After the fish and the diver, so the wrappers can call their
         ; image-index routines. The demo does not include this file.
         INCLUDE "fastsprite.asm"
+        INCLUDE "boom.asm"
         INCLUDE "menu.asm"
     IFDEF SOAK
         INCLUDE "soak.asm"

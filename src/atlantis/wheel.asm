@@ -656,7 +656,7 @@ wheel_draw:
 
         ld iy,wheel_bg
         ld (iy+BG_VALID),0
-        ret
+        jp boom_service         ; the explosion, only while the bomb is gone
 
 
 ;------------------------------------------------------------------------------
