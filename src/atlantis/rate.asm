@@ -25,8 +25,13 @@
 
 game_rate:      db CFG_START_RATE
 step_ticks:     db 1
+step_saved:     db 1            ; step_one puts the real rate back here
 spare_lines:    db 0            ; 0..99 shown; the true count is capped
 spare_late:     db 0            ; 1 if the step had already missed the interrupt
+spare_pic:      db 0            ; 25 fps: spare lines in the picture frame
+spare_pic_late: db 0
+spare_idle:     db 0            ; 25 fps: spare lines in the idle frame
+spare_idle_late: db 0
 rate_prev:      db 0            ; last frame's Symbol Shift + F
 chord_flash:    db 0            ; steps of border flash left; 0 = normal border
 

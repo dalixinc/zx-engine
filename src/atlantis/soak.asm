@@ -25,8 +25,8 @@
 ; off (including a plain S, which must not toggle). Then it parks the
 ; fish on row 0 while he has already sunk clear of it, and toggles again.
 ; Then it holds Down for the rest of the run so he rides the sand and at
-; least one silo. Around frame 650 the wheel bomb is at the surface, and
-; the chord is pressed twice more so the digits sit on it. 1024 frames.
+; least one silo. When the wheel bomb bobs onto row 0 the chord is
+; pressed twice more so the digits sit on it. 1024 frames.
 ; Green border and "OK" means every check passed. A red border and a
 ; reason number means it stopped at the first failure; the frame number
 ; is next to it.
@@ -46,7 +46,8 @@
 ;   9 the wheel was never seen clipped on the right, clipped on the
 ;     left, crossing the fish, crossing the diver, and under the digits
 ;  10 the title, a help line or the hearts changed
-;  11 the menu did not show the title, or key 2 did not settle on 50
+;  11 the menu did not show the title, or key 2 did not settle back
+;     on the start rate
 ;  12 Symbol Shift + F did not flip the speed, or F alone flipped it,
 ;     or holding the chord flipped it again
 ;  13 Symbol Shift + P did not return to the menu, or P alone did,
@@ -54,11 +55,12 @@
 ;
 ; The run is four phases.
 ;   0  the menu. Key 2 is pressed, held, and pressed again, so the
-;      speed goes to 25 and back to 50. A hold must not flip twice.
-;      Key 1 then starts the game.
+;      speed leaves the start rate and comes back. A hold must not
+;      flip twice. Key 1 then starts the game.
 ;   1  the original 1024 frames.
-;   2  he swims right. F alone does nothing. Symbol Shift + F flips to
-;      25, a hold does not flip again, and a second press returns to 50.
+;   2  he swims right. F alone does nothing. Symbol Shift + F flips
+;      away from the start rate, a hold does not flip again, and a
+;      second press returns to it.
 ;      P alone stays in the game. Symbol Shift + P returns to the menu.
 ;   3  the menu is back, the title is on it, and key 1 starts a clean game.
 ;==============================================================================
@@ -140,32 +142,54 @@ soak_begin_play:
         ld (soak_input),a
 
         ; Frames count from 1 (we incremented first).
+        ; At 25 each step is two television frames, so the same swim
+        ; is half as many steps. The chord and the dive are scaled.
         ld a,h
         or a
-        jr nz,.late             ; frame >= 256: hold Down, fish at his depth
+        jr nz,.late
         ld a,l
 
+    IF CFG_START_RATE = 25
+        cp 80
+    ELSE
         cp 160
+    ENDIF
         jr nc,.down
-        ld a,IN_UP              ; 1..159: climb to row 0 and stay there
+        ld a,IN_UP
         ld (soak_input),a
         jr .chord
 .down:  ld a,IN_DOWN
         ld (soak_input),a
 
-; Four rising edges, so the overlay goes on, off, on, off.
-;   120 press (on), 121-150 hold, 151 release
-;   160 press (off)
-;   162 S alone, Symbol Shift up: must not change anything
-;   210 press (on), 211-240 hold, 241 release
-;   250 press (off)
+; Four rising edges: on, off, on, off. At 50 the presses are 120,
+; 160, 210 and 250. At 25 they are 60, 80, 105 and 125.
 .chord: ld a,l
+    IF CFG_START_RATE = 25
+        cp 60
+        jr z,.both
+        cp 61
+        jr c,.fish
+        cp 76
+        jr c,.both
+        cp 80
+        jr z,.both
+        cp 81
+        jr z,.plain_s
+        cp 105
+        jr z,.both
+        cp 106
+        jr c,.fish
+        cp 121
+        jr c,.both
+        cp 125
+        jr z,.both
+    ELSE
         cp 120
         jr z,.both
         cp 121
         jr c,.fish
         cp 151
-        jr c,.both              ; 121..150 still held
+        jr c,.both
         cp 160
         jr z,.both
         cp 162
@@ -175,9 +199,10 @@ soak_begin_play:
         cp 211
         jr c,.fish
         cp 241
-        jr c,.both              ; 211..240 still held
+        jr c,.both
         cp 250
         jr z,.both
+    ENDIF
         jr .fish
 .both:  ld a,1
         ld (soak_sym),a
@@ -199,18 +224,27 @@ soak_begin_play:
         or a
         jr nz,.fish_hi
         ld a,(soak_frame)
+    IF CFG_START_RATE = 25
+        cp 100
+        ret c
+        cp 140
+        jr nc,.fish_home
+    ELSE
         cp 200
         ret c
+    ENDIF
         xor a
         ld (fish_y),a
         ret
 .fish_hi:
-        ld a,(soak_frame)       ; frames 256..279 are low byte 0..23
+        ld a,(soak_frame)
+    IF CFG_START_RATE = 50
         cp 24                   ; 256+24 = 280
         jr nc,.fish_home
         xor a
         ld (fish_y),a
         ret
+    ENDIF
 .fish_home:
         ld a,FISH_SWIM_Y
         ld (fish_y),a
@@ -703,29 +737,45 @@ soak_count_toggles:
         inc (hl)
         ret
 
-; The surface bomb is on row 0 around frames 650-670. Seed 42, a
-; 48-frame pause and 1 pixel a frame put it there; main.asm asserts
-; those two numbers. Two rising edges, so the overlay goes on and then
-; off again, and the run still ends with it off.
-;   650 press (on), 651-669 hold, 670-679 release
-;   680 press (off)
+; The surface bomb bobs onto row 0 part way through the dive.
+; At 50 frames a second that used to be around frame 650. At 25 the
+; same swim is half as many steps, so the chord follows the bomb
+; instead of a frame number. Two rising edges: on, then off. The run
+; still ends with the overlay off. Not before frame 256, so it does
+; not collide with the chords at the start of the dive.
+; At 25 frames a second the surface bomb is on row 0 at steps
+; 324-333 (it moves two pixels a step). At 50 that is 648-667,
+; the same part of the swim as the old 650 window.
 soak_surface_chord:
         ld hl,(soak_frame)
+    IF CFG_START_RATE = 25
+        ld de,324
+    ELSE
         ld de,650
+    ENDIF
         or a
         sbc hl,de
-        ret c                   ; before 650
+        ret c
         ld a,h
         or a
-        ret nz                  ; more than 255 frames later
+        ret nz
         ld a,l
-        cp 20                   ; 650..669
+    IF CFG_START_RATE = 25
+        cp 10
+        jr c,.both
+        cp 14
+        ret c
+        cp 15
+        ret nc
+    ELSE
+        cp 20
         jr c,.both
         cp 30
-        ret c                   ; 670..679, chord up
+        ret c
         cp 31
-        ret nc                  ; 681 onwards
-.both:  ld a,1                  ; 680 as well: l = 30
+        ret nc
+    ENDIF
+.both:  ld a,1
         ld (soak_sym),a
         ld (soak_s),a
         ret
@@ -1119,18 +1169,34 @@ soak_after_chords:
         jp soak_fail
 .want25:
         ld a,(game_rate)
+    IF CFG_START_RATE = 25
+        cp 50                   ; one flip from the 25 start
+    ELSE
         cp 25
+    ENDIF
         jr nz,.bad12
         ld a,(step_ticks)
+    IF CFG_START_RATE = 25
+        cp 1
+    ELSE
         cp 2
+    ENDIF
         jr z,.step
         jr .bad12
 .want50:
         ld a,(game_rate)
+    IF CFG_START_RATE = 25
+        cp 25                   ; still the start rate, or flipped back
+    ELSE
         cp 50
+    ENDIF
         jr nz,.bad12
         ld a,(step_ticks)
+    IF CFG_START_RATE = 25
+        cp 2
+    ELSE
         cp 1
+    ENDIF
         jr nz,.bad12
         jr .step
 .stuck: ld a,13
@@ -1166,13 +1232,21 @@ soak_on_menu:
         jr .keys
 .want25:
         ld a,(game_rate)
+    IF CFG_START_RATE = 25
+        cp 50
+    ELSE
         cp 25
+    ENDIF
         jr z,.keys
         ld a,11
         jp soak_fail
 .want50:
         ld a,(game_rate)
+    IF CFG_START_RATE = 25
+        cp 25
+    ELSE
         cp 50
+    ENDIF
         jr z,.keys
         ld a,11
         jp soak_fail
@@ -1277,10 +1351,14 @@ soak_check_restart:
         or l
         jp nz,.bad
         ld a,(game_rate)
-        cp 50
+        cp CFG_START_RATE
         jp nz,.bad
         ld a,(step_ticks)
+    IF CFG_START_RATE = 25
+        cp 2
+    ELSE
         cp 1
+    ENDIF
         jp nz,.bad
         ld a,GREEN
         call set_border

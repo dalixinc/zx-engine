@@ -385,7 +385,7 @@ game_reset:
     IFDEF SOAK
 .soak_start:
         ld a,(game_rate)
-        cp 50
+        cp CFG_START_RATE
         jr z,.rate_ok
         ld a,12
         jp soak_fail
