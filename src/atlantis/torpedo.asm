@@ -69,6 +69,7 @@ torp_r1:        dw 0            ; and of its second row
 torp_vn:        db 0
 torp_vcol:      db 0            ; first column on screen
 torp_save:      ds 4            ; row 0 bytes 0 and 1, then row 1 bytes 0 and 1
+fire_ready:     dw 0            ; frame_count at which the next launch is allowed
 
 ;------------------------------------------------------------------------------
 ; torpedo_fire - launch one on a fresh press of fire
@@ -77,6 +78,12 @@ torp_save:      ds 4            ; row 0 bytes 0 and 1, then row 1 bytes 0 and 1
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 torpedo_fire:
+        ld hl,(frame_count)
+        ld de,(fire_ready)
+        or a
+        sbc hl,de
+        ret c                   ; not yet: this costs nothing on frames
+                                ; fire is up, because we are not called
         ld a,(torp_on)
         or a
         ret nz
@@ -129,6 +136,10 @@ torpedo_fire:
         jr c,.on
         ld a,TORP_LOW
 .on:    ld (torp_on),a
+        ld hl,(frame_count)
+        ld de,CFG_FIRE_COOLDOWN
+        add hl,de
+        ld (fire_ready),hl
         ret
 
 ;------------------------------------------------------------------------------
@@ -376,4 +387,6 @@ torpedo_reset:
         xor a
         ld (torp_on),a
         ld (torp_vn),a
+        ld (fire_ready),a
+        ld (fire_ready+1),a
         ret
