@@ -51,7 +51,11 @@ Fire launches one torpedo, along the row he is facing. It destroys a
 wheel bomb it touches, and is spent. Another cannot be launched until
 `CFG_FIRE_COOLDOWN` television frames have passed (48, about a second).
 
-The menu: key 1 starts, key 2 switches 50 and 25 frames a second.
+The tape starts at 25 frames a second. The picture frame does the
+same draw and the same one tick as 50. The next television frame
+moves again and does not draw. Key 2 on the menu switches to 50,
+one step every television frame. Symbol Shift + F does the same
+during play.
 During play, Symbol Shift + S shows the stat line, Symbol Shift + F
 switches the speed, and Symbol Shift + P returns to the menu. Each
 chord fires once, on the press. The key alone does nothing. S and F

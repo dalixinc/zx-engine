@@ -4,8 +4,9 @@
 ; step_ticks is how many 1/50-second television frames one game step
 ; stands in for.
 ;   50 frames a second: step_ticks = 1. The step runs every interrupt.
-;   25 frames a second: step_ticks = 2. The step runs, then the game
-;   waits for one more interrupt with nothing moving.
+;   25 frames a second: step_ticks = 2. The picture frame is one fast
+;   tick, the same work as 50. The next frame only moves, and does not
+;   draw.
 ; Every distance in the game is written per 1/50 second. A step moves
 ; that distance step_ticks times. Both speeds cover the same water in
 ; the same real second. 25 takes the steps in pairs, so it looks less
@@ -25,8 +26,13 @@
 
 game_rate:      db CFG_START_RATE
 step_ticks:     db 1
+step_saved:     db 1            ; the real rate while a tick forces 1
 spare_lines:    db 0            ; 0..99 shown; the true count is capped
 spare_late:     db 0            ; 1 if the step had already missed the interrupt
+spare_pic:      db 0            ; 25 fps: spare lines in the picture frame
+spare_pic_late: db 0
+spare_idle:     db 0            ; 25 fps: spare lines in the idle frame
+spare_idle_late: db 0
 rate_prev:      db 0            ; last frame's Symbol Shift + F
 chord_flash:    db 0            ; steps of border flash left; 0 = normal border
 

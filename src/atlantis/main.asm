@@ -100,9 +100,9 @@ entry:
 
 ;------------------------------------------------------------------------------
 ; main_loop - one step
-; At 50 frames a second that is one television frame. At 25 it is two:
-; the work runs, then the game waits for one more interrupt with the
-; picture held still.
+; At 50 frames a second that is one television frame. At 25 it is two.
+; The picture frame is the 50 body: same draw, then one fast tick.
+; The idle frame only moves (no drawing), and it starts on an interrupt.
 ;------------------------------------------------------------------------------
 main_loop:
         ; The spare-scanline count already waited for the interrupt at
@@ -361,16 +361,9 @@ SLACK_WARMUP    equ 0
         ; The wheel is included: it can bob up to y = 0.
         call stats_overlay_if_row0
 
-        ; 50: one pixel of ground, and one pixel of sand on every other
-        ; step. 25: the same real-time speed in one coarser step. The
-        ; sand moves one pixel either way (its speed is one pixel per
-        ; two television frames, which is exactly one pixel per 25-step).
-        ; The ground moves one pixel per television frame, so the 25-step
-        ; moves it twice.
-        ld a,(step_ticks)
-        cp 2
-        jr z,.scroll25
-
+        ; Same order as 50. The blit, then one shift, then the border,
+        ; then one fast tick. Nothing above the shift is extra at 50.
+        ; At 25 the idle frame does the second shift and the second tick.
     IFDEF TIMING_BARS
         ld a,CYAN
         out (ULA_PORT),a
@@ -386,10 +379,9 @@ SLACK_WARMUP    equ 0
         out (ULA_PORT),a
     ENDIF
         call scroll_shift_ground
-
-        ; Phase 0 means the screen matches the slow buffer. Flipping it
-        ; and rotating only when the result is 1 leaves the buffer one
-        ; pixel ahead, which the next full copy shows.
+        ; Phase 0 means the screen matches the slow buffer. Flipping
+        ; it and rotating only when the result is 1 leaves the buffer
+        ; one pixel ahead, which the next full copy shows.
         ld a,(slow_phase)
         xor 1
         ld (slow_phase),a
@@ -399,52 +391,6 @@ SLACK_WARMUP    equ 0
         out (ULA_PORT),a
     ENDIF
         call scroll_shift_slow
-        jr .scrolled
-
-.scroll25:
-        ; Phase 0: the screen matches the buffer. Rotate one pixel, show
-        ; that picture, and leave them matching.
-        ; Phase 1: the buffer is already a pixel ahead (50 mode leaves it
-        ; that way on the odd frame). Show that pixel, then rotate one
-        ; more, so the buffer is a pixel ahead again. Either way the
-        ; screen advances one pixel, and switching back to 50 does not
-        ; skip a pixel or show the same one twice.
-        ld a,(slow_phase)
-        or a
-        jr nz,.phase1
-        call scroll_shift_slow
-        ld a,1
-        ld (slow_phase),a
-    IFDEF TIMING_BARS
-        ld a,CYAN
-        out (ULA_PORT),a
-    ENDIF
-        call scroll_blit
-        xor a
-        ld (slow_phase),a
-        jr .late25
-.phase1:
-    IFDEF TIMING_BARS
-        ld a,CYAN
-        out (ULA_PORT),a
-    ENDIF
-        call scroll_blit
-    IFDEF TIMING_BARS
-        ld a,GREEN
-        out (ULA_PORT),a
-    ENDIF
-        call scroll_shift_slow
-.late25:
-    IFDEF SOAK
-        call soak_after_blit
-    ENDIF
-        call draw_late
-    IFDEF TIMING_BARS
-        ld a,RED
-        out (ULA_PORT),a
-    ENDIF
-        call scroll_shift_ground
-        call scroll_shift_ground
 .scrolled:
 
     IFDEF TIMING_BARS
@@ -493,23 +439,18 @@ SLACK_WARMUP    equ 0
         ; left the row. A sprite on row 0 was already handled above.
         call stats_overlay_if_clear
 
-        ; The diver and the fish move one pixel per call. A second call
-        ; is the second 1/50 second when the step stands for two. The
-        ; routines themselves are shared with the demo, so the second
-        ; step lives here and the demo's bytes stay put. The bomb applies
-        ; the step inside its own routine: calling it twice would count
-        ; the pause between bombs twice.
+        ; One pixel each. The second pixel, at 25, is the idle frame.
         call update_diver
         call update_fish
+        ; The wheel and the torpedo apply step_ticks themselves. This
+        ; frame always does one fast tick. 50 already has step_ticks = 1.
         ld a,(step_ticks)
+        ld (step_saved),a
         cp 2
-        jr nz,.moved
-        call update_diver
-        call update_fish
-.moved:
-        ; The torpedo: move the one that is running, then launch a new
-        ; one on a fresh press, from where he is now. Each is a load and
-        ; a test when there is nothing to do.
+        jr nz,.actors
+        ld a,1
+        ld (step_ticks),a
+.actors:
         ld a,(torp_on)
         or a
         call nz,torpedo_move
@@ -520,20 +461,28 @@ SLACK_WARMUP    equ 0
         call update_wheel
     IFNDEF SOAK
         ; Before hit_check: a bomb that was shot first is already gone.
-        ; The soak fires torpedoes but keeps its bombs (see soak.asm).
         ld a,(torp_on)
         or a
         call nz,torpedo_hit
-    ENDIF
-    IFNDEF SOAK
-        ; After everything has moved. The last life goes to the menu
-        ; from here, where no call is waiting to return.
         call hit_check
-        jp c,game_over
+        jr nc,.lived
+        ld a,(step_saved)
+        ld (step_ticks),a
+        jp game_over
+.lived:
     ENDIF
     ENDIF
+        ld a,(step_saved)
+        ld (step_ticks),a
+
     IFDEF SOAK
+        ; At 25 the idle tick has not run yet. The script reads the
+        ; position after the whole step.
+        ld a,(step_ticks)
+        cp 2
+        jr z,.soak_later
         call soak_after_update
+.soak_later:
     ENDIF
     IFDEF TIMING_BARS
         ld a,BLACK
@@ -567,18 +516,69 @@ SLACK_WARMUP    equ 0
         jr .shot_halt
 .shot_go:
     ENDIF
-        ; Not the sled, and not the timing border. Count the scanlines
-        ; left in this television frame. That wait IS the sync. At 25
-        ; frames a second, wait for one more interrupt with nothing moving.
+        ; Sled, timing border, and shot builds sync with wait_frame.
+        ; The second tick goes in the frame that wait opens.
+    IFDEF SLACK_LINES
+        DEFINE IDLE_HOLD
+    ENDIF
+    IFDEF TIMING_BARS
+        DEFINE IDLE_HOLD
+    ENDIF
+    IFDEF SHOT_FRAME
+        DEFINE IDLE_HOLD
+    ENDIF
+    IFDEF IDLE_HOLD
+        call idle_hold
+    ENDIF
+        ; Count the scanlines left. That wait IS the sync. At 25 this
+        ; is the picture frame; the idle frame is counted on its own,
+        ; after it has been started on an interrupt.
     IFNDEF SLACK_LINES
     IFNDEF TIMING_BARS
     IFNDEF SHOT_FRAME
         call spare_count
-        ld a,(step_ticks)
+        ld a,(step_saved)
         cp 2
-        jr nz,.synced
+        jr nz,.after_idle
+        ld a,(spare_lines)
+        ld (spare_pic),a
+        ld a,(spare_late)
+        ld (spare_pic_late),a
+        or a
+        jr z,.idle_on_time
+        ; Already past the beam. Wait for a real interrupt, or the
+        ; second tick starts late and the next picture tears.
         call wait_frame
-.synced:
+.idle_on_time:
+        xor a
+        ld (vsync_flag),a       ; this tick owns the frame that just began
+        call idle_tick
+        call spare_count
+        ld a,(spare_lines)
+        ld (spare_idle),a
+        ld a,(spare_late)
+        ld (spare_idle_late),a
+        or a
+        jr z,.idle_merge
+        call wait_frame         ; next picture starts on an interrupt
+.idle_merge:
+        ; Stat line shows the tighter frame.
+        ld a,(spare_pic_late)
+        or a
+        jr z,.pic_ok
+        ld (spare_late),a
+.pic_ok:
+        ld a,(spare_idle)
+        ld b,a
+        ld a,(spare_pic)
+        cp b
+        jr nc,.idle_soaked     ; idle was tighter; spare_lines is already it
+        ld (spare_lines),a
+.idle_soaked:
+    IFDEF SOAK
+        call soak_after_update
+    ENDIF
+.after_idle:
     IFDEF MEASURE
         ; The warmup is not counted. The window after it keeps the
         ; smallest spare, because the sand-only copy is much cheaper
@@ -596,18 +596,36 @@ SLACK_WARMUP    equ 0
         ld (meas_base),hl
         jp .meas_go
 .meas_sample:
+        ; meas_min / meas_max / meas_zeros: the picture frame at 25,
+        ; and the only frame at 50. The idle frame is meas_min2,
+        ; meas_max2 and meas_zeros2.
+        ld a,(step_ticks)
+        cp 2
+        jr nz,.meas_one
+        ld a,(spare_pic)
+        ld hl,meas_min
+        call meas_keep
+        ld a,(spare_pic_late)
+        or a
+        jr z,.meas_idle
+        ld hl,(meas_zeros)
+        inc hl
+        ld (meas_zeros),hl
+.meas_idle:
+        ld a,(spare_idle)
+        ld hl,meas_min2
+        call meas_keep
+        ld a,(spare_idle_late)
+        or a
+        jr z,.meas_notzero
+        ld hl,(meas_zeros2)
+        inc hl
+        ld (meas_zeros2),hl
+        jr .meas_notzero
+.meas_one:
         ld a,(spare_lines)
-        ld b,a
-        ld a,(meas_min)
-        cp b
-        jr c,.meas_kept        ; the stored one is already smaller
-        ld a,b
-        ld (meas_min),a
-.meas_kept:
-        ; spare_late is set only when the work had already passed the
-        ; interrupt. A spare of 0 with this clear means the step still
-        ; finished inside the frame: no whole scanline was left, but it
-        ; did fit. The hex field printed as "zeros" is this late count.
+        ld hl,meas_min
+        call meas_keep
         ld a,(spare_late)
         or a
         jr z,.meas_notzero
@@ -636,11 +654,23 @@ SLACK_WARMUP    equ 0
         ld hl,(meas_zeros)
         ld bc,(2 << 8) | 2
         call print_hex16
-        ld hl,(meas_frames)
+        ld a,(meas_max)
         ld bc,(2 << 8) | 7
+        call print_hex8
+        ld hl,(meas_frames)
+        ld bc,(2 << 8) | 10
         call print_hex16
+        ld a,(meas_min2)
+        ld bc,(3 << 8) | 0
+        call print_hex8
+        ld hl,(meas_zeros2)
+        ld bc,(3 << 8) | 2
+        call print_hex16
+        ld a,(meas_max2)
+        ld bc,(3 << 8) | 7
+        call print_hex8
         ld hl,(meas_loops)
-        ld bc,(2 << 8) | 12
+        ld bc,(3 << 8) | 10
         call print_hex16
         ld a,GREEN
         out (ULA_PORT),a
@@ -653,6 +683,72 @@ SLACK_WARMUP    equ 0
     ENDIF
     ENDIF
         jp main_loop
+
+;------------------------------------------------------------------------------
+; idle_tick - the second 1/50 second. No drawing.
+; The picture frame already shifted and moved once. This is the other
+; pixel, on the fast paths (step_ticks forced to 1). Restores step_ticks
+; from step_saved. hit_check may jump to game_over.
+; Corrupts: AF, BC, DE, HL, IX, IY
+;------------------------------------------------------------------------------
+idle_tick:
+        ld a,1
+        ld (step_ticks),a
+    IFDEF TIMING_BARS
+        ld a,RED
+        out (ULA_PORT),a
+    ENDIF
+        call scroll_shift_ground
+        ld a,(slow_phase)
+        xor 1
+        ld (slow_phase),a
+        jr z,.noslow
+    IFDEF TIMING_BARS
+        ld a,GREEN
+        out (ULA_PORT),a
+    ENDIF
+        call scroll_shift_slow
+.noslow:
+        call update_diver
+        call update_fish
+        ld a,(torp_on)
+        or a
+        call nz,torpedo_move
+        ld a,(input_state)
+        and IN_FIRE
+        call nz,torpedo_fire
+    IFNDEF NO_WHEEL
+        call update_wheel
+    IFNDEF SOAK
+        ld a,(torp_on)
+        or a
+        call nz,torpedo_hit
+        call hit_check
+        jr nc,.lived
+        ld a,(step_saved)
+        ld (step_ticks),a
+        jp game_over
+.lived:
+    ENDIF
+    ENDIF
+        ld a,(step_saved)
+        ld (step_ticks),a
+        ret
+
+; Timing, sled, and shot builds have no spare_count. Open the idle
+; frame with a real interrupt, then do the second tick and nothing else.
+    IFDEF IDLE_HOLD
+idle_hold:
+        ld a,(step_saved)
+        cp 2
+        ret nz
+        call wait_frame
+        call idle_tick
+    IFDEF SOAK
+        call soak_after_update
+    ENDIF
+        ret
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; draw_late - the diver, the bomb and the torpedo, when the seabed copy
@@ -736,8 +832,24 @@ shot_loops:     dw 0            ; main-loop passes, 1 on the first
 meas_loops:     dw 0
 meas_base:      dw 0            ; frame_count when the window opened
 meas_frames:    dw 0            ; interrupts across the window
-meas_min:       db 255          ; smallest spare in the window
-meas_zeros:     dw 0            ; steps in the window that missed the interrupt
+; In: A = spare count, HL -> min byte. The next byte is the max.
+meas_keep:
+        cp (hl)
+        jr nc,.max
+        ld (hl),a
+.max:   inc hl
+        cp (hl)
+        ret c
+        ret z
+        ld (hl),a
+        ret
+
+meas_min:       db 255          ; smallest spare in the picture frame
+meas_max:       db 0            ; largest spare in that same frame
+meas_zeros:     dw 0            ; picture frames that missed the interrupt
+meas_min2:      db 255          ; idle frame, 25 fps only
+meas_max2:      db 0
+meas_zeros2:    dw 0
     ENDIF
 
 code_end:
@@ -763,7 +875,7 @@ DATA_LENGTH     equ data_end - data_start
         ASSERT DIVER_ANIM_STEP == 4, "diver_image_index divides by 4 with two RRCAs"
         ASSERT DIVER_FRAMES == 3, "diver_image_index multiplies facing by 3"
         ASSERT FISH_FRAMES == 2, "fish_image_index multiplies facing by 2"
-        ASSERT WHEEL_FRAMES == 8, "the pulsar has eight frames"
+        ASSERT WHEEL_FRAMES == 8, "the pulsar animation is eight steps"
         ASSERT (WHEEL_FRAMES & (WHEEL_FRAMES - 1)) == 0, "wheel frame mask"
         ASSERT WHEEL_WIDTH == 12
         ASSERT WHEEL_BYTES == 3, "the widest shift of the 12px wheel is 3 bytes"
@@ -795,7 +907,7 @@ DATA_LENGTH     equ data_end - data_start
         ASSERT HIT_X_SPAN > 0 && HIT_Y_SPAN > 0, "a hit box has no size"
         ASSERT BORDER_FRAMES == 8, "the rrca x3 above assumes BORDER_FRAMES = 8"
     IFDEF SOAK
-        ASSERT CFG_START_RATE == 50, "the soak starts at 50 frames a second"
+        ASSERT CFG_START_RATE = 25 || CFG_START_RATE = 50, "soak rate is 25 or 50"
         ASSERT CFG_WHEEL_WOBBLE == 0, "the soak expects a smooth bob"
         ASSERT CFG_WHEEL_BOB == 6, "the soak expects a swing of 6"
         ASSERT CFG_WHEEL_BOB_SPEED == 1, "the soak expects one sine step per frame"
