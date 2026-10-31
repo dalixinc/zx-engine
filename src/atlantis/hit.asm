@@ -97,6 +97,8 @@ hit_check:
         call wheel_remove
         call boom_at_bomb
         call fish_cheap         ; a fish in the same place goes too
+        ld a,60                 ; the x game_reset starts him on
+        ld (diver_x),a
         ld a,CFG_HIT_FLASH
         ld (hit_flash),a
         ld a,1

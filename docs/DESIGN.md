@@ -55,8 +55,9 @@ A hit on a bomb, from the torpedo or from the diver, plays a short
 explosion where the bomb was. The bomb is already gone, so the
 explosion is drawn instead of it. The fish bursts the same way if it meets the diver or a torpedo while
 the bomb is away, and the diver does not lose a life for that. If a
-bomb is already on screen, the fish just vanishes and the torpedo is
-still spent. The burst is four pictures, lined up on a byte, and it stays
+bomb is already on screen, the fish stops and flashes yellow and red,
+then goes. Either way a new fish swims in from the right after a short
+pause. A bomb hit still costs a life, and puts him back at his start. The burst is four pictures, lined up on a byte, and it stays
 put while the sea scrolls.
 
 The tape starts at 25 frames a second. The picture frame does the

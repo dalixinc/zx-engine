@@ -17,7 +17,16 @@ boom_t:         db 0            ; 0 = nothing to draw
 boom_left:      db 0            ; draws still to show
 boom_got:       db 0            ; 1 = boom_bg holds the screen under it
 boom_fish:      db 0            ; 1 = the fish draw was turned off for a burst
-fish_dead:      db 0            ; 1 = vanished while a bomb was on screen
+fish_busy:      db 0            ; 1 = flashing, waiting, or hidden for a burst
+fish_left:      db 0            ; attribute flashes still to show
+fish_tint:      db 0            ; 0 = yellow, 1 = red
+fish_wait:      db 0            ; steps until the next fish swims in
+fish_acol:      db 0
+fish_arow:      db 0
+FISH_FLASHES    equ 4
+FISH_GAP        equ 20          ; game steps, then a new fish from the right
+FISH_YEL        equ BRIGHT | YELLOW | (BLUE << 3)
+FISH_RED        equ BRIGHT | RED | (BLUE << 3)
 boom_col:       db 0            ; screen column, 0..30
 boom_y:         db 0
 boom_bg:        ds BOOM_ROWS * 2
@@ -30,10 +39,14 @@ boom_reset:
         ld (boom_t),a
         ld (boom_got),a
         ld (boom_fish),a
-        ld (fish_dead),a
+        ld (fish_busy),a
+        ld (fish_left),a
+        ld (fish_wait),a
         ld hl,fish_draw_fast
         ld (fish_draw_call+1),hl
-        ret
+        ld hl,fish_restore_fast
+        ld (fish_rest_call+1),hl
+        jp fish_unhold
 
 ; The patched call lands here while a fish burst is showing. The restore
 ; this frame already put the fish's photograph back. Drop it so the next
@@ -42,6 +55,124 @@ fish_draw_skip:
         ld iy,fish_bg
         ld (iy+BG_VALID),0
         ret
+
+fish_draw_none:
+        ret
+
+fish_move_skip:
+        ret
+
+; Stop the two movement calls. The heavy frame does not come here.
+fish_hold:
+        ld hl,fish_move_skip
+        ld (fish_mv+1),hl
+        ld (fish_mv2+1),hl
+        ret
+
+fish_unhold:
+        ld hl,update_fish
+        ld (fish_mv+1),hl
+        ld (fish_mv2+1),hl
+        ret
+
+; The fish stays where it was drawn. Four attribute passes, yellow then
+; red, then the photograph is put back and the fish is gone.
+fish_flash_begin:
+        ld a,(fish_x)
+        rrca
+        rrca
+        rrca
+        and 31
+        ld (fish_acol),a
+        ld a,FISH_SWIM_Y / 8
+        ld (fish_arow),a
+        xor a
+        ld (fish_tint),a
+        ld a,FISH_FLASHES
+        ld (fish_left),a
+        ld a,1
+        ld (fish_busy),a
+        ld hl,fish_flash_step
+        ld (fish_rest_call+1),hl
+        ld hl,fish_draw_none
+        ld (fish_draw_call+1),hl
+        jp fish_hold
+
+fish_flash_step:
+        ld a,(fish_left)
+        or a
+        jr z,.gone
+        ld a,(fish_tint)
+        or a
+        ld a,FISH_YEL
+        jr z,.ink
+        ld a,FISH_RED
+.ink:   call fish_paint
+        ld a,(fish_tint)
+        xor 1
+        ld (fish_tint),a
+        ld hl,fish_left
+        dec (hl)
+        ret
+.gone:  call fish_restore_fast  ; the pixels, once the colours are done
+        ld a,WATER_ATTR
+        call fish_paint
+        ld iy,fish_bg
+        ld (iy+BG_VALID),0
+        ld hl,fish_restore_fast
+        ld (fish_rest_call+1),hl
+        jp fish_begin_wait
+
+; A = attribute. Three columns, two rows, the fish's footprint.
+fish_paint:
+        push af
+        ld a,(fish_arow)
+        ld b,a
+        ld a,(fish_acol)
+        ld c,a
+        call attr_addr
+        pop af
+        ld c,a
+        ld b,2
+.row:   push bc
+        push hl
+        ld b,3
+.col:   ld (hl),c
+        inc l
+        djnz .col
+        pop hl
+        ld de,32
+        add hl,de
+        pop bc
+        djnz .row
+        ret
+
+; The fish is already off the screen. After FISH_GAP steps a new one
+; swims in from the right, which is the way it crosses the water.
+fish_begin_wait:
+        ld a,FISH_GAP
+        ld (fish_wait),a
+        ld a,1
+        ld (fish_busy),a
+        ld hl,fish_wait_step
+        ld (fish_draw_call+1),hl
+        jp fish_hold
+
+fish_wait_step:
+        ld hl,fish_wait
+        dec (hl)
+        ret nz
+        ld a,FISH_MAX_X
+        ld (fish_x),a
+        ld a,FACE_LEFT
+        ld (fish_facing),a
+        ld a,FISH_SWIM_Y
+        ld (fish_y),a
+        xor a
+        ld (fish_busy),a
+        ld hl,fish_draw_fast
+        ld (fish_draw_call+1),hl
+        jp fish_unhold
 
 ;------------------------------------------------------------------------------
 ; boom_at_bomb - the bomb has just been removed. Burst where it was.
@@ -59,8 +190,10 @@ boom_at_fish:
         jr nz,.arm
         ld a,1
         ld (boom_fish),a
+        ld (fish_busy),a
         ld hl,fish_draw_skip
         ld (fish_draw_call+1),hl
+        call fish_hold
 .arm:   ld a,(fish_x)
         ld l,a
         ld h,0
@@ -106,17 +239,12 @@ boom_arm:
         ret
 
 boom_show_fish:
-        ld a,(fish_dead)
-        or a
-        ret nz                  ; a cheap death stays dead until the next game
         ld a,(boom_fish)
         or a
         ret z
         xor a
         ld (boom_fish),a
-        ld hl,fish_draw_fast
-        ld (fish_draw_call+1),hl
-        ret
+        jp fish_begin_wait
 
 ;------------------------------------------------------------------------------
 ; fish_hit - the fish against the diver. No life is lost.
@@ -126,7 +254,7 @@ boom_show_fish:
 ; vanishes, which is cheaper than drawing the burst on that frame.
 ;------------------------------------------------------------------------------
 fish_hit:
-        ld a,(fish_dead)
+        ld a,(fish_busy)
         or a
         ret nz
         ld a,(boom_t)
@@ -155,20 +283,15 @@ fish_cheap:
         ld a,(diver_y)
         cp FISH_SWIM_Y + FISH_HEIGHT
         ret nc                  ; he is below the fish; the usual heavy frame
-        ld a,(fish_dead)
+        ld a,(fish_busy)
         or a
         ret nz
         call fish_touch
         ret nc
-        ld a,1
-        ld (fish_dead),a
-        ld hl,fish_draw_skip
-        ld (fish_draw_call+1),hl
-        or a
-        ret
+        jp fish_flash_begin
 
 torpedo_fish:
-        ld a,(fish_dead)
+        ld a,(fish_busy)
         or a
         ret nz
         ld a,(torp_y)
@@ -194,11 +317,7 @@ torpedo_fish:
         ld a,(wheel_phase)
         or a
         jp z,boom_at_fish       ; bomb is away: the full burst
-        ld a,1
-        ld (fish_dead),a
-        ld hl,fish_draw_skip
-        ld (fish_draw_call+1),hl
-        ret
+        jp fish_flash_begin
 
 ;------------------------------------------------------------------------------
 ; boom_service - erase the last picture, then draw the next, or finish
