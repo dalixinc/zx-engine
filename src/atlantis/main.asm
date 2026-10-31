@@ -763,7 +763,7 @@ DATA_LENGTH     equ data_end - data_start
         ASSERT DIVER_ANIM_STEP == 4, "diver_image_index divides by 4 with two RRCAs"
         ASSERT DIVER_FRAMES == 3, "diver_image_index multiplies facing by 3"
         ASSERT FISH_FRAMES == 2, "fish_image_index multiplies facing by 2"
-        ASSERT WHEEL_FRAMES == 4, "wheel_drift masks the frame with 3"
+        ASSERT WHEEL_FRAMES == 8, "the pulsar has eight frames"
         ASSERT (WHEEL_FRAMES & (WHEEL_FRAMES - 1)) == 0, "wheel frame mask"
         ASSERT WHEEL_WIDTH == 12
         ASSERT WHEEL_BYTES == 3, "the widest shift of the 12px wheel is 3 bytes"
