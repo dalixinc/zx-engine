@@ -205,51 +205,157 @@ SLACK_WARMUP    equ 0
         ld a,IN_DOWN
         ld (input_state),a
     ENDIF
+    IFDEF MEAS_FIRE
+        ; Measurement only. Fire goes down on every other step, so a
+        ; new torpedo leaves as soon as the last one is spent and one
+        ; is nearly always running.
+        ld a,(frame_count)
+        and 1
+        jr z,.meas_nofire
+        ld a,(input_state)
+        or IN_FIRE
+        ld (input_state),a
+.meas_nofire:
+    ENDIF
 
     IFDEF TIMING_BARS
         ld a,WHITE
         out (ULA_PORT),a
     ENDIF
         ; Restore first, while the screen still matches the photographs.
-        ; Draw order is fish, wheel, diver (back to front), so restore is
-        ; the reverse: diver, wheel, fish. The wheel is drawn after the
-        ; fish, so where they overlap its photograph contains the fish
-        ; and has to be put back before the fish's is.
+        ; Restore is the reverse of last step's draw order, so where two
+        ; sprites overlap, the one drawn later (whose photograph holds
+        ; the other) is put back first.
+        ;
+        ; Draw order:
+        ;   up in the water, before the seabed copy: the higher of the
+        ;       diver and the wheel, then the lower one, then the fish.
+        ;       The torpedo goes straight after the diver: it is new at
+        ;       his height, so it shares his place in the race.
+        ;   on the seabed, after the copy: diver, wheel, torpedo
+        ; The beam runs down the picture while this happens. A sprite is
+        ; missing from the picture if the beam reaches it after it was
+        ; erased and before it is drawn again. With a fixed order, the
+        ; one drawn second lost that race whenever it was near the top:
+        ; first the diver, behind a bomb, and then, the other way round,
+        ; a bomb at the surface. Drawing the higher one first, and
+        ; restoring it last, gives each the shortest gap where the beam
+        ; reaches it soonest. The fish swims at pixel row 76, which the
+        ; beam reaches much later, so it goes last.
+        ; The order between the diver and the bomb is not about which
+        ; is in front. If they overlap it is a hit and the bomb goes.
+        ; diver_late, wheel_late, wheel_first and torp_vn remember what
+        ; was done,
+        ; so the restore below runs in exactly the reverse order.
+        ;
         ; The fish and the diver go through the tight walker. The shared
         ; routines are what Engine Demo 1 still calls.
         ; NO_WHEEL is a measurement switch, the same kind of thing as
         ; SLACK_LINES. The tape does not define it. It leaves the bomb
         ; out so the spare-scanline count can be taken with no bomb
         ; on screen.
-        call diver_restore_fast
+        ld a,(torp_vn)          ; drawn after the copy: TORP_LOW is set
+        rla
+        call c,torpedo_restore
     IFNDEF NO_WHEEL
-        call wheel_restore
+        ld a,(wheel_late)
+        or a
+        call nz,wheel_restore
     ENDIF
+        ld a,(diver_late)
+        or a
+        call nz,diver_restore_fast
         call fish_restore_fast
+    IFNDEF NO_WHEEL
+        ld a,(wheel_first)
+        or a
+        jr nz,.wheel_was_first
+        ld a,(wheel_late)
+        or a
+        call z,wheel_restore
+    ENDIF
+        ld a,(torp_vn)          ; 1 or 2: drawn before the copy
+        dec a
+        cp 2
+        call c,torpedo_restore
+        ld a,(diver_late)
+        or a
+        call z,diver_restore_fast
+    IFNDEF NO_WHEEL
+        jr .restored
+.wheel_was_first:
+        ld a,(torp_vn)          ; 1 or 2: drawn before the copy
+        dec a
+        cp 2
+        call c,torpedo_restore
+        ld a,(diver_late)
+        or a
+        call z,diver_restore_fast
+        ld a,(wheel_late)       ; set only with wheel_late clear,
+        or a                    ; but the test keeps the rule simple
+        call z,wheel_restore
+.restored:
+    ENDIF
         call stats_prepare      ; drop the digits if a sprite is about to
                                 ; photograph row 0. Otherwise leave them:
                                 ; the beam is about to read that row.
+        ld a,(lives_dirty)      ; the hearts, while no sprite is on screen
+        or a
+        call nz,lives_draw
     IFDEF SOAK
         call soak_after_restore
     ENDIF
 
-        call fish_draw_fast
-    IFNDEF NO_WHEEL
-        ; Above the weed the ink is written while the beam is still in
-        ; the top border. A bomb that reaches the weed is drawn after
-        ; the seabed copy, or the copy would paint over it.
-        call wheel_is_low
-        jr nc,.wheel_later
-        call wheel_draw
-        call wheel_colours
-.wheel_later:
-    ENDIF
+        ; Which half each is drawn in. Once the diver's feet reach the
+        ; weed he is drawn after the copy (draw_late), or the copy would
+        ; paint over him. The same for the bomb. SBC A,A turns the
+        ; carry into 0 (up in the water) or $FF (drawn late).
         ld a,(diver_y)
         add a,DIVER_HEIGHT - 1  ; his lowest pixel
         cp BACK_ROW * 8         ; seabed starts at row 21
-        jr nc,.low
-        call diver_draw_fast    ; still in open water: the copy will not touch him
-.low:
+        ccf
+        sbc a,a
+        ld (diver_late),a
+    IFNDEF NO_WHEEL
+        call wheel_is_low       ; carry set: up in the water, or not shown
+        ccf
+        sbc a,a
+        ld (wheel_late),a
+        ; The bomb goes first if it is in the water and its top is
+        ; above the diver's. A diver on the seabed is drawn late
+        ; anyway, so that order does not matter there.
+        ld b,0
+        or a
+        jr nz,.order
+        ld a,(diver_y)
+        ld c,a
+        ld a,(wheel_y)
+        cp c
+        jr nc,.order
+        dec b                   ; $FF: the bomb first
+.order: ld a,b
+        ld (wheel_first),a
+        or a
+        call nz,wheel_draw_early
+    ENDIF
+        ld a,(diver_late)
+        or a
+        call z,diver_draw_fast
+        ; The torpedo, if one is running above the weed. It is drawn here
+        ; even when the diver is late: the order is the same either way.
+        ld a,(torp_on)
+        dec a                   ; TORP_HIGH is 1
+        call z,torpedo_draw
+    IFNDEF NO_WHEEL
+        ld a,(wheel_first)
+        or a
+        jr nz,.wheel_drawn
+        ld a,(wheel_late)
+        or a
+        call z,wheel_draw_early
+.wheel_drawn:
+    ENDIF
+        call fish_draw_fast
         ; If a sprite is on row 0, the digits go back on top now,
         ; after the photograph and before we spend the frame on the seabed.
         ; The wheel is included: it can bob up to y = 0.
@@ -348,11 +454,37 @@ SLACK_WARMUP    equ 0
     IFNDEF SOAK
         ; Heartbeat. The digits are hidden by default, so the border is
         ; what shows the frame loop is alive. rrca x3 is / BORDER_FRAMES.
-        ld hl,(frame_count)
+        ; After a hit, hit_flash counts down and the border flashes red
+        ; and black, four steps each. Otherwise, after a Symbol Shift
+        ; chord, chord_flash blinks it white and black, two steps each.
+        ; A hit wins. With neither flash this costs about 58 T-states
+        ; more than the plain heartbeat did.
+        ld a,(hit_flash)
+        or a
+        jr z,.nohit
+        dec a
+        ld (hit_flash),a
+        and 4
+        ld a,RED
+        jr nz,.border
+        xor a                   ; BLACK
+        jr .border
+.nohit: ld a,(chord_flash)
+        or a
+        jr z,.beat
+        dec a
+        ld (chord_flash),a
+        and 2
+        ld a,WHITE
+        jr nz,.border
+        xor a                   ; BLACK
+        jr .border
+.beat:  ld hl,(frame_count)
         ld a,l
         rrca
         rrca
         rrca
+.border:
         call set_border
     ENDIF
     ENDIF
@@ -375,8 +507,30 @@ SLACK_WARMUP    equ 0
         call update_diver
         call update_fish
 .moved:
+        ; The torpedo: move the one that is running, then launch a new
+        ; one on a fresh press, from where he is now. Each is a load and
+        ; a test when there is nothing to do.
+        ld a,(torp_on)
+        or a
+        call nz,torpedo_move
+        ld a,(input_state)
+        and IN_FIRE
+        call nz,torpedo_fire
     IFNDEF NO_WHEEL
         call update_wheel
+    IFNDEF SOAK
+        ; Before hit_check: a bomb that was shot first is already gone.
+        ; The soak fires torpedoes but keeps its bombs (see soak.asm).
+        ld a,(torp_on)
+        or a
+        call nz,torpedo_hit
+    ENDIF
+    IFNDEF SOAK
+        ; After everything has moved. The last life goes to the menu
+        ; from here, where no call is waiting to return.
+        call hit_check
+        jp c,game_over
+    ENDIF
     ENDIF
     IFDEF SOAK
         call soak_after_update
@@ -501,15 +655,16 @@ SLACK_WARMUP    equ 0
         jp main_loop
 
 ;------------------------------------------------------------------------------
-; draw_late - the diver, and the bomb, when the seabed copy would cover them
-; The bomb that is still up in the water was drawn before the copy.
+; draw_late - the diver, the bomb and the torpedo, when the seabed copy
+; would cover them
+; main_loop already decided which half each one is drawn in, and kept
+; that in diver_late and wheel_late for the next restore.
 ; Corrupts: AF, BC, DE, HL, IX, IY
 ;------------------------------------------------------------------------------
 draw_late:
-        ld a,(diver_y)
-        add a,DIVER_HEIGHT - 1
-        cp BACK_ROW * 8
-        jr c,.diver_done
+        ld a,(diver_late)
+        or a
+        jr z,.diver_done
     IFDEF TIMING_BARS
         ld a,MAGENTA
         out (ULA_PORT),a
@@ -517,12 +672,31 @@ draw_late:
         call diver_draw_fast
 .diver_done:
     IFNDEF NO_WHEEL
-        call wheel_is_low
-        ret c
+        ld a,(wheel_late)
+        or a
+        jr z,.wheel_done
         call wheel_draw
         call wheel_colours
+.wheel_done:
     ENDIF
-        ret
+        ld a,(torp_on)
+        rla                     ; TORP_LOW is bit 7
+        ret nc
+        jp torpedo_draw
+
+    IFNDEF NO_WHEEL
+; The bomb above the seabed: the picture, then its colours.
+wheel_draw_early:
+        call wheel_draw
+        jp wheel_colours
+    ENDIF
+
+; Which half of the step each sprite was drawn in: 0 before the seabed
+; copy, $FF after it. wheel_first is $FF when the bomb was drawn before
+; the diver. Read by the next step's restore.
+diver_late:     db 0
+wheel_late:     db 0
+wheel_first:    db 0
 
 ;------------------------------------------------------------------------------
 ; Engine, then the Atlantis-only pieces, then the shared actors.
@@ -537,6 +711,8 @@ draw_late:
         INCLUDE "stats.asm"
         INCLUDE "rate.asm"
         INCLUDE "wheel.asm"
+        INCLUDE "hit.asm"
+        INCLUDE "torpedo.asm"
         INCLUDE "../fish.asm"
         INCLUDE "../diver.asm"
         ; After the fish and the diver, so the wrappers can call their
@@ -577,6 +753,7 @@ data_start:
         INCLUDE "../../gfx/fish.asm"
         INCLUDE "../../gfx/diver.asm"
         INCLUDE "../../gfx/wheel.asm"
+        INCLUDE "../../gfx/torpedo.asm"
 data_end:
 DATA_LENGTH     equ data_end - data_start
         DISPLAY "atlantis data_end ", data_end
@@ -612,6 +789,10 @@ DATA_LENGTH     equ data_end - data_start
         ASSERT DIVER_MIN_Y == 0, "he is allowed up onto row 0"
         ASSERT FISH_SWIM_Y == 76, "the fish stays at the demo's depth"
         ASSERT FISH_SWIM_Y + FISH_HEIGHT <= BACK_ROW * 8, "the fish reaches the seabed; it is drawn before the blit"
+        ASSERT TORPEDO_WIDTH == 7 && TORPEDO_BYTES == 2, "the torpedo is one or two bytes a row"
+        ASSERT 2 * (TORP_SPEED + WHEEL_SPEED) < TORP_X_SPAN, "at 25 a torpedo could jump over a bomb"
+        ASSERT CFG_LIVES >= 1 && CFG_LIVES <= 9, "the stat line has one digit for the lives"
+        ASSERT HIT_X_SPAN > 0 && HIT_Y_SPAN > 0, "a hit box has no size"
         ASSERT BORDER_FRAMES == 8, "the rrca x3 above assumes BORDER_FRAMES = 8"
     IFDEF SOAK
         ASSERT CFG_START_RATE == 50, "the soak starts at 50 frames a second"

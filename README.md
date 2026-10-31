@@ -28,19 +28,44 @@ New to the scrolling ground? Read [docs/SCROLLING.md](docs/SCROLLING.md)**
 | Down   | A               | 6           | down     |
 | Left   | O               | 5           | left     |
 | Right  | P               | 8           | right    |
-| Fire   | SPACE (unused for now) | 0    | fire     |
+| Fire   | SPACE                  | 0           | fire     |
 | Stats  | Symbol Shift + S       |             |          |
+| Speed  | Symbol Shift + F       |             |          |
+| Menu   | Symbol Shift + P       |             |          |
 
-Symbol Shift + S toggles the debug digits on row 0. They are off at the
-start. One press is one toggle; holding the keys does not flicker, and S
-on its own does nothing. The digits are `F` frame, `K` keys, `J` joystick,
-`I` combined, `X` and `Y` in pixels, `M` image (0-2 facing right, 3-5
-facing left). While they are hidden, that row is water again.
+The tape opens on a start screen: `1` starts the game, `2` swaps between
+50 and 25 frames a second. The choice is kept when you come back to the
+menu.
+
+The diver has three lives (`CFG_LIVES` in `src/atlantis/config.asm`),
+shown as hearts at the top right of the screen. A wheel bomb that
+touches him costs one: the bomb vanishes, a heart goes, and the border
+flashes red. The hit boxes are a little smaller than the pictures, so a
+graze of the flippers or the rim does not count. After the last life
+the game goes back to the menu, which says GAME OVER.
+
+Fire launches a torpedo from the nose of his jet unit, the way he is
+facing. It runs along that row until it leaves the screen, and a bomb it
+touches is gone. One at a time: a new press fires again once the last one
+has gone. It does not follow him up or down.
+
+The three Symbol Shift chords fire once, the moment both keys go down.
+Holding them does not repeat, and the letter on its own does nothing.
+
+Symbol Shift + S toggles the stat line on row 0. It is off at the start.
+While it is hidden, that row is water again. It reads
+
+```
+scan 12 50/s x160 y090 L3 f65535
+```
+
+`scan` is the number of scanlines left over after the last step (99 at
+most), `50/s` the speed, `x` and `y` the diver in pixels, `L` the lives
+left, and `f` the television frames since the game started. The digits are reprinted every
+eight steps.
 
 All sources are merged into one byte, `000FUDLR` (same layout as Kempston),
-with `IN_*` constants in `src/constants.asm`. The overlay shows it in hex
-when it is on: `K` (keyboard only), `J` (Kempston only), `I` (combined).
-Keys are redefinable: overwrite the `keys_primary` table in `src/input.asm`
+with `IN_*` constants in `src/constants.asm`. Keys are redefinable: overwrite the `keys_primary` table in `src/input.asm`
 (5 entries of half-row byte + bit mask, order FIRE, UP, DOWN, LEFT, RIGHT).
 A Kempston read with any of bits 5-7 set is treated as "no joystick", which
 guards against the floating bus when no interface is fitted.
@@ -51,11 +76,18 @@ The demo still prints its digits on rows 22 and 23. It has no overlay.
 
 ```
 src/atlantis/main.asm    Atlantis entry, main loop, output directives
+src/atlantis/config.asm  the numbers you change: diver range, start speed, bomb bob
 src/atlantis/layout.asm  the game's rows, colours, buffer addresses
+src/atlantis/data.asm    menu words, stat-line template, sine table (at $C000)
+src/atlantis/menu.asm    the start screen, and Symbol Shift + P back to it
+src/atlantis/rate.asm    50 or 25 frames a second, the chords, the spare-scanline count
 src/atlantis/scenery.asm water, sand and ground colours
 src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
-src/atlantis/stats.asm   the row-0 overlay, Symbol Shift + S
+src/atlantis/stats.asm   the row-0 stat line, Symbol Shift + S
 src/atlantis/wheel.asm   the wheel bomb: drift, bob, spin, one at a time
+src/atlantis/hit.asm     the bomb against the diver, and the lives
+src/atlantis/torpedo.asm the diver's torpedo: fire, run, hit a bomb, its own draw
+src/atlantis/fastsprite.asm  the faster sprite walker the game uses (not the demo)
 src/atlantis/soak.asm    the background-restore check, only with -DSOAK
 src/main.asm             Engine Demo 1 entry and loop
 src/layout.asm           the demo's rows and buffer addresses
@@ -76,6 +108,8 @@ gfx/diver.txt            diver art, 24 x 15, 3 frames, facing right
 gfx/diver.asm            GENERATED from diver.txt: 8 shifts x 3 frames x 2 facings
 gfx/wheel.txt            wheel bomb, 12 x 12, 4 frames, mirror off (the T stays a T)
 gfx/wheel.asm            GENERATED from wheel.txt: 8 shifts x 4 frames, one facing
+gfx/torpedo.txt          torpedo, 7 x 2, one frame
+gfx/torpedo.asm          GENERATED from torpedo.txt: 8 shifts x 1 frame x 2 facings
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
 tools/gfx2asm.py         ASCII art -> pre-shifted masked .asm (Python 3)
@@ -87,9 +121,13 @@ Makefile                 Linux / WSL build
 build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
-Atlantis memory: code and data at `$8000-$BF92` (`code_end` is `$BF93`,
-16,275 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
-The wheel bomb is 12 by 12. A shifted row is 2 bytes for shifts 0 to 4
+Atlantis memory: the tape has two code blocks. The instructions are at
+`$8000-$A398` (`code_end` is `$A399`, 9,113 bytes) and must stay below
+`$C000`. The pictures, menu words and tables are at `$C000-$E714`
+(10,005 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+A build prints both ends (`atlantis code_end`, `atlantis data_end`), and
+the `ASSERT`s at the end of `src/atlantis/main.asm` stop it if a block
+runs into the next. The wheel bomb is 12 by 12. A shifted row is 2 bytes for shifts 0 to 4
 and 3 bytes for shifts 5 to 7, so the picture is smaller than a 16 by 16
 sprite stored at one width.
 The scroll buffers are ordinary RAM at `$F000-$F2FF` (768 bytes: 16 slow
@@ -103,8 +141,8 @@ climb down into the row table.
 Engine Demo 1 is smaller: `code_end` is `$A928` (10,536 bytes) and its two
 buffers are `$F000-$F3FF`.
 
-Graphics: `make` regenerates `gfx/fish.asm`, `gfx/diver.asm` and
-`gfx/wheel.asm` from the `.txt` art with Python 3 when the art changes. The
+Graphics: `make` regenerates `gfx/fish.asm`, `gfx/diver.asm`,
+`gfx/wheel.asm` and `gfx/torpedo.asm` from the `.txt` art with Python 3 when the art changes. The
 generated files are committed, so Windows users can build with `build.bat`
 without Python. After editing the art, run e.g.
 `python tools\gfx2asm.py gfx\wheel.txt gfx\wheel.asm wheel` first. A line
@@ -178,8 +216,9 @@ works only with the SDL build (`fuse-sdl`).
 
 ## What you should see
 
-**Atlantis** (`make run`). "ATLANTIS" in yellow on blue, a help line, and
-the line "Symbol Shift + S: stats". Open water from the top of the screen
+**Atlantis** (`make run`). First the start screen: "ATLANTIS" in yellow on
+blue, the controls, and the numbered options over the seabed. Press `1`.
+The play screen has no words on it. Open water from the top of the screen
 down to three thin bands at the bottom: a green seaweed plant now and
 then, yellow sand on blue, and a black strip on yellow with rocks and a
 missile silo. The silo's top half stands in the sand and is drawn yellow
@@ -199,7 +238,7 @@ a direction, and glides with his legs together when you let go. He can
 swim up to the top row, and down over the weed and the sand, until his
 feet are one pixel above the black under him. A silo or a rising hill
 lifts him. Over a coloured cell he takes on its colours. The strips keep
-scrolling whether or not he moves. The debug digits are hidden until
+scrolling whether or not he moves. The stat line is hidden until
 Symbol Shift + S; the border cycles every 8 frames so the loop is still
 obvious. See `build/atlantis-seabed.png`, `build/atlantis-low.png`,
 `build/atlantis-stats.png` and `build/atlantis-stats-off.png`. The

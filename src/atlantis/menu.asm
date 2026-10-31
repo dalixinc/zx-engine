@@ -19,14 +19,30 @@
 
 menu_prev:      db 0            ; last frame's 1-2-3-4-5 keys
 leave_prev:     db 0            ; last frame's Symbol Shift + P
+menu_game_over: db 0            ; 1 = the last life was lost: say GAME OVER
+
+;------------------------------------------------------------------------------
+; game_over - the last life is gone. Jumped to from the main loop, never
+; called, so the stack is the main loop's and nothing is left on it.
+;------------------------------------------------------------------------------
+game_over:
+        ld a,1
+        ld (menu_game_over),a
+        ; fall through
 
 ;------------------------------------------------------------------------------
 ; enter_menu - clear the play picture and draw this screen
 ; Does not move the diver, the fish or the bomb. draw_scenery rebuilds
 ; the seabed from column 0, which is what the player sees behind the words.
 ; Corrupts: AF, BC, DE, HL, IX
+;
+; Symbol Shift + P jumps here from inside chords_poll, so its return
+; address is still on the stack. Nothing here returns, so the stack is
+; simply started again. Without that, each trip to the menu left two
+; bytes behind. At boot SP is already STACK_TOP, so it changes nothing.
 ;------------------------------------------------------------------------------
 enter_menu:
+        ld sp,STACK_TOP
     IFDEF SOAK
         ; Phase 2 is the play test that tries P on its own. That press
         ; must not arrive here. The real press sets the allow flag first.
@@ -61,9 +77,11 @@ enter_menu:
         ld (wheel_attr_n),a
         ld (stats_dirty),a
         ld (stats_template_up),a
+        call torpedo_reset
 
         call draw_scenery
         call menu_draw
+        call menu_draw_game_over
         call menu_arm
         ; fall through
 
@@ -79,6 +97,22 @@ menu_loop:
         call menu_poll
         jr nc,menu_loop
         jp game_reset
+
+;------------------------------------------------------------------------------
+; menu_draw_game_over - GAME OVER under the options, after the last life
+; Starting a new game clears the flag, so a return with Symbol Shift + P
+; does not say it.
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+menu_draw_game_over:
+        ld a,(menu_game_over)
+        or a
+        ret z
+        ld a,GAME_OVER_ATTR
+        ld (text_attr),a
+        ld hl,str_game_over
+        ld bc,(15 << 8) | 11
+        jp print_string
 
 ;------------------------------------------------------------------------------
 ; menu_draw - title, four control lines, then every row of menu_tab
@@ -268,13 +302,14 @@ leave_key_p:
         ld a,(soak_p)
         cp $FF
         jr z,.hw
-        ret
+        neg                     ; as stats_key_sym: through the real mask
+        jr .mask
 .hw:
     ENDIF
         ld bc,ROW_P_Y * 256 + ULA_PORT
         in a,(c)
         cpl
-        and %00000001
+.mask:  and %00000001
         ret
 
 leave_arm:
@@ -306,6 +341,14 @@ game_reset:
         ld a,7
         ld (stats_phase),a
 
+        ld a,CFG_LIVES
+        ld (lives),a
+        ld a,1
+        ld (lives_dirty),a
+        xor a
+        ld (hit_flash),a
+        ld (menu_game_over),a
+
         ld a,60
         ld (diver_x),a
         ld a,110
@@ -323,6 +366,7 @@ game_reset:
         ld (fish_facing),a
 
         call wheel_reset
+        call torpedo_reset
 
         di
         ld hl,0

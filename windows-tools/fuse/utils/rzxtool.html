@@ -1,0 +1,163 @@
+<!-- Creator     : groff version 1.23.0 -->
+<!-- CreationDate: Fri Apr  3 20:57:35 2026 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta name="generator" content="groff -Thtml, see www.gnu.org">
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<meta name="Content-Style" content="text/css">
+<style type="text/css">
+       p       { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       pre     { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       table   { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       h1      { text-align: center }
+</style>
+<title>rzxtool</title>
+
+</head>
+<body>
+
+<h1 align="center">rzxtool</h1>
+
+<a href="#NAME">NAME</a><br>
+<a href="#SYNOPSIS">SYNOPSIS</a><br>
+<a href="#DESCRIPTION">DESCRIPTION</a><br>
+<a href="#OPTIONS">OPTIONS</a><br>
+<a href="#BUGS">BUGS</a><br>
+<a href="#SEE ALSO">SEE ALSO</a><br>
+<a href="#AUTHOR">AUTHOR</a><br>
+
+<hr>
+
+
+<h2>NAME
+<a name="NAME"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">rzxtool &mdash;
+Modify Sinclair ZX Spectrum input recording files</p>
+
+<h2>SYNOPSIS
+<a name="SYNOPSIS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em"><b>rzxtool</b>
+[&minus;d<i>block number</i>] [&minus;e<i>block
+number</i>,<i>filename</i>] [&minus;i<i>block
+number</i>,<i>filename</i>] [&minus;f] [&minus;u]
+<i>rzxfile</i> [<i>outfile</i>]</p>
+
+<h2>DESCRIPTION
+<a name="DESCRIPTION"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">rzxtool allows
+some simple modifications to be made to Sinclair ZX Spectrum
+input recording files: blocks can be removed, snapshot data
+can be extracted or snapshots can be inserted into the file.
+The file can also be uncompressed.</p>
+
+<h2>OPTIONS
+<a name="OPTIONS"></a>
+</h2>
+
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;d<i>block
+number</i></p>
+
+<p style="margin-left:18%;">The block number specified will
+be deleted from the file. Block numbers start at zero and
+ignore any &ldquo;creator information&rdquo; blocks in the
+file. The modified file will be written to
+<i>outfile</i>.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;e<i>block
+number</i>,<i>filename</i></p>
+
+<p style="margin-left:18%;">The snapshot in the specified
+block number will be written to the specified filename. All
+snapshot formats supported by <i>libspectrum</i>(3) are
+available.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;i<i>block
+number</i>,<i>filename</i></p>
+
+<p style="margin-left:18%;">The snapshot specified in
+<i>filename</i> will be added to the file at the position
+specified by <i>block number</i>.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;f</p>
+
+<p style="margin-left:18%;">Finalise the RZX file. Any
+embedded snapshot (except the first one) will be deleted.
+Fuse can add interspersed snapshots to RZX files to allow
+rollbacking to a previous time. Action replays submitted to
+the RZX Archive should not have these snapshots.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;u</p>
+
+<p style="margin-left:18%;">When outputting an RZX file,
+this option causes the input recording data to be output
+uncompressed; if this option is not given, the data will be
+compressed using <i>zlib</i>(3).</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;h,
+&minus;&minus;help</p>
+
+<p style="margin-left:18%;">Give brief usage help, listing
+available options.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;V,
+&minus;&minus;version</p>
+
+<p style="margin-left:18%;">Output version information.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em"><i>rzxfile</i></p>
+
+<p style="margin-left:18%;">specifies an input recording
+file whose contents are to be modified.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em"><i>outfile</i></p>
+
+<p style="margin-left:18%;">specifies where the modified
+input file should be written.</p>
+
+<h2>BUGS
+<a name="BUGS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">None known</p>
+
+<h2>SEE ALSO
+<a name="SEE ALSO"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em"><i>fuse</i>(1),
+<i>fuse&minus;utils</i>(1), <i>rzxcheck</i>(1),
+<i>rzxdump</i>(1), <i>zlib</i>(3)</p>
+
+<p style="margin-left:9%; margin-top: 1em">The
+comp.sys.sinclair Spectrum FAQ, at <i><br>
+http://www.worldofspectrum.org/faq/index.html</i>.</p>
+
+<h2>AUTHOR
+<a name="AUTHOR"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">Philip Kendall
+(philip&minus;fuse@shadowmagic.org.uk).</p>
+<hr>
+</body>
+</html>

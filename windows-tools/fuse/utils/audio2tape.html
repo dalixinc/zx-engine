@@ -1,0 +1,203 @@
+<!-- Creator     : groff version 1.23.0 -->
+<!-- CreationDate: Fri Apr  3 20:57:30 2026 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta name="generator" content="groff -Thtml, see www.gnu.org">
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<meta name="Content-Style" content="text/css">
+<style type="text/css">
+       p       { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       pre     { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       table   { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       h1      { text-align: center }
+</style>
+<title>audio2tape</title>
+
+</head>
+<body>
+
+<h1 align="center">audio2tape</h1>
+
+<a href="#NAME">NAME</a><br>
+<a href="#SYNOPSIS">SYNOPSIS</a><br>
+<a href="#DESCRIPTION">DESCRIPTION</a><br>
+<a href="#OPTIONS">OPTIONS</a><br>
+<a href="#BUGS">BUGS</a><br>
+<a href="#SEE ALSO">SEE ALSO</a><br>
+<a href="#AUTHOR">AUTHOR</a><br>
+
+<hr>
+
+
+<h2>NAME
+<a name="NAME"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">audio2tape
+&mdash; Sinclair ZX Spectrum audio to tape file
+converter</p>
+
+<h2>SYNOPSIS
+<a name="SYNOPSIS"></a>
+</h2>
+
+
+
+<p style="margin-left:9%; margin-top: 1em"><b>audio2tape</b>
+[&minus;t <i>type</i>] [&minus;s] [&minus;r] [&minus;k]
+[&minus;z <i>level</i>] [&minus;c <i>level</i>] <i>infile
+outfile</i></p>
+
+<h2>DESCRIPTION
+<a name="DESCRIPTION"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">audio2tape
+converts audio files to ZX Spectrum tape images.</p>
+
+<h2>OPTIONS
+<a name="OPTIONS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;t
+<i>type</i></p>
+
+<p style="margin-left:18%;">causes <i>type</i> to be used
+as the level detection trigger. There are two triggers
+implemented; the <i>simple</i> trigger just uses a threshold
+value to convert to a one or zero on output, and the
+<i>schmitt</i> trigger implements a Schmitt trigger which
+outputs a less noisy signal, but requires a stronger signal
+to noise ratio than the simple trigger. The default trigger
+is &ldquo;schmitt&rdquo;.</p>
+
+<table width="100%" border="0" rules="none" frame="void"
+       cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="9%"></td>
+<td width="3%">
+
+
+<p>&minus;s</p></td>
+<td width="6%"></td>
+<td width="82%">
+
+
+<p>causes the display of a frequency graph showing the
+sound levels present in the audio file. This can be useful
+when selecting good crossover points.</p></td></tr>
+<tr valign="top" align="left">
+<td width="9%"></td>
+<td width="3%">
+
+
+<p>&minus;r</p></td>
+<td width="6%"></td>
+<td width="82%">
+
+
+<p>causes any ROM blocks that are recognised to use
+idealised timing figures rather than the exact ones found in
+the audio file.</p></td></tr>
+<tr valign="top" align="left">
+<td width="9%"></td>
+<td width="3%">
+
+
+<p>&minus;k</p></td>
+<td width="6%"></td>
+<td width="82%">
+
+
+<p>causes the tape file that is produced to keep any audio
+data from the original audio file that isn&rsquo;t
+recognised. This will allow unsupported loading schemes,
+encryption tones etc. to be preserved in the file that is
+produced.</p> </td></tr>
+</table>
+
+<p style="margin-left:9%;">&minus;z <i>level</i></p>
+
+<p style="margin-left:18%;">causes <i>level</i> to be used
+as the zero point in the supplied audio file, it allows
+adjustment for a DC offset in the audio file. The default
+level is 127 from a range of 0&ndash;255.</p>
+
+<p style="margin-left:9%;">&minus;c <i>level</i></p>
+
+<p style="margin-left:18%;">causes <i>level</i> to be used
+as the Schmitt trigger noise threshold, this reduces the
+sensitivity to noise in the provided file. The default level
+is 8 from a range of 0&ndash;127.</p>
+
+<p style="margin-left:9%;">&minus;h, &minus;&minus;help</p>
+
+<p style="margin-left:18%;">give brief usage help, listing
+available options.</p>
+
+<p style="margin-left:9%;">&minus;V,
+&minus;&minus;version</p>
+
+<p style="margin-left:18%;">output version information.</p>
+
+<table width="100%" border="0" rules="none" frame="void"
+       cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="9%"></td>
+<td width="8%">
+
+
+<p><i>infile</i></p></td>
+<td width="1%"></td>
+<td width="82%">
+
+
+<p>specifies the audio file to be converted. This file can
+be in any of the sound formats supported by
+<i>libaudiofile</i>.</p> </td></tr>
+</table>
+
+<p style="margin-left:9%;"><i>outfile</i></p>
+
+<p style="margin-left:18%;">specifies the output tape file.
+The format will be determined by the file extension and can
+be in any of the formats <i>libspectrum</i>(3) supports for
+output.</p>
+
+<h2>BUGS
+<a name="BUGS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">None known.</p>
+
+<h2>SEE ALSO
+<a name="SEE ALSO"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em"><i>fuse</i>(1),
+<i>fuse&minus;utils</i>(1), <i>libspectrum</i>(3),
+<i>listbasic</i>(1), <i>tapeconv</i>(1), <i>tzxlist</i>(1),
+<i>snap2tzx</i>(1), <i>tape2pulses</i>(1)
+<i>tape2wav</i>(1)</p>
+
+<p style="margin-left:9%; margin-top: 1em">The
+comp.sys.sinclair Spectrum FAQ, at <i><br>
+http://www.worldofspectrum.org/faq/index.html</i>.</p>
+
+<h2>AUTHOR
+<a name="AUTHOR"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">Fredrick Meunier
+(fredm@spamcop.net).</p>
+<hr>
+</body>
+</html>

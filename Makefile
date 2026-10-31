@@ -21,7 +21,7 @@ ASM       ?= sjasmplus
 EMU       ?= fuse-sdl
 PYTHON    ?= python3
 GFX       := gfx/fish.asm gfx/diver.asm
-ATL_GFX   := $(GFX) gfx/wheel.asm
+ATL_GFX   := $(GFX) gfx/wheel.asm gfx/torpedo.asm
 SHARED    := src/constants.asm src/interrupts.asm src/screen.asm src/text.asm \
              src/input.asm src/sprite.asm src/fish.asm src/diver.asm \
              src/loader.asm
@@ -30,7 +30,7 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/config.asm src/atlantis/data.asm \
              src/atlantis/scenery.asm src/atlantis/scroll.asm \
              src/atlantis/stats.asm src/atlantis/rate.asm \
-             src/atlantis/menu.asm src/atlantis/wheel.asm \
+             src/atlantis/menu.asm src/atlantis/wheel.asm src/atlantis/hit.asm src/atlantis/torpedo.asm \
              src/atlantis/fastsprite.asm \
              src/atlantis/soak.asm $(SHARED)
 

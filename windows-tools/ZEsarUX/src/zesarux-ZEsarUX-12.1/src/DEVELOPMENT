@@ -1,0 +1,1238 @@
+* en cpu.h, actualizar numero de version, comentar SNAPSHOT_VERSION, borrar -SN o -RC sufijo de EMULATOR_VERSION
+* cambiar version en accion push de docker-zesarux.sh
+* Cambiar EMULATOR_VERSION en archivo configure
+* Cambiar version en macos/apptemplate/Contents/Info.plist, tag CFBundleVersion
+* en cpu.h, cambiar fechas en EMULATOR_DATE, EMULATOR_SHORT_DATE
+* en cpu.h, cambiar nombre edicion en EMULATOR_GAME_EDITION
+* en Changelog cambiar nombre edicion y fechas
+
+* activar capture segmentation fault en start.c
+* activar capture floating point exception en start.c
+* ZESARUX_EXTRAS_URL en cpu.h en principio no hay que tocarlo
+
+* Ajustar juego editionnamegame.tap, si juego no permitido distribucion, eliminar. Ajustar EDITION_NAME_GAME en cpu.h sobretodo si cambia a tap o tzx o dsk. Crear editionnamegame.tap.config o editionnamegame.tzx.config si es necesario
+* En changelog, decir qué comandos nuevos de ZRCP, haciendo diff con version anterior
+* sacar el listado de funciones admitidas por el esxdos handler y meterlo en el menu de ayuda del mismo, con la sentencia:
+cat storage/esxdos_handler.c |grep ESXDOS_RST8_|grep -v ESXDOS_RST8_FA_|grep case|grep -v "/"|sed 's/.*case //'|sed 's/:/,/'|sed 's/ESXDOS_RST8_//'|sort|tr '\n' ' '
+tener en cuenta de sacar de esta lista los casos que retornan hacia rst8 (con funcion esxdos_handler_run_normal_rst8), como DISK_READ
+
+* Actualizar features, segun lo agregado a Changelog
+* Revisar orden de las entradas en Changelog, que haya una agrupación mas o menos lógica
+* vigilar funciones F de pruebas en xwindows, desactivar las que sean de pruebas
+
+* generar README.md mediante ./generate_readme_md.sh > ../README.md
+
+*cuando hay nueva versión hay que actualizar archivo txt del servidor
+Si es estable, actualizar ambos archivos
+Si es beta, actualizar solo el archivo de snapshot
+
+
+Nombres ediciones disponibles:
+Exploding fist, Silent service, Three weeks in Paradise, Gauntlet, Death Wish 3, Match day,
+Star raiders 2, Sabre wulf, Saint Dragon, Dynamite Dan 2, Frank n stein, Bruce lee,
+Exolon, Koronis Rift, Fox Fights back, Pheenix, Rygar, Target renegade, Zorro, Ghostbusters
+
+Usados:
+hysteria, rainbow islands, jetpac, hard drivin', lemmings, sir fred, rick, agent dan, id, rainbow, rainbow+, saint george,
+chase hq, Rescue on Fractalus, gunfright, xeno, Neula, world destruction, the great escape, turbo esprit, toi acid,
+cliff hanger, clive sinclair, carrier command, Abadia del Crimen, David, Bubble Bobble, Night Shift
+
+
+
+--------------
+
+Establecer username y mail en repo descargado:
+git config --global user.name "chernandezba" ; git config --global user.email chernandezba@hotmail.com
+
+
+--------------
+
+Notas: para ver las descargas de github:
+https://api.github.com/repos/chernandezba/zesarux/releases
+
+buscar "download_count"
+
+curl -s https://api.github.com/repos/chernandezba/zesarux/releases | egrep '"name"|"download_count"'
+
+--------------
+
+Para que el cpu_panic muestre backtrace si hay un error, compilar con -g -rdynamic (en Linux) o -g (en Mac)
+
+
+Para mostrar todos los iconos lower meter en compileoptions.h:
+
+#define FORCE_VISIBLE_ALL_LOWER_ICONS
+
+
+Para poner como disabled en todos los iconos lower meter en compileoptions.h:
+
+#define FORCE_DISABLED_ALL_LOWER_ICONS
+
+Para poner como enabled en todos los iconos lower meter en compileoptions.h:
+
+#define FORCE_ENABLED_ALL_LOWER_ICONS
+
+
+Para forzar ver todos los iconos posibles de botones upper meter en compileoptions.h:
+
+#define FORCE_VISIBLE_ALL_UPPER_ICONS
+
+--------------
+
+Icono para windows:
+
+Tener los diferentes tamanyos en png
+
+Luego convertir a ico con:
+
+convert zesarux_16.png zesarux_32.png zesarux_48.png zesarux_256.png -colors 256 zesarux.ico
+
+Y agregar al exe con:
+
+#rcexit zesarux.exe --set-icon zesarux.ico
+
+
+vim zesarux.rc
+id ICON "zesarux.ico"
+
+---
+
+Luego
+windres zesarux.rc -O coff zesarux.res
+
+Y en el linkado incluir zesarux.res
+
+
+http://stackoverflow.com/questions/708238/how-do-i-add-an-icon-to-a-mingw-gcc-compiled-executable
+
+---------------------
+
+Para crear una carpeta nueva de codigo fuente
+
+Leer comentario al principio archivo configure, en Nota: si se agregan carpetas nuevas de codigo fuente, agregar a:
+
+---------------------
+
+
+Diferencias en el uso del menu de:
+menu_generic_message
+y
+menu_generic_message_splash
+
+en el caso de mostrar un OK de alguna operación realizada
+
+
+* menu_generic_message_splash: suele mostrar un OK de alguna operación realizada, en que no es muy importante que el usuario
+lea detenidamente el mensaje. Ejemplo:
+
+menu_generic_message_splash("Clear CPU statistics","OK. Statistics cleared");
+menu_generic_message_splash("Reload MMC","OK. MMC file reloaded");
+
+
+* menu_generic_message: en el caso de mensajes con OK, interesa que el usuario pueda leer detenidamente el mensaje. Ejemplo:
+
+menu_generic_message("Change DIVMMC ROM","OK. Remember to enable DIVMMC paging to load the firmware");
+menu_generic_message("Rename file","OK. File renamed");
+
+
+-----------------------------------------
+
+Items de menú:
+
+* si tiene submenus, agregarle menu_add_item_menu_tiene_submenu
+* si genera ventana, agregarle menu_add_item_menu_genera_ventana. "Next machine id" por ejemplo presenta una lista de opciones y
+tiene este parametro. Por lo general, lo que son acciones (sin ventanas de confirmación) o submenus, no generan ventana y por tanto no tienen este parametro. Esto mostrará puntos suspensivos (...) a la derecha del item de menu. Independiente de si esa ventana permite background o no (por ejemplo osd aventure keyboard no permite background)
+* si disparar la accion, se cerraran todos los menus, agregarle menu_add_item_menu_se_cerrara
+* si solo visible con items avanzados, agregarle menu_add_item_menu_es_avanzado
+
+-----------------------------------------
+Sobre indexado de menus
+
+
+Si se utiliza funcion de crear menu pero no es un menu estrictamente, llamar a:
+
+menu_dibuja_menu_dialogo_no_title_lang
+
+En vez de usar menu_dibuja_menu_no_title_lang o cualquier otra variante menu_dibuja_menu*
+
+Esto evita que se indexe dicho menu
+
+El indexado se hace para menus normales, que no sean tabulados
+
+
+-----------------------------------------
+- Generación de una nueva release
+
+Se generan los siguientes archivos:
+
+LEEME
+MD5SUM
+README
+ZEsarUX_extras-[version].zip
+ZEsarUX_freebsd-[version]-freebsd12_amd64.tar.gz
+ZEsarUX_haiku-[version]_x86_64.tar.gz
+ZEsarUX_linux-[version]-debian12_i686.tar.gz
+ZEsarUX_linux-[version]-debian12_x86_64.tar.gz
+ZEsarUX_linux-[version]-fedora38_x86_64.tar.gz
+ZEsarUX_linux-[version]-ubuntu22_x86_64.tar.gz
+ZEsarUX_macos-[version]-legacy.dmg
+ZEsarUX_macos-[version].dmg
+ZEsarUX_raspberrypios-framebuffer-[version]_armv6l.tar.gz
+ZEsarUX_src-[version].tar.gz
+ZEsarUX_windows-[version]-legacy.zip
+ZEsarUX_windows-[version].zip
+
+Donde [version] es el numero de version, por ejemplo 10.3
+
+Ejemplos de nombres de archivos de una distribución estable y sus tamaños:
+
+ ZEsarUX_extras-11.0.zip                               152 MB
+ ZEsarUX_freebsd-11.0-freebsd12_x64.tar.gz             35.9 MB
+ ZEsarUX_haiku-11.0_x86_64.tar.gz                      35.9 MB
+ ZEsarUX_linux-11.0-debian12_x32.tar.gz                36.1 MB
+ ZEsarUX_linux-11.0-debian12_x64_64.tar.gz             36.1 MB
+ ZEsarUX_linux-11.0-fedora38_x86_64.tar.gz             36.1 MB
+ ZEsarUX_linux-11.0-ubuntu22_x86_64.tar.gz             36.1 MB
+ ZEsarUX_macos-11.0-legacy.dmg                         34.3 MB
+ ZEsarUX_macos-11.0.dmg                                34.5 MB
+ ZEsarUX_raspberrypios-framebuffer-11.0_armv6l.tar.gz  35.7 MB
+ ZEsarUX_src-11.0.tar.gz                               37.4 MB
+ ZEsarUX_windows-11.0-legacy.zip                       37.5 MB
+ ZEsarUX_windows-11.0.zip                              37.2 MB
+
+*generar también versión docker con: ./docker-zesarux.sh push
+Y editar info en descripción inicial resumida y Repository overview para hacer referencia las instrucciones al número de versión actual
+
+Al final de la subida,
+Generar en servidor ZEsarUX, en ruta
+STATS_URL_UPDATE_STABLE_VERSION
+con contenido numero de version, ejemplo:
+"8.1"
+
+* LEEME, README
+
+Es el contenido del Changelog y el Cambios, solo del trozo de esta versión en concreto
+
+
+* Binarios a generar
+
+
+
+** Linux
+Generar estos dos binarios de Linux (32 y 64 bits):
+ZEsarUX_linux-version-debian12_i686.tar.gz
+ZEsarUX_linux-version-debian12_x86_64.tar.gz
+Habilita drivers video: xwindows, sdl, fbdev, curses, stdout, simpletext y drivers audio: pulse, alsa, sdl, dsp, pcspeaker.
+
+con comandos:
+export CFLAGS=-O3
+export LDFLAGS=-O3
+./configure --enable-ssl --disable-caca --disable-aa --disable-cursesw --prefix /usr
+make clean
+make
+make debian32 o make debian64
+
+
+** Haiku
+En entorno de 64 bits
+
+export CFLAGS=-O3
+export LDFLAGS=-O3
+./configure --enable-ssl --disable-caca --disable-aa --disable-cursesw --prefix /usr
+make clean
+make
+make haiku
+
+
+** Ubuntu
+desde entorno con Docker:
+make ubuntu
+
+
+** Fedora
+desde entorno con Docker:
+make fedora
+
+
+** FreeBSD
+Generar este binarios de FreeBSD:
+ZEsarUX_freebsd-version-freebsd12_amd64.tar.gz
+Habilita drivers video: xwindows, sdl, fbdev, curses, stdout, simpletext y drivers audio: pulse, alsa, sdl, dsp, pcspeaker.
+
+con comandos:
+export CFLAGS=-O3
+export LDFLAGS=-O3
+./configure --enable-ssl --disable-caca --disable-aa --disable-cursesw --prefix /usr
+make clean
+make
+make freebsd
+
+
+** Raspbian
+Generar este binario de Raspbian:
+ZEsarUX-version-raspbian9.tar.gz
+Habilita extensiones raspberry, drivers video: fbdev, curses, y drivers audio: alsa, sdl, dsp.
+
+con comandos:
+export CFLAGS=-O3
+export LDFLAGS=-O3
+./configure --enable-raspberry --spectrum-reduced-core --disable-memptr --disable-visualmem --disable-cpustats --enable-ssl --disable-xwindows --disable-caca --disable-aa --disable-pulse --disable-pcspeaker --disable-simpletext --disable-stdout --disable-cursesw --prefix /usr
+
+La salida debe ser similar a:
+ Enabled Video output drivers: curses sdl fbdev null
+ Disabled Video output drivers: stdout simpletext cursesw aa caca cocoa xwindows
+ Enabled Audio output drivers: dsp alsa sdl null
+ Disabled Audio output drivers: pcspeaker pulse coreaudio
+ Enabled Audio File output drivers: raw
+ Disabled Audio File output drivers: wav
+ Pthreads support: yes
+ SSL support: yes
+ Networking support: yes
+ Remote command protocol support: yes
+ Linux real joystick support: yes
+ MEMPTR emulation: no
+ Visual memory option: no
+ CPU statistics option: no
+ Raspberry extensions: yes
+ Contended memory emulation: yes
+ Putpixel cache: yes
+ Spectrum default core: Reduced
+
+Install prefix: /usr
+
+
+Luego:
+
+make clean
+make
+make rpi
+
+
+** Mac
+
+Generar dos binarios de Mac:
+(-Quizá versión legacy de Mac ya no tiene sentido. Requiere Mac OS reciente y los cflags O2 estarán soportados en todos los recientes )
+ZEsarUX-version-macos-legacy.dmg.gz
+Habilita drivers video: cocoa, stdout, simpletext y drivers audio: coreaudio.
+
+con comandos:
+Versión sin optimizaciones, sin SSL:
+
+export CFLAGS="-mmacosx-version-min=10.13"
+export LDFLAGS="-mmacosx-version-min=10.13"
+
+./configure --disable-xwindows --disable-sdl --disable-fbdev --disable-caca --disable-aa --disable-curses --disable-sndfile
+make clean
+make
+make macapp
+
+Y
+
+
+ZEsarUX-version-macos.dmg.gz
+Habilita drivers video: cocoa, stdout, simpletext y drivers audio: coreaudio.
+con comandos:
+Versión con optimizaciones, sin SSL:
+
+
+export CFLAGS="-O3"
+export LDFLAGS="-O3"
+
+#Al menos poner un 10.x dos versiones inferior al que yo tenga, suponiendo que funcione bien...
+#-Use otool -l /path/to/binary and inspect the LC_VERSION_MIN_MACOSX load command;
+
+./configure --disable-xwindows --disable-sdl --disable-fbdev --disable-caca --disable-aa --disable-curses --disable-sndfile
+make clean
+make
+make macapp
+
+
+
+
+**Windows
+Generar este binario de Windows, mingw:
+ZEsarUX-version-windows.zip
+
+
+Ver documento INSTALLWINDOWS, Native Windows (with mingw)
+
+Generar binario con:
+
+#sin optimizar
+export CFLAGS="-I/c/openssl-1.1.1d-win32-mingw/include"
+export LDFLAGS="-L/c/openssl-1.1.1d-win32-mingw/lib"
+
+#optimizado
+export CFLAGS="-O3 -I/c/openssl-1.1.1d-win32-mingw/include"
+export LDFLAGS="-O3 -L/c/openssl-1.1.1d-win32-mingw/lib"
+
+
+./configure --enable-ssl
+
+
+Esto compilara con SDL1
+
+La salida debe ser:
+ Enabled Video output drivers: simpletext sdl null
+ Disabled Video output drivers: stdout curses aa caca cocoa xwindows fbdev
+ Enabled Audio output drivers: sdl null
+ Disabled Audio output drivers: dsp alsa pulse coreaudio
+ ...
+ Pthreads support: yes
+ SSL support: yes
+
+make clean
+make
+
+copiar SDL.dll aqui:
+copy c:\mingw\sdl\bin\SDL.dll .
+
+o SDL2
+copy c:\mingw\sdl2\bin\SDL2.dll .
+
+tambien copiar:
+pthreadGC2.dll libgcc_s_dw2-1.dll
+
+y probar a ejecutar:
+
+desde consola:
+zesarux.exe
+
+y con doble-click desde explorer
+
+Luego enviar zesarux.exe y SDL.dll a maquina linux/unix y generar el binario con:
+-ejecutar misma sentencia configure que en windows y luego
+
+make clean
+make windows
+El make clean es importante para que borre la carpeta temporal ZEsarUX_win-XX, sino, puede pasar que al hacer primero la version de pthreads,
+la siguiente, que no usa threads, tendra dlls adicionales en esa carpeta y se copiarian (cosa que no pasaria nada, pero es innecesario)
+
+Nota: se podria compilar en 64 bits, pero SDL 1.2 solo tiene version 32 bits
+Nota: pasar antes antivirus al exe y al dll por si acaso
+
+
+* source a generar
+
+ZEsarUX_src-[version].tar.gz
+
+con comandos:
+make sourcetargz
+
+Nota: no hacerlo desde Mac pues agrega todos esos archivos ._*
+
+
+* Extra files
+
+#make extra_files
+desde carpeta de zesarux-extras
+zip -r ZEsarUX_extras-[version].zip extras/
+Y subir el zip a github, al repo de zesarux, en releases
+#Nota: Los extra_files generarlos despues de las versiones de Mac pues se incluyen los extras para zesarux con SSL
+#Nota2: Tener en cuenta que la carpeta extras este visible, sea como enlace o como submodulo
+
+
+
+* MD5SUM
+
+Suma md5 de todos los archivos, generar al final
+
+
+
+** Otros Linux/Unix genericos
+
+./configure
+make clean
+make
+make bintargz
+
+-------------------------------------------------
+
+Sobre menu y overlay y ventanas en background:
+
+menu_overlay_activo indica que hay un overlay sobre el render normal de la máquina emulada.
+Esto puede ser el menú pero también mensajes de splash, logo de bienvenida, botón joystick numselect etc
+
+Para mostrar ese overlay es muy simple: cada driver de vídeo tiene esta parte de código,
+después de haber hecho refresco de la máquina emulada:
+
+screen_render_menu_overlay_if_active();
+
+La función de overlay que dibuja texto es : normal_overlay_texto_menu
+Las ventanas que hacen dibujado de pixel, como waveform, cambian este overlay para llamar a sus funciones internas
+
+En normal_overlay_texto_menu se dibuja el texto de las ventanas, y también se llama a las funciones de overlay
+de las ventanas en background (si es que está habilitado el background de ventanas)
+
+Con la F-funcion F_FUNCION_OVERLAY_WINDOWS, se activa el dibujado de ventanas en background con el menu cerrado
+
+---------------------
+
+
+Para soportar background en una ventana:
+(ver template de ejemplo menu_template_window_can_be_backgrounded)
+
+Para poder enviar una ventana a background:
+
+-ventanas en funcion de overlay hacen al principio
+
+//si ventana minimizada, no ejecutar todo el codigo de overlay
+if (xxxx_overlay_window->is_minimized) return; //sustituir xxxx_overlay_window por lo que convenga
+
+
+-tienen que referenciar a la ventana activa teniendo la estructura fuera de la funcion,
+al estilo por ejemplo de: "zxvision_window zxvision_window_view_sprites;". Luego usar variable "ventana" como puntero a ahí, ejemplo:
+
+    zxvision_window *ventana;
+    ventana=&zxvision_window_view_sprites;
+
+-justo despues de asignar ventana a la estructura, ver si ventana ya existe con:
+
+    //Crear ventana si no existe
+    if (!zxvision_if_window_already_exists(ventana)) {
+        int xventana,yventana,ancho_ventana,alto_ventana,is_minimized,is_maximized,ancho_antes_minimize,alto_antes_minimize;
+
+        if (!util_find_window_geometry("processswitcher",&xventana,&yventana,&ancho_ventana,&alto_ventana,&is_minimized,&is_maximized,&ancho_antes_minimize,&alto_antes_minimize)) {
+           ...
+
+    }
+
+    //Si ya existe, activar esta ventana
+    else {
+        zxvision_activate_this_window(ventana);
+    }
+
+	zxvision_draw_window(ventana);
+
+-pueden o no usar salvado de geometria. Si lo usan, hacerlo justo despues de zxvision_if_window_already_exists
+
+
+-Activar para poder usar boton de background "!":  ventana->can_be_backgrounded=1;
+
+-menu ventanas finalizan con:
+
+
+	if (tecla==3) {
+		//zxvision_ay_registers_overlay
+		zxvision_message_put_window_background();
+	}
+
+	else {
+		zxvision_destroy_window(ventana);
+ 	}
+
+	 O alternativa para menus:
+	 if (retorno_menu==MENU_RETORNO_BACKGROUND) {
+
+
+-Si se quiere que una ventana pueda enviarse a background:
+
+Definirla en zxvision_known_window_names_array
+
+-para poder restaurar al inicio, despues de activar can_be_backgrounded, agregar:
++	//indicar nombre del grabado de geometria
++	strcpy(ventana->geometry_name,"displaypalettes");
+Esto permite tambien que cuando se haga rearrange/reduce, su geometria se guarde
+
+---Fin Para poder enviar una ventana a background
+
+-desde menu al pulsar background se retorna MENU_RETORNO_BACKGROUND
+
+-Se llaman a todas las funciones de overlay de las ventanas en background desde la función de overlay de menú normal_overlay_texto_menu
+
+
+-Otras cosas a considerar: una ventana cuando escribe texto comprueba si tiene ventanas encima, para escribir o no el caracter.
+Mismo se hace para putpixel
+
+
+Ejemplo de cambios realizados en una ventana para soportar background. En este caso se sale mediante lectura de teclas, no hay menus:
+
+
+
+diff --git a/src/menu_items.c b/src/menu_items.c
+index 9e32a67e..16a8f772 100644
+--- a/src/menu_items.c
++++ b/src/menu_items.c
+@@ -7560,7 +7560,7 @@ void menu_display_total_palette_draw_barras(void)
+
+ 				//Esto tiene que estar despues de escribir la lista de colores, para que se refresque y se vea
+ 				//Si estuviese antes, al mover el cursor hacia abajo dejándolo pulsado, el texto no se vería hasta que no se soltase la tecla
+-				normal_overlay_texto_menu();
++				if (!zxvision_drawing_in_background) normal_overlay_texto_menu();
++               menu_speech_tecla_pulsada=1; //Habitualmente esto, cuando hay texto. Si no, envia continuamente todo ese texto a speech
++               //si ventana minimizada, no ejecutar todo el codigo de overlay
++               if (xxxx_overlay_window->is_minimized) return; //Sustituir xxxx_overlay_window por lo que convenga
+
+
+ 				if (si_complete_video_driver()) {
+ 					//Mostrar colores
+@@ -7586,16 +7586,42 @@ void menu_display_total_palette_cursor_abajo(void)
+
+ }
+
++
++zxvision_window zxvision_window_display_palettes;
++
++
+ void menu_display_total_palette(MENU_ITEM_PARAMETERS)
+ {
+ 	menu_espera_no_tecla();
+ 	menu_reset_counters_tecla_repeticion();
+
+-	zxvision_window ventana;
++	//zxvision_window ventana;
+
+-	zxvision_new_window(&ventana,TOTAL_PALETTE_WINDOW_X,TOTAL_PALETTE_WINDOW_Y,TOTAL_PALETTE_WINDOW_ANCHO,TOTAL_PALETTE_WINDOW_ALTO,
+-							TOTAL_PALETTE_WINDOW_ANCHO-1,TOTAL_PALETTE_WINDOW_ALTO-2,"Colour palettes");
+-	zxvision_draw_window(&ventana);
++    zxvision_window *ventana;
++    ventana=&zxvision_window_display_palettes;
++
++	//IMPORTANTE! no crear ventana si ya existe. Esto hay que hacerlo en todas las ventanas que permiten background.
++	//si no se hiciera, se crearia la misma ventana, y en la lista de ventanas activas , al redibujarse,
++	//la primera ventana repetida apuntaria a la segunda, que es el mismo puntero, y redibujaria la misma, y se quedaria en bucle colgado
++	zxvision_delete_window_if_exists(ventana);
++
++
++	int x,y,ancho,alto,is_minimized;
++
++
++	if (!util_find_window_geometry("displaypalettes",&x,&y,&ancho,&alto,&is_minimized)) {
++		x=TOTAL_PALETTE_WINDOW_X;
++		y=TOTAL_PALETTE_WINDOW_Y;
++		ancho=TOTAL_PALETTE_WINDOW_ANCHO;
++		alto=TOTAL_PALETTE_WINDOW_ALTO;
++	}
++
++	//zxvision_new_window(&ventana,TOTAL_PALETTE_WINDOW_X,TOTAL_PALETTE_WINDOW_Y,TOTAL_PALETTE_WINDOW_ANCHO,TOTAL_PALETTE_WINDOW_ALTO,
++	//						TOTAL_PALETTE_WINDOW_ANCHO-1,TOTAL_PALETTE_WINDOW_ALTO-2,"Colour palettes");
++
++    zxvision_new_window(ventana,x,y,ancho,alto,ancho-1,alto-2,"Colour palettes");
++	ventana->can_be_backgrounded=1;
++	//indicar nombre del grabado de geometria
++	strcpy(ventana->geometry_name,"displaypalettes");
++   //restaurar estado minimizado de ventana
++   ventana->is_minimized=is_minimized;
++
++	zxvision_draw_window(ventana);
+
+
+
+	int salir=0;
+
+
+	set_menu_overlay_function(menu_display_total_palette_draw_barras);
+	menu_display_total_palette_draw_barras_window=ventana; //Decimos que el overlay lo hace sobre la ventana que tenemos aqui
+
++       //Toda ventana que este listada en zxvision_known_window_names_array debe permitir poder salir desde aqui
++       //Se sale despues de haber inicializado overlay y de cualquier otra variable que necesite el overlay
++       if (zxvision_currently_restoring_windows_on_start) {
++               //printf ("Saliendo de ventana ya que la estamos restaurando en startup\n");
++               return;
++       }
+
+ 	z80_byte tecla;
+
+@@ -7604,7 +7630,7 @@ void menu_display_total_palette(MENU_ITEM_PARAMETERS)
+
+
+ 	set_menu_overlay_function(menu_display_total_palette_draw_barras);
+-	menu_display_total_palette_draw_barras_window=&ventana; //Decimos que el overlay lo hace sobre la ventana que tenemos aqui
++	menu_display_total_palette_draw_barras_window=ventana; //Decimos que el overlay lo hace sobre la ventana que tenemos aqui
+
+     do {
+
+@@ -7764,17 +7790,33 @@ void menu_display_total_palette(MENU_ITEM_PARAMETERS)
+ 					case 2:
+ 						salir=1;
+ 					break;
++
++					//O tecla background
++					case 3:
++						salir=1;
++					break;
+ 				}
+
+
+         } while (salir==0);
+
+
+-        set_menu_overlay_function(normal_overlay_texto_menu);
+
+	//Antes de restaurar funcion overlay, guardarla en estructura ventana, por si nos vamos a background
++	zxvision_set_window_overlay_from_current(ventana);
+
+	//restauramos modo normal de texto de menu
++    set_menu_overlay_function(normal_overlay_texto_menu);
+
+
+ 	cls_menu_overlay();
+-	zxvision_destroy_window(&ventana);
++	util_add_window_geometry_compact("displaypalettes",ventana);
++
++        if (tecla==3) {
++                zxvision_message_put_window_background();
++        }
++
++        else {
++
++		zxvision_destroy_window(ventana);
++	}
+
+
+ }
+
+
+--------------------
+
+Mas notas devel: TODO: apuntarlas en otro sitio
+
+-activar background windows + even with menu closed, implica que incluso con menu cerrado, las funciones de putpixel están haciendo siempre
+mix de la maquina emulada con los pixeles del menu (llamando a screen_putpixel_mix_layers).
+No implica mucho mas uso de cpu (si hay poca ventana abierta) pero hay que tener en cuenta que por el hecho de tener esa opcion activada, incluso con todas las ventanas cerradas, ya consume algo mas de cpu
+
+----
+
+Borrador rapido de como se redibuja pantalla
+
+-ventanas zxvision: zxvision_draw_window_contents, zxvision_draw windows y otras, escriben en overlay de menu las letras, usando funcion putchar
+-normal_overlay_texto_menu se encarga de leer de overlay de menu y poner los pixeles correspondientes en pantalla de acuerdo a cada letra
+-ventanas con dibujos pixeles (waveform, visualmem etc) tienen una funcion adicional de overlay que ponen pixeles ellas mismas
+Hay dos optimizaciones de cache:
+
+1) Campo .modificado en overlay dice que se ha escrito ese caracter y al refrescar desde nomal_overlay_texto_menu debe renderizarlo. Desde alli,
+al renderizar, se pondra ese campo .modificado a 0. Asi en ventanas como help->readme, si no se mueve no hace scroll ni nada,
+solo se renderiza una vez, en cada refresco de pantalla no se renderiza de nuevo, ahorrando monton de ciclos de cpu
+
+2) Si el caracter a escribir es el mismo, con mismos atributos, y parametro use_cache_mismo_caracter=1, no modificamos ese caracter, por tanto
+no se renderizara desde nomal_overlay_texto_menu. Dado que es mismo caracter, ahorraremos ciclos de cpu
+
+//El parametro cache_mismo_caracter le dice si usamos cache al escribir caracter. Esta cache no se usa por ejemplo en ventanas que
+//tienen mucho putpixel con fondo en blanco (caracter " ") que quieren que se escriba el fondo al refrescar ventana
+//Podria dar problemas con alguna otra llamada a putchar_menu_overlay o putchar_menu_overlay_parpadeo  (donde se usa cache)
+//pero lo que hemos hecho es que en putchar_menu_overlay y putchar_menu_overlay_parpadeo, siempre llama sin cache
+
+-ventanas que dibujan en pixeles, suele ser responsabilidad de ellas borrar los pixeles del frame anterior, o quedaran "restos".
+Alternativamente se puede usar parametro must_clear_cache_on_draw de la ventana, que indica que a cada refresco, se redibuja siempre el fondo de texto,
+que suele ser caracter " " y se le dice que no haga cache de ese caracter, con lo que se borra la ventana (incluido logicamente los pixeles)
+
+Aparte de todo eso, cuando no se permite background windows, habitualmente solo se tiene una ventana visible, pero se puede dar en caso de 2 a la vez, por ejemplo al pulsar F1 en algun item de menu. Es por eso que hay varias funciones que consideran cuando hay mas de 1 ventana a la vez (aunque no se permitan en background), como el redraw all windows o la función de ver si una ventana está encima de otra que se llama desde draw window contents (zxvision_coords_in_superior_windows)
+
+otro: se puede usar dirty_user_must_draw_contents para saber el usuario cuando tiene que redibujar todos los pixeles de una ventana.
+en caso que no este activo eso, se pueden dibujar solo los pixeles que cambian, y no todos
+
+---
+
+
+Para poder abrir el menu con una ventana concreta, llamar a zxvision_open_menu_with_window
+Esto hace entrar en el bucle de gestion multitarea de menu, con una ventana concreta. Se usa por ejemplo cuando se dispara un breakpoint
+
+---
+
+Para poder agregar una maquina
+
+En este caso es un ejemplo muy simple que es una maquina que se comporta como spectrum 48, agregamos maquina MACHINE_ID_SPECTRUM_48_PLUS_ENG
+
+
+## Agregar en README, si conviene:
+
+
+--It's a ZX Machines Emulator for UNIX based operating systems (and Windows), including all the Sinclair computers:
+...
+--And also:
+...
+
+
+Formato diff:
+
+## Agregar en changelog
+diff --git a/src/Changelog b/src/Changelog
+index 38b9613..54e1043 100644
+--- a/src/Changelog
++++ b/src/Changelog
+@@ -3,6 +3,7 @@ Version 10.2 - Hysteria edition. 14 June 2022
+ Allow .Z80 corrupted snapshot loading from ZXSP emulator with additional header of 31 byte size
+ Added ZSF support for Timex TS2068
+ Added setting for path where to download files from the speccy and zx81 online browser
++Added machine Spectrum 48k+
+
+
+ Improved ZX Spectrum Next emulation: added sprite rendering priority bit
+
+## Agregar en FEATURES y FEATURES_es
+diff --git a/src/FEATURES b/src/FEATURES
+index 49b094c..a6e5fe2 100644
+--- a/src/FEATURES
++++ b/src/FEATURES
+@@ -4,7 +4,7 @@
+     * Science of Cambridge MK14
+     * Sinclair ZX80
+     * Sinclair ZX81
+-    * Spectrum models: 16k, 48k (English and Spanish), Inves Spectrum +, Spectrum 128k (English and Spanish), Spectrum +2 (English, Spanish and French), Spectrum +2A (English and Spanish), Spectrum +3 (English and Spanish), Microdigital TK90X (Portuguese and Spanish), TK95
++    * Spectrum models: 16k, 48k (English and Spanish), 48k+ (English and Spanish), Inves Spectrum +, Spectrum 128k (English and Spanish), Spectrum +2 (English, Spanish and French), Spectrum +2A (English and Spanish), Spectrum +3 (English and Spanish), Microdigital TK90X (Portuguese and Spanish), TK95
+     * Sinclair QL
+     * Cambridge Z88
+     * Timex TS 2068
+
+## Agregar ID maquina
+diff --git a/src/cpu.h b/src/cpu.h
+index 563c78c..090b532 100644
+--- a/src/cpu.h
++++ b/src/cpu.h
+@@ -386,6 +386,7 @@ extern z80_bit stdout_simpletext_automatic_redraw;
+ #define MACHINE_ID_SPECTRUM_P3_41		26
+ #define MACHINE_ID_SPECTRUM_P3_SPA		27
+
++#define MACHINE_ID_SPECTRUM_48_PLUS_ENG		28
+
+ #define MACHINE_ID_COLECO 100
+ #define MACHINE_ID_SG1000 101
+@@ -477,8 +478,9 @@ extern z80_bit stdout_simpletext_automatic_redraw;
+
+
+
+-#define MACHINE_IS_SPECTRUM_16_48 ( (current_machine_type<=MACHINE_ID_MICRODIGITAL_TK95) || MACHINE_IS_SPECTRUM_48_SPA )
++#define MACHINE_IS_SPECTRUM_48_PLUS_ENG (current_machine_type==MACHINE_ID_SPECTRUM_48_PLUS_ENG)
++#define MACHINE_IS_SPECTRUM_16_48 ( (current_machine_type<=MACHINE_ID_MICRODIGITAL_TK95) || MACHINE_IS_SPECTRUM_48_PLUS_SPA || MACHINE_IS_SPECTRUM_48_PLUS_ENG)
+
+ #define MACHINE_IS_SPECTRUM_128_P2 ( (current_machine_type>=MACHINE_ID_SPECTRUM_128 && current_machine_type<=MACHINE_ID_SPECTRUM_P2_SPA) || MACHINE_IS_PENTAGON)
+
+## Agregar en listado descriptivo
+diff --git a/src/cpu.c b/src/cpu.c
+index 7771e2a..0bc9509 100644
+--- a/src/cpu.c
++++ b/src/cpu.c
+@@ -1274,6 +1274,7 @@ char *string_machines_list_description=
+ 							" ZX81     ZX81\n"
+               " 16k      ZX Spectrum 16k\n"
+               " 48k      ZX Spectrum 48k\n"
++              " 48kp     ZX Spectrum+ 48k\n"
+ 							" 128k     ZX Spectrum+ 128k\n"
+ 							" QL       QL\n"
+
+## Agregar en lista nombre maquinas
+@@ -2662,6 +2664,8 @@ struct s_machine_names machine_names[]={
+     {"ZX Spectrum +3 (ROM v4.1)",		MACHINE_ID_SPECTRUM_P3_41},
+     {"ZX Spectrum +3 (Spanish)",		MACHINE_ID_SPECTRUM_P3_SPA},
+
++    {"ZX Spectrum+ 48k",		MACHINE_ID_SPECTRUM_48_PLUS_ENG},
++
+     {"MSX1",MACHINE_ID_MSX1},
+     {"ColecoVision",MACHINE_ID_COLECO},
+     {"SG-1000",MACHINE_ID_SG1000},
+
+## Agregar en listado ids maquinas (comentarios)
+@@ -3158,7 +3158,7 @@ void set_machine_params(void)
+ 27=Amstrad +3 - Espa�ol
+
+ 28=Spectrum + English
+-29 Reservado (algun otro modelo de Spectrum)
++29=Timex TC2048
+ 100=colecovision
+ 101=sega sg1000
+ 102=Spectravideo 318
+
+ ## Agregar en set_machine_params, casos de maquinas y funciones lectura, escritura memoria y puertos
+@@ -3746,7 +3751,8 @@ You don't need timings for H/V sync =)
+ 		break;
+
+ 		case 1:
+		case MACHINE_ID_SPECTRUM_48_PLUS_SPA:
++        case MACHINE_ID_SPECTRUM_48_PLUS_ENG:
+ 		poke_byte=poke_byte_spectrum_48k;
+ 		peek_byte=peek_byte_spectrum_48k;
+ 		peek_byte_no_time=peek_byte_no_time_spectrum_48k;
+
+## Agregar en carga de ROM
+@@ -4589,6 +4595,7 @@ void rom_load(char *romfilename)
+                 break;
+
+                 case 1:
++                case MACHINE_ID_SPECTRUM_48_PLUS_ENG:
+                 romfilename="48.rom";
+                 break;
+
+
+
+
+diff --git a/src/keyboard_48p.bmp b/src/keyboard_48p.bmp
+new file mode 100644
+index 0000000..3c7fcc7
+Binary files /dev/null and b/src/keyboard_48p.bmp differ
+diff --git a/src/menu_bitmaps.c b/src/menu_bitmaps.c
+index 77ac612..a405ae3 100644
+--- a/src/menu_bitmaps.c
++++ b/src/menu_bitmaps.c
+@@ -3294,6 +3294,36 @@ char *bitmap_button_ext_desktop_my_machine_spectrum_128_spa[EXT_DESKTOP_BUTTONS_
+ 	"xxxxxxxxxxxxxxxxxxrygbxxxx" 	 //25
+ };
+
++//Icono "My machine" para un Spectrum 48k+ Spanish
++char *bitmap_button_ext_desktop_my_machine_spectrum_48_spa[EXT_DESKTOP_BUTTONS_ANCHO]={
++    //01234567890123456789012345
++    "                          ",     //0
++  	"                          ",
++	"                          ",
++	"                          ",
++	"                          ",
++	"                          ",
++	"                          ",
++	"                          ",
++	"                          ",
++    "                          ",
++	"                          ",	//10
++	"xxxxxxxxxxxxxxxxxxxxxxxxxx",
++	"xxxxxxxxxxxxxxxxxxxxxxxxxx",
++	"xxxxxxxxxxxxxxxxxxxxxxxxxx",
++	"xxrxrrxxxxxxxxxxxxxxxxxxxx",
++	"xxxxxxxxxxxxxxxxxxxxxxxxxx",
++	"xxxxxxxxxxxxxxxxxxxxxxxxxx",
++	"xxwwxwwxwwxwwxwwxwwxwwwxxx",
++	"xxxxxxxxxxxxxxxxxxxxxxxxxx",
++	"xxwxwwxwwxwwxwwxwwxwwxwxxx",
++	"xxxxxxxxxxxxxxxxxxxxxxwxxx",    //20
++	"xxwwwxwwxwwxwwxwwxwwxwwxxx",
++	"xxxxxxxxxxxxxxxxxxxxxxxxxx",
++	"xxwxwwxwwxwwwwwwxwwxwwrygb",
++	"xxxxxxxxxxxxxxxxxxxxxrygbx",
++	"xxxxxxxxxxxxxxxxxxxxrygbxx" 	 //25
++};
+
+ //Icono "My machine" para un Spectrum 128k+ English
+ char *bitmap_button_ext_desktop_my_machine_spectrum_128_eng[EXT_DESKTOP_BUTTONS_ANCHO]={
+diff --git a/src/menu_bitmaps.h b/src/menu_bitmaps.h
+index d7693a9..fdb310d 100644
+--- a/src/menu_bitmaps.h
++++ b/src/menu_bitmaps.h
+@@ -141,6 +141,7 @@ extern char *bitmap_button_ext_desktop_my_machine_spectrum_128_spa[];
+ extern char *bitmap_button_ext_desktop_my_machine_spectrum_128_eng[];
+ extern char *bitmap_button_ext_desktop_my_machine_spectrum_p2[];
+ extern char *bitmap_button_ext_desktop_my_machine_spectrum_p3[];
++extern char *bitmap_button_ext_desktop_my_machine_spectrum_48_spa[];
+
+ #define EXT_DESKTOP_TOTAL_BUTTONS 14
+
+diff --git a/src/menu_items.c b/src/menu_items.c
+index 1f3ba0d..728d9ef 100644
+--- a/src/menu_items.c
++++ b/src/menu_items.c
+@@ -18796,7 +18796,8 @@ void menu_help_keyboard_load_bmp(void)
+     else if (MACHINE_IS_SPECTRUM_P2) strcpy(nombrebmp,"keyboard_p2.bmp");
+     else if (MACHINE_IS_SPECTRUM_P2A_P3) strcpy(nombrebmp,"keyboard_p3.bmp");
+     else if (MACHINE_IS_SPECTRUM_16) strcpy(nombrebmp,"keyboard_16.bmp");
+     else if (MACHINE_IS_SPECTRUM_48_PLUS_SPA) strcpy(nombrebmp,"keyboard_48s.bmp");
++    else if (MACHINE_IS_SPECTRUM_48_PLUS_ENG) strcpy(nombrebmp,"keyboard_48p.bmp"); //mismo teclado que el 128, aunque dejo archivos separados
+     else if (MACHINE_IS_SPECTRUM_128) strcpy(nombrebmp,"keyboard_128.bmp");
+     else if (MACHINE_IS_SPECTRUM_128_SPA) strcpy(nombrebmp,"keyboard_128s.bmp");
+     else if (MACHINE_IS_ZX80) strcpy(nombrebmp,"keyboard_zx80.bmp");
+
+
+
+diff --git a/src/tape.c b/src/tape.c
+index 66b9e0b..98e2885 100644
+--- a/src/tape.c
++++ b/src/tape.c
+@@ -1539,7 +1539,7 @@ void gestionar_autoload_spectrum(void)
+ 			case MACHINE_ID_MICRODIGITAL_TK90X:
+ 			case MACHINE_ID_MICRODIGITAL_TK90X_SPA:
+ 			case MACHINE_ID_MICRODIGITAL_TK95:
+             case MACHINE_ID_SPECTRUM_48_PLUS_SPA:
++            case MACHINE_ID_SPECTRUM_48_PLUS_ENG:
+ 				//Ver para maquinas 48k
+ 				gestionar_autoload_spectrum_48kmode();
+ 				break;
+diff --git a/src/utils.c b/src/utils.c
+index a6b8c23..8e3051b 100644
+--- a/src/utils.c
++++ b/src/utils.c
+@@ -564,7 +564,7 @@ char array_fabricantes_hotkey_letra[]="aobcdiurmyewpngs tlvz";
+
+ //Array de maquinas por fabricante, acabado en 255
+ int array_maquinas_sinclair[]={
+-	120,121,0,1,6,160,255
++	120,121,0,1,MACHINE_ID_SPECTRUM_48_PLUS_ENG,6,160,255
+ };
+
+ int array_maquinas_timex_sinclair[]={
+@@ -752,6 +752,7 @@ int return_fabricante_maquina(int maquina)
+ 		case 0:
+ 		case 1:
+ 		case 6:
++        case MACHINE_ID_SPECTRUM_48_PLUS_ENG:
+ 		case 120:
+ 		case 121:
+ 		case 160:
+@@ -3101,6 +3102,7 @@ int get_rom_size(int machine)
+
++    else if (machine==MACHINE_ID_SPECTRUM_48_PLUS_ENG) return 16384;
+
+@@ -10499,6 +10500,7 @@ struct s_machines_short_names_id {
+ struct s_machines_short_names_id machines_short_names_id[]={
+    {"16k",0},
+    {"48k",1},
++   {"48kp",MACHINE_ID_SPECTRUM_48_PLUS_ENG},
+    {"48ks",20},
+    {"Inves",2},
+    {"TK90X",3},
+
+
+
+diff --git a/src/utils.c b/src/utils.c
+index b9211404..8ae300f0 100644
+--- a/src/utils.c
++++ b/src/utils.c
+@@ -11694,6 +11694,18 @@ struct s_machines_short_names_id machines_short_names_id[]={
+    {"ACE",122,bitmap_button_ext_desktop_my_machine_ace},
+    {"TS1000",MACHINE_ID_TIMEX_TS1000,bitmap_button_ext_desktop_my_machine_ts1000},
+    {"TS1500",MACHINE_ID_TIMEX_TS1500,bitmap_button_ext_desktop_my_machine_ts1500},
++{"48kp",MACHINE_ID_SPECTRUM_48_PLUS_ENG,bitmap_button_ext_desktop_my_machine_48kp},
+
+
+
+# Agregar en debug.c, en struct s_machine_family machine_family_list[]={ , si no es una maquina de la familia Spectrum
+
+
+# Entrada en contend.c si conviene
+
+
+------------------------------
+
+Para poder agregar soporte de tipo de archivos en el file selector para expandir, mostrar vista previa, convertir a SCR, convertir a Z80, usar como fondo del ZX Desktop:
+
+- Convertir a SCR, convertir a Z80:
+* Entrada correspondiente en función file_utils_file_convert
+
+Ejemplo:
++               else if (!util_compare_file_extension(archivo,"rzx")) {
++                char *opciones[]={
++                                       "RZX to SCR",
++                    "RZX to Z80",
++                        NULL};
++
++        int opcion=menu_ask_list_texto("File converter","Select conversion",opciones);
++               if (opcion<0) {
++                       //Salido con ESC
++                       return;
++               }
++                switch (opcion) {
++                        case 0:
++                                sprintf(archivo_destino,"%s/%s.scr",directorio,archivo);
++                                                               util_convert_any_to_scr(fullpath,archivo_destino);
++                        break;
++
++                        case 1:
++                                sprintf(archivo_destino,"%s/%s.z80",directorio,archivo);
++                                                               util_convert_rzx_to_z80(fullpath,archivo_destino);
++                        break;
++
++
++                 }
+
+
+- Expandir archivo:
+
+* Lista de extensiones válidas en menu_filesel_file_can_be_expanded
+Ejemplo:
+     char *extensiones_validas[]={
+         "hdf","tap","tzx","cdt","pzx",
+         "trd","dsk","epr","eprom",
+-        "flash","p","p81","o","mdv","scl","ddh","mdr","rmd",
++        "flash","p","p81","o","mdv","scl","ddh","mdr","rmd","rzx",
+
+* Entrada en función menu_filesel_expand
+Ejemplo:
++        else if (!util_compare_file_extension(archivo,"rzx") ) {
++                debug_printf (VERBOSE_DEBUG,"Is a rzx file");
++                return util_extract_rzx(archivo,tmpdir,NULL,NULL);
++        }
+
+
+- Usar como fondo en ZX Desktop
+
+* Agregar extensión en función menu_zxdesktop_scrfile
+Ejemplo:
+ void menu_zxdesktop_scrfile(MENU_ITEM_PARAMETERS)
+ {
+-    char *filtros[15];
++    char *filtros[16];
+
+     filtros[0]="scr";
+     filtros[1]="tap";
+@@ -11954,7 +11954,8 @@ void menu_zxdesktop_scrfile(MENU_ITEM_PARAMETERS)
+     filtros[11]="p";
+     filtros[12]="mdr";
+     filtros[13]="rmd";
+-    filtros[14]=0;
++    filtros[14]="rzx";
++    filtros[15]=0;
+
+* Entrada en función util_convert_any_to_scr
+Ejemplo:
++       else if (!util_compare_file_extension(filename,"rzx")) {
++        char z80_destination[PATH_MAX]="";
++        retorno=util_extract_rzx(filename,tmpdir,z80_destination,NULL);
++
++        if (z80_destination[0]) {
++                   util_convert_z80_to_scr(z80_destination,archivo_destino);
++            //No hay que buscar archivo de pantalla. ya lo extrae directo. volvemos
++            return 0;
++        }
++       }
+
+- Mostrar vista previa
+
+* Lista de extensiones válidas en util_get_extract_preview_type_file
+Ejemplo:
+         !util_compare_file_extension(nombre,"mdr") ||
++        !util_compare_file_extension(nombre,"rzx") ||
+         !util_compare_file_extension(nombre,"rmd")
+
+
+* Entrada en util_extract_preview_file_simple o util_extract_preview_file_expandable
+dependiendo de si hay conversión directa del archivo a pantalla, o se extraen varios archivos
+Ejemplo:
++                       else if (!util_compare_file_extension(nombre,"rzx") ) {
++                    //Hay que extraer el z80 de dentro del rzx, y luego despues de ese, sacar el scr
++                                       debug_printf (VERBOSE_DEBUG,"Is a rzx file");
++                    char z80_destination[PATH_MAX]="";
++                                       util_extract_rzx(nombre,tmpdir,z80_destination,NULL);
++
++                    if (z80_destination[0]) {
++                        char scr_destino[PATH_MAX];
++
++                        char nombre_sin_dir[PATH_MAX];
++
++                        util_get_file_no_directory(nombre,nombre_sin_dir);
++
++                        sprintf(scr_destino,"%s/%s.scr",tmpdir,nombre_sin_dir); //z80_destination);
++                        //printf("Convertir a %s\n",scr_destino);
++                        retorno=util_convert_z80_to_scr(z80_destination,scr_destino);
++
++                        //Y como esto no es una conversión directa (rzx expande a una carpeta y de ahi sale un z80 y luego un scr)
++                        //hay que indicarle mediante MENU_SCR_INFO_FILE_NAME la ruta al archivo scr
++
++                        char buff_preview_scr[PATH_MAX];
++                        sprintf(buff_preview_scr,"%s/%s",tmpdir,MENU_SCR_INFO_FILE_NAME);
++
++                        //Meter en archivo MENU_SCR_INFO_FILE_NAME la ruta al archivo de pantalla
++                        util_save_file((z80_byte *)scr_destino,strlen(scr_destino)+1,buff_preview_scr);
++                    }
++                       }
+
+------------------------------
+
+Sobre tipos de datos
+
+Usar "long"/"long int" es un error , pues en sistemas de 32 bits es un tipo de dato de 32 bits, pero en sistemas de 64 bits ocupa 64 bits
+
+Por tanto, para usar tipos de datos de 64 bits, usar "long long int"
+
+Salida del siguiente programa:
+
+#include <stdio.h>
+int main(int argc, char *argv[])
+{
+    printf( "sizeof(int)=%d\n", sizeof(int) );
+    printf( "sizeof(long)=%d\n", sizeof(long) );
+    printf( "sizeof(long int)=%d\n", sizeof(long int) );
+    printf( "sizeof(long long)=%d\n", sizeof(long long) );
+    printf( "sizeof(long long int)=%d\n", sizeof(long long int) );
+    return 0;
+}
+
+
+En sistema de 32 bits:
+
+sizeof(int)=4
+sizeof(long)=4
+sizeof(long int)=4
+sizeof(long long)=8
+sizeof(long long int)=8
+
+En sistema de 64 bits:
+
+sizeof(int)=4
+sizeof(long)=8
+sizeof(long int)=8
+sizeof(long long)=8
+sizeof(long long int)=8
+
+Recomiendo usar los tipos definidos en cpu.h:
+
+//8 bits
+typedef unsigned char z80_byte;
+//16 bits
+typedef unsigned short z80_int;
+//32 bits
+typedef unsigned int z80_long_int;
+typedef unsigned int z80_32bit;
+//64 bits
+typedef long long int z80_64bit;
+
+
+-------------------
+
+How Z80 core in debug mode works (and nested functions)
+
+This is a way I created to add some conditions or states to the cpu core so it doesn't slowdown the main emulation.
+When a machine is created, the Z80 cpu core is running from a function called "cpu_core_loop". This is running Z80 opcodes, redrawing the screen, reading the keyboard, etc.
+
+Then, when something is enabled in the cpu core (like breakpoints or betadisk emulation for example), that core is changed to another function called "cpu_core_loop_nested_handler". This function runs the cpu_core_loop as usual but also executes other core functions that need attention (check breakpoints for example). You can add other core functions on top of the normal core, this is way it's called "nested": every nested funcition calls the previous one in order they are added, so, for example:
+
+-You start ZEsarUX. Z80 core function is set to cpu_core_loop
+
+-You enable breakpoints. Z80 core function is set to cpu_core_loop_nested_handler.
+cpu_core_loop_nested_handler runs the following functions:
+1. cpu_core_loop_debug (the one that checks breakpoints)
+2. cpu_core_loop
+
+-You enable betadisk. cpu_core_loop_nested_handler runs the following functions:
+1. cpu_core_loop_betadisk
+2. cpu_core_loop_debug
+3. cpu_core_loop
+
+
+
+This is a simple way to avoid having in the normal core sentences like:
+
+if (breakpoints_enabled) check_breakpoints();
+if (betadisk_enabled) betadisk_rom_traps();
+etc...
+
+There could exist lots of "if something is enabled then"... This might sound not too important, but all this increases physical cpu usage so it can slowdown emulation (even more on architectures without Speculative Execution in the cpu, like raspberry pi).
+
+So, these nested functions allows me to avoid "if" sentences and have low cpu usage when the Z80 cpu core is not using all these features (breakpoints, betadisk etc), and only increase cpu usage when they are enabled.
+
+Some ZRCP functions like "smartload" or "set-machine" first set cpu-step-mode; if that mode is not set, it may crash randomly, when the cpu core thread is inside a nested call (for example inside cpu_core_loop_debug) but the function list is emptied by the ZRCP thread (when running smartload).
+
+By the way, read and write functions (*peek* and *poke*) work the same way as Z80 core loop: they use nested functions when something is enabled, to reduce cpu usage. You can run the ZRCP command "dump-nested-functions" and you'll see all these nested functions when they are enabled, for example:
+
+command> dump-nested-functions
+
+Nested Core functions
+Element: 0x7fb4e275cac0 (0) id: 0 name: Debug core pointer function: 0x10be7c200 previous: 0x0 next: 0x7fb4e24a29a0
+Element: 0x7fb4e24a29a0 (1) id: 1 name: Betadisk core pointer function: 0x10bfc7de0 previous: 0x7fb4e275cac0 next: 0x0
+
+Nested poke_byte functions
+Element: 0x7fb4e275c570 (0) id: 0 name: Debug poke_byte pointer function: 0x10be7a3b0 previous: 0x0 next: 0x0
+
+Nested poke_byte_no_time functions
+Element: 0x7fb4e275c760 (0) id: 0 name: Debug poke_byte_no_time pointer function: 0x10be7a570 previous: 0x0 next: 0x0
+
+Nested peek_byte functions
+Element: 0x7fb4e275c880 (0) id: 0 name: Debug peek_byte pointer function: 0x10be7a730 previous: 0x0 next: 0x7fb4e24a2bb0
+Element: 0x7fb4e24a2bb0 (1) id: 1 name: Betadisk peek_byte pointer function: 0x10bfc7b00 previous: 0x7fb4e275c880 next: 0x0
+
+Nested peek_byte_no_time functions
+Element: 0x7fb4e275c9a0 (0) id: 0 name: Debug peek_byte_no_time pointer function: 0x10be7a900 previous: 0x0 next: 0x7fb4e24a2880
+Element: 0x7fb4e24a2880 (1) id: 1 name: Betadisk peek_byte_no_time pointer function: 0x10bfc7bc0 previous: 0x7fb4e275c9a0 next: 0x0
+
+
+
+-----
+
+
+-Notas sobre captura de audio en máquinas virtuales Linux:
+*en la de 64 bits, activando Audio Input en esa máquina virtual, se cuelga a los segundos. Y habilitando la tarjeta por USB, captura mal
+*en la de 32 bits, activando Audio Input en esa máquina virtual, no se suele colgar, lee bien, pero a veces se desconecta al cabo de pocos minutos. Y habilitando la tarjeta por USB, captura mal
+*en ambos linux, uso driver alsa. Para cambio a captura de tarjeta USB, uso parámetro --alsacapturedevice hw:1

@@ -8,12 +8,13 @@
 ; The line is one row of 32 cells, in ordinary decimal, with the words
 ; left in place and only the digits rewritten:
 ;
-;   scan 12 50/s x 160 y 090 f 65535
+;   scan 12 50/s x160 y090 L3 f65535
 ;
 ;   scan   spare scanlines in the last step. How many television lines
 ;          were left after the work. 99 is the most the two digits show.
 ;   50/s   the speed, 50 or 25 frames a second
 ;   x y    the diver, in pixels
+;   L      lives left
 ;   f      television frames since the game started (the interrupt count)
 ;
 ; It fits on the one row. A second row is not used.
@@ -21,8 +22,8 @@
 ; The words are drawn once, when the line is turned on. The numbers are
 ; reprinted from the real counters once every eight steps. Seven steps
 ; leave the digits as they are. The eighth prints the spare count, the
-; speed, the diver and the frame count, and skips a digit that has not
-; changed.
+; speed, the diver, the lives and the frame count, and skips a digit
+; that has not changed.
 ;
 ; That eighth step is a full reprint. It is more time than the frame
 ; which copies the seaweed has left, so the picture can miss one
@@ -72,6 +73,7 @@ stats_prev_spare: db 255
 stats_prev_x:   db 255
 stats_prev_y:   db 255
 stats_prev_rate: db 255
+stats_prev_lives: db 255
 
 ; Counts 0 to 7. The numbers are reprinted when this lands on 0.
 ; It starts at 7 so the first step after the words are drawn fills them.
@@ -91,18 +93,30 @@ stats_arm:
 ; The two keys are on different half-rows, so this is not a ghost.
 ; Bit 1 of the space row is Symbol Shift. Bit 1 of the A row is S.
 ; A key reads as 0 when it is down.
+;
+; Symbol Shift comes back as $FF (every bit set), not as its own bit.
+; The chords AND it with the letter's bit: S is bit 1, F is bit 3, P is
+; bit 0. Returned as bit 1 alone, only S survived the AND, and F and P
+; never fired.
+;
+; The soak's 0 or 1 goes through the same masks as the keyboard: NEG
+; turns 1 into $FF, a row with every key down. So the soak tests the
+; real masks, and a wrong bit fails it.
 stats_key_sym:
     IFDEF SOAK
         ld a,(soak_sym)         ; $FF = really read the keyboard
         cp $FF
         jr z,.hw
-        ret                     ; soak passed 0 or 1
+        neg                     ; soak passed 0 or 1: 1 is every key down
+        jr .mask
 .hw:
     ENDIF
         ld bc,ROW_SPC_B * 256 + ULA_PORT
         in a,(c)
         cpl
-        and %00000010
+.mask:  and %00000010
+        ret z
+        ld a,$FF                ; down: every bit, so any letter's bit survives
         ret
 
 stats_key_s:
@@ -110,13 +124,14 @@ stats_key_s:
         ld a,(soak_s)
         cp $FF
         jr z,.hw
-        ret
+        neg
+        jr .mask
 .hw:
     ENDIF
         ld bc,ROW_A_G * 256 + ULA_PORT
         in a,(c)
         cpl
-        and %00000010
+.mask:  and %00000010
         ret
 
 ;------------------------------------------------------------------------------
@@ -257,6 +272,7 @@ stats_draw_template:
         ld (stats_prev_x),a
         ld (stats_prev_y),a
         ld (stats_prev_rate),a
+        ld (stats_prev_lives),a
         ld a,7
         ld (stats_phase),a
         ret
@@ -284,20 +300,20 @@ stats_update_numbers:
         cp (hl)
         jr z,.ypos
         ld (hl),a
-        ld c,15
+        ld c,14
         call stats_dec3
 .ypos:  ld a,(diver_y)
         ld hl,stats_prev_y
         cp (hl)
         jr z,.rate
         ld (hl),a
-        ld c,21
+        ld c,19
         call stats_dec3
 .rate:  ; 50 or 25. Two stores, and only when the speed actually flips.
         ld a,(game_rate)
         ld hl,stats_prev_rate
         cp (hl)
-        jr z,.frame
+        jr z,.lives
         ld (hl),a
         cp 25
         ld a,'5'
@@ -311,6 +327,15 @@ stats_update_numbers:
         jr nz,.runits
         ld a,'5'
 .runits:ld c,9
+        call stats_put
+.lives: ; One digit. CFG_LIVES is at most 9.
+        ld a,(lives)
+        ld hl,stats_prev_lives
+        cp (hl)
+        jr z,.frame
+        ld (hl),a
+        add a,'0'
+        ld c,24
         call stats_put
 .frame: ; The real counter. Digits that already match the screen are
         ; left alone, so this usually redraws one digit of the count.

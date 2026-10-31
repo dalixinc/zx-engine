@@ -15,7 +15,8 @@
 ;     stays white-on-blue except where the wheel bomb is painting it
 ;     (those cells are the bomb's ink), and a set seaweed pixel is
 ;     never left in a water-coloured cell
-;   * the title and the two help lines (rows 2, 4 and 5) still match the
+;   * row 1 is the hearts for the lives left and water elsewhere, and
+;     the title and the two help lines (rows 2, 4 and 5) still match the
 ;     copy taken on the first frame. The wheel flies through them. The
 ;     blank-water check skips those rows, so this is what catches a
 ;     restore that put the title back in the wrong place.
@@ -44,7 +45,7 @@
 ;     or never checked a sprite photograph on row 0
 ;   9 the wheel was never seen clipped on the right, clipped on the
 ;     left, crossing the fish, crossing the diver, and under the digits
-;  10 the title or a help line changed
+;  10 the title, a help line or the hearts changed
 ;  11 the menu did not show the title, or key 2 did not settle on 50
 ;  12 Symbol Shift + F did not flip the speed, or F alone flipped it,
 ;     or holding the chord flipped it again
@@ -217,9 +218,23 @@ soak_begin_play:
 
 ; After read_input. $FF would mean "don't override"; the script always sets
 ; a real value, including 0.
+; In the dive, fire is also pressed on every 16th frame, so a torpedo is
+; nearly always running: up by the surface, across the fish, through the
+; seabed, and off both edges. The checks after each restore then cover
+; its erase as well. torpedo_hit is not called on this build, so the
+; bombs keep the path the frame numbers above expect.
 soak_apply_input:
+        ld a,(soak_phase)
+        cp 1
         ld a,(soak_input)
-        ld (input_state),a
+        jr nz,.store
+        ld b,a
+        ld a,(soak_frame)
+        and 15
+        ld a,b
+        jr nz,.store
+        or IN_FIRE
+.store: ld (input_state),a
         ret
 
 ; After restore + stats_prepare, before anything is drawn.
@@ -258,12 +273,15 @@ soak_after_update:
 
 ; --- checks -------------------------------------------------------------------
 
-; Open water must be blank. Title rows 2, 4 and 5 are the exception.
+; Open water must be blank. Row 1 (the hearts) and title rows 2, 4 and
+; 5 are the exception.
 ; Row 0 is also an exception when the digits are up and no sprite is on
 ; them: prepare left those pixels so the beam can read them.
 soak_check_water:
         ld b,0                  ; character row
 .row:   ld a,b
+        cp LIVES_ROW
+        jr z,.next
         cp 2
         jr z,.next
         cp 4
@@ -328,37 +346,36 @@ soak_row_is_blank:
         ret
 
 ; A sprite on row 0 must have photographed water, not the digits.
-; Draw order is fish, then wheel, then diver. The back-most of those that
-; covers row 0 photographed the water. A later one may have photographed
-; the sprite behind it, so only the back-most is checked. (The old check
-; stepped aside when the fish and the diver were both up there, for the
-; same reason.)
+; Draw order in the water is the higher of the diver and the wheel,
+; then the other, then the fish (main_loop says why). wheel_first still
+; holds the order of the step that took these photographs. The
+; back-most of those that covers row 0 photographed the water. A later
+; one may have photographed the sprite behind it, so only the back-most
+; is checked. A sprite drawn after the seabed copy is far below row 0.
 soak_check_bg:
-        ld a,(fish_bg + BG_VALID)
+        ld a,(wheel_first)
         or a
-        jr z,.try_wheel
-        ld a,(fish_bg + BG_Y)
-        cp 8
-        jr nc,.try_wheel
-        ld iy,fish_bg
+        jr nz,.wheel
+        ld iy,diver_bg
+        call soak_one_bg
+        jr nz,.saw_diver
+        ld iy,wheel_bg
+        call soak_one_bg        ; fails inside if a byte is not water
+        ret nz
+        jr .fish
+.wheel: ld iy,wheel_bg
+        call soak_one_bg
+        ret nz
+        ld iy,diver_bg
+        call soak_one_bg
+        jr nz,.saw_diver
+.fish:  ld iy,fish_bg
         call soak_one_bg
         ret z
         ld a,1
         ld (soak_saw_fish_bg),a
         ret
-.try_wheel:
-        ld a,(wheel_bg + BG_VALID)
-        or a
-        jr z,.try_diver
-        ld a,(wheel_bg + BG_Y)
-        cp 8
-        jr nc,.try_diver
-        ld iy,wheel_bg
-        jp soak_one_bg          ; fail inside if a byte is not water
-.try_diver:
-        ld iy,diver_bg
-        call soak_one_bg
-        ret z
+.saw_diver:
         ld a,1
         ld (soak_saw_diver_bg),a
         ret
@@ -863,7 +880,9 @@ soak_title_check:
 .compare:
         xor a
         ld (soak_title_mode),a
-.rows:  ld hl,SOAK_TITLE
+.rows:  call soak_hearts_row
+        jr nz,.bad
+        ld hl,SOAK_TITLE
         ld a,2
         call soak_one_title_row
         jr nz,.bad
@@ -875,6 +894,44 @@ soak_title_check:
         ret z
 .bad:   ld a,10
         jp soak_fail
+
+; Row 1 against what lives_draw puts there: water up to LIVES_COL, then
+; a heart for each life left, then empty cells. The soak takes no hits,
+; so this is CFG_LIVES hearts, put back by every restore that crossed them.
+; Out: Z if it matched. Corrupts: AF, BC, DE, HL, IX
+soak_hearts_row:
+        ld a,LIVES_ROW * 8
+        call row_table_entry
+        ld de,lives_heart       ; this pixel line of the heart
+        ld c,8
+.line:  ld l,(ix+0)
+        ld h,(ix+1)
+        ld b,0                  ; column
+.byte:  ld a,b
+        sub LIVES_COL
+        jr c,.water
+        push hl
+        ld hl,lives
+        cp (hl)
+        pop hl
+        jr nc,.water
+        ld a,(de)
+        jr .cmp
+.water: xor a
+.cmp:   cp (hl)
+        ret nz
+        inc l
+        inc b
+        ld a,b
+        cp 32
+        jr c,.byte
+        inc de
+        inc ix
+        inc ix
+        dec c
+        jr nz,.line
+        xor a
+        ret
 
 ; In:  A = character row, HL -> buffer (advanced by 8*32)
 ;      soak_title_mode 0 = compare, 1 = capture

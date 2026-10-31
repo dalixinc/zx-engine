@@ -1,0 +1,141 @@
+<!-- Creator     : groff version 1.23.0 -->
+<!-- CreationDate: Fri Apr  3 20:57:34 2026 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta name="generator" content="groff -Thtml, see www.gnu.org">
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<meta name="Content-Style" content="text/css">
+<style type="text/css">
+       p       { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       pre     { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       table   { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       h1      { text-align: center }
+</style>
+<title>raw2hdf</title>
+
+</head>
+<body>
+
+<h1 align="center">raw2hdf</h1>
+
+<a href="#NAME">NAME</a><br>
+<a href="#SYNOPSIS">SYNOPSIS</a><br>
+<a href="#DESCRIPTION">DESCRIPTION</a><br>
+<a href="#OPTIONS">OPTIONS</a><br>
+<a href="#NOTES">NOTES</a><br>
+<a href="#BUGS">BUGS</a><br>
+<a href="#SEE ALSO">SEE ALSO</a><br>
+<a href="#AUTHOR">AUTHOR</a><br>
+
+<hr>
+
+
+<h2>NAME
+<a name="NAME"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">raw2hdf &mdash;
+Create an .hdf hard disk image from a raw data file</p>
+
+<h2>SYNOPSIS
+<a name="SYNOPSIS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em"><b>raw2hdf</b>
+[<i>OPTION</i>] <i>rawfile hdffile</i></p>
+
+<h2>DESCRIPTION
+<a name="DESCRIPTION"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">raw2hdf converts
+a binary dump of a hard disk&rsquo;s data into an IDE disk
+image in .hdf format for use with Sinclair ZX Spectrum
+emulators.</p>
+
+<h2>OPTIONS
+<a name="OPTIONS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;v
+<i>version</i></p>
+
+<p style="margin-left:18%;">specifies the version of .hdf
+image to be created. Valid values are
+&lsquo;<i>1.0</i>&rsquo; for a version 1.0 file and
+&lsquo;<i>1.1</i>&rsquo; for a version 1.1 file. Defaults to
+creating version 1.1 files.</p>
+
+<p style="margin-left:9%;"><i>&minus;h</i>,
+<i>&minus;&minus;help</i></p>
+
+<p style="margin-left:18%;">give brief usage help, listing
+available options.</p>
+
+<p style="margin-left:9%;"><i>&minus;V</i>,
+<i>&minus;&minus;version</i></p>
+
+<p style="margin-left:18%;">output version information.
+<i>rawfile</i> specifies a raw data file (or block device
+corresponding to an actual disk) to be converted.</p>
+
+<p style="margin-left:9%;"><i>hdffile</i></p>
+
+<p style="margin-left:18%;">specifies the .hdf file to
+create.</p>
+
+<h2>NOTES
+<a name="NOTES"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">Since raw2hdf
+has no knowledge of the geometry of the disk from which the
+original image was taken (indeed, the input file need not
+originate from a real IDE disk at all), there is no
+guarantee that the information contained in the .hdf file
+header accurately represents the original disk. However, it
+will attempt to construct a header that is consistent with
+the size of the image, to produce an .hdf file which is
+functionally equivalent.</p>
+
+<h2>BUGS
+<a name="BUGS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">None known.</p>
+
+<h2>SEE ALSO
+<a name="SEE ALSO"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em"><i>fuse</i>(1),
+<i>fuse&minus;utils</i>(1), <i>libspectrum</i>(3)</p>
+
+<p style="margin-left:9%; margin-top: 1em">The .hdf format
+specification, at <i><br>
+
+http://www.zxshed.co.uk/sinclairfaq/index.php5?title=HDF_format</i>.</p>
+
+<p style="margin-left:9%; margin-top: 1em">The
+comp.sys.sinclair Spectrum FAQ, at <i><br>
+http://www.worldofspectrum.org/faq/index.html</i>.</p>
+
+<h2>AUTHOR
+<a name="AUTHOR"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">Matthew Westcott
+(matthew@west.co.tt).</p>
+<hr>
+</body>
+</html>
