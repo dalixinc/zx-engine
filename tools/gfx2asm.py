@@ -144,11 +144,27 @@ def main():
     else:
         shift_widths = [stored_bytes(width, s) for s in range(8)]
         nbytes = max(shift_widths)
+    anim_len = len(frames)
+    # Same picture stored once. The sequence is which shape each step
+    # of the animation shows. Mirrored sprites (fish, diver) skip this:
+    # their bytes are the ones Engine Demo 1 was built with.
+    seq = None
+    if not mirror:
+        order = []
+        seq = []
+        uniq = []
+        for fr in frames:
+            key = tuple(fr)
+            if key not in order:
+                order.append(key)
+                uniq.append(fr)
+            seq.append(order.index(key))
+        frames = uniq
     if mirror:
         facings = [("right", frames),
                    ("left", [[r[::-1] for r in f] for f in frames])]
     else:
-        # One facing. Index in the image table is just the frame number.
+        # One facing. Index in the image table is the shape number.
         facings = [("right", frames)]
 
     out = []
@@ -172,16 +188,32 @@ def main():
     else:
         w(f"{name.upper()}_BYTES  equ {nbytes}        ; widest shifted row (see {name}_shift_bytes)")
     w(f"{name.upper()}_HEIGHT equ {height}")
-    w(f"{name.upper()}_FRAMES equ {len(frames)}")
+    if seq is None:
+        w(f"{name.upper()}_FRAMES equ {len(frames)}")
+    else:
+        # FRAMES is the animation, not the number of stored pictures.
+        w(f"{name.upper()}_FRAMES equ {anim_len}")
+        w(f"{name.upper()}_SHAPES equ {len(frames)}")
     w("")
+    if seq is not None:
+        w(f"; {name}_seq - one byte per animation step. The byte is the")
+        w("; shape number in the image table. A repeated step does not")
+        w("; store the picture again.")
+        w(f"{name}_seq:")
+        w("        db " + ", ".join(str(n) for n in seq))
+        w("")
     if not fixed:
         w(f"; {name}_shift_bytes - how many bytes one row occupies at each")
         w("; pixel shift. The background record is sized for the widest.")
         w(f"{name}_shift_bytes:")
         w("        db " + ", ".join(str(n) for n in shift_widths))
         w("")
-    w(f"; {name}_images: one entry per (facing, frame); each points to a table of")
-    w(";   8 pointers, one per pixel shift 0..7. Index = facing*FRAMES + frame.")
+    if seq is None:
+        w(f"; {name}_images: one entry per (facing, frame); each points to a table of")
+        w(";   8 pointers, one per pixel shift 0..7. Index = facing*FRAMES + frame.")
+    else:
+        w(f"; {name}_images: one entry per stored shape. {name}_seq picks which.")
+        w("; Each entry points to a table of 8 pointers, one per pixel shift.")
     w(f"{name}_images:")
     for face, fr in facings:
         for i in range(len(fr)):
@@ -210,7 +242,8 @@ def main():
         w(f"; total image bytes: {total}  ({len(facings)} facings x {len(frames)} frames"
           f" x 8 shifts x {height} rows x {2*nbytes} bytes)")
     else:
-        w(f"; total image bytes: {total}  ({len(facings)} facings x {len(frames)} frames"
+        kind = "shapes" if seq is not None else "frames"
+        w(f"; total image bytes: {total}  ({len(facings)} facings x {len(frames)} {kind}"
           f" x 8 shifts, width depending on the shift)")
     open(dst, "w").write("\n".join(out) + "\n")
     print(f"{dst}: {total} bytes of sprite data")

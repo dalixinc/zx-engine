@@ -40,6 +40,13 @@ the way. The order later is pulsar, then the partial wheel, then the
 full wheel. Their pictures are `gfx/wheel-partial.txt` and
 `gfx/wheel-full.txt`.
 
+A repeated step does not store the picture again. Each different
+shape is kept once, and a short list (`wheel_seq`, and the same for
+the other two) says which shape each step shows. The pulsar's eight
+steps are two shapes. The two wheels have no repeated frame, so the
+list does not shrink them. They stay out of the tape until a level
+needs them.
+
 Fire launches one torpedo, along the row he is facing. It destroys a
 wheel bomb it touches, and is spent. Another cannot be launched until
 `CFG_FIRE_COOLDOWN` television frames have passed (48, about a second).
