@@ -25,9 +25,8 @@ CFG_DIVER_MAX_X     equ 160
 ;   25  one step every two television frames (coarser, same real speed)
 ; The menu can still switch this before you start, and Symbol Shift + F
 ; switches it during play. Only 50 and 25 are allowed.
-; 25 is the start. The picture is drawn in the first television frame
-; and a second movement tick runs in the next. Measured spare is still
-; zero on both frames of a heavy step. A build can force 50 with
+; 25 is the start. The picture frame is the same work as 50, and the
+; next television frame only moves. A build can force 50 with
 ; -DCFG_START_RATE=50.
     IFNDEF CFG_START_RATE
 CFG_START_RATE      equ 25

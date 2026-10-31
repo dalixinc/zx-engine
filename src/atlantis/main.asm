@@ -101,8 +101,8 @@ entry:
 ;------------------------------------------------------------------------------
 ; main_loop - one step
 ; At 50 frames a second that is one television frame. At 25 it is two.
-; The first frame draws the picture. The second holds it and does the
-; buffer shifts and the movement, so neither frame misses the interrupt.
+; The picture frame is the 50 body: same draw, then one fast tick.
+; The idle frame only moves (no drawing), and it starts on an interrupt.
 ;------------------------------------------------------------------------------
 main_loop:
         ; The spare-scanline count already waited for the interrupt at
@@ -361,10 +361,9 @@ SLACK_WARMUP    equ 0
         ; The wheel is included: it can bob up to y = 0.
         call stats_overlay_if_row0
 
-        ; The picture is one 50-style step of the scroll. At 25 the
-        ; second step of the buffers happens in the idle frame, inside
-        ; step_one, so the sand still moves once per two television
-        ; frames and the ground twice.
+        ; Same order as 50. The blit, then one shift, then the border,
+        ; then one fast tick. Nothing above the shift is extra at 50.
+        ; At 25 the idle frame does the second shift and the second tick.
     IFDEF TIMING_BARS
         ld a,CYAN
         out (ULA_PORT),a
@@ -374,6 +373,25 @@ SLACK_WARMUP    equ 0
         call soak_after_blit    ; the picture the next restore must match
     ENDIF
         call draw_late
+
+    IFDEF TIMING_BARS
+        ld a,RED
+        out (ULA_PORT),a
+    ENDIF
+        call scroll_shift_ground
+        ; Phase 0 means the screen matches the slow buffer. Flipping
+        ; it and rotating only when the result is 1 leaves the buffer
+        ; one pixel ahead, which the next full copy shows.
+        ld a,(slow_phase)
+        xor 1
+        ld (slow_phase),a
+        jr z,.scrolled
+    IFDEF TIMING_BARS
+        ld a,GREEN
+        out (ULA_PORT),a
+    ENDIF
+        call scroll_shift_slow
+.scrolled:
 
     IFDEF TIMING_BARS
         ld a,YELLOW
@@ -421,38 +439,50 @@ SLACK_WARMUP    equ 0
         ; left the row. A sprite on row 0 was already handled above.
         call stats_overlay_if_clear
 
-        ; One 1/50 of scroll and movement, in this frame, on the fast
-        ; paths. At 50 that is the whole step. At 25 the same work runs
-        ; again in the next television frame, with the picture held.
-        call step_one
+        ; One pixel each. The second pixel, at 25, is the idle frame.
+        call update_diver
+        call update_fish
+        ; The wheel and the torpedo apply step_ticks themselves. This
+        ; frame always does one fast tick. 50 already has step_ticks = 1.
+        ld a,(step_ticks)
+        ld (step_saved),a
+        cp 2
+        jr nz,.actors
+        ld a,1
+        ld (step_ticks),a
+.actors:
+        ld a,(torp_on)
+        or a
+        call nz,torpedo_move
+        ld a,(input_state)
+        and IN_FIRE
+        call nz,torpedo_fire
+    IFNDEF NO_WHEEL
+        call update_wheel
+    IFNDEF SOAK
+        ; Before hit_check: a bomb that was shot first is already gone.
+        ld a,(torp_on)
+        or a
+        call nz,torpedo_hit
+        call hit_check
+        jr nc,.lived
+        ld a,(step_saved)
+        ld (step_ticks),a
+        jp game_over
+.lived:
+    ENDIF
+    ENDIF
+        ld a,(step_saved)
+        ld (step_ticks),a
+
+    IFDEF SOAK
+        ; At 25 the idle tick has not run yet. The script reads the
+        ; position after the whole step.
         ld a,(step_ticks)
         cp 2
-        jr nz,.steps_done
-    IFDEF TIMING_BARS
-        ld a,BLACK
-        out (ULA_PORT),a
-    ENDIF
-    IFDEF SLACK_LINES
-        call wait_frame
-    ELSE
-    IFDEF TIMING_BARS
-        call wait_frame
-    ELSE
-    IFDEF SHOT_FRAME
-        call wait_frame
-    ELSE
-        call spare_count
-        ld a,(spare_lines)
-        ld (spare_pic),a
-        ld a,(spare_late)
-        ld (spare_pic_late),a
-    ENDIF
-    ENDIF
-    ENDIF
-        call step_one
-.steps_done:
-    IFDEF SOAK
+        jr z,.soak_later
         call soak_after_update
+.soak_later:
     ENDIF
     IFDEF TIMING_BARS
         ld a,BLACK
@@ -486,35 +516,69 @@ SLACK_WARMUP    equ 0
         jr .shot_halt
 .shot_go:
     ENDIF
-        ; Not the sled, and not the timing border. Count the scanlines
-        ; left in this television frame. That wait IS the sync. At 25
-        ; frames a second, wait for one more interrupt with nothing moving.
+        ; Sled, timing border, and shot builds sync with wait_frame.
+        ; The second tick goes in the frame that wait opens.
+    IFDEF SLACK_LINES
+        DEFINE IDLE_HOLD
+    ENDIF
+    IFDEF TIMING_BARS
+        DEFINE IDLE_HOLD
+    ENDIF
+    IFDEF SHOT_FRAME
+        DEFINE IDLE_HOLD
+    ENDIF
+    IFDEF IDLE_HOLD
+        call idle_hold
+    ENDIF
+        ; Count the scanlines left. That wait IS the sync. At 25 this
+        ; is the picture frame; the idle frame is counted on its own,
+        ; after it has been started on an interrupt.
     IFNDEF SLACK_LINES
     IFNDEF TIMING_BARS
     IFNDEF SHOT_FRAME
         call spare_count
-        ; 25: this count is the idle frame. The picture frame was
-        ; counted above, into spare_pic. Keep both, and show the
-        ; tighter one on the stat line.
-        ld a,(step_ticks)
+        ld a,(step_saved)
         cp 2
-        jr nz,.synced
+        jr nz,.after_idle
+        ld a,(spare_lines)
+        ld (spare_pic),a
+        ld a,(spare_late)
+        ld (spare_pic_late),a
+        or a
+        jr z,.idle_on_time
+        ; Already past the beam. Wait for a real interrupt, or the
+        ; second tick starts late and the next picture tears.
+        call wait_frame
+.idle_on_time:
+        xor a
+        ld (vsync_flag),a       ; this tick owns the frame that just began
+        call idle_tick
+        call spare_count
         ld a,(spare_lines)
         ld (spare_idle),a
         ld a,(spare_late)
         ld (spare_idle_late),a
+        or a
+        jr z,.idle_merge
+        call wait_frame         ; next picture starts on an interrupt
+.idle_merge:
+        ; Stat line shows the tighter frame.
         ld a,(spare_pic_late)
         or a
-        jr z,.pic_fit
+        jr z,.pic_ok
         ld (spare_late),a
-.pic_fit:
+.pic_ok:
         ld a,(spare_idle)
         ld b,a
         ld a,(spare_pic)
         cp b
-        jr nc,.synced          ; the idle frame was tighter
+        jr nc,.idle_soaked     ; idle was tighter; spare_lines is already it
         ld (spare_lines),a
-.synced:
+.idle_soaked:
+    IFDEF SOAK
+        call soak_after_update
+    ENDIF
+.after_idle:
     IFDEF MEASURE
         ; The warmup is not counted. The window after it keeps the
         ; smallest spare, because the sand-only copy is much cheaper
@@ -621,16 +685,13 @@ SLACK_WARMUP    equ 0
         jp main_loop
 
 ;------------------------------------------------------------------------------
-; step_one - one 1/50 second of buffers and movement
-; The picture for this step has already been drawn. The wheel and the
-; torpedo read step_ticks, so it is forced to 1 here and a 25-step
-; calls this twice. Both frames are still late: the idle tick starts
-; after a missed interrupt. hit_check may jump to game_over and not
-; return. Corrupts: AF, BC, DE, HL, IX, IY
+; idle_tick - the second 1/50 second. No drawing.
+; The picture frame already shifted and moved once. This is the other
+; pixel, on the fast paths (step_ticks forced to 1). Restores step_ticks
+; from step_saved. hit_check may jump to game_over.
+; Corrupts: AF, BC, DE, HL, IX, IY
 ;------------------------------------------------------------------------------
-step_one:
-        ld a,(step_ticks)
-        ld (step_saved),a
+idle_tick:
         ld a,1
         ld (step_ticks),a
     IFDEF TIMING_BARS
@@ -638,9 +699,6 @@ step_one:
         out (ULA_PORT),a
     ENDIF
         call scroll_shift_ground
-        ; Phase 0 means the screen matches the slow buffer. Flipping
-        ; it and rotating only when the result is 1 leaves the buffer
-        ; one pixel ahead, which the next full copy shows.
         ld a,(slow_phase)
         xor 1
         ld (slow_phase),a
@@ -676,6 +734,21 @@ step_one:
         ld a,(step_saved)
         ld (step_ticks),a
         ret
+
+; Timing, sled, and shot builds have no spare_count. Open the idle
+; frame with a real interrupt, then do the second tick and nothing else.
+    IFDEF IDLE_HOLD
+idle_hold:
+        ld a,(step_saved)
+        cp 2
+        ret nz
+        call wait_frame
+        call idle_tick
+    IFDEF SOAK
+        call soak_after_update
+    ENDIF
+        ret
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; draw_late - the diver, the bomb and the torpedo, when the seabed copy
