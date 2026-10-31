@@ -1,0 +1,426 @@
+ZX Spectrum
+
+Machine Code
+Assembler
+
+
+(c) 1983 COPYRIGHT ACS SOFTWARE
+This tape is copyright.  You may not record or copy any part or parts of this
+tape by any means whatsoever.
+07 084718 5
+
+
+ZX Spectrum Machine Code Assembler
+
+The ZX Machine Code Assembler is a sophisticated utility program, designed to
+translate standard Zilog assembler mnemonics - assembly language - into machine
+code.
+	There are two versions of the program, one on each side of the cassette
+tape.  One is for the 16K Spectrum, the other is for the 48K machine.  Rewind
+the tape, if necessary, to get to the start of the correct version for your
+Spectrum.
+	Load the tape in the usual way, with
+					LOAD "mgh 48K"
+							or
+					LOAD "mgh 16K"
+							as appropriate.
+Alternatively, LOAD "" will load either version.
+	Once the program has loaded, the title page will appear.  Pressing any
+key will seem to execute a 'NEW', but the Assembler will be safely stored in the
+computer's high memory.
+
+
+Features of the Assembler
+
+The ZX Spectrum Machine Code Assembler has many features designed to provide the
+programmer with the greatest possible each of use.  The major features of the
+Assembler are:
+1.  The Source Code (i.e., the Assembler mnemonics) is written into REM
+statements, held in the computer in the form of an ordinary BASIC listing.
+	This means that the assembly-language program is typed into the computer
+using the Spectrum's own text editing system, with which the Spectrum programmer
+will be completely familiar.  It means, of course, that it is easy to change the
+program, add to it, or subtract from it.  It also means that the unassembled
+source code can be saved to tape, or listed on the screen or printer in the
+usual way.
+2.  The Assembler can be directed to store the assembled code anywhere in
+memory.
+	The Assembler can also be directed to compile the code to run in a
+location other than the one in which it is stored (useful if you are writing
+long programs and want to store the code temporarily). Although it is often
+convenient to store machine code in a 'dummy REM' statement (see below) in the
+Spectrum, the decision is left up to the programmer.
+3.  An advantage of the way in which the ZX Spectrum Machine Code Assembler has
+been designed is that it normally permits you to run machine-code programs with
+the Assembler still in the computer's memory - an invaluable feature when
+developing programs.
+4.  The Assembler recognizes a range of pseudo-instructions.  These are either
+directives to the Assembler, or 'convenience' instructions to make programming
+easier.
+5.  Real labels are permitted, and they can be of any length.  This is a useful
+aid in finding your way round complicated assembly-language programs.
+6.  Comments can be included in the listings, and will appear in the assembled
+listing on the screen or printer.
+7.  The ZX Spectrum Machine Code Assembler is equipped with efficient error
+detection.  If you have made a mistake in your program, the Assembler will stop,
+during assembly, with an indication of the position of the error and the type of
+error.
+
+
+Assembly-language Programming
+
+Users of the ZX Spectrum Machine Code Assembler are expected to be familiar with
+Z80 assembly-language programming.  If you are not, or if you want to improve
+your knowledge of assembly-language programming with special reference to the
+Sinclair Spectrum, a book, Learn and Use Assembly Language on the ZX Spectrum by
+Tony Woods, has been written specially to suit this Assembler program.  The book
+is published by McGraw-Hill (ISBN 07 084705 3, September 1983) and is available
+in good bookshops and many computer stores.
+
+
+Using the ZX Spectrum Machine Code Assembler
+
+First, you must decide where you want to store the assembled machine-code
+program.  Unless you have reasons for using other memory locations, the best
+place is probably in a REM statement at the beginning of a BASIC program.  The
+first line of the BASIC program in which you are writing the assembly language
+should be a 'dummy' REM statement, consisting of the line number (1), REM, and
+as many characters (any character) as there are bytes in the assembled program.
+Leave plenty of space, as you can always delete it later.  A short program might
+require, for example, twenty bytes.  The dummy REM statement would look like
+this:
+
+	1 REM 00000000000000000000
+
+Figure 1.
+
+In the Spectrum, the address of the first character after the REM in a REM
+statement in line 1 of a program is always 23760, unless microdrives are in use.
+If you direct the Assembler to assemble the code starting from this address, the
+Assembler will over-write the dummy characters with the code.  The line can then
+be saved on tape, or incorporated into a BASIC program later.
+	Every program written for this Assembler (whether or not there is a
+dummy REM statement as the first line of the program) must being with two
+pseudo-instructions, to tell the program to start assembly, and to tell it where
+to put the code.  These are go and org.
+	The first line (or second line, if there is a dummy REM) must be go, and
+it must be a line on it's own.
+	The second line must being with org, although it can contain other
+statements; the ZX Spectrum Machine Code Assembler accepts multiple statements
+in a line, if they are separated by semicolons.
+	The last line of the assembly-language program must be finish.  Again,
+this must be on a line on it's own.
+To run the Assembler, enter as a direct command
+	RANDOMIZE USR 58000
+					for the 48K version,
+								or
+	RANDOMIZE USR 26000
+					for the 16K version.
+It is convenient to incorporate this into the listing, as the last line after
+the finish.  Then you can simply type RUN to start assembly, the BASIC
+interpreter stepping over all the REM statements and executing the RANDOMIZE USR
+at the end.
+	The structure of a typical assembly-language program is therefore like
+this:
+
+	1 REM 00000000000000000000
+	10 REM go
+	20 REM org 23760
+			.
+			.
+			.
+			.
+			.
+			.
+			.
+			.
+	(assembly language program)
+			.
+			.
+			.
+			.
+			.
+			.
+			.
+			.
+	100 REM finish
+	110 RANDOMIZE USR 58000
+
+Figure 2.
+
+
+Features of the assembly language.
+
+The ZX Spectrum Machine Code Assembler assemblers all standard Zilog mnemonics,
+but also has the following features:
+1.  Numbers can be entered in hexadecimal or in decimal.  Numbers are assumed to
+be decimal unless preceded by $.  The alphabetic component of the hexadecimal
+number can be in upper or lower case letters, or even a mixture of the two.  The
+following are all acceptable:
+	223
+	0
+	27
+	$1AFF
+	$1aFf
+2.  Comments can be included anywhere in the listing, except in the lines
+containing go and finish.  A comment is preceded by an exclamation make !.  The
+first 32 characters (only) of a comment will appear in the assembled listings.
+3.  Relative jumps must be given a sign to indicate the direction of the jump.
+The following are acceptable:
+	jr -3
+	jr z,+9
+	jr nc,+$1F
+4.  Labels can be used to refer to memory locations, the addresses of which will
+not be known until assembly is complete.  Labels can be any length with the
+following restrictions: the first character must be a capital letter, and the
+characters ')' and '+' must not be used.  For example, Here, any-where, and
+Z3/@$ are valid labels but this label, Place(2) and Logical+1 are not.  The
+labels are simply written into the program like any other instruction.
+	There are several ways in which labels can be used.  For example, the
+label Mgh can be referred to in the following ways:
+	ld a,(Mgh)
+	ld hl,Mgh
+	call Mgh
+	jp nz,Mgh
+	ld de,Mgh
+	jr c,Mgh
+
+Self-modifying code
+Labels can be used to write self-modifying code.  For example, you might have
+the following piece of code:
+	Johnny;ld hl,(23700)
+You might want your program to alter the address from which hl is loaded (in
+other words you might want the change the two bytes in memory one byte after
+"Johnny").  This can be done with the following code:
+	ld hl,30000;ld (Johnny+1),hl
+When this part of the machine-code program is executed, it rewrites the program
+to give:
+	Johnny;ld hl,(30000)
+Note that only +1 and +2 are allowed in this type of label reference.
+	A final word on labels.  The Assembler stores the names and addresses of
+labels in a table.  The space allocated for this table is limited.  When it is
+used up, no more labels will be recognized and reference to further labels will
+given an error.  The number of labels that you can use clearly depends on their
+length.  You can have about 100 5-character labels but fewer longer ones, so be
+frugal and concise!
+5.  The ZX Spectrum Machine Code Assembler will assemble mnemonics written in
+lower case.  If you are in any doubt about the correct forms, they are listed in
+Appendix A, pages 183-188, or the Sinclair Spectrum Manual.
+
+
+Pseudo-instructions
+
+The ZX Spectrum Machine Code Assembler recognizes instructions that, although
+not standard Z80 assembly language, are used to make life easier for the
+programmer.  These are listed here:
+
+go		This is the instruction to the Assembler to begin assembly.  It
+will ignore anything before the go.  See above.
+
+finish	This instruction tells the Assembler to end assembly.  See above.
+
+org		This instruction tells the Assembler where to start assembling
+code.  For example, org 23760 will initiate assembly at the first free byte in
+your REM statement at the top of your program.  For obvious reasons the first
+instructions in your program must be an org.  You can use org as often as you
+like to make the Assembler skip to a new assembly address.
+	Sometimes you might want to write a program that is designed to operate
+in the region of memory around address 60000 (or around address 30000 in the 16K
+Spectrum).  This could present a problem because this is where the Assembler
+itself lives.  Assembling code here would overwrite the Assembler and probably
+cause a crash.
+	You can get around this problem by using a special form of org.  If you
+were to write org 23760 60000 this would result in the code being assembled at
+23760 but written so that it would operate correctly when relocated to 60000.
+All you need to do now is to use the Spectrum SAVE "" CODE 23760,x and LOAD ""
+CODE 60000,x facility to relocate the code (or better still use ldir).  Once
+again, remember that the spaces are important.
+
+defb		This allows a byte at the current assembly address to be set to
+a defined value.  This can be useful when forcing an error message with rst 8.
+For example rst 8;defb 1 will give the error message "2 Variable not found".
+defb can be used to put a series of numbers into a program.  As many numbers as
+are required can be put after defb, provided they are all in the range 0-255 and
+are all separated by spaces, for example:
+	defb 23 45 127 254 23 49 0
+
+defw		Basically the same as defb, but sets two bytes only.  defw is
+followed by a number between 0 and 65535 or a label, which it stores in two
+bytes in the standard format for the Z80, that is, least significant byte first.
+Thus defw 65200 will be assembled into two bytes beginning at the currently
+assembly position as 176, 254.
+
+defs		This allows a string of ASCII characters to be inserted in
+memory at the current assembly position.  For example, the name of a computer
+could be stored with defs Sinclair Spectrum.  This facility is invaluable for
+storing text within a program.
+
+equ		Sometimes, particularly with the 16K Spectrum, you might want to
+write a machine-code program in several sections and then join them together
+later.  This is fine if you do not try to refer to labels outside the section of
+code that you are currently writing.  If you do, then the label will not be
+found and an error will occur.  You can get round this problem by using equ
+which tells the Assembler the address of a label.  For example equ 23780 Fred
+will allow the label Fred to be used even though the address of Fred is not
+within the section of code being assembled.
+
+
+Error messages
+
+If go, finish, or org are faulty, then an error will be given before assembly
+starts.  It should be reasonably easy to detect any problems at this stage!
+	If an error is detected during assembly, then assembly will stop with
+two error messages.  The first is given by the Assembler, and is a flashing
+message that tells you the line number, statement number, and type of
+instruction where the error is detected.
+	The second error message is generated via the Spectrum interpreter, and
+will be one of four error messages:
+B Integer out of range.		This is the result of entering a number that is
+too large, for example more than 255 for a single byte number, or more than
+99999 for a decimal number.  The decimal numbers between 65536 and 99999, the
+Assembler will repeatedly subtract 65536 until it gets a sensible number it can
+use.
+6 Number too big.		This indicates that the displacement of a
+relative jump is out of range.
+2 Variable not found.		This error message occurs if you refer to a
+non-existent label, or if the variable table is full.
+Q Parameter error.		This indicates an error in syntax - spelling,
+missed spaces, etc.
+
+
+The assembled listing
+
+The Assembler will make two passes through the source code to assemble it, the
+second pass being preceded by a message to indicate that the printer is enabled.
+The listing will be put on the screen one page at a time, and will pause at the
+end of each page for authority to carry on.
+	The assembled listing can be listed on the ZX printer, on other printer
+systems that recognize the COPY command, and on printers using suitable software
+to replace the function of the COPY command (see below).  Copying the listing on
+a printer is given as an option during listing the assembled code.
+
+
+Modifications to the Assembler program
+
+To switch off the pause after each page of listing, so that assembly continues
+until the end of the program,
+	POKE 62679,24:POKE 62680,30
+					for the 48K machine,
+								or
+	POKE 30679,24:POKE 30680,30
+					for the 16K machine.
+	Another type of customizing would involve sending the output to a
+printer other than the Sinclair printer.  To do this, the Spectrum should
+contain somewhere in memory a machine-code routine equivalent to COPY.  In the
+case of the Kempston/Hilderbay centronics interface, this routine would start at
+65200 (48K) or 32423 (16K).  This address should be put into the Assembler at
+two places.  These are at 62707/8 and 32720/1 (48K) or 30707/8 and 31720/1
+(16K).  This is probably best done using the Assembler itself, e.g.:
+
+	10 REM go
+	20 REM org 62707
+	30 REM defw 65200
+	40 REM org 63720
+	50 REM defw 65200
+	60 REM finish
+	70 RANDOMIZE USR 58000
+
+Figure 3
+
+The above is for 48K version.  For the 16K version, use the following:
+
+	10 REM go
+	20 REM org 30707
+	30 REM defw 65200
+	40 REM org 31720
+	50 REM defw 65200
+	60 REM finish
+	70 RANDOMIZE USR 26000
+
+Figure 4
+
+
+Sample Programs
+
+Finally, here are two sample routines you might like to try assembling as a
+demonstration of the way the ZX Spectrum Machine Code Assembler works:
+
+	1 REM 00000000000000
+	10 REM go
+	20 REM org 23760
+	30 REM ld hl,0
+	40 REM add hl,sp
+	50 REM ld de,($5C65)
+	60 REM and a
+	70 REM sbc hl,de
+	80 REM push hl
+	90 REM pop bc
+	100 REM ret
+	110 REM finish
+	120 RANDOMIZE USR 58000
+
+Figure 5
+
+	The above is a program to show how much memory remains free after a
+program has been entered.  Use it with PRINT USR 23760.
+	The next program is a high-resolution scroll.  Each time it is called,
+it scrolls the screen up by one high-resolution pixel.  You call it with
+RANDOMIZE USR 23760.  This is a longer program, and, to save space in the
+listing, multiple statement lines have been used.
+	There is a demonstration program in BASIC from line 996 of this listing,
+to show you how the high-resolution scroll works.  Use RUN 1000 to start the
+demonstration (after assembly, of course).
+
+	1 REM 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+	5 REM go
+	10 REM org 23760
+	20 REM ld hl,$4000;ld b,3;Loop6;push bc
+	30 REM ld b,8;Loop5;push bc;ld b,7;Loop0;push bc
+	40 REM ld b,$20;Loop2;push hl;ld de,$100;add hl,de;pop de
+	50 REM ld a,(hl);Loop1;ld (de),a;ex de,hl;inc hl
+	60 REM djnz Loop2;ld de,$E0;add hl,de;pop bc;djnz Loop0
+	70 REM pop bc;ld a,b;cp 1;jr z,Jump1;push bc;ld b,$20
+	80 REM Loop3;ld de,$6E0;push hl;and a;sbc hl,de;pop de;ld a,(hl)
+	90 REM ld (de),a;ex de,hl;inc hl
+	100 REM djnz Loop3;ld de,$700;and a;sub hl,de;pop bc;dhnz Loop5
+	110 REM Jump1;pop bc;ld a,b;cp 1;jr z,Jump2;push bc;ld b,$20
+	120 REM Loop7;ld de,$20;push hl;add hl,de;pop de;ld a,(hl)
+	130 REM ld (de),a;ex de,hl;inc hl;djnz Loop7;pop bc;djnz Loop6;Jump2;ld b,$20
+	140 REM Loop4;ld (hl),0;inc hl;djnz Loop4;ret
+	150 REM finish
+	160 RANDOMIZE USR 58000
+	996 STOP
+	997 REM
+	998 REM *********************
+	999 REM DEMONSTRATION PROGRAM
+	1000 PRINT AT 0,0; PAPER 0;"                                ";AT 21,0;"McGraw-Hill Book Co (UK) Limited"
+	1010 FOR i=1 TO 170
+	1020 RANDOMIZE USR 23760
+	1030 NEXT i
+	1040 GOTO 1000
+
+
+Figure 6
+
+	Both the above listings are for the 48K Assembler.  Lines 120 and 160
+respectively will need to be changed if you are using the 16K version.
+	After assembly, you might want to save the machine code and nothing
+else.  To do this, just delete all lines except line 1, and SAVE in the usual
+way.  The resulting subroutine can be merged with a BASIC program, or the new
+BASIC program typed in.
+	The two routines listed above are by kind permission of Bobby Rao, and
+were first published in Your Computer magazine.
+
+
+HELP!
+
+If you have problems...
+Just fill in the enclosed card, stamp and post it.  We provide a quick (and
+free) advice/exchange service.  If you brought the tape from a shop, please
+don't take it back; use the card, but keep your receipt.  DON'T send the tape
+back at this stage.
+	Important: We cannot offer advice about modifying the programs on this
+tape or about application outside the range considered normal for this type of
+software.  Software support does NOT include advice with respect to your own
+programs, either in BASIC or in Assembly language.
+

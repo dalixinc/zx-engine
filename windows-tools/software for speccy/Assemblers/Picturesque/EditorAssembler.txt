@@ -1,0 +1,2495 @@
+===========================================
+Editor Assembler Owner's Manual Version 2.1
+===========================================
+Document created by rstuart@ukonline.co.uk on 24th Dec 99 for
+World of Spectrum: http://www.void.demon.nl/spectrum.html
+
+Spectrum 16k & 48k Machine Code System - Picturesque
+
+Contents
+--------
+Introduction..........................1
+Loading & Customising.................2
+The Editor............................4
+   Keyboard...........................4
+   Screen Display.....................5
+   Entering A Line....................6
+   Editor Commands....................9
+   Comment Lines.....................14
+The Assembler........................15
+   Memory Map........................15
+   Operands..........................16
+   Labels............................19
+   The Object Buffer.................22
+   Assembler Directives..............23
+   Assembler Commands................26
+Data Storage Commands................31
+Assembly From Microdrive/Cassette....37
+Error Messages.......................42
+Use Of Spectrum Monitor..............45
+Appendix A - Mnenonics...............47
+Appendix B - Commands................51
+
+Copyright 1984 by Picturesque. All rights reserved. This book and the
+accompanying computer program are copyright.
+
+Published by: Picturesque, 6 Corkscrew Hill, West Wickham, Kent BR4 9BB.
+
+-----[Page 1]-----
+
+Introduction
+------------
+The EDITOR/ASSEMBLER that you have purchased for your ZX Spectrum is one of
+the most powerful Machine code programming aids produced for the ZX range of
+computers. With our Spectrum MONITOR debug/disassembler, you have a
+complete machine code system. The EDITOR/ASSEMBLER is a self contained
+package, allowing you to enter and edit the source code (mnemonics and label
+names), produce the object code (the Hex machine code) and create hard copy
+on the ZX Printer, or cassette copies on tape with total independence from
+Basic. Full error detection is included, with sensible error messages
+displayed on the screen.
+
+The cassette contains two versions of the program. Side 1 contains a version
+for 16K machines and Side 2 contains a version for 48K machines which
+includes commands to operate the ZX Microdrives, and gives greater
+flexibility in respect of Printer options, Assembly options and program
+editing. The limitations of memory size of a 16K machine do not allow the
+same sophistication as the 48K program, and these operating instructions make
+clear the differences where they exist.
+
+The EDITOR/ASSEMBLER operates in two distinct parts. Firstly the EDITOR
+allows entry of the Source Code by means of line numbers in a similar
+fashion to a Basic program, and allows editing of that source code. In the
+second part of the operation, the Source Code is assembled into the actual
+Hex code (object code).
+
+Loading
+-------
+Connect your Spectrum to a T.V., cassette recorder and Printer (if you own
+one) and to ZX Microdrives via Interface 1 (if you own these) as described
+in Sinclair's operating instructions, and switch your computer on.
+
+16K Version
+The EDITOR/ASSEMBLER Loads from cassette in the same way as a Basic Program.
+Disconnect the MIC lead, type LOAD " " or LOAD "EDITAS" and press ENTER.
+Start your cassette machine running. The program Loads in two parts; the
+first part is a short Basic program that automatically Loads the Machine
+code. The screen ident for the first part is PROGRAM: EDITAS. The Spectrum
+then automatically Loads the EDITOR/ASSEMBLER, and self-runs the EDITOR/
+ASSEMBLER. The screen ident for the second part is BYTES: EDITAS. Let the
+cassette machine run in PLAY until both parts are loaded.
+
+-----[Page 2]-----
+
+48K Version
+The 48K Version can be customised to work with a range of Centronics
+Printer Interfaces, as well as the ZX Printer, or an RS232 Printer connected
+via Sinclair's Interface 1. The Centronics Interfaces catered for are:
+
+1).  Kempston Interface
+2).  Kempston 'E' Interface
+3).  Euroelectronics Lprint Interface
+4).  Hilderbay Interface, Type H
+5).  Hilderbay Interface, Type T
+6).  Hilderbay Interface, Type K
+7).  Morex Centronics Interface
+
+As well as Printer options, the 48K Assembler also offers options on
+saving the customised program, both on its own and with the 16K version of
+our 'Spectrum Monitor' on the same tape. If you intend to Save the program
+onto Microdrive Cartridge, you should ensure that you have a Formatted
+Cartridge available BEFORE you start customising the program. The Cartridge
+should have at least 11K spare capacity if you are to Save the Assembler
+alone, or at least 16K spare capacity if you are to save the 'Spectrum
+Monitor' as well.
+
+If you intend to Save the 16K version of 'Spectrum Monitor' and the 48K
+version of the assembler together, you should load and customise the Monitor
+FIRST, selecting the 'No Save required' option. This will access the Monitor
+program, and you will need to press BREAK followed by RETURN (Key Y) to go
+back to Basic. Then type LOAD " " to load the 48K Assembler.
+
+The Assembler is supplied on a standard cassette and should be loaded by
+entering
+
+  LOAD " " or LOAD "EDITAS"
+
+The program is loaded in two parts and auto runs when loaded. You will then
+be given nine Printer options to choose from. Enter the number of the
+option that you require (there is no need to press ENTER). If you are using
+a Centronics Interface option you will then be asked to state whether your
+printer gives an automatic Line Feed after a Carriage Return. If it does,
+select option 1, otherwise select option 2, and the Assembler's Print
+routines will be set to send a separate Line Feed. (If you are in doubt about
+this, you should refer to the operating instructions supplied with the
+Printer. It is usually possible to select this feature by means of switches
+inside your printer).
+
+-----[Page 3]-----
+
+Having customised the Assembler for your printer, you will then be given the
+option of making a copy of the customised program onto a cassette or onto
+a Microdrive Cartridge. (Microdrive cartridges are NOT supplied). If you
+Save onto cassette, you should only connect the MIC lead when Saving, and
+the EAR lead when Verifying.
+
+If you choose one of the Save options, you will further be asked whether
+you want to Save 'Spectrum Monitor' onto the same tape. If your answer is
+Yes, both programs are automatically Saved, and BOTH will subsequently be
+Loaded back from the customised tape. Spectrum Monitor must have been
+Loaded and customised BEFORE loading the Assembler.
+
+*****************************************************************************
+                                    WARNING
+                                    -------
+                 THIS PROGRAM IS COPYRIGHT AND ONE COPY ONLY
+                   may be made for your OWN PERSONAL USE.
+
+         It is illegal to sell copies or to give copies to friends.
+*****************************************************************************
+
+When the 48K Assembler is Saved, a short Basic Loader program is also Saved,
+which subsequently auto runs and controls loading of the Machine Code of the
+Assembler (and the Spectrum Monitor if that was saved at the same time).
+
+When a Save to cassette is made, the Basic loader of the customised program
+is given the name "EDITAS", and can be loaded back by entering
+
+   LOAD " " or LOAD "EDITAS"
+
+When a save to Microdrive is made, the Basic loader is given the name "run",
+and this allows you to load the Assembler by simply typing the keyword RUN
+after executing a Basic NEW, or upon switching your Spectrum on. (See page
+15 of the Sinclair Microdrive manual). Should you at any time wish to reload
+the Monitor of the Assembler Code only (without loading the Basic loader
+program), the Assembler code is saved with the name "EDITAS" and the Monitor
+code is saved with the name "MONITOR". If you wish to keep a customised copy
+of the 48K Monitor on the same Microdrive Cartridge, you should load and
+customise it as described in its own manual. The Basic loader program is
+named "Mon 48" and the code is named "M 48".
+
+-----[Page 4]-----
+
+The Editor
+----------
+Having loaded and customised the EDITOR/ASSEMBLER, the program will ask you
+whether to use NEWTEXT or to continue with existing text. As there will be
+no text (listing) in the text buffer, type N in response to the prompt at the
+bottom of the screen. (See page 30 for the CONTINUE option). The message
+will disappear, and a cursor (white square) will appear in the bottom left
+corner of the screen.
+
+At all times, the EDITOR/ASSEMBLER writes new information to the bottom of
+the screen, and screen scrolling is automatic, with no "Scroll?" messages.
+The normal screen colours used are INK 7: PAPER 1 i.e. white characters on a
+blue screen. This can be changed by altering the screen colours with Basic
+commands INK, PAPER and BORDER. To do this, return to Basic, change the Basic
+screen colours and re-access the Assembler. (See Page 12 for details of how
+to return to Basic).
+
+The whole program writes to the screen using a special routine that produces
+40 characters to a line, therefore characters do not relate to the standard
+character locations, and for this reason, the cursor does not flash, but
+simply shows where the next character typed in will appear on the screen.
+
+Keyboard
+--------
+As the number of commands accessible from the ASSEMBLER is much smaller than
+the number accessible from Basic, the Keyboard operates in a simplified
+manner. EXTENDED mode is not available, nor is the GRAPHICS mode, or CAPS
+LOCK mode. The ASSEMBLER knows when lower case letters may be required, and
+displays capital letters at all other times. Whenever possible the ASSEMBLER
+commands are accessed by the same kays as the equivalent keywords in Basic.
+These command names are as follows, and are printed in white letters on the
+key tops and are only accessible when the screen cursor is at the left
+hand end of the bottom line.
+
+  LIST    on Key K
+  EDIT    on Key 1 with Caps Shift
+  SAVE    on Key S
+  LOAD    on Key J
+  NEW     on Key A
+  CLEAR   on Key X
+  RETURN  on Key Y
+
+-----[Page 5]-----
+
+Other ASSEMBLER commands that have no Basic equivalent or are not Basic
+keywords are as follows, and are also only accessible with the cursor at the
+left end of the line:-
+
+  RENUM     use Key N
+  VERIFY    use Key V
+  AUTO      use Key D
+  ASSEMBLE  use Key R
+
+Cursor control functions are accessible wherever the cursor is positioned,
+and are:-
+
+  <--      on Key 5 with Caps Shift
+  -->      on Key 8 with Caps Shift
+  DELETE   on Key 0 with Caps Shift
+  ENTER    on Key ENTER
+
+All other alpha-numeric keys operate as normal, giving the appropriate letter
+or number. Use of the Symbol Shift with a key will give the red symbol shown
+on that key top, providing it is a single character symbol, i.e. "!" is
+available from key 1 plus Symbol shift, but using Key "U" plus Symbol shift
+will produce no result as 'OR' is not a single character symbol. Symbols
+normally accessed by the use of the Extended mode in Basic are not accessible
+from the ASSEMBLER.
+
+The only time you will need to use CAPS SHIFT to access a capital letter is
+when you are entering a message line in the ASSEMBLER. At all other times,
+the ASSEMBLER automatically displays capital letters.
+
+Screen Display
+--------------
+The 40 column screen display of the ASSEMBLER is divided into fields. This
+produces an ordered form of listing that is very easily readable. The cursor
+control functions automatically recognise the boundaries between fields,
+making entry of a line into the text buffer a simple option.
+
+It is suggested that you read through the section on 'entering a line' and
+experiment until you are familiar with the way the fields and cursor controls
+operate.
+
+-----[Page 6]-----
+
+Entering A Line
+---------------
+The machine code program that you wish to wrirte is entered into a listing
+in a similar fashion to a Basic listing. Only one instruction per line is
+allowed, and the line must contain a line number between 0 and 9999, and the
+operation name along with the relevant operand(s). A full list of Z80
+mnemonics in the correct form for the ASSEMBLER is shown in Appendix A. The
+program line may also contain a LABEL name that will identify that
+instruction in the program. The screen display is divided into 4 fields as
+shown below, starting at the left hand end of the line:-
+
+  Line number    - 1st 4 characters plus one space
+  Label name     - Next 5 characters plus one space
+  Operation name - Next 4 characters plus one space
+  Operands       - remainder of line.
+
+Use the "<--" and "-->" cursor to move the cursor along the bottom line. With
+an empty line, the cursor will jump to the beginning of each field. Use the
+"<--" cursor control to ensure that the cursor is at the left hand end of the
+line and type in a line number, say 10.
+
+As you type each character, it is displayed, and the cursor moves 1 location
+to the right. Having entered the number, type SPACE. The cursor will move
+to the start of the next field, the LABEL field. The SPACE key has several
+different functions depending upon the cursor position in the line, and these
+will be explained later. Its main function when entering a line it to
+advance the cursor to the start of the next field, clearing any characters
+it passes. The cursor is now at the start of the Label Field. Most of the
+lines you will enter will not require a Label, so type SPACE again, and the
+cursor will move to the start of the Operation Field.
+
+Pressing space a third time has no effect, as every line you enter must have
+an operation name, and the cursor waits for a name to be entered.
+
+All programs you write must start with a definition of the address from which
+the program is to be assembled. This is called the ORIGIN, and is abbreviated
+to ORG as the operation. Type SPACE, and the cursor will now move to the
+start of the Operand Field. The ORG operation now requires the address that
+will be the address of the first byte of the assembled program. For this
+example, enter 6000H. This represents the Hex address 6000 (=24576 decimal).
+For more information on ORG, see the section on Assembler Directives, and for
+more about numbers, see page 16.
+
+-----[Page 7]-----
+
+The bottom line of the screen should now be:-
+
+  0010      ORG  6000H
+
+Before entering this line into the listing, use the "-->" and "<--" controls
+to move the cursor around the line. Unlike the Basic line editor, this
+cursor sits over each cursor, not between characters. When the cursor is over
+a character, pressing an alpha-numberic key will replace the original
+character with the one typed in, and move the cursor 1 location right. The
+"-->" and "<--" controls move the cursor to the nect character left or right,
+within a field, ignoring any spaces. If a field is empty, the cursor moves to
+the appropriate end of that field.
+
+To DELETE a character, move the cursor to the character to the right of the
+one to be deleted, and type Caps Shift and 0 exactly as you would in the
+Basic Editor. The character to the left of the cursor is deleted and the
+cursor moves into the deleted location. The rest of the line is not moved.
+
+Now, move the cursor to the R in ORG and press SPACE. The RG of ORG is erased
+and the cursor moves to the beginning of the next field. To erase the last
+character in a field, place the cursor over the character and press SPACE.
+Now use "<--" to move the cursor left. It moves to the O remaining from ORG.
+Move the cursor to the extreme left end of the line, over the first character
+of the line number and press SPACE. The whole line is deleted. Press SPACE
+again and nothing happens, as the cursor is now waiting for a line number
+or command name (keyword).
+
+Re-type the whole ORIGIN line again, and experiment with the cursor control
+keys, the SPACE and DELETE keys until you are familiar with the operation of
+these functions. When you are ready re-type the ORIGIN line again, and this
+time press ENTER.
+
+-----[Page 8]-----
+
+The screen will scroll, and the cursor will appear at the left end of the
+bottom line. The line has been entered into the listing. At the time of
+entering a line into the listing, checks are carried out on the contents of
+the line to ensure that each field ends with at least one space. The spaces
+are essential for the ASSEMBLER to recognise the various parts of the line.
+If they do not appear in the line when you press ENTER, the line is not
+entered, and the cursor appears over the unwanted character. In the 16K
+version, all lines entered (except messages which will be described later)
+must be contained within one line i.e. 40 characters. The cursor will not
+allow you to go over the end of the line, and the last character must be
+space. However, the 48K version will allow any line to go over 40 characters
+in length, with the cursor stopping about three-quaters of the way along a
+second line. Again, the last character must be a space.
+
+Appendix A shows a complete list of mnemonics in the form that the ASSEMBLER
+will recognise, and it is important that you enter them in this form.
+
+Using the four fields into which the screen is divided, always enter a line
+number; enter a label name (maximum 5 characters) or leave the label field
+blank; enter the operation name (LD CALL RET etc.) into the operation field;
+and enter any operands into the last field. When an operation has two
+operands; they must be separated by a comma e.g.
+
+  0020      LD  A,20H
+
+Inspection of Appendix A will show two important points.
+
+(i)  Some of the arithmetic operations (ADD, ADC, SUB, SBC, AND, XOR, OR,)
+     have slightly different form from that approved by Zilog. Where the
+     first operand is A, (the Accumulator) this ASSEMBLER does not require it
+     to be stated. Only where the first operation is not A, must both be
+     stated.
+     e.g. Use ADC B in place of ADC A, B
+          But use ADD HL, DE as normal.
+     The JP(IX) JP(IY) and JP(HL) instructions can be written with or without
+     the brackets.
+
+(ii) There are a number of instructions that will be recognised by the
+     ASSEMBLER, that are not published by Zilog. These have been found by
+     experiment and are mainly operations on the individual halves of the IX
+     and IY register pairs. The form used is XH and XL for the MSB and LSB
+     halves respectively. Similarly use YH and YL. One extra arithmetic
+     function is SLL, which shifts the byte to the left, puts BIT 7 into the
+     CARRY and puts 1 into BIT 0. Flag conditions are the same as SRL.
+
+-----[Page 9]-----
+
+Unlike the Basic line editor, which maintains a listing on the screen, the
+EDITOR/ASSEMBLER simply scrolls the screen as you enter a line, and if you
+enter lines out of order, they will remain on the screen in the order you
+entered them. You can, of course, call up a listing in numeric order, by
+using the LIST command.
+
+Editor Commands
+---------------
+As you have seen, the cursor control functions "-->", "<--", SPACE and
+DELETE, along with ENTER, take effect wherever the cursor position is in the
+line. All other commands are only accessible when the cursor is at the left
+hand end of the line. A summary of Commands given in Appendix B, and each
+command is described in detail below.
+
+(i) LIST    Move the cursor to the left hand end of the line, and press the
+            K key (Keyword LIST). The word LIST will appear on the screen.
+            Pressing ENTER will produce a listing to the screen in numeric
+            order, starting with the lowest line number. Ten lines of the
+            program are displayed whereupon the listing will temporarily
+            stop. Subsequent blocks of ten lines of listing are displayed by
+            pressing SPACE, until the end of the program is reached. After
+            each block of ten lines, any other command may be used before
+            counting with the listing.
+
+            You can specify a line number after LIST, and the listing will
+            start from that line number, or the next line, if that line
+            number does not exist.
+
+    LIST/   If you have a ZX Printer, you can produce a listing on the
+            Printer by entering an oblique (Symbol shift and V) after the
+            Keyword LIST. This will produce a Printer listing from the
+            beginning of the program, through to the end, without stopping.
+            To LIST to the Printer from a given line number to the end of
+            the listing, enter the line number after the oblique. With the
+            48K version, this produces a listed output to the ZX Printer or
+            a Centronics Printer, depending upon how you customised the
+            printer options on loading the program.
+
+-----[Page 10]-----
+
+    LIST *  One further option is available from the 48K version. By typing
+            a star (Symbol Shift + B) after the command LIST, the listing is
+            directed to the RS232 output of Interface 1. This uses the "t"
+            type of output (see Sinclair's Microdrive manual) and
+            automatically sends a Carriage Return and a Line Feed at the end
+            of each line of the listing. If Interface 1 is not connected, a
+            return to Basic is made with "Error i". (See page 12 to re-access
+            the Assembler). Whenever you use the RS232 output, always make
+            sure that you set the Baud Rate to the correct value for your
+            Printer. To do this, return to Basic and use the FORMAT command
+            as described in Sinclair's Manual.
+
+(ii) EDIT   Move the cursor to the left hand end of the line and type Caps
+            Shift and 1. EDIT is displayed on the screen. Pressing ENTER will
+            display the first line of the listing at the bottom of the
+            screen. Unlike Basic, there is no program cursor to identify the
+            EDIT line, so to EDIT a specific line, simply enter the line
+            number after the EDIT command, and press ENTER. You can now edit
+            the line, and re-enter it into the listing by pressing ENTER.
+
+            To delete a line from the listing, type in the line number only,
+            and press ENTER.
+
+(iii) AUTO  Move the cursor to the left hand end of the line, and press the
+            D key. AUTO will be displayed on the bottom line. This command
+            gives you the Auto line numbering facility where a new line
+            number is automatically displayed each time you enter a line.
+
+            16K Version
+            Type in the line number from which you wish to start, and press
+            ENTER. The screen will scroll, and the line number is displayed.
+            Line numbers increase by 10 and the cursor is automatically
+            placed at the start of the label field. If you do not wish to
+            enter a Label name, press SPACE once, to move the cursor to the
+            start of the operation field. To stop the Auto facility, use
+            DELETE to erase the current line number. When the cursor reaches
+            the left hand end of the line, you may use any of the other
+            commands and the AUTO facility is cancelled. Re-entering AUTO
+            again, without specifying a line number, will pick up the next
+            line number from where you last left the AUTO mode; or you can
+            specify a new starting line number.
+
+-----[Page 11]-----
+
+            Line number range from 0000 to 9999, and the AUTO mode cycles
+            round to 0000 after entering line 9990.
+
+            48K Version
+            Two valves can be specified, the first being the step value
+            between successive line numbers, and the second, the starting
+            line number.
+            The command form is:-
+
+              AUTO x, y
+
+            where AUTO is accessed from the 'D' key, and
+              x = the step value between 1 and 99
+              y = the starting line number
+
+            x and y must be separated by a comma.
+
+            EXAMPLE a). AUTO 5,1000 will start numbering at line 1000 giving
+            line numbers increasing in steps of 5.
+
+            EXAMPLE b). AUTO 10 will fix a step value of 10, and carry on
+            producing new line numbers from the last used Auto line number.
+
+            If Auto line numbering is about to produce a new line number in
+            excess of 9999, the AUTO facility is aborted to avoid
+            overwriting the start of the listing.
+
+            When a new line number has been displayed on the screen, the
+            cursor is left at the start of the Label field. If you do not
+            wish to enter a label name, press SPACE once to move the cursor
+            to the start of the operation field.
+            To stop the Auto facility, use DELETE to erase the current line
+            number. When the cursor reaches the left hand end of the line,
+            you can access any other command, and the Auto facility is
+            cancelled. Re-entering Auto again without specifying any values
+            will use the last step value specified with the line number
+            following the last one produced by Auto.
+
+-----[Page 12]-----
+
+(iv) NEW    This command clears the Text Buffer of a listing, clears the
+            Label Table, and resets the EDITOR/ASSEMBLER to the same state it
+            was in when you first loaded it from tape. With the cursor at the
+            left hand end of the bottom line, press the 'A' key (Keyword NEW)
+            and press ENTER. The message you saw when you first loaded the
+            program into your Spectrum will appear. If you typed NEW by
+            mistake, you can now enter 'C', and nothing will be lost. If you
+            want to erase the entire program, Type 'N'.
+
+(v) RETURN  This command allows you to return to Basic. Press the 'Y' key
+            (Keyword RETURN) which displays RETURN, followed by ENTER, and
+            you will see the normal "0 OK" error message from Basic.
+
+            To re-enter the EDITOR/ASSEMBLER from Basic type:
+
+for (16K)   RANDOMIZE USR 28205 followed by ENTER
+for (48K)   RANDOMIZE USR 60973 followed by ENTER
+
+            The NEW/CONTINUE? message will be displayed again. Responding
+            with 'N' has the same effect as NEW, but 'C' will change nothing.
+            This allows you to interchange with Basic without upsetting the
+            listing you have typed in.
+
+If you press the BREAK key during Printer operation or during a SAVE/LOAD/
+VERIFY, that routine will stop, but you will be automatically returned to
+Basic, with the usual BREAK message. Use the form shown to re-enter the
+EDITOR/ASSEMBLER.
+
+With the 48K version that has been customised to operate with a Centronics
+Interface, pressing BREAK while the Printer is working will stop the printer
+and display the Assembler's normal cursor, ready for the next command. You
+are not returned to Basic in this instance.
+
+-----[Page 13]-----
+
+If you are using the 48K Assembler, and you loaded it into memory from a
+Microdrive Cartridge, there is a simpler way to re-access the Assembler from
+Basic. Type
+
+  RUN *
+
+where RUN is the Basic Keyword, and * is Symbol Shift + B, and press ENTER.
+This facility uses the new System Variable VECTOR.
+
+(vi) RENUM  16K Version
+            Allows the Source Code line numbers to be renumbered. Press the
+            'N' Key (with the cursor at the left hand end of the line).
+            RENUM will be displayed. Now type in the decimal value of the
+            new interval between line numbers that you require. Any value
+            between 1 and 99 will be accepted. Press ENTER, and re-numbering
+            will occur, with the first line being given the value of the
+            specified interval. (i.e. if you wish to re-number in steps of 5,
+            the first line will become line 5). If the stated interval would
+            cause a line number greater than 9999 to be generated, the
+            routine automatically reduces the interval value by one, and
+            tries again, until successful. The resulting step value is
+            indicated by the number allocated to the first line.
+
+            48K Version
+            Allows the Source Code line numbers to be renumbered. The command
+            form is
+
+              RENUM x, y, z
+
+            where RENUM is accessed from the 'N' key
+              x = the step value
+              y = the line number in the listing from which to start
+                  renumbering
+              z = the new value to be given to line y
+
+            (the routine actually gives a new value of z+x to the line y)
+
+            EXAMPLE a). RENUM 2,1000,2000 will give a step value of 2, and
+            renumber from the existing line 1000, giving that line a new
+            number of 2002. Subsequent line numbers, through to the end of
+            the listing, will be renumbered in steps of 2.
+
+-----[Page 14]-----
+
+            EXAMPLE b). RENUM 2,1000 will renumber from line 1000 to the end
+            of the listing in steps of 2.
+
+            EXAMPLE c). RENUM 2 will renumber the while listing in steps of
+            2.
+
+            In all cases, if the RENUM parameters would create a line number
+            greater than 9999, the step value is reduced by 1 and the
+            renumber is executed again automatically. In Example b). if the
+            step value has reached 1 and a line number greater than 9999
+            would be produced, the whole listing is renumbered in steps of 1.
+            If, in Example a). the step value reaches 1 and a line number
+            greater then 9999 would be produced, the value of z is reduced
+            and the renumber it attempted again with a step value of 1
+            until it is successful.
+
+            In all cases, renumbering is effective from the chosen line in
+            the listing through to the end of the listing.
+
+Comment Lines
+-------------
+Comments can be inserted into your listing, in a similar way to a REM line in
+Basic.
+
+Enter the Line Number; move the cursor to the start of the Label Field and
+enter a semi-colon.
+
+Using the "-->" cursor control, move the cursor to the start of the operand
+field and enter your comment, enclosed in quotes, exactly as you would enter
+a message line. (See DEFM on Page 25). The semi-colon identifies the line as
+a comment, and the Assembly routine ignores the whole line.
+
+The main function of the EDITOR have now been described and although its
+operation is different in some respects from the Basic line editor, you
+should become familiar with it fairly quickly. The remainder of the commands
+mentioned in the section relating to the keyboard are described in the next
+part of the Manual, which explains the operation of the ASSEMBLER.
+
+-----[Page 15]-----
+
+The Assembler
+-------------
+The ASSEMBLER converts the mnemonics entered in the listing into the Hex
+code that the CPU can understand. The mnemonics in the listing are called
+the Source Code and the assembled Hex code is known as the Object Code.
+
+The ASSEMBLER makes two passes through the listing. The first pass checks for
+correct syntax; calculates the values of the Labels and creates a table of
+those values: and creates an outline Object File. The second pass calculates
+fully all the numeric and Label operands, and calculates the offsets for
+relative jumps. It is not possible to separate the two passes. The results of
+the second pass are displayed either to the screen or to a Printer.
+
+This section of the manual will describe the use of Labels and Assembler
+Directives. It will also describe the commands not yet dealt with. It is
+advisable to read the whole section before using the ASSEMBLER.
+
+Memory Map
+----------
+
+   4000H |-----------------|
+         |     SCREEN      |
+   5800H |-----------------|
+         |      ATTR       |
+   5B00H |-----------------|
+         | SYSTEM VARS ETC |
+    PROG |-----------------|
+         |      BASIC      |
+         |                 |
+  STKEND |-----------------|
+         |                 |
+         |-----------------|
+         |                 |
+         |  OBJECT BUFFER  |
+         |        /\       |
+         |-----------------|
+         |        \/       |
+         |                 |
+         |                 |
+         |                 |
+         |                 |
+         |      SPARE      |
+         |                 |
+         |                 |
+         |                 |
+         |                 |
+         |        /\       |
+         |-----------------|
+         |        \/       |
+         |                 |
+         |   TEXT BUFFER   |
+         |                 |
+   DD18H |-----------------|
+OR 6700H |                 |
+         |                 |
+         |      EDITOR     |
+         |    ASSEMBLER    |
+         |                 |
+         |                 |
+         |                 |
+         |-----------------|
+         |      STACK      |
+         |-----------------|
+         |       UDG       |
+   FFFFH |-----------------|
+OR 7FFFH
+
+-----[Page 16]-----
+
+The Assembler resides at the top of memory and is non relocatable. The size
+and location of all the tables and buffers created by the Assembler is
+transparent to the user, thus simplifying the program's operation.
+
+As you enter a line into the Assembler listing, the line is stored in its
+correct place in the Text Buffer, and this buffer expands downwards below the
+Assembler as the listing increases in size.
+
+To allow you to locate your Machine Code at any location in memory (including
+ROM locations with the 48K version, should you wish to program Eproms) the
+Hex code (Object Code) produced by the Assembler is always stored in the
+Object Buffer. This buffer expands upwards from the end of Basic's memory as
+the Assembler creates the code. If the Text Buffer and Object Buffer are in
+danger of overwriting each other the Assembler will produce an error "MEMORY
+FULL". For more details on how to overcome this see the CLEAR command on Page
+27, or refer to the section on "Assembly from cassette or Microdrive" if you
+are using the 48K program.
+
+Important
+---------
+The whole of the EDITOR/ASSEMBLER, and its Buffers and Tables are below
+RAMTOP, and are not protected from Basic. The Basic command NEW will erase
+the ASSEMBLER from memory.
+
+Operands
+--------
+
+Numbers
+-------
+The ASSEMBLER will accept Decimal or Hex numbers, and will default to
+Decimal. Numbers must start with a numeric digit, i.e. 0 to 9, and Hex
+numbers must have a suffix H. If a Hex number starts with a letter (A to F)
+it must be preceeded by a zero, or the ASSEMBLER will treat is as a Label.
+i.e. D000 Hex must be written 0D000H, and FF Hex as 0FFH.
+
+Decimal numbers need no suffix. Decimal numbers between 0 and 65,535 are
+evaluated to their corresponding Hex value. Decimal numbers greater than
+65,535, up to 99,999 are evaluated, but the carry produced is ignored. (i.e.
+65,536 is evaluated to 0000 Hex and -1 is evaluated to FFFF Hex).
+
+-----[Page 17]-----
+
+ASCII Characters
+----------------
+Single ASCII characters are accepted as operands, providing that the
+character is entered witin normal quotes (Symbol shift and P). This type of
+operand is accepted by all operations that can accept a numberic operand,
+except the ASSEMBLER directives ORG and END.
+
+When you type the first quote, the ASSEMBLER automatically produces lower
+case letters unless you use the Caps Shift.
+
+  Example:- LD A, "a" produces the code 3E 61.
+
+Arithmetic
+----------
+Addition and Subtraction within an operand is allowed. The sum of difference
+of Label values, numberic values or ASCII characters in any combination is
+accepted.
+
+Examples:- (i)   LD A, "A" + 20H produces the code 3E 61
+           (ii)  LD HL, LBL2 - LBL1 calculates the difference between Labels.
+           (iii) LD DE, START + 100H adds a fixed offset to a Label.
+
+-----[Page 18]-----
+
+JR/DJNZ
+-------
+The relative offsets for these two jump instructions can be specified in a
+number of ways, and the following example clearly shows all the possible
+forms of defining the offset. The jump must be within the limits + 127 and
+- 127.
+
+  5DDB          0010       ORG  #
+  5DDB 1802     0020       JR   LOOP
+  5DDD 3E01     0030       LD   A,1
+  5DDF 0602     0040 LOOP  LD   B,2
+  5DE1 18FC     0050       JR   LOOP
+  5DE3 1820     0060       JR   32
+  5DE5 1820     0070       JR   20H
+  5DE7 1820     0080       JR   +32
+  5DE9 1820     0090       JR   +20H
+  5DEB 18FC     0100       JR   0FCH
+  5DED 18FC     0110       JR   252
+  5DEF 18FC     0120       JR   -4
+  5DF1 18FC     0130       JR   -4H
+  5DF3 10EA     0140       DJNZ LOOP
+  5DF5 10EE     0150       DJNZ 0EEH
+  5DF7 10EE     0160       DJNZ 238
+  5DF9 10EE     0170       DJNZ -18
+  5DFB 10EE     0180       DJNZ -12H
+  5DFD 1020     0190       DJNZ 32
+  5DFF 1020     0200       DJNZ 20H
+  5E01 1020     0210       DJNZ +32
+  5E03 1020     0220       DJNZ +20H
+                0230       END
+  LOOP   5DDF
+  #      5DDB
+
+-----[Page 19]-----
+
+Labels
+------
+Any Label can be used as an operand, providing that the value is within the
+limits for that operation.
+
+Labels are a means of identifying a particular point in the program or of
+keeping the value of a constant or variable. All Labels have a two byte, 16
+Bit value. Label names can be defined with a maximum of 5 characters. They
+must start with a non-numeric character and cannot contain spaces. All
+register names and abbreviations for conditions are reserved names, and
+cannot be used as a Label name, as the ASSEMBLER will try to evaluate them
+as a register or condition. The first character of a label name must not be a
+semi-colon, or it will be recognised as a comment line (See Page 14).
+
+Ordinary Labels
+---------------
+Label names put into the Label Field and followed by an operation other than
+EQU or DEFL are given the value of the current program address for that
+instruction. They are not re-definable, and can only be defined once in a
+program. An ordinary label used as an operand must be defined somewhere in
+the program listing, but can be defined in a line after it is used as an
+operand. This allows forward jumps to a Label name.
+
+There are two special types of Label that are defined by the use of ASSEMBLER
+directives EQU and DEFL. The Label values are defined by you as constants or
+variables.
+
+EQU
+---
+This Assembler Directive assigns a value to a Label name. (See page 23 for an
+explanation of Assembler Directives). It does not put any code into the
+Object Buffer. Once a Label is assigned a value by EQU, it cannot be
+re-defined. Any numeric value, ASCII character or other label name is
+accepted as an operand, but if a Label name is used as an operand, it must
+already have been defined in a previous line in the listing.
+
+The Label name is put into the Label Field; EQU is put into the operation
+field and the operand in the operation field. A special operand for use with
+EQU and DEFL only is $ i.e. LABEL EQU $. This gives the label a value equal
+to the current program address.
+
+-----[Page 20]-----
+
+DEFL
+----
+This Assembler Directive also allows you to define the Label value, but it
+also allows you to re-define the value as often as you wish within a program.
+At each new definition, the previous value is lost. A Label is only
+re-definable if its first definition in line order in the listing is by DEFL.
+Subsequent definitions can be by DEFL or EQU, but it remains re-definable.
+You cannot change an existing ordinary Label into a redefinable one. Having
+established a Label name using DEFL, you cannot use the same name for an
+ordinary Label to identify part of the program. It can only be redefined by
+DEFL or EQU.
+
+Example:
+
+  0010       ORG  7000H
+  0020 LBL1  DEFL "A"
+  0030       LD   A,LBL1
+  0040 ;
+  0050 ;**** **** ***********************
+  0060 ;
+  0070 ;          "Rest of program"
+  0080 ;
+  0090 ;**** **** ***********************
+  0100 ;
+  0110 LBL1  DEFL LBL1+20H
+  0120       LD   A,LBL1
+
+In the above example, line 20 sets LBL1 to the ASCII value of "A" which is
+41 H, and uses that value in line 30. Later in the program, LBL1 has 20 H
+added to it, which gives the ASCII value of "a", which is used in line 120.
+
+When using other Label names as operands with EQU and DEFL, those Label names
+must have been previously defined in the listing.
+
+As EQU and DEFL Labels are not strictly part of the program, and do not
+appear in the assembled code, they have no address related to them, and so
+during the assembly display, their value is shown in the left hand column,
+where you would expect to see an address.
+
+At the end of the Assembly procedure, a table of Label values is produced,
+and DEFL labels are flagged by an asterisk.
+
+-----[Page 21]-----
+
+Label Slicing (48K Version only)
+--------------------------------
+All labels are stored as a 16-BIT value even if they are defined as having
+a value of 255 or less. If their value is 255 or less, then the Assembler
+will treat them as either 8-BIT or 16-BIT, depending upon the instruction
+with which they are used.
+
+  e.g. If a label, LBL1 is defined as having a value of 80H, it will be
+       stored as 0080H, and could be used as an 8-BIT value, by
+         LD A, LBL1
+
+       or as a 16-BIT value by
+         LD HL,LBL1
+
+If its value is defined as greater then 255, it will always be treated as a
+16-BIT number.
+
+It is possible to access the high and low bytes of a label value separately
+by preceeding the label name when it is used as an operand by < to access
+the HIGH byte, or by > to access the LOW byte.
+
+EXAMPLE. A label has been defined thus:
+           LBL1 EQU 5CB0H
+
+         The instruction LD A,<LBL1 will take the HIGH byte of the label,
+         and is equivalent to LD A,5CH
+
+         The instruction LA A,>LBL1 will take the LOW byte of the label, and
+         is equivalent to LD A,0B0H
+
+The label does not have to be defined by EQU, and any label can be 'sliced'
+in this way. It is important to remember that ALL label names should start
+with a LETTER. Never start a label name with '<' or '>' as the Assembler will
+produce errors when that label name is used as an operand.
+
+All Source Code files saved from previous issues of our Assembler will Load
+into the new version and will assemble correctly, but you should check that
+there are no labels defined that start with '>' or '<'.
+
+-----[Page 22]-----
+
+Further information on Labels is given on Pages 27 and 12 with the
+descriptions of the CLEAR and NEW commands.
+
+#
+-
+This label name is pre-defined by the ASSEMBLER, and is always given a value
+equal to the address of the first byte of the Object Buffer. It is not
+redefinable, but it always updated by the ASSEMBLER each time you access the
+ASSEMBLER from Basic.
+
+The Object Buffer
+-----------------
+The ASSEMBLER stores the Hex code it produces from your listing into a buffer
+called the Object Buffer, irrespective of the starting address you have
+specified as the Origin (ORG). This buffer always has a fixed relation to the
+end of the Basic area of memory, starting 256 byte above STKEND. The 256 byte
+gap allows you to return to Basic and re-enter the ASSEMBLER without
+overwriting the Object Buffer.
+
+Certain Basic operations will however corrupt the code stored in the Object
+Buffer, e.g. the addition of several lines of Basic listing, or use of the
+Microdrive commands from Basic. It is always advisable to re-assemble your
+machine code program if you have returned to Basic before you save the
+machine code.
+
+The machine code produced by the ASSEMBLER can be Saved from the Object
+Buffer by the Assembler SAVE command, in which case the header information
+of the Save is correct for the ORG address you specified, with the block of
+code deing saved from the Object Buffer. At a later stage the code can be
+loaded back using the Basic LOAD "" CODE format, and it will be loaded into
+the area of memory specified by your ORG address.
+
+While you are developing a program, (particularly if you are using Spectrum
+MONITOR to debug the program) you can test the code while it is in the
+Object Buffer without having to Save it and then Load it into the correct
+area of memory. This will save a great deal of time otherwise spent Saving
+and Loading. By defining the origin as
+
+  ORG #
+
+-----[Page 23]-----
+
+the assembler will take the address of the start of the Object Buffer as the
+Origin. Debugging of the code can then take place in the Object Buffer. When
+you are sure that the code is correct, change the Origin in your listing to
+the address that you finally require and re-assemble the code for the new
+Origin before Saving it.
+
+Assembler Directives
+--------------------
+These are not operation names recognised by the CPU and are included to
+simplify the process of writing machine code. They are used by the ASSEMBLER,
+at assembly time, to create messages, data bytes, etc. They are entered into
+the listing, with a line number, by writing the Directive name into the
+operation field. They can be identified with labels and all require an
+operand except END. EQU and DEFL have already been dealt with.
+
+Two of these Assembler Directives are compulsory in every program you write;
+namely ORG and END. An error message is produced if either is missing.
+
+ORG         Defines the address of the first byte of the assembled code. It
+---         must be defined in the listing before any other instruction.
+            Comment lines can preceed it, but it is good practice to define
+            it in the first line you enter.
+
+            The Hex code produced by the ASSEMBLER is written into the Object
+            Buffer (see Page 22) from where it is Saved to cassette. Label #
+            defines the start of this Buffer, and is set by the ASSEMBLER.
+            The operand for ORG can be a number; a Label, so long as it has
+            already been defined; or Label #. Only ONE ORG per program is
+            allowed.
+
+            In the 16K version, there is a lower limit to the acceptable
+            value of the ORG address, and is the start of the Basic program
+            as defined in the System Variable PROG.
+
+            In the 48K version, any value for ORG is acceptable, e.g.
+            allowing code to be written for EPROMS that will replace the
+            Basic ROM.
+
+            If a program is assembled with ORG #, the code in the Object
+            Buffer is correctly assembled for the Buffer address, and can
+            be run there. Any other ORG address will produce code in the
+            Object Buffer designed to run from a different address.
+
+-----[Page 24]-----
+
+END         This signifies the end of the program. Although there may be
+---         lines of program listing after the END statement, the ASSEMBLER
+            will ignore them.
+
+DEFB        Assigns a value to the single byte at the current assembly
+----        address. The value must be less than 256 (0100H) and the operand
+            can be a number, a single ASCII character, or a Label with a
+            value less than 256.
+
+            It is useful for defining data bytes within a program.
+
+            In the 16K version, only one operand is allowed per line of
+            listing.
+            In the 48K version, multiple operands are allowed, separated by
+            commas, e.g.
+
+              DEFB  10,0E3H,255,3CH
+
+            The assembled value of each operand is displayed to the screen
+            or printer at assembly time (if screen or printer output is
+            requested). The first operand value is displayed in the normal
+            position along with the program address and the line from the
+            listing. The second and subsequent operand values are displayed
+            on the next line.
+
+DEFW        Assigns a value to the next two bytes at the current assembly
+----        address. The value is stored with the LSB first, followed by
+            the MSB; i.e. in the normal way for a two byte value.
+
+            It is also useful for defining data bytes within a program.
+
+            In the 16K version, only one operand is allowed per line of
+            listing.
+            In the 48K version, multiple operands are allowed, separated by
+            commas, e.g.
+
+              DEFW  40000,7C80H,3CH,LBL2
+
+-----[Page 25]-----
+
+            The assembled value of each operand is displayed to the screen
+            or printer at assembly time (if screen or printer output is
+            requested). The first operand value is displayed in the normal
+            position along with the program address and the line from the
+            listing. The second and subsequent operand values are displayed
+            on the next line.
+
+DEFS        This creates a number of blank bytes from the current assembly
+----        address. The space created has its byte values set to 0. Its
+            operand can be a number or a label name, providing that the label
+            has been defined in a previous line in the listing.
+
+DEFM        Allows messages to be entered into the listing as a string of
+----        ASCII characters. DEFM calculates the Hex code for each
+            character, and puts that code into the current Object Buffer
+            address. The operand must be a string of ASCII characters
+            enclosed within quotes. When you type the first quote into the
+            listing, the EDITOR automatically displays lower case characters
+            unless CAPS SHIFT is pressed. When the cursor is positioned
+            between string quotes, lower case letters are automatically
+            produced. The first character of the operand must be a quote.
+            Unlike all other lines entered into the listing, which must be
+            contained within one screen line of 40 characters, a message line
+            can extend over nearly two lines, giving you a maximum length of
+            47 characters.
+
+PRNT        (48K Version ONLY)
+----        Allows screen or printer output to be turned on and off within
+            an assembly pass. PRNT is entered into the listing (in the
+            operation field) at the points where the display is required. It
+            does not affect the machine code that the ASSEMBLER produces.
+
+            If, for example, you have altered part of a listing, and require
+            a print out of the section that has been altered, you can
+            enable screen or printer output for that part of the Assembly
+            process only, without sacrificing the increased speed of having
+            no output for most of the assembly process.
+
+-----[Page 26]-----
+
+            PRNT S    turns on screen output from the next line in the
+                      listing.
+
+            PRNT /    directs the Assembly output to the ZX Printer or a
+                      Centronics printer depending upon how the program was
+                      originally customised.
+
+            PRNT *    directs the Assembly output to the RS232 printer output
+                      of Interface 1. It uses the "t" type of output.
+
+            PRNT OFF  turns off the Print facility.
+
+            The operands S,/,*,OFF must be placed in the operand field in the
+            Source Code. Use ASSEMBLE (followed by ENTER) to give no screen
+            or printer output until the PRNT directive requests it.
+
+Commands
+--------
+Those commands used by the EDITOR have been dealt with on Page 9. The
+remaining commands are as follows, and are only accessible when the cursor
+is at the left hand end of the line:-
+
+ASSEMBLE    Use Key R (Keyword RUN), and ASSEMBLE is displayed on the screen.
+--------    The first pass of the assembler does not produce an output to
+            either the screen or printer. The second pass can be displayed to
+            the screen, the printer, or neither. The last case will give the
+            fastest assembly.
+
+            1). Assembly with no display: Type R (ASSEMBLE) and press ENTER.
+            Assuming there are no errors, there will be a pause, with no
+            screen output, related to the length of the program, and the
+            assembly will end with a display to the screen of a table of the
+            Labels and their values, with DEFL labels flagged by an asterisk.
+
+ASSEMBLE /  2). Assembly with display to the ZX Printer: Type R, and then
+----------  type in an oblique (Symbol Shift and V) and press ENTER. If the
+            ZX Printer is attached, the full assembly listing will be printed
+            out. The printer can be stopped with the BREAK key, but will
+            return you to Basic. (See Page 12 to re-access the Assembler).
+
+-----[Page 27]-----
+
+            In the 48K version, ASSEMBLE / will produce an output to the ZX
+            Printer or a Centronics printer depending upon how the program
+            was initially customised.
+
+ASSEMBLE *  3). (48K Version only). Assembly with display to RS232 printer
+----------  via Interface 1: Type R and then type * (Symbol Shift + B) and
+            press ENTER. This uses the "t" type of RS232 output,
+            automatically producing a Line Feed after a Carriage Return. If
+            Interface 1 is not connected, a return to Basic is made with
+            Error i.
+
+ASSEMBLE S  4). Assembly with screen display: Type R, and then type S and
+----------  press ENTER. The second pass of the Assembly will be displayed to
+            the screen, and will show the assembly address, the Hex code,
+            plus all the information contained in the listing. The screen
+            display will continue scrolling, through to the end of the
+            assembly, but can be PAUSED at any time by pressing the M key
+            (Keyword PAUSE), to allow you to read the assembled listing.
+            Assembly will continue when the M key is released.
+
+            PAUSE also operates when using the Printer, and printing
+            continues when the M key is released.
+
+            In the 48K version, if you start an Assembly pass, and then
+            decide that you do not want it to continue, press CAPS SHIFT and
+            BREAK together. The Assembly process will stop and the
+            Assembler's normal cursor will reappear on the bottom screen
+            line.
+            Pressing CAPS SHIFT and BREAK while a load from cassette or
+            Microdrive is taking place, or while the ZX Printer or RS232 link
+            is in use will return you to Basic. If a Centronics printer is in
+            use, the normal Assembler cursor is displayed.
+
+CLEAR       Clears the Text Buffer, but leaves the Label Table intact. If you
+-----       are assembling a long program in sections, the labels produced
+            by one part will probably be required by subsequent parts.
+
+-----[Page 28]-----
+
+            Having entered and assembled one part, and Saved the Text Buffer
+            and Object Buffer, CLEAR will empty the Text Buffer, but retain
+            all the Labels, and protect them. (Only the ASSEMBLER command
+            NEW will delete these labels). The next part of the listing can
+            be entered and assembled. Any new labels are added to the table,
+            but each time the new listing is assembled, the Label Table is
+            cleared of the current labels, the old labels being unaffected.
+            Labels carried over in this way retain their origional status,
+            i.e. if a label is first defined by DEFL as being re-definable
+            it will remain so in subsequent listings, but if it is
+            re-defined by the current listing, the original value will be
+            lost the first time the current listing is assembled. If the
+            original value is required by the current listing it is advisable
+            to create a new label to retain the original value. This only
+            applies to re-definable labels.
+
+            Use of CLEAR after "MEMORY FULL" error:
+            If you get a Memory Full error while using the 16K version of the
+            ASSEMBLER, you will need to assemble your program in more than
+            one part. A program can be broken down into small parts, each
+            being assembled and then Saved separately by the ASSEMBLER. If
+            the END instruction of one part is given a label name to
+            identify its program address, that label name can be used by the
+            ORG of the next part, to ensure that the program address of the
+            start of the next part follows on from the end of the previous
+            one. Use the CLEAR command to clear the Text Buffer (having first
+            assembled the code and Saved the Text and the Code) before
+            entering or Loading the next part. Having Saved all the parts of
+            the program, return to Basic and Load them all back into memory:
+            they will join up to form one complete program which you can
+            Save from Basic as a single program.
+
+            N.B. Each section of the program can only access labels that are
+            defined in that section or that have been defined in a previous
+            section and retained by the use of the CLEAR command.
+
+-----[Page 29]-----
+
+            The space problem is much less with the 48K version as there are
+            some 32,000 bytes of memory available for the Buffers and Tables.
+            If you should experience a Memory Full error with the 48K
+            version, you can use the method described above, but the
+            facility of 'Assembly from Microdrive or Cassette' is a
+            preferable solution. (See Page 37).
+
+Example of two part listing:
+
+  0010 ;          **********
+  0020 ;          "PART ONE"
+  0030 ;          **********
+  0040 ;
+  0050       ORG  7000H
+  0060       LD   A,"G"
+  0070       CP   (HL)
+  0080 ;
+  0090 ;          "Remainder"
+  0100 ;
+  0110 END1  END
+
+  0010 ;           **********
+  0020 ;           "PART TWO"
+  0030 ;           **********
+  0040 ;
+  0050        ORG  END1
+  0060        LD   (DE),A
+  0070        RET
+  0080 ;
+  0090 ;           "Remainder"
+  0100 ;
+  0110 END2   END
+
+-----[Page 30]-----
+
+Assembly of two part listing:
+
+                0010 ;          **********
+                0020 ;          "PART ONE"
+                0030 ;          **********
+                0040 ;
+  7000          0050       ORG  7000H
+  7000 3E47     0060       LD   A,"G"
+  7002 BE       0070       CP   (HL)
+                0080 ;
+                0090 ;          "Remainder"
+                0100 ;
+                0110 END1  END
+  END1   7003
+  #      5DDB
+
+                0010 ;           **********
+                0020 ;           "PART TWO"
+                0030 ;           **********
+                0040 ;
+  7003          0050        ORG  END1
+  7003 12       0060        LD   (DE),A
+  7004 C9       0070        RET
+                0080 ;
+                0090 ;           "Remainder"
+                0100 ;
+                0110 END2   END
+  END2   7005
+  END1   7003
+  #      5DDB
+
+CONTINUE    Strictly, this is not a command, but is one of the responses
+--------    to the message displayed when you enter the ASSEMBLER from Basic
+            (by typing C). It changes nothing, and allows you an interchange
+            with Basic without destroying any of the Buffers or Tables set
+            up by the ASSEMBLER. The other option on entry from Basic is N
+            (NEW) and this has the same effect as NEW (See Page 12).
+
+label       (48K Version ONLY)
+-----       The label table display at the end of an assembly pass can be
+            inhibited, and can be called up independently of an assembly
+            pass. The label table is always created by an assembly pass and
+            this command only controls its display. Press key L when the
+            cursor is at the left hand end of the line and the command label
+            is displayed. Pressing ENTER will display the current label table
+            (unless it has been inhibited).
+
+-----[Page 31]-----
+
+label 0     Press zero after key L, followed by ENTER. The label table
+-------     display will be inhibited.
+
+label 1     Press 1 after key L, followed by ENTER. The label table display
+-------     will be enabled, and the current table displayed on the screen.
+
+label /     Press / (Symbol Shift + V) after key L, followed by ENTER. The
+-------     current label table will be printed onto the ZX Printer or a
+            Centronics printer depending upon how the Assembler was initially
+            customised. If the label table has been disabled, nothing will
+            happen.
+
+label *     Press * (Symbol Shift + B) after key L, followed by ENTER. If the
+-------     label table is entered, its display will be directed via the
+            RS232 link on Interface 1. It uses the "t" type output as
+            described in ASSEMBLE *.
+
+Data Storage Commands
+---------------------
+It is possible to Save the contents of both the Text Buffer and the Object
+Buffer directly from the ASSEMBLER; to Verify both buffers against a Saved
+copy; and to Load a Text file into the Text Buffer.
+
+The 16K Version of the ASSEMBLER only contains commands to work with cassette
+storage, whereas the 48K version, running in a Spectrum fitted with
+Sinclair's Interface 1 will allow data storage on cassette and Microdrive,
+and the transfer of both the Text Buffer and the Object Buffer into another
+Spectrum via the Network, or to another computer via the RS232 link.
+
+The syntax of all these commands has been maintained as close to those
+required by Basic as possible. Although the Microdrive command syntax is a
+little cumbersome, it was felt to be better to retain the syntax that users
+will be familiar with.
+
+-----[Page 32]-----
+
+In all cases, any file name must be specified within quotes (Symbol Shift +
+P) and contain a maximum of ten characters. Both Buffers are Saved as blocks
+of CODE, and there is no need to specify start addresses or their length as
+the ASSEMBLER calculates this for you.
+
+The command SAVE is accessed from the S key with the cursor at the left hand
+end of the line.
+
+The command LOAD is accessed from the L key with the cursor at the left hand
+end of the line.
+
+The command VERIFY is accessed from the V key with the cursor at the left
+hand end of the line.
+
+Important
+---------
+It is possible to Load a Text Buffer file from cassette or Microdrive via
+Basic, but this will corrupt the Label Table and prevent the ASSEMBLER
+working correctly. Text files must be loaded through the ASSEMBLER.
+
+Object Buffer files are designed to be loaded back into your Spectrum via
+Basic command LOAD "" CODE. When you do this, be aware that you can overwrite
+the ASSEMBLER, and you should refer to the memory maps in this book if you
+subsequently want to use the ASSEMBLER.
+
+Cassette Routines
+-----------------
+
+SAVE        1). TEXT BUFFER
+----        The command form is SAVE "name"T where T indicates the TEXT
+            Buffer.
+
+            Press ENTER and the familiar "Start tape..." message is
+            displayed. Proceed as you would for a Basic Save. On completion,
+            the Assembler's cursor is returned on the bottom screen line.
+
+            2). OBJECT BUFFER
+            The command form is SAVE "name"C where C indicates your machine
+            CODE.
+
+            Again the "Start tape..." message is displayed when you press
+            ENTER, and the procedure is as above. The Object Buffer is Saved
+            with the correct Header information for the location specified by
+            your ORG in the listing, with the block of code being Saved from
+            the Object Buffer. The resulting cassette will Load back via the
+            normal Basic LOAD "" CODE into the correct part of memory as
+            defined by ORG.
+
+-----[Page 33]-----
+
+VERIFY      The command form for Verifying both the Text Buffer and the
+------      Object Buffer is
+
+              VERIFY "" or VERIFY "name"
+
+            The ASSEMBLER knows whether to Verify Text  or Code, and you do
+            not specify which. As in Basic, VERIFY "" will Verify the next
+            file on the cassette, and VERIFY "name" will only Verify that
+            named file. The ident BYTES: and the filename are displayed at
+            the bottom of the screen. If successful, the Assembler's cursor
+            will reappear, otherwise the Basic error 'R. Tape loading error'
+            will appear, and you will be left in Basic. Re-enter the
+            ASSEMBLER, assemble your program again if you were Verifying the
+            Object Buffer, and SAVE again.
+
+            It is recommended that you do not return to Basic between Saving
+            an Object File and Verifying it, as the address of STKEND, and
+            therefore the address of the Object Buffer, can change slighly.
+            If this happens, then Verifying the Object Buffer will fail, and
+            you will need to re-assemble your program.
+
+LOAD        The Assembler will ONLY Load a TEXT Buffer file. If you try to
+----        Load an Object Buffer file, it is ignored after the header has
+            been checked. Similarly, if you try to Load a cassette Saved from
+            Basic, it will be ignored. As with Verify, you can specify a
+            filename after LOAD, or not, in which case the next Text file
+            will be loaded.
+
+            1). LOAD "name"N where N represents NEW. The existing Text Buffer
+            and Label Table are both deleted (as in NEW) before the new Text
+            Buffer is loaded from cassette. The N need not be specified.
+            (i.e. LOAD "name" has the same effect).
+
+-----[Page 34]-----
+
+            2). LOAD "name"C where C represents CLEAR. The existing Text
+            Buffer is deleted and the existing Label Table is protected, as
+            in the CLEAR command. The new Text file is then loaded.
+
+            3). LOAD "name"A where A represents APPEND. The existing Label
+            Table is cleared to a null table containing only the label #. The
+            new Text file is Appended to the end of the existing Text Buffer.
+            Having Appended a Text File, you should renumber the whole
+            listing to allow editing of the full listing, and remove
+            unwanted ORG and END Directives at the junctions of the two
+            files. If you do not renumber, the ASSEMBLER will correctly
+            assemble the total program, even if there are duplicate line
+            numbers.
+
+Microdrive Commands 48K version only
+------------------------------------
+Syntax is identical to Basic. Any drive number can be specified, (although
+the examples given use Drive 1-) and there is the normal limit of ten
+characters for the file name. When saving, Source Code is denoted by the
+letter T after the file name, and the Object Code by the letter C as in the
+normal cassette commands. Loading from the Microdrive can also use the
+suffix N (for NEW), C (for CLEAR) and A (for APPEND) as described in the
+cassette commands. If none of these suffixes is used, NEW is assumed, and the
+existing Source Code and Label Table are deleted.
+
+Microdrive commands CAT, FORMAT and ERASE are not accessible directly from
+the ASSEMBLER. To use these commands, return to Basic (Key Y) and use them
+from Basic. Microdrive and Network commands used from BASIC will overwrite
+part of the Object Buffer, as Basic creates their Channel areas. If you use
+these commands from Basic and re-access the Assembler, then re-assemble your
+program before saving the Object Buffer. When using these commands from
+within the Assembler, the Object Buffer is automatically moved.
+
+The following Microdrive, Network and RS232 commands have basically the same
+effect as the cassette commands, and the same general conditions apply.
+
+-----[Page 35]-----
+
+a).  SAVE *"m";1;"name"T
+     will save the current Text Buffer file (indicated by the letter T) to
+     Drive 1 with the file name "name".
+
+b).  SAVE *"m";1;"name"C
+     will save the current Object Code (indicated by the letter C) to Drive 1
+     with the file name "name".
+
+c).  LOAD *"m";1;"name"
+     will load the file with the name "name" into the Text Buffer. If the
+     file "name" was saved as Code from the Object Buffer, an error "Wrong
+     File Type" is displayed.
+
+d).  VERIFY *"m";1;"name"
+     will verify the file "name" against the Source or Object Code as
+     appropriate.
+
+When saving Source or Object Code, the file name "name" must not exist on
+the Cartridge being used. If the name does already exist, the following
+message is displayed:
+
+  File already exists: OVERWRITE? (Y/N)
+
+If you do not wish to overwrite the origional file, press CAPS SHIFT and N
+and save again with a new file name.
+
+If you do wish to overwrite the existing file, press CAPS SHIFT and Y. The
+origional file is first erased, and then the new file is automatically saved.
+In doing this, the Drive will run for approximately 15 seconds.
+
+Network Commands 48K version only
+---------------------------------
+a).  SAVE *"n";1T
+     will save the Text Buffer (T for Text) via the Network to Station 1.
+     Any Station number between 1 and 64 can be used, and Station 0 denotes
+     the Broadcast function. Syntax is identical to Basic and you should
+     refer to the Sinclair Microdrive Manual for further information relating
+     to the Network, and defining station numbers.
+
+b).  SAVE *"n";1C
+     saves the Object Code (C for Code) via the Network to Station 1. Again,
+     any station number is valid, and Station 0 is the Broadcast function.
+
+     NB If you have assembled the Source Code with ORG # or with an ORG
+     address that is close to the value held in STKEND in the receiving
+     Spectrum, the receiving Spectrum will almost certainly crash, as the
+     Code saved via the Network will overwrite the Network channel area in
+     the receiving Spectrum.
+
+-----[Page 36]-----
+
+c).  LOAD *"n";1
+     This will only load a valid Source Code file via the Network from
+     another Spectrum that is running the Assembler, and is in the process
+     of Saving its Source Code onto the Network. Station numbers must be
+     correct. If the recieved data is not a valid Source Code file, an
+     error "Wrong File Type" will appear. Suffixes N (New), C (Clear) and A
+     (Append) can all be added after the Station number. With no suffix, NEW
+     is assumed.
+
+d).  VERIFY *"n";1
+     This will Verify, via the Network, either a Source Code file or an
+     Object Code file as appropriate. The second Spectrum will need to SAVE
+     *"n" to the appropriate Station number.
+
+RS232 Commands 48K version only
+-------------------------------
+Save/Load/Verify commands via the RS232 link of Interface 1 all use the "b"
+type of data transfer as described in the Sinclair Microdrive Manual. The
+information is not suitable for display on a line printer. (Use LIST * and
+ASSEMBLE * for printer output). These Save/Load/Verify commands are included
+for those users who have linked two computers via the RS232, or who are
+using peripheral equipment such as a modem. As normal with the "b" format,
+a Line Feed is not sent automatically with a Carriage Return.
+
+a).  SAVE *"b"T
+     This saves the Source Code via the RS232 link.
+
+b).  SAVE *"b"C
+     This saves the Object Code via the RS232 link.
+
+c).  LOAD *"b"
+     This will only load a valid Source Code file into the Text Buffer. An
+     error "Wrong File Type" is produced if the incoming data is not valid.
+     The suffixes N (New) C (Clear) and A (Append) can all be added after the
+     "b". With no suffix, NEW is automatic.
+
+d).  VERIFY *"b"
+     will verify the data incoming via the RS232 link with either the Source
+     Code or Object Code as appropriate.
+
+-----[Page 37]-----
+
+Before using any of the RS232 commands, ensure that the Baud rate is set
+correctly for both your Spectrum and the communicating equipment. To set the
+Baud rate of your Spectrum, return to Basic (Key Y) and use the Basic FORMAT
+command as described in the Sinclair Microdrive Manual.
+
+Assembly From Microdrive Or Cassette 48K Version Only
+-----------------------------------------------------
+To overcome the problems of writing very large programs, where there is
+insufficient memory for the total Source Code and Object Code in memory
+together, it is possible to store the Source Code in sections on cassette
+or Microdrive, and to assemble the sections onto one long Object Code file.
+
+A maximum of ten sections of Source Code is permitted, each with the same
+file name that also includes an identifying section number. The first section
+must contain an ORG directive, and the last section must contain an END
+directive. Intermediate sections must contain neither. Labels in any section
+can be assessed from any other section, exactly as if the whole Source Code
+was in memory at the same time.
+
+The principle of the operation is that each section of the Source Code is
+loaded into the Text Buffer in turn, with the Assembler executing the first
+of the two assembly passes on each section. Then each section of Source Code
+is again loaded into the Text Buffer for the second assembly pass. Therefore,
+with a limited size of Text Buffer, a very large Object Code buffer can be
+created.
+
+For maximum effectiveness, each section of the Source Code should be around
+750 lines in length, which will allow a maximum Object Code length of around
+15k to be created. The total Source Code storage requirements for such a
+situation would be around 95K, and if this situation looks likely, it is
+suggested that several Microdrive Cartridges be Formatted, and the cartridge
+giving the largest capacity used. ALL SECTIONS MUST BE ON THE SAME CARTRIDGE.
+
+When using a Microdrive to store the sections of Source Code, the multiple
+assembly process is automatic, and the normal options of assembly output to
+the screen or printer or neither are available.
+
+If a cassette recorder is used, prompting messages are displayed on the
+screen, indicating when to start, stop or rewind the tape to access the
+correct section. Each section of the Source Code on the cassette does not
+need to follow on immediately from the last, as the assembly process allows
+you time to wind the cassette to the correct location before continuing.
+
+-----[Page 38]-----
+
+Saving A Section Of Source Code 48K Version only
+------------------------------------------------
+The Save command for cessette or Microdrive are virtually identical to the
+normal Save commands. The only difference is the section number
+specification. The Save commands are:
+
+  SAVE "name"#n            for cassette
+  SAVE *"m";1;"name"#n     for Microdrive (any drive number)
+
+while the file name "name" is limited to 8 characters.
+
+  #  indicates the Save as part of a multi-section Source Code file,
+  n  is the section number.
+
+The file name Saved with the Source Code is always 10 characters long, and
+the ninth and tenth characters are always #n.
+The first section MUST be #0, and in subsequent sections the value of 'n'
+MUST be incremented by 1. If the resulting sections do not contain
+consecutive section numbers, the assembly will fail. It is therefore
+essential that you keep track of the section numbers used and always use
+the next section number when Saving a new section. The file name "name" must
+be identical for each section.
+
+Loading A Single Section Of Source Code. 48K only
+-------------------------------------------------
+Alterations to any section of Source Code can be made by loading that
+section, and subsequent Saving it again with the SAME file name and the SAME
+section number. (You have the option to overwrite a Microdrive file that
+already exists if you wish).
+
+To Load a section, the command is:
+
+  LOAD "name"#n            for cassette
+  LOAD *"m";1;"name"#n     for Microdrive (any Drive number).
+
+-----[Page 39]-----
+
+As with SAVE, # identifies a section of a multiple section Source Code file,
+and n is the section number.
+
+When loading from cassette, the file name "name" and the section number need
+not be specified; simply use LOAD "".
+
+Veryfying A Section Of Source Code 48K Version only
+---------------------------------------------------
+Providing that the section of Source Code you wish to Verify has been Saved,
+and is still the current section in the Text Buffer, enter:
+
+  VERIFY "name"#n          for cassette
+  VERIFY *"m";1;"name"#n   for Microdrive (any drive number).
+
+Assembling A Multi-Section Source Code File. 48K only
+-----------------------------------------------------
+a).  From cassette:- Enter the command
+
+       ASSEMBLE #"name"
+
+     and press ENTER.
+
+The screen display will ask you to "Set tape to start #0 ENTER". Wind the
+cassette to the start of section 0 and press ENTER. You will then be asked
+to "PLAY TAPE". When that section has loaded, you will be asked to "STOP
+TAPE" and press ENTER.
+This initiates the first assembly pass of section 0, and when that is
+completed, the above process is repeated for all subsequent sections. The
+whole process is then repeated for the second assembly pass, with messages
+displayed on the screen at all times to indicate what is going on.
+
+b).  From Microdrive:- Enter the command
+
+       ASSEMBLE #*"m";1;"name"
+
+     and press ENTER (any Drive number can be specified)
+
+-----[Page 40]-----
+
+The Drive specified in the command will operate, and the whole Assembly
+process is automatic. Screen messages are displayed to indicate which
+section is currently being assembled.
+
+The full assembly listing can be output to the screen, ZX Printer (or
+Centronics printer is that option was chosen on customising) or via the
+RS232. To use these facilities, type S or / or * respectively, after the
+command ASSEMBLE, and before the #.
+
+  E.g.
+
+  ASSEMBLE S#*"m";1;"name"
+
+  will Assemble from Microdrive 1, the Source Code with the file name "name",
+  and display the whole assembled listing to the screen.
+
+  ASSEMBLE *#"name"
+
+  will do the same assembly from cassette, and will output the full Assembly
+  listing to the RS232 link ("t" type output).
+
+In general terms, after the command ASSEMBLE enter the type of output
+required (enter nothing if no output is required), then enter the '#'
+character to indicate a multi-section Assembly, and then define the loading
+parameters using the same syntax as the LOAD command.
+
+To help explain the multi-section Assembly process, try the following short
+example.
+
+1)  Type in the following Source Code:
+
+    0010       ORG  #
+    0020 START LD   A,2
+    0030       CALL 1601H
+    0040       LD   HL,MSG
+    0050       LD   B,LEN
+
+    and Save with the command
+
+    SAVE "test"#0          for cassette
+    SAVE *"m";1;"test"#0   for Microdrive
+
+-----[Page 41]-----
+
+2)  NEW the Source Code and enter part two:
+
+    0010 LOOP  LD   A, (HL)
+    0020       PUSH HL
+    0030       PUSH BC
+    0040       RST  16
+    0050       POP  BC
+
+    and Save with the command
+
+    SAVE "test"#1          for cassette
+    SAVE *"m";1;"test"#1   for Microdrive
+
+3)  NEW the Source Code and enter part three:
+
+    0010       POP  HL
+    0020       INC  HL
+    0030       DJNZ LOOP
+    0040       RET
+    0050 MSG   DEFM "A multi-part Assembly"
+    0060 LEN   EQU  $-MSG
+    0070       END
+
+    and Save with the command
+
+    SAVE "test"#2          for cassette
+    SAVE *"m";1;"test"#2   for Microdrive
+
+4)  Type in the command:
+
+    ASSEMBLE S#"test"         for cassette
+    ASSEMBLE S#*"m";1;"test"  for Microdrive
+
+    which will execute the multi-part Assembly and display the results on the
+    screen as follows:
+
+    5E0A          0010       ORG  #
+    5E0A 3E02     0020 START LD   A,2
+    5E0C CD0116   0030       CALL 1601H
+    5E0F 211E5E   0040       LD   HL,MSG
+    5E12 0615     0050       LD   B,LEN
+    5E14 7E       0010 LOOP  LD   A, (HL)
+    5E15 E5       0020       PUSH HL
+    5E16 C5       0030       PUSH BC
+    5E17 D7       0040       RST  16
+    5E18 C1       0050       POP  BC
+    5E19 E1       0010       POP  HL
+    5E1A 23       0020       INC  HL
+    5E1B 10F7     0030       DJNZ LOOP
+    5E1D C9       0040       RET
+    5E1E          0050 MSG   DEFM "A multi-part Assembly"
+    0015          0060 LEN   EQU  $-MSG
+                  0070       END
+    LEN   0015   MSG   5E1E   LOOP  5E14
+    START 5E0A   #     5E0A
+
+-----[Page 42]-----
+
+At Assembly time, you may well get an Assembly error such as "Jump out of
+range". If this happens, ammend the appropriate section of the listing (if
+it is not the section currently in the Text Buffer, use LOAD "name"#n or
+LOAD *"m";1;"name"#n to load the correct section) and Save the ammended
+listing with the appropriate Save command for that section. Ensure that the
+file name and section number are correct for that section, and overwrite the
+original section. If you are in any doubt about overwriting the original
+section, Save it onto cassette or another Microdrive Cartridge first. Having
+Saved the ammeded section, start the Assembly process again with the
+appropriate ASSEMBLE # command.
+
+It is recommended that when using Microdrives you work with two Cartridges,
+and update each one alternately. In this was you will always be able to
+refer back to the previous listing, and will have it available should you
+damage one Catridge.
+
+Error Messages
+--------------
+When using the EDITOR to enter a listing, the only error message you are
+likely to encounter is MEMORY FULL. It is displayed if the line you are
+about to enter will cause the Text Buffer and the Object Buffer to overlap.
+Owners of 16K machines may see this message under these conditions, but it is
+unlikely to affect owners of 48K machines.
+
+The remaining Error Message only appears at Assembly time, and are followed
+by an automatic display, in the EDIT Mode, of the line that contains the
+error. The cursor will be at the right hand end of the line, as if you had
+just EDITed the line. You must now correct the error and press ENTER to
+re-insert the line into the listing before continuing. Error messages and
+their causes are as follows:
+
+-----[Page 43]-----
+
+INVALID ORG      (i) If the ORG address is less than the start of the Basic
+                     Program area as defined in the System Variable PROG.
+                     (16K Version only).
+
+                (ii) If the first line of the program (excluding comment
+                     lines) is not a definition of the ORG.
+
+               (iii) If there is more than one line in the program that
+                     defines an ORG. The line containing the second
+                     occurrence is displayed at the bottom of the screen.
+
+INVALID NUMBER       If a decimal number contains a non-numeric character,
+                     or if a Hex number contains an invalid character.
+
+INVALID OP       (i) If an operation name is not recognised.
+
+                (ii) If a numeric operand has a value out of range for the
+                     particular operation (e.g. loading a single register
+                     with a Label whose value is greater than 255).
+
+               (iii) If an invalid mnemonic is entered. (e.g. if there is
+                     an incorrect number of operands).
+
+LABEL NOT        (i) If an operand is not a recognised register or condition
+DEFINED              and no label of that name has been defined.
+
+                (ii) If a Hex number does not commence with a number.
+
+               (iii) If EQU, DEFL or DEFS have an operand that is a label
+                     which has not been defined in a previous line of the
+                     listing, or in a previous section. (These directives
+                     cannot refer forward to labels).
+
+-----[Page 44]-----
+
+LABEL ALREADY        If a Label name is defined more than once and the first
+DEFINED              definition is not DEFL. The line containing the second
+                     definition is displayed.
+
+NO END INSTR.        If there is not a line containing the END instruction.
+
+JUMP OUT OF          If a relative jump (JR or DJNZ) is asked to jump to an
+RANGE                address with an offset of more than +127 or -128.
+
+MEMORY FULL      (i) On entry of a line into the listing if that line will
+                     cause the Text Buffer and Label Table to over-write the
+                     Object Buffer.
+
+                (ii) On Assembly, if the Object Buffer would overwrite the
+                     Label Table and Text Buffer when the current line
+                     being assembled is entered into the Buffer.
+
+PRINTER OFF          (48K version only).
+LINE                 If you are using a Centronics Printer and the Printer
+                     is OFF LINE (most printers can be taken off line to
+                     manually advance the paper) the BUSY signal from the
+                     printer will be SET to prevent data being sent. If the
+                     printer is BUSY for more than about one second, the
+                     Assembler assumes it is OFF LINE and produces this
+                     error, while still checking the BUSY signal. As soon as
+                     the printer's BUSY signal is cleared, the Assembler
+                     start sending data. Pressing CAPS SHIFT + BREAK will
+                     return the Assembler's cursor.
+
+Microdrive/Network/RS232 Errors (48K Version only)
+--------------------------------------------------
+
+Microdrive full      There is not sufficient room on the Cartridge for the
+                     file being Saved.
+
+-----[Page 45]-----
+
+Reading from a       Attempting to Load from Microdrive with a filename that
+'WRITE' file         does not exist on that Cartridge.
+
+Drive WRITE          Attempting to Save to Microdrive where the Cartridge's
+PROTECTED            Write Protect tab has been removed.
+
+Wrong FILE           Attempting to Load into the Text Buffer a file that is
+type                 not a valid Source Code file. (i.e. Object Code or
+                     Basic program).
+
+Memory full          Can appear when Saving to Microdrive or Network. Because
+                     of the extra Channel space created for Microdrive or
+                     Network use, the Assembler temporarily moves the Object
+                     Buffer up memory while these commands are executed. If
+                     there is not enough space to do this without
+                     overwriting buffers, the error message is shown. A
+                     program could Assemble without error, and then display
+                     this message when Saved. Delete comment lines, or use
+                     'Assembly from Microdrive or Cassette' to remedy.
+
+Spectrum Monitor
+----------------
+The 48K version of the EDITOR/ASSEMBLER has one extra command to access our
+Spectrum MONITOR Debug/Dis-assembler program.
+
+If you wish to use both programs together, we recommend that you Load the
+MONITOR first (the 16K version) then Load the 48K version of the ASSEMBLER.
+In this way, the Stack will be above the ASSEMBLER, and cannot be over-
+written by the Object Buffer. To access the MONITOR, type 'M', and
+'MONITOR' is displayed on the screen. Pressing ENTER makes a simple check
+that the MONITOR is loaded, and CALLS it if it is there; otherwise, the
+cursor is returned to the bottom screen line. It is impossible to make a
+comprehensive check on the MONITOR, so be aware that the Object Buffer or
+the Text Buffer could overwrite part of the MONITOR if a very large program
+is being assembled, but this is unlikely to happen.
+
+-----[Page 46]-----
+
+   4000H |-----------------|
+         | SCREEN, BASIC,  |
+         | ETC.            |
+         |                 |
+         |-----------------|
+         | OBJECT BUFFER   |
+         |                 |
+         |                 |
+         |-----------------|
+         | SPARE (I)   |   |
+         |             V   |
+         |-----------------|
+         | MONITOR         |
+         |                 |
+         |                 |
+         |                 |
+         |                 |
+         |                 |
+   8000H |-----------------|
+         | SPARE (II)   A  |
+         |              |  |
+         |-----------------|
+         | TEXT BUFFER     |
+         |                 |
+         |                 |
+         |-----------------|
+         | EDITOR          |
+         | ASSEMBLER       |
+         |                 |
+         |                 |
+         |                 |
+         |                 |
+         |-----------------|
+         | STACK           |
+  RAMTOP |-----------------|
+         | UDG             |
+         |                 |
+   FFFFH |-----------------|
+
+Available Spare Memory
+----------------------
+With both programs loaded, the Spare area (i) is available for the Object
+Buffer, and allows a maximum Object Buffer of about 2800 bytes with no
+Basic listing present. The Spare area (ii) is available for the Text Buffer,
+and allows a maximum Text Buffer of around 23800 bytes.
+If you think that the length of your Assembled code is greater than 2800
+bytes, and could have overwritten the start of the Monitor, it is advisable
+to reload the Monitor before using it.
+
+-----[Page 47]-----
+
+Appendix A
+----------
+A complete list of mnemonics is now given, in the form acceptable to the
+ASSEMBLER.
+
+ADC  (HL)            BIT  1,H             CALL PE,0584H
+ADC  (IX+5)          BIT  1,L             CALL PO,0584H
+ADC  (IY+5)          BIT  2,(HL)          CALL Z,0584H
+ADC  A               BIT  2,(IX+5)        CALL 0584H
+ADC  B               BIT  2,(IY+5)        CCF
+ADC  C               BIT  2,A             CP   (HL)
+ADC  D               BIT  2,B             CP   (IX+5)
+ADC  E               BIT  2,C             CP   (IY+5)
+ADC  H               BIT  2,D             CP   A
+ADC  L               BIT  2,E             CP   B
+ADC  20H             BIT  2,H             CP   C
+ADC  HL,BC           BIT  2,L             CP   D
+ADC  HL,DE           BIT  3,(HL)          CP   E
+ADC  HL,HL           BIT  3,(IX+5)        CP   H
+ADC  HL,SP           BIT  3,(IY+5)        CP   L
+ADD  (HL)            BIT  3,A             CP   32
+ADD  (IX+5)          BIT  3,B             CPD
+ADD  (IY+5)          BIT  3,C             CPDR
+ADD  A               BIT  3,D             CPIR
+ADD  B               BIT  3,E             CPI
+ADD  C               BIT  3,H             CPL
+ADD  D               BIT  3,L             DAA
+ADD  E               BIT  4,(HL)          DEC  (HL)
+ADD  H               BIT  4,(IX+5)        DEC  (IX+5)
+ADD  L               BIT  4,(IY+5)        DEC  (IY+5)
+ADD  32              BIT  4,A             DEC  A
+ADD  HL,BC           BIT  4,B             DEC  B
+ADD  HL,DE           BIT  4,C             DEC  BC
+ADD  HL,HL           BIT  4,D             DEC  C
+ADD  HL,SP           BIT  4,E             DEC  D
+ADD  IX,BC           BIT  4,H             DEC  DE
+ADD  IX,DE           BIT  4,L             DEC  E
+ADD  IX,IX           BIT  5,(HL)          DEC  H
+ADD  IX,SP           BIT  5,(IX+5)        DEC  HL
+ADD  IY,BC           BIT  5,(IY+5)        DEC  IX
+ADD  IY,DE           BIT  5,A             DEC  IY
+ADD  IY,IY           BIT  5,B             DEC  L
+ADD  IY,SP           BIT  5,C             DEC  SP
+AND  (HL)            BIT  5,D             DI
+AND  (IX+5)          BIT  5,E             DJNZ 2EH
+AND  (IY+5)          BIT  5,H             EI
+AND  A               BIT  5,L             EX   (SP),HL
+AND  B               BIT  6,(HL)          EX   (SP),IX
+AND  C               BIT  6,(IX+5)        EX   (SP),IY
+AND  D               BIT  6,(IY+5)        EX   AF,A'F'
+AND  E               BIT  6,A             EX   DE,HL
+AND  H               BIT  6,B             EXX
+AND  L               BIT  6,C             HALT
+AND  32              BIT  6,D             IM0
+BIT  0,(HL)          BIT  6,E             IM1
+BIT  0,(IX+5)        BIT  6,H             IM2
+BIT  0,(IY+5)        BIT  6,L             IN   A,(C)
+BIT  0,A             BIT  7,(HL)          IN   B,(C)
+BIT  0,B             BIT  7,(IX+5)        IN   C,(C)
+BIT  0,C             BIT  7,(IY+5)        IN   D,(C)
+BIT  0,D             BIT  7,A             IN   E,(C)
+BIT  0,E             BIT  7,B             IN   H,(C)
+BIT  0,H             BIT  7,C             IN   L,(C)
+BIT  0,L             BIT  7,D             INC  (HL)
+BIT  1,(HL)          BIT  7,E             INC  (IX+5)
+BIT  1,(IX+5)        BIT  7,H             INC  (IY+5)
+BIT  1,(IY+5)        BIT  7,L             INC  A
+BIT  1,A             CALL C,0584H         INC  B
+BIT  1,B             CALL M,0584H         INC  BC
+BIT  1,C             CALL NC,0584H        INC  C
+BIT  1,D             CALL NZ,0584H        INC  D
+BIT  1,E             CALL P,0584H         INC  DE
+
+-----[Page 48]-----
+
+INC  E               LD   A,L             LD   L,D
+INC  H               LD   A,32            LD   L,E
+INC  HL              LD   A,R             LD   L,H
+INC  IX              LD   B,(HL)          LD   L,L
+INC  IY              LD   B,(IX+5)        LD   L,32
+INC  L               LD   B,(IY+5)        LD   R,A
+INC  SP              LD   B,A             LD   SP,(0584H)
+IN   A,(32)          LD   B,B             LD   SP,HL
+IND                  LD   B,C             LD   SP,IX
+INDR                 LD   B,D             LD   SP,IY
+INI                  LD   B,E             LD   SP,0584H
+INIR                 LD   B,H             LDD
+JP   0584H           LD   B,L             LDDR
+JP   (HL)            LD   B,32            LDI
+JP   (IX)            LD   BC,(0584H)      LDIR
+JP   (IY)            LD   BC,0584H        NEG
+JP   C,0584H         LD   C,(HL)          NOP
+JP   M,0584H         LD   C,(IX+5)        OR   (HL)
+JP   NC,0584H        LD   C,(IY+5)        OR   (IX+5)
+JP   NZ,0584H        LD   C,A             OR   (IY+5)
+JP   P,0584H         LD   C,B             OR   A
+JP   PE,0584H        LD   C,C             OR   B
+JP   PO,0584H        LD   C,D             OR   C
+JP   Z,0584H         LD   C,E             OR   D
+JR   C,2EH           LD   C,H             OR   E
+JR   NC,2EH          LD   C,L             OR   H
+JR   NZ,2EH          LD   C,32            OR   L
+JR   Z,2EH           LD   D,(HL)          OR   32
+JR   2EH             LD   D,(IX+5)        OTDR
+LD   (BC),A          LD   D,(IY+5)        OTIR
+LD   (DE),A          LD   D,A             OUT  (C),A
+LD   (HL),A          LD   D,B             OUT  (C),B
+LD   (HL),B          LD   D,C             OUT  (C),C
+LD   (HL),C          LD   D,D             OUT  (C),D
+LD   (HL),D          LD   D,E             OUT  (C),E
+LD   (HL),E          LD   D,H             OUT  (C),H
+LD   (HL),H          LD   D,L             OUT  (C),L
+LD   (HL),L          LD   D,32            OUT  (32),A
+LD   (HL),32         LD   DE,(0584H)      OUTD
+LD   (IX+5),A        LD   DE,0584H        OUTI
+LD   (IX+5),B        LD   E,(HL)          POP  AF
+LD   (IX+5),C        LD   E,(IX+5)        POP  BC
+LD   (IX+5),D        LD   E,(IY+5)        POP  DE
+LD   (IX+5),E        LD   E,A             POP  HL
+LD   (IX+5),H        LD   E,B             POP  IX
+LD   (IX+5),L        LD   E,C             POP  IY
+LD   (IX+5),32       LD   E,D             PUSH AF
+LD   (IY+5),A        LD   E,E             PUSH BC
+LD   (IY+5),B        LD   E,H             PUSH DE
+LD   (IY+5),C        LD   E,L             PUSH HL
+LD   (IY+5),D        LD   E,32            PUSH IX
+LD   (IY+5),E        LD   H,(HL)          PUSH IY
+LD   (IY+5),H        LD   H,(IX+5)        RES  0,(HL)
+LD   (IY+5),L        LD   H,(IY+5)        RES  0,(IX+5)
+LD   (IY+5),32       LD   H,A             RES  0,(IY+5)
+LD   (0584H),A       LD   H,B             RES  0,A
+LD   (0584H),BC      LD   H,C             RES  0,B
+LD   (0584H),DE      LD   H,D             RES  0,C
+LD   (0584H),HL      LD   H,E             RES  0,D
+LD   (0584H),IX      LD   H,H             RES  0,E
+LD   (0584H),IY      LD   H,L             RES  0,H
+LD   (0584H),SP      LD   H,32            RES  0,L
+LD   A,(BC)          LD   HL,(0584H)      RES  1,(HL)
+LD   A,(DE)          LD   HL,0584H        RES  1,(IX+5)
+LD   A,(HL)          LD   I,A             RES  1,(IY+5)
+LD   A,(IX+5)        LD   IX,(0584H)      RES  1,A
+LD   A,(IY+5)        LD   IX,0584H        RES  1,B
+LD   A,(0584H)       LD   IY,(0584H)      RES  1,C
+LD   A,A             LD   IY,0584H        RES  1,D
+LD   A,B             LD   L,(HL)          RES  1,E
+LD   A,C             LD   L,(IX+5)        RES  1,H
+LD   A,D             LD   L,(IY+5)        RES  1,L
+LD   A,E             LD   L,A             RES  2,(HL)
+LD   A,H             LD   L,B             RES  2,(IX+5)
+LD   A,I             LD   L,C             RES  2,(IY+5)
+
+-----[Page 49]-----
+
+RES  2,A             RL   D               SET  1,(HL)
+RES  2,B             RL   E               SET  1,(IX+5)
+RES  2,C             RL   H               SET  1,(IY+5)
+RES  2,D             RL   L               SET  1,A
+RES  2,E             RLA                  SET  1,B
+RES  2,H             RLC  (HL)            SET  1,C
+RES  2,L             RLC  (IX+5)          SET  1,D
+RES  3,(HL)          RLC  (IY+5)          SET  1,E
+RES  3,(IX+5)        RLC  A               SET  1,H
+RES  3,(IY+5)        RLC  B               SET  1,L
+RES  3,A             RLC  C               SET  2,(HL)
+RES  3,B             RLC  D               SET  2,(IX+5)
+RES  3,C             RLC  E               SET  2,(IY+5)
+RES  3,D             RLC  H               SET  2,A
+RES  3,E             RLC  L               SET  2,B
+RES  3,H             RLCA                 SET  2,C
+RES  3,L             RLD                  SET  2,D
+RES  4,(HL)          RR   (HL)            SET  2,E
+RES  4,(IX+5)        RR   (IX+5)          SET  2,H
+RES  4,(IY+5)        RR   (IY+5)          SET  2,L
+RES  4,A             RR   A               SET  3,B
+RES  4,B             RR   B               SET  3,(HL)
+RES  4,C             RR   C               SET  3,(IX+5)
+RES  4,D             RR   D               SET  3,(IY+3)
+RES  4,E             RR   E               SET  3,A
+RES  4,H             RR   H               SET  3,C
+RES  4,L             RR   L               SET  3,D
+RES  5,(HL)          RRA                  SET  3,E
+RES  5,(IX+5)        RRC  (HL)            SET  3,H
+RES  5,(IY+5)        RRC  (IX+5)          SET  3,L
+RES  5,A             RRC  (IY+5)          SET  4,(HL)
+RES  5,B             RRC  A               SET  4,(IX+5)
+RES  5,C             RRC  B               SET  4,(IY+5)
+RES  5,D             RRC  C               SET  4,A
+RES  5,E             RRC  D               SET  4,B
+RES  5,H             RRC  E               SET  4,C
+RES  5,L             RRC  H               SET  4,D
+RES  6,(HL)          RRC  L               SET  4,E
+RES  6,(IX+5)        RRCA                 SET  4,H
+RES  6,(IY+5)        RRD                  SET  4,L
+RES  6,A             RST  0               SET  5,(HL)
+RES  6,B             RST  8H              SET  5,(IX+5)
+RES  6,C             RST  10H             SET  5,(IY+5)
+RES  6,D             RST  18H             SET  5,A
+RES  6,E             RST  20H             SET  5,B
+RES  6,H             RST  28H             SET  5,C
+RES  6,L             RST  30H             SET  5,D
+RES  7,(HL)          RST  38H             SET  5,E
+RES  7,(IX+5)        SBC  32              SET  5,H
+RES  7,(IY+5)        SBC  (HL)            SET  5,L
+RES  7,A             SBC  (IX+5)          SET  6,(HL)
+RES  7,B             SBC  (IY+5)          SET  6,(IX+5)
+RES  7,C             SBC  A               SET  6,(IY+5)
+RES  7,D             SBC  B               SET  6,A
+RES  7,E             SBC  C               SET  6,B
+RES  7,H             SBC  D               SET  6,C
+RES  7,L             SBC  E               SET  6,D
+RET                  SBC  H               SET  6,E
+RET  C               SBC  L               SET  6,H
+RET  M               SBC  HL,BC           SET  6,L
+RET  NC              SBC  HL,DE           SET  7,(HL)
+RET  NZ              SBC  HL,HL           SET  7,(IX+5)
+RET  P               SBC  HL,SP           SET  7,(IX+5)
+RET  PE              SCF                  SET  7,A
+RET  PO              SET  0,(HL)          SET  7,B
+RET  Z               SET  0,(IX+5)        SET  7,C
+RETI                 SET  0,(IY+5)        SET  7,D
+RETN                 SET  0,A             SET  7,E
+RL   (HL)            SET  0,B             SET  7,H
+RL   (IX+5)          SET  0,C             SET  7,L
+RL   (IY+5)          SET  0,D             SLA  (HL)
+RL   A               SET  0,E             SLA  (IX+5)
+RL   B               SET  0,H             SLA  (IY+5)
+RL   C               SET  0,L             SLA  A
+
+-----[Page 50]-----
+
+SLA  B               LD   C,XH
+SLA  C               LD   C,YH
+SLA  D               LD   C,XL
+SLA  E               LD   C,YL
+SLA  H               LD   D,XH
+SLA  L               LD   D,YH
+SRA  (HL)            LD   D,XL
+SRA  (IX+5)          LD   D,YL
+SRA  (IY+5)          LD   E,XH
+SRA  A               LD   E,YH
+SRA  B               LD   E,XL
+SRA  C               LD   E,YL
+SRA  D               LD   XH,B
+SRA  E               LD   YH,B
+SRA  H               LD   XH,C
+SRA  L               LD   YH,C
+SRL  (HL)            LD   XH,D
+SRL  (IX+5)          LD   YH,D
+SRL  (IY+5)          LD   XH,E
+SRL  A               LD   YH,E
+SRL  B               LD   XH,XL
+SRL  C               LD   YH,YL
+SRL  D               LD   XH,A
+SRL  E               LD   YH,A
+SRL  H               LD   XL,B
+SRL  L               LD   YL,B
+SUB  (HL)            LD   XL,C
+SUB  (IX+5)          LD   YL,C
+SUB  (IY+5)          LD   XL,D
+SUB  A               LD   YL,D
+SUB  B               LD   XL,E
+SUB  C               LD   YL,E
+SUB  D               LD   XL,XH
+SUB  E               LD   YL,YH
+SUB  H               LD   XL,A
+SUB  L               LD   YL,A
+SUB  32              LD   A,XH
+XOR  (HL)            LD   A,YH
+XOR  (IX+5)          LD   A,XL
+XOR  (IY+5)          LD   A,YL
+XOR  A               ADD  XH
+XOR  B               ADD  YH
+XOR  C               ADD  XL
+XOR  D               ADD  YL
+XOR  E               ADD  XH
+XOR  H               ADC  YH
+XOR  L               ADC  XL
+XOR  32              ADC  YL
+SLL  (HL)            SUB  XH
+SLL  (IX+5)          SUB  YH
+SLL  (IY+5)          SUB  XL
+SLL  A               SUB  YL
+SLL  B               SBC  XH
+SLL  C               SBC  YH
+SLL  D               SBC  XL
+SLL  E               SBC  YL
+SLL  H               AND  XH
+SLL  L               AND  YH
+INC  XH              AND  XL
+INC  YH              AND  YL
+DEC  XH              XOR  XH
+DEC  YH              XOR  YH
+LD   XH,32           XOR  XL
+LD   YH,32           XOR  YL
+INC  XL              OR   XH
+INC  YL              OR   YH
+DEC  XL              OR   XL
+DEC  YL              OR   YL
+LD   XL,32           CP   XH
+LD   YL,32           CP   YH
+LD   B,XH            CP   XL
+LD   B,YH            CP   YL
+LD   B,XL
+LD   B,YL
+
+-----[Page 51]-----
+
+Summary Of Commands And Forms. Appendix B
+-----------------------------------------
+All commands are executed by pressing ENTER. All references to the ZX Printer
+include a Centronics Printer in the 48K version depending upon how the
+program was initially customised. All references to Microdrive, Network or
+RS232 commands only relate to the 48K version.
+
+LIST            (Key K)     Lists Source Code to screen from start. 10 lines
+                            displayed. Space gives next 10 lines.
+
+LIST nn                     Lists Source Code to screen from Line nn, for 10
+                            lines. Space gives next 10 lines.
+
+LIST /          (Key K +    Lists to ZX Printer only, from start of Source
+                Symbol      Code, through to the end of the listing, without
+                Shift and   stopping. BREAK stops, but leaves you in Basic.
+                Key V)
+
+LIST / nn                   List to ZX Printer from line nn to end of
+                            listing. BREAK as above.
+
+LIST *          (Key K +    Lists to RS232 Printer from start of Source Code
+                Symbol      through to the end of the listing without
+                Shift and   stopping. BREAK stops but leaves you in Basic.
+                Key B)
+
+LIST * nn                   Lists to RS232 Printer from Line nn to end of
+                            listing. BREAK as above.
+
+EDIT            (Caps       Displays the first line of listing at bottom of
+                Shift +     screen, ready for Editing.
+                Key 1)
+
+EDIT nn                     Displays Line nn as above.
+
+AUTO            (Key D)     16K Version:
+                            Selects Auto Line Numbering adding 10 to last
+                            Auto Line Number displayed.
+
+                            48K Version:
+                            Selects Auto Line Numbering adding last specified
+                            Step value to last Auto Line Number displayed.
+
+-----[Page 52]-----
+
+AUTO nn                     16K Version:
+                            Selects Auto Line Numbering from line nn. Step
+                            value fixed at 10.
+
+AUTO x,y                    48K Version only:
+                            Selects Auto line Numbering with
+                              x = step value (1 to 99)
+                              y = line number to start from
+
+RETURN          (Key Y)     Return to Basic.
+
+NEW             (Key A)     Gives Entry message. If 'N' typed in response,
+                            Source Code is cleared and Label Table cleared
+                            completely. If 'C' typed, nothing is changed.
+
+CLEAR           (Key X)     Clears the Source Code Buffer, but retains and
+                            protects the current Label Table.
+
+ASSEMBLE        (Key R)     Assembles the Object Code with no screen or
+                            printer output. Key M will PAUSE the Label Table
+                            screen display only. CAPS SHIFT + BREAK stops
+                            early.
+
+ASSEMBLE S      (Key R +    Assembles Object Code and displays assembled code
+                Key S)      to screen. Key M will PAUSE.
+
+ASSEMBLE /      (Key R +    Assembles Object Code and displays assembled code
+                Symbol      to ZX Printer only. Key M will PAUSE.
+                Shift +
+                Key V)
+
+ASSEMBLE *      (Key R *    Assembles Object Code and displays assembled code
+                Symbol      to RS232 Printer via Interface 1 RS232 link. Key
+                Shift +     M will PAUSE.
+                Key B)
+
+label           (Key L)     Displays the current Label Table to the screen,
+                            providing the display is enabled. Key M will
+                            PAUSE.
+
+-----[Page 53]-----
+
+label 0         (Key L +    Disables the Label Table display.
+                Key 0)
+
+label 1         (Key L +    Enables the Lable Table display, and displays
+                Key 1)      table to screen.
+
+label /         (Ket L +    Prints current Label Table to the ZX Printer,
+                Symbol      providing it is enabled.
+                Shift +
+                Key V)
+
+label *         (Key L +    Prints current Label Table to RS232 printer via
+                Symbol      Interface 1, providing it is enabled.
+                Shift +
+                Key B)
+
+RENUM nn        (Key N)     16K Version:
+                            Renumbers whole Source Code listing in Text
+                            Buffer with Step value = nn. (1 to 99).
+
+RENUM x,y,z                 48K Version only:
+                            Renumbers Text Buffer listing, where
+                              x = Step value (1 to 99)
+                              y = the existing Line Number to start from
+                              z = new starting Line Number (actually = z+x)
+
+Cassette commands:
+
+SAVE "name"C    (Save on    Saves Object Code to cassette from Object Buffer.
+                Key S)      "name" is file name: max. 10 characters.
+
+SAVE "name"T                Saves Text (Listing) to cassette. "name" is file
+                            name: max. 10 characters.
+
+VERIFY "name"   (Verify     Verifies named file. ASSEMBLER knows whether it
+                on Key V)   is Source Code or Object Code.
+
+VERIFY " "                  Verifies first file from cassette with
+                            appropriate buffer.
+
+-----[Page 54]-----
+
+LOAD "name"     (Load on    Displays file name with ident. 'BYTES': If file
+                Key J)      is Source Code Loads named file into Source Code
+                            buffer, and clears Label Table completely.
+
+LOAD "name"N                As above.
+
+LOAD "name"C                Displays file name with ident. 'Bytes': If file
+                            is Source Code loads named file into Source Code
+                            buffer, and retains and protects Label Table as
+                            in CLEAR.
+
+LOAD "name"A                Displays file name with ident. BYTES: If file is
+                            Source Code, Appends new file to that in Text
+                            Buffer and clears Label Table.
+
+LOAD " "                    As LOAD "name", but loads 1st Source Code File
+                            from tape.
+
+LOAD " "N                   As LOAD "name"N but loads 1st Source Code File
+                            from tape.
+
+LOAD " "C                   As LOAD "name"C but loads 1st Source Code File
+                            from tape.
+
+LOAD " "A                   As LOAD "name"A but Loads 1st Source Code File
+                            from tape.
+
+Microdrive/Network/RS232 commands:
+
+SAVE *"m";d;"name"T         Saves current Text Buffer file to Drive d with
+                            filename "name".
+
+SAVE *"m";d;"name"C         Saves current Object Buffer to Drive d with
+                            filename "name".
+
+LOAD *"m";d;"name"N         If file is valid Source Code, deletes existing
+                            Text Buffer and Label Table and Loads file into
+                            Text Buffer. (Suffix N is optional).
+
+LOAD *"m";d;"name"C         Deletes existing Text Buffer, protects current
+                            Label table, and Loads file into Text Buffer.
+
+-----[Page 55]-----
+
+LOAD *"m";d;"name"A         Appends new file to end of current Text Buffer
+                            and deletes current Label Table.
+
+VERIFY *"m";d;"name"        Verifies file "name" against Text Buffer or
+                            Object Buffer as appropriate.
+
+SAVE *"n";sT                Saves the current Text Buffer file to Station
+                            number s.
+
+SAVE *"n";sC                Saves the current Object Buffer to Station number
+                            s.
+
+LOAD *"n";sN                If incoming data is valid Source Code file,
+                            deletes existing Text Buffer and Label Table and
+                            Loads incoming data into Text Buffer. (Suffix N
+                            is optional).
+
+LOAD *"n";sC                If incoming data is a valid Source Code file,
+                            deletes existing Text Buffer, protects current
+                            Label Table and Loads incoming data into Text
+                            Buffer.
+
+LOAD *"n";sA                If incoming data is a valid Source Code file,
+                            Appends incoming data to end of current Text
+                            Buffer and deletes current Label Table.
+
+VERIFY *"n";s               Verifies incoming data against Text Buffer or
+                            Object Buffer as appropriate.
+
+SAVE *"b"T                  Saves current Text Buffer to RS232 output of
+                            Interface 1.
+
+SAVE *"b"C                  Saves current Object Buffer to RS232 output of
+                            Interface 1.
+
+LOAD *"b"N                  If incoming data is valid Source Code, deletes
+                            existing Text Buffer and Label Table and Loads
+                            data into Text Buffer. (N is optional).
+
+-----[Page 56]-----
+
+LOAD *"b"C                  If incoming data is valid Source Code, deletes
+                            existing Text Buffer and protects current Label
+                            Table, and Loads data into Text Buffer.
+
+LOAD *"b"A                  If incoming data is valid Source Code, Appends
+                            incoming data to end of current Text Buffer and
+                            deletes current Label Table.
+
+VERIFY *"b"                 Verifies incoming data against Text Buffer or
+                            Object Buffer as appropriate.

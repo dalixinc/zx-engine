@@ -1,0 +1,73 @@
+10 Septiembre 2025
+
+Últimamente me he centrado en recuperar cintas de ZX Spectrum de mis programas. Adicionalmente, encontré una cinta de ZX81 (Control de Stocks),
+que es un programa comercial. Las rutinas que tenía para convertir audio desde ZX81 no eran todo lo buenas que me gustaría y además, aunque
+podía cargar directamente desde cinta con el típico LOAD "" del ZX81, las primeras cargas no fueron perfectas.
+Esto me llevó a pensar unas mejores rutinas de conversión del sonido de carga del ZX81, para convertirlo a digital (formatos .P y .P81).
+La señal del ZX81, dado que es a muy baja velocidad (de media 300 baudios) permite que, en teoría, tenga un gran porcentaje de probabilidad
+de recuperación. Es decir, examinando una señal "a ojo" se puede saber qué bits representan esa señal (4 pulsos es un bit 0, 8 pulsos es un bit 1).
+La rutina que tenía de conversión integrada en ZEsarUX (y también la de línea de comandos) es prácticamente la misma que la primera que hice
+en 1998! Por tanto, aunque conseguí cargar bastantes programas, no está exenta de fallos y no funciona todo lo bien que debería.
+Con mis observaciones sobre la señal de carga y lo "fácil" que sería generar una rutina de inteligencia artificial (obviamente para alguien
+que sepa programar rutinas de ese tipo - yo no), pensé que debería hacer una rutina nueva. No he metido IA en la misma, pero sí he simplificado
+la rutina al máximo. Considerando como la rutina tiene que detectar el inicio y fin de un pulso (según la proporción del flanco de subida y
+el de bajada) y además considerando una amplitud mínima para ese pulso (amplitud que se autodetecta para obtener los mejores valores), al final
+obtengo una rutina que me ha permitido recuperar, de momento, hasta 48 programas de ZX81 (de una cinta grabada por mi en 1994),
+prácticamente cargando todos a la primera (con algún ajuste de azimuth en alguno).
+Además la rutina no necesita un samplerate concreto, al algoritmo le da igual el samplerate con el que esté
+capturado el sonido.
+Esto representa un gran logro respecto al algoritmo anterior (que internamente en ZEsarUX se sigue pudiendo utilizar). Además,
+he generado una nueva ventana donde se puede ver la conversión del sonido de cinta, como se van leyendo los bits según la señal de onda, todo
+de manera bastante gráfica por lo que representa, por una parte, una herramienta didáctica para aprender como funciona la señal de carga del ZX81,
+y por otra parte, es una buena herramienta de preservación de la descripción de esta señal.
+
+
+25 Mayo 2025
+
+En varias ocasiones he pensado poder incorporar controles analógicos de joystick de pc (como volantes) a la emulación. La idea es que en vez de leer
+cuando se mueve el volante a izquierda o derecha, utilizar el valor analógico del movimiento del joystick para saber "que tanto" se está girando
+el volante.
+Esto no tendría mucho sentido (o sería demasiado esfuerzo) si fuese para crear juegos nuevos, pero lo atractivo aquí es poder modificar juegos
+existentes de Spectrum para que lo utilicen. Uno de estos juegos es el Hard Drivin'. Este es un juego al que he jugado mucho y acabé por dominar
+el control de su movimiento "analógico" del volante: con las pulsaciones de teclas izquierda o derecha, el volante se va girando en una de esas
+direcciones, y puede estar mas o menos girado. Esto es un problema cuando hay que volver a poner el mando centrado por ejemplo, que se necesita
+mucha práctica. Pero con el tiempo descubrí el truco de pulsar la tecla Space, que se encarga de centrar el volante. Usando las teclas de giro y
+el space, conseguí controlar el coche, siendo uno de mis juegos favoritos y de los pocos que me he conseguido acabar.
+Volviendo al volante analógico, se trata de que se pueda leer la posición del volante y pasársela al juego, sin tener que usar las teclas de
+dirección ni la tecla space.
+Haciendo uso de la ventana de Memory Cheat de ZEsarUX, buscando valores que se van cambiando en memoria (girando el volante continuamente) en el Hard Drivin',
+me encuentro que la dirección de memoria 96ach se encarga de guardar la posición del volante, con rango desde -120 (volante completamente a la izquierda),
+hasta +120 (volante completamente a la derecha).
+Trampeando un poco el código de ZEsarUX donde se gestiona el joystick, hago que se escriba en esa dirección la posición del volante
+(escalando desde los valores -32768 hasta +32767 que gestiona ZEsarUX). Y puedo jugar, por primera vez, al Hard Drivin' en Spectrum con un volante :)
+La experiencia ha sido muy satisfactoria.
+Me he puesto a probar también con el wec le mans y test drive 2, ambos también con control analógico para el volante, aunque ambos cuentan
+con una función que retorna el volante al centro de manera automática. Modificando esos puntos para que no retorne el volante, y trampeando de
+nuevo el código de ZEsarUX, puedo jugar a ambos con mi volante.
+Las tareas siguientes serán:
+- Opción dentro del menú de configuración de real joystick para poder modificar una posición de memoria guardando la posición del volante.
+Así como rangos de valores admitidos, etc
+- Juegos que tienen funciones de auto-retorno de volante, crearé archivos .POK para desactivar esas secciones
+- Probar mas juegos donde se pueda incorporar el volante, como Toyota celica, Drift y Nightmare rally
+
+Después de eso, crear un video donde se pueda enseñar a la gente la funcionalidad.
+
+
+20 Marzo 2025
+
+Aquí nace un nuevo archivo dentro de ZEsarUX, una bitácora de desarrollo con la intención de ir describiendo los cambios realizados en él.
+Es curioso que hasta ahora (y después de 12 años casi) no se me hubiera ocurrido; a decir verdad, la idea me la he "copiado" de Jane McKay,
+autora del emulador x128. Ella tiene una web donde va anotando los cambios realizados en su emulador.
+No sé si lo mantendré siempre y con qué frecuencia, pero creo que puede estar bien explicar ciertos cambios; en un futuro me puede servir
+para echar la vista atrás y saber qué andaba haciendo en fechas concretas. Alguno podría decir que eso ya me lo da git... pero sinceramente,
+git tiene muchas posibilidades pero prefiero depender lo mínimo de él. Además, no solo se trata de ver commits y cambios, se trata de explicar
+el por qué de esos cambios, o si corregir un fallo me ha costado mucho, etc. Iremos viendo...
+
+Por estrenar la primera entrada, ando mejorando la pantalla de Status de ZENG Online, donde manera "pseudo-gráfica" se ven los paquetes del
+protocolo ZENG Online como se van moviendo entre ZEsarUX y el servidor remoto (obviamente otro ZEsarUX, pero con el ZENG Online server activado).
+
+También he realizado los últimos cambios al hecho de poder mostrar el logo de ZEsarUX en pantalla sólo cuando se carga, y además, que las
+franjas de color de dicho logo cambien a medida que va cargando. Esto me vino como idea al ver a David Carrión, con su pantalla led, que tiene
+exactamente 256x192, donde no se ve ni el border ni el footer, y a veces no se sabe si una carga de un juego ha finalizado o no.
+Con estas nuevas opciones, ya se puede saber cuando se está cargando (obviamente se podría escuchar, si es una carga real, pero no siempre se oye
+cuando se está en un entorno ruidoso, como un evento retro)

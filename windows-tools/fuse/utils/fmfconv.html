@@ -1,0 +1,514 @@
+<!-- Creator     : groff version 1.23.0 -->
+<!-- CreationDate: Fri Apr  3 20:57:32 2026 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta name="generator" content="groff -Thtml, see www.gnu.org">
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<meta name="Content-Style" content="text/css">
+<style type="text/css">
+       p       { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       pre     { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       table   { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       h1      { text-align: center }
+</style>
+<title>fmfconv</title>
+
+</head>
+<body>
+
+<h1 align="center">fmfconv</h1>
+
+<a href="#NAME">NAME</a><br>
+<a href="#SYNOPSIS">SYNOPSIS</a><br>
+<a href="#DESCRIPTION">DESCRIPTION</a><br>
+<a href="#OPTIONS">OPTIONS</a><br>
+<a href="#General options:">General options:</a><br>
+<a href="#Audio options:">Audio options:</a><br>
+<a href="#Video/image options:">Video/image options:</a><br>
+<a href="#The following options are available when PNG files are supported:">The following options are available when PNG files are supported:</a><br>
+<a href="#The following options are available when JPEG files are supported:">The following options are available when JPEG files are supported:</a><br>
+<a href="#EXAMPLES">EXAMPLES</a><br>
+<a href="#BUGS">BUGS</a><br>
+<a href="#SEE ALSO">SEE ALSO</a><br>
+<a href="#AUTHOR">AUTHOR</a><br>
+
+<hr>
+
+
+<h2>NAME
+<a name="NAME"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">fmfconv &mdash;
+Fuse Movie File converter</p>
+
+<h2>SYNOPSIS
+<a name="SYNOPSIS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em"><b>fmfconv</b>
+[<i>options</i>] [<i>infile</i> [<i>outfile</i>
+[<i>soundfile</i>]]]</p>
+
+<h2>DESCRIPTION
+<a name="DESCRIPTION"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">fmfconv is a
+Fuse Movie File converter. It can read .fmf files produced
+by Fuse ZX Spectrum emulator and write audio files, video
+files or sequences of images in a variety of popular
+formats. It can also stream data to external tools through a
+pipe, so you can get virtually any possible format (see
+EXAMPLES).</p>
+
+<p style="margin-left:9%; margin-top: 1em">fmfconv has
+built-in support for AIFF, AU and WAV sound formats, PPM and
+SCR image formats, AVI and YUV4MPEG2 video formats. Supports
+PNG and JPEG/MJPEG formats internally if libpng and libjpeg
+are available respectively.</p>
+
+<h2>OPTIONS
+<a name="OPTIONS"></a>
+</h2>
+
+
+<h3>General options:
+<a name="General options:"></a>
+</h3>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;h <br>
+&minus;&minus;help</p>
+
+<p style="margin-left:18%;">Give brief usage help, listing
+available options.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;info</p>
+
+<p style="margin-left:18%;">Scan input file(s) and print
+information.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;i
+<i>filename</i> <br>
+&minus;&minus;input <i>filename</i></p>
+
+<p style="margin-left:18%;">Input file.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;o
+<i>filename</i> <br>
+&minus;&minus;output <i>filename</i></p>
+
+<p style="margin-left:18%;">Output file.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;y <br>
+&minus;&minus;overwrite</p>
+
+<p style="margin-left:18%;">Force overwrite of existing
+output file(s).</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;g
+<i>form</i> <br>
+&minus;&minus;progress <i>form</i></p>
+
+<p style="margin-left:18%;">Show progress, where
+&lsquo;form&rsquo; is one of &lsquo;%&rsquo;,
+&lsquo;bar&rsquo;, &lsquo;frame&rsquo; or
+&lsquo;time&rsquo;. frame and time are similar to bar and
+show movie seconds or frame number as well.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;q <br>
+&minus;&minus;quiet</p>
+
+<p style="margin-left:18%;">Decrease the verbosity level by
+one.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;v <br>
+&minus;&minus;verbose</p>
+
+<p style="margin-left:18%;">Increase the verbosity level by
+one.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;V <br>
+&minus;&minus;version</p>
+
+<p style="margin-left:18%;">Print the version number and
+exit.</p>
+
+<h3>Audio options:
+<a name="Audio options:"></a>
+</h3>
+
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;aifc</p>
+
+<p style="margin-left:18%;">Force AIFF-C output if sound
+format is AIFF.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;m <br>
+&minus;&minus;aiff</p>
+
+<p style="margin-left:18%;">Save sound to Apple Computer
+audio (aiff/aiff-c) file.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;u <br>
+&minus;&minus;au</p>
+
+<p style="margin-left:18%;">Save sound to Sun Audio (au)
+file.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;mono</p>
+
+<p style="margin-left:18%;">Convert sound to mono (by
+default sound is converted to stereo).</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;raw&minus;sound</p>
+
+<p style="margin-left:18%;">Do not convert sound to 16-bit
+signed PCM and STEREO or MONO. This is an advanced option.
+If stereo/mono or audio encoding change through
+&lsquo;fmf&rsquo; file, your sound will be crappy.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;s
+<i>filename</i> <br>
+&minus;&minus;sound <i>filename</i></p>
+
+<p style="margin-left:18%;">Output sound file.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;sound&minus;only</p>
+
+<p style="margin-left:18%;">Process only the sound from an
+&lsquo;fmf&rsquo; file.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;E
+<i>rate</i> <br>
+&minus;&minus;srate <i>rate</i></p>
+
+<p style="margin-left:18%;">Resample audio to
+&lsquo;rate&rsquo; sampling rate where &lsquo;rate&rsquo; is
+&lsquo;cd&rsquo; for 44100&nbsp;Hz or &lsquo;dat&rsquo; for
+48000&nbsp;Hz or a number (&lsquo;cd&rsquo; and
+&lsquo;dat&rsquo; set &lsquo;stereo&rsquo; as well).</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;w <br>
+&minus;&minus;wav</p>
+
+<p style="margin-left:18%;">Save sound to Waveform Audio
+(wav) file.</p>
+
+<h3>Video/image options:
+<a name="Video/image options:"></a>
+</h3>
+
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;avi</p>
+
+<p style="margin-left:18%;">Save video as AVI format with
+built-in AVI encoder. If fmfconv supports jpeg files, encode
+video as M-JPEG and audio as S16_LE PCM. If output is not a
+file (stdout or redirected) then fmfconv encode video as
+uncompressed BGR24 DIB frames (see
+&minus;&minus;avi&minus;mjpeg and
+&minus;&minus;avi&minus;uncompr).</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;f
+<i>timing</i> <br>
+&minus;&minus;frate <i>timing</i></p>
+
+<p style="margin-left:18%;">Set output frame rate.
+&lsquo;timing&rsquo; is &lsquo;pal&rsquo;,
+&lsquo;ntsc&rsquo;, &lsquo;movie&rsquo; or a number with
+maximum 3 digit after decimal point, or a #/# (e.g.:
+&minus;f 29.97 or &minus;f 30000/1001). <br>
+For video output formats (AVI/MJPEG/YUV4MPEG2) fmfconv set
+frame rate to 25 fps (PAL timing). If you want to keep the
+original frame rate use &lsquo;raw&rsquo; timing.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;C
+<i>cut</i> <br>
+&minus;&minus;out&minus;cut <i>cut</i></p>
+
+<p style="margin-left:18%;">Leave out the comma delimited
+&lsquo;cut&rsquo; ranges e.g.:
+100&minus;200,300,500,1:11&minus;2:22 cut the frames
+100&ndash;200, 300, 500 and frames from 1 min 11 sec to 2
+min 22 sec (in the given timing see:
+&minus;f/&minus;&minus;frate).</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;P <br>
+&minus;&minus;ppm</p>
+
+<p style="margin-left:18%;">Save video as PPM
+screenshots.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;S <br>
+&minus;&minus;scr</p>
+
+<p style="margin-left:18%;">Save video as SCR
+screenshots.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;Y <br>
+&minus;&minus;yuv</p>
+
+<p style="margin-left:18%;">Save video as yuv4mpeg2.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;yuv&minus;format
+<i>frm</i></p>
+
+<p style="margin-left:18%;">Set yuv4mpeg2 file frame format
+to &lsquo;frm&rsquo;, where &lsquo;frm&rsquo; is one of
+&lsquo;444&rsquo;, &lsquo;422&rsquo;, &lsquo;420j&rsquo;,
+&lsquo;420m&rsquo;, &lsquo;420&rsquo; or
+&lsquo;410&rsquo;.</p>
+
+<h3>The following options are available when PNG files are supported:
+<a name="The following options are available when PNG files are supported:"></a>
+</h3>
+
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;greyscale</p>
+
+<p style="margin-left:18%;">Save greyscale images.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;G <br>
+&minus;&minus;png</p>
+
+<p style="margin-left:18%;">Save video frames as PNG
+screenshots.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;png&minus;compress
+<i>level</i></p>
+
+<p style="margin-left:18%;">Set compression level from a
+range 0&ndash;9, or &lsquo;none&rsquo;, &lsquo;fast&rsquo;,
+&lsquo;best&rsquo;.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;progressive</p>
+
+<p style="margin-left:18%;">Save progressive (interlaced)
+PNG files.</p>
+
+<h3>The following options are available when JPEG files are supported:
+<a name="The following options are available when JPEG files are supported:"></a>
+</h3>
+
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;avi&minus;mjpeg</p>
+
+<p style="margin-left:18%;">Force the use of M-JPEG AVI
+frames (lossy).</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;avi&minus;uncompr</p>
+
+<p style="margin-left:18%;">Force the use of uncompressed
+BGR24 AVI frames. This format does not produce compression
+artifacts but the file size is bigger. It is a good choice
+if you want to process the video with an external tool.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;greyscale</p>
+
+<p style="margin-left:18%;">Save greyscale images or
+convert video frames.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;J <br>
+&minus;&minus;jpeg</p>
+
+<p style="margin-left:18%;">Save video frames as JPEG
+screenshots.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;jpeg&minus;fast</p>
+
+<p style="margin-left:18%;">Use faster, less accurate
+integer method for DCT compression.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;jpeg&minus;float</p>
+
+<p style="margin-left:18%;">Use floating-point method for
+DCT compression.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;jpeg&minus;optimize</p>
+
+<p style="margin-left:18%;">Compute optimal Huffman coding
+tables for the image.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;Q <br>
+&minus;&minus;jpeg&minus;quality <i>q</i></p>
+
+<p style="margin-left:18%;">Set jpeg quality from a range
+0&ndash;100.</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;jpeg&minus;smooth
+<i>factor</i></p>
+
+<p style="margin-left:18%;">Set jpeg smoothing factor from
+a range 0&ndash;100.</p>
+
+<p style="margin-left:9%; margin-top: 1em">&minus;M <br>
+&minus;&minus;mjpeg</p>
+
+<p style="margin-left:18%;">Save video as raw M-JPEG file
+(abbreviated JPEG stream).</p>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;&minus;progressive</p>
+
+<p style="margin-left:18%;">Save progressive (interlaced)
+JPEG files.</p>
+
+<h2>EXAMPLES
+<a name="EXAMPLES"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">Some of the
+following examples use <i>ffmpeg</i>(1) as an external tool
+for doing the final conversion. In some distributions
+<i>avconv</i>(1) is available, which accepts the same
+parameters.</p>
+
+<p style="margin-left:9%; margin-top: 1em">Convert FMF to
+AVI:</p>
+
+<p style="margin-left:18%; margin-top: 1em">fmfconv
+input.fmf output.avi</p>
+
+<p style="margin-left:9%; margin-top: 1em">Convert FMF to a
+mpeg video with quality equivalent to YouTube:</p>
+
+<p style="margin-left:18%; margin-top: 1em">fmfconv
+input.fmf | ffmpeg &minus;i &minus; &minus;vf scale=480:360
+&minus;r 25 <br>
+&minus;codec:v h264 &minus;codec:a aac &minus;f mp4
+&minus;b:a 128k <br>
+&minus;b:v 600k &minus;pix_fmt yuv420p &minus;strict
+&minus;2 output.mp4</p>
+
+<p style="margin-left:9%; margin-top: 1em">Convert FMF to
+compact lossless 720p:</p>
+
+<p style="margin-left:18%; margin-top: 1em">fmfconv
+input.fmf | ffmpeg &minus;i &minus; &minus;vf palettegen
+palette.png <br>
+fmfconv &minus;&minus;raw&minus;sound input.fmf | ffmpeg
+&minus;i &minus; &minus;i palette.png <br>
+&minus;filter_complex <br>
+&quot;scale=960:720:flags=neighbor [x]; [x][1:v]
+paletteuse&quot; <br>
+&minus;c:a flac &minus;c:v zmbv &minus;compression_level:a
+12 output.mkv</p>
+
+<p style="margin-left:9%; margin-top: 1em">Convert FMF to
+compact lossless 1080p:</p>
+
+<p style="margin-left:18%; margin-top: 1em">fmfconv
+input.fmf | ffmpeg &minus;i &minus; &minus;vf palettegen
+palette.png <br>
+fmfconv &minus;&minus;raw&minus;sound input.fmf | ffmpeg
+&minus;i &minus; &minus;i palette.png <br>
+&minus;filter_complex <br>
+&quot;crop=288:216,scale=1440:1080:flags=neighbor <br>
+[x]; [x][1:v] paletteuse&quot; <br>
+&minus;c:a flac &minus;c:v zmbv &minus;compression_level:a
+12 output.mkv</p>
+
+<p style="margin-left:9%; margin-top: 1em">Convert FMF to a
+DVD video format:</p>
+
+<p style="margin-left:18%; margin-top: 1em">fmfconv
+input.fmf | ffmpeg &minus;i &minus; &minus;aspect 4:3
+&minus;target pal&minus;dvd <br>
+output.vob</p>
+
+<p style="margin-left:9%; margin-top: 1em">Convert FMF to
+SVCD video format:</p>
+
+<p style="margin-left:18%; margin-top: 1em">fmfconv
+input.fmf | ffmpeg &minus;i &minus; &minus;aspect 4:3
+&minus;target pal&minus;svcd <br>
+output.mpg</p>
+
+<p style="margin-left:9%; margin-top: 1em">Convert FMF to
+iPod video format:</p>
+
+<p style="margin-left:18%; margin-top: 1em">fmfconv
+input.fmf | ffmpeg &minus;i &minus; &minus;vf scale=320:240
+&minus;r 30 <br>
+&minus;codec:v h264 &minus;codec:a aac &minus;f ipod
+&minus;ar 44100 &minus;b:a 128k <br>
+&minus;b:v 256k &minus;pix_fmt yuv420p &minus;strict
+&minus;2 output.m4v</p>
+
+<p style="margin-left:9%; margin-top: 1em">Convert FMF to
+animated GIF (25 fps) using ImageMagick:</p>
+
+<p style="margin-left:18%; margin-top: 1em">fmfconv
+&minus;f 25 input.fmf tmp.png <br>
+convert &minus;delay 4 &minus;loop 0 &minus;layers
+removeDups &minus;layers Optimize <br>
+tmp*.png output.gif</p>
+
+<p style="margin-left:9%; margin-top: 1em">Extract audio
+(mono) from a FMF file:</p>
+
+<p style="margin-left:18%; margin-top: 1em">fmfconv
+&minus;&minus;sound-only &minus;&minus;mono input.fmf
+output.wav</p>
+
+<h2>BUGS
+<a name="BUGS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">None known.</p>
+
+<h2>SEE ALSO
+<a name="SEE ALSO"></a>
+</h2>
+
+
+
+<p style="margin-left:9%; margin-top: 1em"><i>avconv</i>(1),
+<i>ffmpeg</i>(1), <i>fuse</i>(1),
+<i>fuse&minus;utils</i>(1), <i>imagemagick</i>(1).</p>
+
+<p style="margin-left:9%; margin-top: 1em">The Fuse Movie
+File specification, at <i><br>
+
+http://sourceforge.net/p/fuse-emulator/wiki/FMF%20File%20Format/</i>.</p>
+
+<p style="margin-left:9%; margin-top: 1em">The
+comp.sys.sinclair Spectrum FAQ, at <i><br>
+http://www.worldofspectrum.org/faq/index.html</i>.</p>
+
+<h2>AUTHOR
+<a name="AUTHOR"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">Gergely
+Szasz.</p>
+<hr>
+</body>
+</html>

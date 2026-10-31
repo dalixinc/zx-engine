@@ -1,0 +1,180 @@
+<!-- Creator     : groff version 1.23.0 -->
+<!-- CreationDate: Fri Apr  3 20:57:36 2026 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta name="generator" content="groff -Thtml, see www.gnu.org">
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<meta name="Content-Style" content="text/css">
+<style type="text/css">
+       p       { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       pre     { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       table   { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       h1      { text-align: center }
+</style>
+<title>snapconv</title>
+
+</head>
+<body>
+
+<h1 align="center">snapconv</h1>
+
+<a href="#NAME">NAME</a><br>
+<a href="#SYNOPSIS">SYNOPSIS</a><br>
+<a href="#DESCRIPTION">DESCRIPTION</a><br>
+<a href="#OPTIONS">OPTIONS</a><br>
+<a href="#BUGS">BUGS</a><br>
+<a href="#SEE ALSO">SEE ALSO</a><br>
+<a href="#AUTHOR">AUTHOR</a><br>
+
+<hr>
+
+
+<h2>NAME
+<a name="NAME"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">snapconv &mdash;
+Sinclair ZX Spectrum snapshot converter</p>
+
+<h2>SYNOPSIS
+<a name="SYNOPSIS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em"><b>snapconv</b>
+[ &minus;c ] [ &minus;n ] [ &minus;f ] <i>infile
+outfile</i></p>
+
+<h2>DESCRIPTION
+<a name="DESCRIPTION"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">snapconv
+converts between ZX Spectrum snapshot files.</p>
+
+<h2>OPTIONS
+<a name="OPTIONS"></a>
+</h2>
+
+
+<table width="100%" border="0" rules="none" frame="void"
+       cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="9%"></td>
+<td width="3%">
+
+
+<p style="margin-top: 1em"><i>&minus;c</i></p></td>
+<td width="6%"></td>
+<td width="82%">
+
+
+<p style="margin-top: 1em">specifies that all data in the
+output snapshot should be compressed, even if that
+compression will result in a bigger file than if some data
+is left uncompressed. This helps compatibility with some
+buggy programs that can only read entirely compressed .z80
+files.</p> </td></tr>
+<tr valign="top" align="left">
+<td width="9%"></td>
+<td width="3%">
+
+
+<p><i>&minus;n</i></p></td>
+<td width="6%"></td>
+<td width="82%">
+
+
+<p>specifies that the output snapshot should be
+uncompressed.</p> </td></tr>
+<tr valign="top" align="left">
+<td width="9%"></td>
+<td width="3%">
+
+
+<p><i>&minus;f</i></p></td>
+<td width="6%"></td>
+<td width="82%">
+
+
+<p>specifies that the A and F and A' and F' registers
+should be swapped. Version 0.5.0 and older of
+<i>libspectrum</i>(3) had a bug that resulted in these
+registers being swapped in SZX snapshots only. Version 0.5.1
+and newer of <i>libspectrum</i>(3) automatically recognise
+these snapshots and correct the problem, but this flag is
+necessary to fix some snapshots created by <i>development
+versions only</i> of <i>libspectrum</i>(3) which had the bug
+fixed, but cannot be distinguished from snapshots containing
+the bug.</p></td></tr>
+</table>
+
+<p style="margin-left:9%;"><i>&minus;h</i>,
+<i>&minus;&minus;help</i></p>
+
+<p style="margin-left:18%;">give brief usage help, listing
+available options.</p>
+
+<p style="margin-left:9%;"><i>&minus;V</i>,
+<i>&minus;&minus;version</i></p>
+
+<p style="margin-left:18%;">output version information.</p>
+
+<table width="100%" border="0" rules="none" frame="void"
+       cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="9%"></td>
+<td width="8%">
+
+
+<p><i>infile</i></p></td>
+<td width="1%"></td>
+<td width="82%">
+
+
+<p>specifies the snapshot to be converted. This file can be
+in any of the snapshot formats supported by
+<i>libspectrum</i>(3).</p> </td></tr>
+</table>
+
+<p style="margin-left:9%;"><i>outfile</i></p>
+
+<p style="margin-left:18%;">specifies the output snapshot.
+The format will be determined by the file extension and can
+be in any of the formats <i>libspectrum</i>(3) supports for
+output.</p>
+
+<h2>BUGS
+<a name="BUGS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">None known.</p>
+
+<h2>SEE ALSO
+<a name="SEE ALSO"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em"><i>fuse</i>(1),
+<i>fuse&minus;utils</i>(1), <i>libspectrum</i>(3),
+<i>listbasic</i>(1), <i>snap2tzx</i>(1)</p>
+
+<p style="margin-left:9%; margin-top: 1em">The
+comp.sys.sinclair Spectrum FAQ, at <i><br>
+http://www.worldofspectrum.org/faq/index.html</i>.</p>
+
+<h2>AUTHOR
+<a name="AUTHOR"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">Philip Kendall
+(philip&minus;fuse@shadowmagic.org.uk).</p>
+<hr>
+</body>
+</html>

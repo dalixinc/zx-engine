@@ -1,0 +1,205 @@
+<!-- Creator     : groff version 1.23.0 -->
+<!-- CreationDate: Fri Apr  3 20:57:36 2026 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta name="generator" content="groff -Thtml, see www.gnu.org">
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<meta name="Content-Style" content="text/css">
+<style type="text/css">
+       p       { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       pre     { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       table   { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       h1      { text-align: center }
+</style>
+<title>snap2tzx</title>
+
+</head>
+<body>
+
+<h1 align="center">snap2tzx</h1>
+
+<a href="#NAME">NAME</a><br>
+<a href="#SYNOPSIS">SYNOPSIS</a><br>
+<a href="#DESCRIPTION">DESCRIPTION</a><br>
+<a href="#OPTIONS">OPTIONS</a><br>
+<a href="#BUGS">BUGS</a><br>
+<a href="#SEE ALSO">SEE ALSO</a><br>
+<a href="#AUTHOR">AUTHOR</a><br>
+
+<hr>
+
+
+<h2>NAME
+<a name="NAME"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">snap2tzx &mdash;
+Convert ZX Spectrum snapshot to .tzx tape images</p>
+
+<h2>SYNOPSIS
+<a name="SYNOPSIS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em"><b>snap2tzx</b>
+[&minus;1 <i>string</i>] [&minus;2 <i>string</i>] [&minus;b
+<i>colour</i>] [&minus;g <i>string</i>] [&minus;l
+<i>string</i>] [&minus;o <i>filename</i>] [&minus;r]
+[&minus;s <i>speed</i>] [&minus;v] [&minus;$
+<i>filename</i>] <i>snapshot</i></p>
+
+<h2>DESCRIPTION
+<a name="DESCRIPTION"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">snap2tzx
+converts a ZX Spectrum snapshot into a .tzx tape image.</p>
+
+<h2>OPTIONS
+<a name="OPTIONS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">&minus;1
+<i>string</i></p>
+
+<p style="margin-left:18%;">causes <i>string</i> (which has
+a maximum of 32 characters) to be shown while loading.</p>
+
+<p style="margin-left:9%;">&minus;2 <i>string</i></p>
+
+<p style="margin-left:18%;">causes <i>string</i> (maximum
+32 characters) to also be shown while loading.</p>
+
+<p style="margin-left:9%;">&minus;b <i>colour</i></p>
+
+<p style="margin-left:18%;">specifies the border colour
+while loading.</p>
+
+<p style="margin-left:9%;">&minus;g <i>string</i></p>
+
+<p style="margin-left:18%;">causes <i>string</i> (maximum
+32 characters) to be used as the game name while
+loading.</p>
+
+<p style="margin-left:9%;">&minus;l <i>string</i></p>
+
+<p style="margin-left:18%;">causes <i>string</i> (maximum 8
+characters) to be used as the BASIC filename in the
+loader.</p>
+
+<p style="margin-left:9%;">&minus;o <i>filename</i></p>
+
+<p style="margin-left:18%;">causes the output to be sent to
+<i>filename</i>.</p>
+
+<table width="100%" border="0" rules="none" frame="void"
+       cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="9%"></td>
+<td width="3%">
+
+
+<p>&minus;r</p></td>
+<td width="6%"></td>
+<td width="82%">
+
+
+<p>causes the final line of attribute data in the loading
+screen to be bright.</p></td></tr>
+</table>
+
+<p style="margin-left:9%;">&minus;s <i>speed</i></p>
+
+<p style="margin-left:18%;">specifies the speed of the
+loader; available values for <i>speed</i> are 0 (1500 bps),
+1 (2250 bps), 2 (3000 bps), 3 (4500 bps), 4 (5000 bps) and 5
+(6000 bps).</p>
+
+<table width="100%" border="0" rules="none" frame="void"
+       cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="9%"></td>
+<td width="3%">
+
+
+<p>&minus;v</p></td>
+<td width="6%"></td>
+<td width="32%">
+
+
+<p>specifies verbose output.</p></td>
+<td width="50%">
+</td></tr>
+</table>
+
+<p style="margin-left:9%;">&minus;$ <i>filename</i></p>
+
+<p style="margin-left:18%;">specifies that the ZX Spectrum
+screen stored in <i>filename</i> should be used as the
+loading screen.</p>
+
+<p style="margin-left:9%;">&minus;h, &minus;&minus;help</p>
+
+<p style="margin-left:18%;">give brief usage help, listing
+available options.</p>
+
+<p style="margin-left:9%;">&minus;V,
+&minus;&minus;version</p>
+
+<p style="margin-left:18%;">output version information.</p>
+
+<p style="margin-left:9%;"><i>snapshot</i></p>
+
+<p style="margin-left:18%;">specifies the snapshot (in a
+format supported by <i>libspectrum</i>(3)) to be
+converted.</p>
+
+<p style="margin-left:9%; margin-top: 1em">In any
+<i>string</i> parameter, the tilde (&#732;) will be
+converted into a copyright symbol.</p>
+
+<h2>BUGS
+<a name="BUGS"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">None known.</p>
+
+<h2>SEE ALSO
+<a name="SEE ALSO"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em"><i>fuse</i>(1),
+<i>fuse&minus;utils</i>(1), <i>libspectrum</i>(3),
+<i>listbasic</i>(1), <i>snapconv</i>(1)</p>
+
+<p style="margin-left:9%; margin-top: 1em">The
+comp.sys.sinclair Spectrum FAQ, at <i><br>
+http://www.worldofspectrum.org/faq/index.html</i>.</p>
+
+<h2>AUTHOR
+<a name="AUTHOR"></a>
+</h2>
+
+
+<p style="margin-left:9%; margin-top: 1em">Philip Kendall
+(philip&minus;fuse@shadowmagic.org.uk).</p>
+
+<p style="margin-left:9%; margin-top: 1em">Tomaz Kac wrote
+<i>z802tzx</i>
+(<i>ftp://ftp.worldofspectrum.org/pub/sinclair/tools/unix/z802tzx&minus;1.2.tar.gz</i>),
+on which <i>snap2tzx</i> is very heavily based.</p>
+
+<p style="margin-left:9%; margin-top: 1em">Martijn van der
+Heide wrote the turbo-loading code, originally for
+<i>Taper</i>
+(<i>http://www.worldofspectrum.org/taper.html</i>).</p>
+<hr>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!-- Creator     : groff version 1.23.0 -->
+<!-- CreationDate: Fri Apr  3 20:57:31 2026 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta name="generator" content="groff -Thtml, see www.gnu.org">
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<meta name="Content-Style" content="text/css">
+<style type="text/css">
+       p       { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       pre     { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       table   { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       h1      { text-align: center }
+</style>
+<title>createhdf</title>
+
+</head>
+<body>
+
+<h1 align="center">createhdf</h1>
+
+<a href="#NAME">NAME</a><br>
+<a href="#SYNOPSIS">SYNOPSIS</a><br>
+<a href="#DESCRIPTION">DESCRIPTION</a><br>
+<a href="#OPTIONS">OPTIONS</a><br>
+<a href="#BUGS">BUGS</a><br>
+<a href="#SEE ALSO">SEE ALSO</a><br>
+<a href="#AUTHOR">AUTHOR</a><br>
+
+<hr>
+
+
+<p>1</p>
+
+<h2>NAME
+<a name="NAME"></a>
+</h2>
+
+
+<p style="margin-left:11%; margin-top: 1em">createhdf
+&mdash; Create a blank IDE hard disk image in .hdf
+format</p>
+
+<h2>SYNOPSIS
+<a name="SYNOPSIS"></a>
+</h2>
+
+
+
+<p style="margin-left:11%; margin-top: 1em"><b>createhdf</b>
+[ &minus;c ] [ &minus;s ] [&minus;v <i>version</i>]
+<i>cylinders heads sectors file</i></p>
+
+<h2>DESCRIPTION
+<a name="DESCRIPTION"></a>
+</h2>
+
+
+<p style="margin-left:11%; margin-top: 1em">createhdf
+creates a blank image of an IDE hard disk in .hdf format for
+use with Sinclair ZX Spectrum emulators.</p>
+
+<h2>OPTIONS
+<a name="OPTIONS"></a>
+</h2>
+
+
+<table width="100%" border="0" rules="none" frame="void"
+       cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="3%">
+
+
+<p style="margin-top: 1em"><i>&minus;c</i></p></td>
+<td width="8%"></td>
+<td width="78%">
+
+
+<p style="margin-top: 1em">specifies that the .hdf image
+should be created in &lsquo;compact&rsquo; mode, where only
+the low byte of every word is stored in the image. This is
+useful for saving space if the hard disk image is for use
+with an interface which accesses only the low byte of every
+word.</p> </td></tr>
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="3%">
+
+
+<p><i>&minus;s</i></p></td>
+<td width="8%"></td>
+<td width="78%">
+
+
+<p>specifies that the .hdf image should <b>not</b> be
+created as a sparse file. Normally, <i>createhdf</i> will
+attempt to create the hard disk image as a &lsquo;sparse
+file&rsquo;, where the operating system knows that the file
+consists mostly of zero bytes and fills those in without
+using any space in the file. This option disables this.
+(There&rsquo;s nothing &lsquo;magic&rsquo; about this: if
+data is written to the file, it will take up space just like
+any other data; it&rsquo;s only empty space which is
+synthesised by the operating system).</p></td></tr>
+</table>
+
+<p style="margin-left:11%;"><i>&minus;v version</i></p>
+
+<p style="margin-left:22%;">specifies the version of .hdf
+image to be created. Valid values are
+&lsquo;<i>1.0</i>&rsquo; for a version 1.0 file and
+&lsquo;<i>1.1</i>&rsquo; for a version 1.1 file. Defaults to
+creating version 1.1 files.</p>
+
+<p style="margin-left:11%;"><i>&minus;h</i>,
+<i>&minus;&minus;help</i></p>
+
+<p style="margin-left:22%;">give brief usage help, listing
+available options.</p>
+
+<p style="margin-left:11%;"><i>&minus;V</i>,
+<i>&minus;&minus;version</i></p>
+
+<p style="margin-left:22%;">output version information.</p>
+
+<p style="margin-left:11%;"><i>cylinders</i></p>
+
+<p style="margin-left:22%;">specifies the number of
+cylinders in the image.</p>
+
+<table width="100%" border="0" rules="none" frame="void"
+       cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="7%">
+
+
+<p><i>heads</i></p></td>
+<td width="4%"></td>
+<td width="66%">
+
+
+<p>specifies the number of heads in the image.</p></td>
+<td width="12%">
+</td></tr>
+</table>
+
+<p style="margin-left:11%;"><i>sectors</i></p>
+
+<p style="margin-left:22%;">specifies the number of sectors
+in the image.</p>
+
+<table width="100%" border="0" rules="none" frame="void"
+       cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="6%">
+
+
+<p><i>file</i></p></td>
+<td width="5%"></td>
+<td width="78%">
+
+
+<p>specifies the file to which the image should be
+written.</p> </td></tr>
+</table>
+
+<h2>BUGS
+<a name="BUGS"></a>
+</h2>
+
+
+<p style="margin-left:11%; margin-top: 1em">None known.</p>
+
+<h2>SEE ALSO
+<a name="SEE ALSO"></a>
+</h2>
+
+
+
+<p style="margin-left:11%; margin-top: 1em"><i>fuse</i>(1),
+<i>fuse&minus;utils</i>(1), <i>libspectrum</i>(3)</p>
+
+<p style="margin-left:11%; margin-top: 1em">The .hdf format
+specification, at <i><br>
+
+http://www.zxshed.co.uk/sinclairfaq/index.php5?title=HDF_format</i>.</p>
+
+<p style="margin-left:11%; margin-top: 1em">The
+comp.sys.sinclair Spectrum FAQ, at <i><br>
+http://www.worldofspectrum.org/faq/index.html</i>.</p>
+
+<h2>AUTHOR
+<a name="AUTHOR"></a>
+</h2>
+
+
+<p style="margin-left:11%; margin-top: 1em">Philip Kendall
+(philip&minus;fuse@shadowmagic.org.uk).</p>
+<hr>
+</body>
+</html>
