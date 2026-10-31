@@ -44,7 +44,7 @@ Verification means assembling a variant build with `-D` flags and running it in 
 |------|--------------|
 | `-DSOAK` | `src/atlantis/soak.asm` plays a scripted dive and checks background restore, colours and the terrain clamp after every frame. **Green border + "OK"** = pass. Red border + reason number + frame = first failure (reasons are listed in soak.asm's header). It takes about 2 minutes. |
 | `-DTIMING_BARS` | Border colour per phase. The legend is in main.asm's header. |
-| `-DMEASURE` | Runs warmup + 512 steps, then halts and prints hex on row 2: min spare scanlines, late-step count, interrupts, loops. Options: `-DMEAS_DOWN` (hold Down, the heavy seabed case), `-DMEAS_FIRE` (tap fire every other step, so a torpedo is nearly always running), `MEAS_RATE`, `MEAS_WARMUP`, `MEAS_WINDOW`. At 25 fps the late count is high by design; judge it by interrupts = 2 per step. |
+| `-DMEASURE` | Runs warmup + 512 steps, then halts and prints hex on row 2: min spare scanlines, late-step count, max spare, interrupts. Row 3 is the same for the 25 fps idle frame (ending in loops). Options: `-DMEAS_DOWN` (hold Down, the heavy seabed case), `-DMEAS_FIRE` (tap fire every other step, so a torpedo is nearly always running), `MEAS_RATE`, `MEAS_WARMUP`, `MEAS_WINDOW`. Judge the speed by interrupts: 1 per step at 50, 2 at 25. At 50 the heavy case shows a handful of late steps that overrun by a few T-states and catch up; that count moves by 1-2 with schedule alignment alone. |
 | `-DSLACK_LINES=n` | Adds an n-scanline NOP sled. Green/red border shows whether the frame still fits. Optional `SLACK_WARMUP`. |
 | `-DSHOT_FRAME=n` | Halts after loop n for a deterministic screenshot. |
 | `-DNO_WHEEL` | Leaves the wheel bomb out, for measurement. |
@@ -66,7 +66,7 @@ After a change that touches the frame loop, sprites, scroll, stats or input, run
 6. Stats overlay, then `update_diver` / `update_fish` / `update_wheel`
 7. `spare_count` (`src/atlantis/rate.asm`) busy-waits in an exact 224-T-state loop until the interrupt. **This wait is the vsync**, and it also measures spare scanlines
 
-**50/25 fps**: every speed is written per 1/50 s. `step_ticks` is 1 or 2. At 25, the movement updates run twice and the loop waits one more interrupt. The wheel applies `step_ticks` internally, so don't call it twice.
+**50/25 fps**: every speed is written per 1/50 s. `step_ticks` is 1 or 2. At 25 each step is two television frames: the picture frame only restores, draws and copies the seabed, and `idle_tick` (the next frame) shifts the ground twice and the slow buffer once, then runs the movement twice on the one-pixel paths. `rate_apply` patches the two jumps in `main_loop` (`step_jp_shift`, `step_jp_move`) that skip the shifts and the moves on the picture frame. The wheel applies `step_ticks` internally, so don't call it twice.
 
 **Sprites**: masked, pre-shifted copies (8 shifts per frame), so drawing involves no run-time bit shifting. Each sprite has a background record (`BG_*` offsets in `src/sprite.asm`) addressed through IY. Save, draw, then restore next frame. `fastsprite.asm` is Atlantis's faster walker, which also clips at the left and right edges. The ISR only preserves AF and HL, and the fast walker relies on that.
 

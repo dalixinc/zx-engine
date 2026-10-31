@@ -101,8 +101,9 @@ entry:
 ;------------------------------------------------------------------------------
 ; main_loop - one step
 ; At 50 frames a second that is one television frame. At 25 it is two.
-; The picture frame is the 50 body: same draw, then one fast tick.
-; The idle frame only moves (no drawing), and it starts on an interrupt.
+; The picture frame only restores, draws and copies the seabed. The idle
+; frame (idle_tick) does the step's shifts and both moves, draws
+; nothing, and starts on an interrupt.
 ;------------------------------------------------------------------------------
 main_loop:
         ; The spare-scanline count already waited for the interrupt at
@@ -297,9 +298,12 @@ fish_rest_call:
         call z,wheel_restore
 .restored:
     ENDIF
+boom_hook:
         call stats_prepare      ; drop the digits if a sprite is about to
                                 ; photograph row 0. Otherwise leave them:
                                 ; the beam is about to read that row.
+                                ; boom_step while an explosion is up: it
+                                ; goes under the sprites (boom.asm).
         ld a,(lives_dirty)      ; the hearts, while no sprite is on screen
         or a
         call nz,lives_draw
@@ -363,9 +367,9 @@ fish_draw_call:
         ; The wheel is included: it can bob up to y = 0.
         call stats_overlay_if_row0
 
-        ; Same order as 50. The blit, then one shift, then the border,
-        ; then one fast tick. Nothing above the shift is extra at 50.
-        ; At 25 the idle frame does the second shift and the second tick.
+        ; At 50: the blit, one shift, the border, one move. At 25 this
+        ; frame only draws. The idle frame after it does both shifts and
+        ; both moves, so the picture has the whole frame for the copy.
     IFDEF TIMING_BARS
         ld a,CYAN
         out (ULA_PORT),a
@@ -376,6 +380,15 @@ fish_draw_call:
     ENDIF
         call draw_late
 
+        ; At 50: shift the seabed, the border, then move one pixel. At 25
+        ; this frame only draws: the idle frame shifts and moves twice.
+        ; rate_apply points these two jumps, so 50 pays 20 T-states for
+        ; them and keeps its old order. Moving the border or the digits
+        ; ahead of the shifts changed which writes the screen slowed down,
+        ; and the heavy case gained late frames.
+step_jp_shift:
+        jp step_shift           ; step_skip at 25
+step_shift:
     IFDEF TIMING_BARS
         ld a,RED
         out (ULA_PORT),a
@@ -387,13 +400,13 @@ fish_draw_call:
         ld a,(slow_phase)
         xor 1
         ld (slow_phase),a
-        jr z,.scrolled
+        jr z,step_skip
     IFDEF TIMING_BARS
         ld a,GREEN
         out (ULA_PORT),a
     ENDIF
         call scroll_shift_slow
-.scrolled:
+step_skip:
 
     IFDEF TIMING_BARS
         ld a,YELLOW
@@ -441,19 +454,13 @@ fish_draw_call:
         ; left the row. A sprite on row 0 was already handled above.
         call stats_overlay_if_clear
 
-        ; One pixel each. The second pixel, at 25, is the idle frame.
+        ; One pixel each, at 50. At 25 the idle frame moves twice.
+step_jp_move:
+        jp step_move            ; step_moved at 25
+step_move:
         call update_diver
 fish_mv:
         call update_fish
-        ; The wheel and the torpedo apply step_ticks themselves. This
-        ; frame always does one fast tick. 50 already has step_ticks = 1.
-        ld a,(step_ticks)
-        ld (step_saved),a
-        cp 2
-        jr nz,.actors
-        ld a,1
-        ld (step_ticks),a
-.actors:
         ld a,(torp_on)
         or a
         call nz,torpedo_move
@@ -468,25 +475,14 @@ fish_mv:
         or a
         call nz,torpedo_hit
         call hit_check
-        jr nc,.lived
-        ld a,(step_saved)
-        ld (step_ticks),a
-        jp game_over
-.lived:
+        jp c,game_over
     ENDIF
     ENDIF
-        ld a,(step_saved)
-        ld (step_ticks),a
-
     IFDEF SOAK
-        ; At 25 the idle tick has not run yet. The script reads the
-        ; position after the whole step.
-        ld a,(step_ticks)
-        cp 2
-        jr z,.soak_later
+        ; At 25 the script reads the position after the idle frame.
         call soak_after_update
-.soak_later:
     ENDIF
+step_moved:
     IFDEF TIMING_BARS
         ld a,BLACK
         out (ULA_PORT),a
@@ -540,7 +536,7 @@ fish_mv:
     IFNDEF TIMING_BARS
     IFNDEF SHOT_FRAME
         call spare_count
-        ld a,(step_saved)
+        ld a,(step_ticks)
         cp 2
         jr nz,.after_idle
         ld a,(spare_lines)
@@ -688,10 +684,11 @@ fish_mv:
         jp main_loop
 
 ;------------------------------------------------------------------------------
-; idle_tick - the second 1/50 second. No drawing.
-; The picture frame already shifted and moved once. This is the other
-; pixel, on the fast paths (step_ticks forced to 1). Restores step_ticks
-; from step_saved. hit_check may jump to game_over.
+; idle_tick - the second television frame of a 25 step. No drawing.
+; The picture frame only drew. This frame does the step's two 1/50
+; seconds of work: the ground moves two pixels, the slow buffer one,
+; and everything moves twice, each time on the fast one-pixel paths
+; (step_ticks is 1 while it runs). hit_check may jump to game_over.
 ; Corrupts: AF, BC, DE, HL, IX, IY
 ;------------------------------------------------------------------------------
 idle_tick:
@@ -702,16 +699,33 @@ idle_tick:
         out (ULA_PORT),a
     ENDIF
         call scroll_shift_ground
-        ld a,(slow_phase)
-        xor 1
-        ld (slow_phase),a
-        jr z,.noslow
+        call scroll_shift_ground
     IFDEF TIMING_BARS
         ld a,GREEN
         out (ULA_PORT),a
     ENDIF
         call scroll_shift_slow
-.noslow:
+        ; The buffer is now a pixel ahead of the screen: the next copy
+        ; is the one with the weed. At 50 the same phase means the same.
+        ld a,1
+        ld (slow_phase),a
+    IFDEF TIMING_BARS
+        ld a,YELLOW
+        out (ULA_PORT),a
+    ENDIF
+        call idle_move
+        call nc,idle_move
+        ld a,2
+        ld (step_ticks),a
+    IFDEF TIMING_BARS
+        ld a,BLACK
+        out (ULA_PORT),a
+    ENDIF
+        ret nc
+        jp game_over
+
+; One 1/50 second of movement. Out: carry set if that was the last life.
+idle_move:
         call update_diver
 fish_mv2:
         call update_fish
@@ -727,23 +741,17 @@ fish_mv2:
         ld a,(torp_on)
         or a
         call nz,torpedo_hit
-        call hit_check
-        jr nc,.lived
-        ld a,(step_saved)
-        ld (step_ticks),a
-        jp game_over
-.lived:
+        jp hit_check
     ENDIF
     ENDIF
-        ld a,(step_saved)
-        ld (step_ticks),a
+        or a
         ret
 
 ; Timing, sled, and shot builds have no spare_count. Open the idle
 ; frame with a real interrupt, then do the second tick and nothing else.
     IFDEF IDLE_HOLD
 idle_hold:
-        ld a,(step_saved)
+        ld a,(step_ticks)
         cp 2
         ret nz
         call wait_frame

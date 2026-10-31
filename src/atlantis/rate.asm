@@ -4,9 +4,9 @@
 ; step_ticks is how many 1/50-second television frames one game step
 ; stands in for.
 ;   50 frames a second: step_ticks = 1. The step runs every interrupt.
-;   25 frames a second: step_ticks = 2. The picture frame is one fast
-;   tick, the same work as 50. The next frame only moves, and does not
-;   draw.
+;   25 frames a second: step_ticks = 2. The picture frame only draws.
+;   The next frame (idle_tick in main.asm) shifts the seabed and moves
+;   everything twice, and does not draw.
 ; Every distance in the game is written per 1/50 second. A step moves
 ; that distance step_ticks times. Both speeds cover the same water in
 ; the same real second. 25 takes the steps in pairs, so it looks less
@@ -26,7 +26,6 @@
 
 game_rate:      db CFG_START_RATE
 step_ticks:     db 1
-step_saved:     db 1            ; the real rate while a tick forces 1
 spare_lines:    db 0            ; 0..99 shown; the true count is capped
 spare_late:     db 0            ; 1 if the step had already missed the interrupt
 spare_pic:      db 0            ; 25 fps: spare lines in the picture frame
@@ -38,18 +37,27 @@ chord_flash:    db 0            ; steps of border flash left; 0 = normal border
 
 ;------------------------------------------------------------------------------
 ; rate_init - the speed from config.asm, before the menu is shown
-; rate_apply - In: A = 50 or 25. Stores the speed and step_ticks.
-; Corrupts: AF
+; rate_apply - In: A = 50 or 25. Stores the speed and step_ticks, and
+; points main_loop's two jumps at the 50 or the 25 path.
+; Corrupts: AF, HL
 ;------------------------------------------------------------------------------
 rate_init:
         ld a,CFG_START_RATE
 rate_apply:
         ld (game_rate),a
+        push de
         cp 25
         ld a,1
+        ld hl,step_shift        ; main_loop's two jumps: shift and move
+        ld de,step_move
         jr nz,.one
         ld a,2
+        ld hl,step_skip         ; or skip both: the idle frame does them
+        ld de,step_moved
 .one:   ld (step_ticks),a
+        ld (step_jp_shift+1),hl
+        ld (step_jp_move+1),de
+        pop de
         ; The digits reprint every eight steps. A new speed should show
         ; on the next step, so the counter is set to reprint then.
         ld a,7
@@ -206,8 +214,9 @@ spare_count:
         ld a,h
         or a
         jr z,.store
-        ld l,255                ; more than a byte: show the cap
-        jr .store8
+        ld a,255                ; more than a byte: show the cap. This was
+        jr .store8              ; LD L, which left H (1) in A, so a nearly
+                                ; empty frame read as 1 spare line.
 .none:  ld a,1
         ld (spare_late),a
         ld hl,0
