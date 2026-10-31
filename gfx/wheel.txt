@@ -1,12 +1,15 @@
-; wheel.txt - the Trigon wheel bomb, 12x12, drawn as a PLACEHOLDER.
+; wheel.txt - the Trigon wheel bomb, 12x12.
 ;
-;   #  = ink pixel       (the rim, the legs, and the T)
+;   #  = ink pixel       (the rim, the spokes, and the T)
 ;   .  = transparent     (the sea shows through)
 ;
-; There is no solid hub. The T has a one-pixel gap of water all the way
-; round it, so the sea (and, where they overlap, the diver or the fish)
-; shows between the mark and the rim. The bomb's own ink colour is what
-; makes the T readable. That colour is chosen per bomb in wheel.asm.
+; The rim is one pixel thick and sits in from the edges, so the
+; wheel reads as a circle with room around it. The spokes stand
+; outside that circle. One spoke is three pixels wide. The other
+; three are a single pixel. That difference is what shows the turn.
+;
+; There is no solid hub. The T has a one-pixel gap of water all the
+; way round it, so the sea shows between the mark and the rim.
 ;
 ; Edit any row. Every frame must stay 12 characters wide and 12 rows
 ; tall, using only those two characters. Blank lines and lines that
@@ -15,11 +18,11 @@
 ; A 12-pixel row does not fill a whole number of bytes. Shifted right
 ; by 0 to 4 it fits in 2 bytes. Shifted by 5, 6 or 7 it spills into a
 ; third. The converter stores each copy at its own width, and writes
-; wheel_shift_bytes so the drawing code knows which.
+; wheel_shift_bytes so the drawing code knows which. The width did
+; not change, so the draw still costs the same.
 ;
 ; mirror off
-;   The fish and the diver are mirrored to face left. This sprite is
-;   not: the T has to stay a T, not a backwards one. Only the legs
+;   The T has to stay a T, not a backwards one. Only the spokes
 ;   change from frame to frame.
 ;
 ; What is fixed in every frame
@@ -28,77 +31,72 @@
 ;       #####       top bar, five pixels including the serifs
 ;       # # #       the end pixels drop down one row (the serifs),
 ;         #         and the stem is one pixel wide
-;         #
 ;        ###        a small foot, three pixels wide
 ;   On this grid the bar is columns 3-7 of row 4, the dropped serifs
 ;   are row 5 columns 3 and 7, the stem is column 5 of rows 5-7, and
-;   the foot is row 8 columns 4-6. Columns and rows count from 0 at
-;   the top left. Row 3, row 9, and the pixels either side of the bar
-;   and the foot are water, so the mark never touches the rim.
+;   the foot is row 8 columns 4-6. Columns and rows count from 0.
 ;
 ; What rotates
-;   The legs around the rim, 90 degrees counter-clockwise each frame.
-;   That is the way a wheel turns when it rolls to the left. Four
-;   frames, not eight: the diagonal positions would be another copy
-;   of the whole sprite, and four is enough to read the spin. One
-;   leg is a wide block (the tread). The other three are short. A
-;   symmetric plus-sign would look the same after a quarter turn.
+;   The spokes, 90 degrees counter-clockwise each frame. That is the
+;   way a wheel turns when it rolls to the left. Four frames, not
+;   eight. A symmetric plus-sign would look the same after a quarter
+;   turn, so one spoke is wide and the others are stubs.
 ;
-; Frame 0  wide leg up
-; Frame 1  wide leg to the left
-; Frame 2  wide leg down
-; Frame 3  wide leg to the right
+; Frame 0  wide spoke up
+; Frame 1  wide spoke to the left
+; Frame 2  wide spoke down
+; Frame 3  wide spoke to the right
 ;
 mirror off
-frame 0  wide leg up
-....####....
-...######...
-..#......#..
-.#........#.
+frame 0  wide spoke up
+....###.....
+...#####....
+..##...##...
+.##.....##..
 .#.#####..#.
-##.#.#.#..##
+.#.#.#.#..#.
 ##...#....##
 .#...#....#.
 .#..###...#.
-.#........#.
-..#......#..
-.....##.....
-frame 1  wide leg left
-.....##.....
-...######...
-..#......#..
-.#........#.
-##.#####..#.
-##.#.#.#..##
+.###...###..
+...#####....
+.....#......
+frame 1  wide spoke left
+.....#......
+...#####....
+..##...##...
+.##.....##..
+.#.#####..#.
+##.#.#.#..#.
 ##...#....##
 ##...#....#.
 .#..###...#.
-.#........#.
-..#......#..
-.....##.....
-frame 2  wide leg down
-.....##.....
-...######...
-..#......#..
-.#........#.
+.###...###..
+...#####....
+.....#......
+frame 2  wide spoke down
+.....#......
+...#####....
+..##...##...
+.##.....##..
 .#.#####..#.
-##.#.#.#..##
+.#.#.#.#..#.
 ##...#....##
 .#...#....#.
 .#..###...#.
-.#........#.
-..#......#..
-....####....
-frame 3  wide leg right
-.....##.....
-...######...
-..#......#..
-.#........#.
-.#.#####..##
-##.#.#.#..##
+.###...###..
+...#####....
+....###.....
+frame 3  wide spoke right
+.....#......
+...#####....
+..##...##...
+.##.....##..
+.#.#####..#.
+.#.#.#.#..##
 ##...#....##
 .#...#....##
 .#..###...#.
-.#........#.
-..#......#..
-.....##.....
+.###...###..
+...#####....
+.....#......
