@@ -276,25 +276,138 @@ def paint():
     fish = load_frames("gfx/fish.txt")
     torpedo = load_frames("gfx/torpedo.txt")
 
-    # The diver, three times his size, firing at a bomb.
-    dx, dy = 24, 89
-    sprite(diver[1], dx, dy, WHITE | BRIGHT, scale=3)
-    sprite(torpedo[0], dx + 24 * 3 + 14, dy + 12 * 3, WHITE | BRIGHT, scale=3)
-    for i, x in enumerate(range(dx + 75, dx + 86, 4)):
-        plot(x, dy + 37 + (i & 1) * 2, WHITE | BRIGHT)
+    # The diver, firing at a bomb.
+    dx, dy = 24, 92
+    mx, my = big_diver(dx, dy)
+    big_torpedo(mx + 14, my - 2)
+    for i, x in enumerate(range(mx + 2, mx + 12, 4)):
+        plot(x, my - 1 + (i & 1) * 2, WHITE | BRIGHT)
 
     # His bubbles, rising to the surface. Row 10 is left alone.
-    for x, y, r in ((dx + 64, 92, 1), (dx + 62, 72, 2), (dx + 68, 62, 3)):
+    for x, y, r in ((dx + 56, 91, 1), (dx + 60, 72, 2), (dx + 54, 62, 3)):
         circle(x, y, r, WHITE | BRIGHT)
 
     # Bombs: one in the torpedo's path, one in the lit water above.
-    sprite(wheel[2], 150, dy + 12 * 3 + 3 - 12, BLACK)
+    sprite(wheel[2], 150, my - 12, BLACK)
     sprite(wheel[0], 136, 56, BLACK)
 
     # Fish, in the game's own size.
     sprite(fish[0], 120, 156, YELLOW, scale=1)
     sprite(fish[1], 40, 62, BLUE | BRIGHT, scale=1, mirror=True)
     sprite(fish[0], 216, 66, BLUE | BRIGHT, scale=1, mirror=True)
+
+
+# --- The big diver ----------------------------------------------------------------
+# The game's diver is 24 x 15, drawn to read at 1:1. Blown up three times
+# it turns to blocks, so this screen has its own, 64 x 38, in the same
+# pose: facing right, helmet at the front, air tank on his back, legs
+# kicking behind, and the jet unit held out under the helmet with its
+# propeller at the back and the dark mouth at the nose. He is white on
+# the game's blue water. Every detail is a line of that blue cut
+# through the white, so no cell needs a third colour.
+
+def disc(cx, cy, rx, ry, c):
+    for y in range(cy - ry, cy + ry + 1):
+        for x in range(cx - rx, cx + rx + 1):
+            if ((x - cx) / (rx + 0.5)) ** 2 + ((y - cy) / (ry + 0.5)) ** 2 <= 1:
+                plot(x, y, c)
+
+
+def thick_line(x0, y0, x1, y1, w, c):
+    n = max(abs(x1 - x0), abs(y1 - y0), 1)
+    for i in range(n + 1):
+        x = x0 + (x1 - x0) * i / n
+        y = y0 + (y1 - y0) * i / n
+        disc(round(x), round(y), w // 2, w // 2, c)
+
+
+def polygon(points, c):
+    ys = [y for _, y in points]
+    for y in range(min(ys), max(ys) + 1):
+        xs = []
+        for (xa, ya), (xb, yb) in zip(points, points[1:] + points[:1]):
+            if (ya <= y < yb) or (yb <= y < ya):
+                xs.append(xa + (y - ya) * (xb - xa) / (yb - ya))
+        xs.sort()
+        for xa, xb in zip(xs[::2], xs[1::2]):
+            for x in range(round(xa), round(xb) + 1):
+                plot(x, y, c)
+
+
+def big_diver(ox, oy):
+    """Top-left at ox, oy. Returns where the jet unit's mouth is."""
+    ink, cut = WHITE | BRIGHT, MID
+
+    def P(x, y):
+        return (ox + x, oy + y)
+
+    # Legs, the upper one kicked up and the lower one down, then fins
+    # that widen away from the ankles.
+    # A flutter kick: the upper leg bent at the knee, the lower straight.
+    thick_line(*P(24, 16), *P(17, 12), 6, ink)
+    thick_line(*P(17, 12), *P(9, 14), 5, ink)
+    thick_line(*P(24, 23), *P(9, 25), 6, ink)
+    polygon([P(10, 11), P(10, 16), P(0, 12), P(0, 5)], ink)
+    polygon([P(10, 23), P(10, 28), P(0, 33), P(0, 26)], ink)
+    for x0, y0, x1, y1 in ((9, 13, 1, 9), (9, 25, 1, 29)):
+        thick_line(*P(x0, y0), *P(x1, y1), 1, cut)      # the fin's rib
+    for y in range(11, 16):
+        plot(*P(10, y), cut)                            # ankle from fin
+    for y in range(23, 28):
+        plot(*P(10, y), cut)
+
+    # Body, and the tank along his back.
+    disc(*P(35, 19), 13, 7, ink)
+    disc(*P(34, 9), 13, 4, ink)
+    fill(*P(47, 7), 3, 4, ink)                          # the valve
+    for x in range(22, 47):
+        plot(*P(x, 13), cut)                            # tank from body
+    for x in (28, 40):
+        for y in range(6, 13):
+            plot(*P(x, y), cut)                         # its straps
+    for y in range(14, 26):
+        plot(*P(26, y), cut)                            # the belt
+    fill(*P(25, 18), 3, 3, cut)
+    plot(*P(26, 19), ink)                               # the buckle
+
+    # Helmet, with a collar line and a round porthole.
+    disc(*P(54, 15), 9, 9, ink)
+    for y in range(9, 24):
+        plot(*P(46, y), cut)
+    disc(*P(56, 14), 5, 5, cut)
+    disc(*P(56, 14), 3, 3, ink)
+    disc(*P(56, 14), 2, 2, cut)                         # the glass
+    plot(*P(55, 13), ink)                               # a glint
+
+    # The arm, down to the jet unit, then the jet unit itself.
+    thick_line(*P(42, 22), *P(48, 28), 5, ink)
+    disc(*P(52, 30), 11, 3, ink)
+    fill(*P(43, 27), 20, 7, ink)
+    for x in (48, 51, 54):
+        for y in range(29, 32):
+            plot(*P(x, y), cut)                         # vents
+    fill(*P(62, 29), 2, 3, cut)                         # the dark mouth
+    # The propeller at the back: a hub and two blades.
+    fill(*P(39, 29), 4, 3, ink)
+    fill(*P(38, 24), 2, 13, ink)
+    plot(*P(38, 30), cut)
+    return P(64, 30)
+
+
+def big_torpedo(x, y):
+    """18 x 7, nose to the right, tail fins at the left."""
+    ink = WHITE | BRIGHT
+    fill(x + 3, y + 2, 12, 3, ink)                      # the body
+    fill(x + 15, y + 2, 2, 3, ink)
+    plot(x + 17, y + 3, ink)                            # the nose
+    fill(x + 4, y + 1, 10, 1, ink)
+    fill(x + 4, y + 5, 10, 1, ink)
+    for dx, dy in ((0, 0), (1, 0), (1, 1), (2, 1), (0, 6), (1, 6), (1, 5), (2, 5)):
+        plot(x + dx, y + dy, ink)                       # the fins
+    fill(x, y + 3, 3, 1, ink)
+    plot(x + 12, y + 3, MID)                            # a band near the nose
+    plot(x + 12, y + 2, MID)
+    plot(x + 12, y + 4, MID)
 
 
 def circle(cx, cy, r, c):
