@@ -35,8 +35,14 @@ game_over:
 ; Does not move the diver, the fish or the bomb. draw_scenery rebuilds
 ; the seabed from column 0, which is what the player sees behind the words.
 ; Corrupts: AF, BC, DE, HL, IX
+;
+; Symbol Shift + P jumps here from inside chords_poll, so its return
+; address is still on the stack. Nothing here returns, so the stack is
+; simply started again. Without that, each trip to the menu left two
+; bytes behind. At boot SP is already STACK_TOP, so it changes nothing.
 ;------------------------------------------------------------------------------
 enter_menu:
+        ld sp,STACK_TOP
     IFDEF SOAK
         ; Phase 2 is the play test that tries P on its own. That press
         ; must not arrive here. The real press sets the allow flag first.
@@ -296,13 +302,14 @@ leave_key_p:
         ld a,(soak_p)
         cp $FF
         jr z,.hw
-        ret
+        neg                     ; as stats_key_sym: through the real mask
+        jr .mask
 .hw:
     ENDIF
         ld bc,ROW_P_Y * 256 + ULA_PORT
         in a,(c)
         cpl
-        and %00000001
+.mask:  and %00000001
         ret
 
 leave_arm:

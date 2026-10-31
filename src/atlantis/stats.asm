@@ -93,18 +93,30 @@ stats_arm:
 ; The two keys are on different half-rows, so this is not a ghost.
 ; Bit 1 of the space row is Symbol Shift. Bit 1 of the A row is S.
 ; A key reads as 0 when it is down.
+;
+; Symbol Shift comes back as $FF (every bit set), not as its own bit.
+; The chords AND it with the letter's bit: S is bit 1, F is bit 3, P is
+; bit 0. Returned as bit 1 alone, only S survived the AND, and F and P
+; never fired.
+;
+; The soak's 0 or 1 goes through the same masks as the keyboard: NEG
+; turns 1 into $FF, a row with every key down. So the soak tests the
+; real masks, and a wrong bit fails it.
 stats_key_sym:
     IFDEF SOAK
         ld a,(soak_sym)         ; $FF = really read the keyboard
         cp $FF
         jr z,.hw
-        ret                     ; soak passed 0 or 1
+        neg                     ; soak passed 0 or 1: 1 is every key down
+        jr .mask
 .hw:
     ENDIF
         ld bc,ROW_SPC_B * 256 + ULA_PORT
         in a,(c)
         cpl
-        and %00000010
+.mask:  and %00000010
+        ret z
+        ld a,$FF                ; down: every bit, so any letter's bit survives
         ret
 
 stats_key_s:
@@ -112,13 +124,14 @@ stats_key_s:
         ld a,(soak_s)
         cp $FF
         jr z,.hw
-        ret
+        neg
+        jr .mask
 .hw:
     ENDIF
         ld bc,ROW_A_G * 256 + ULA_PORT
         in a,(c)
         cpl
-        and %00000010
+.mask:  and %00000010
         ret
 
 ;------------------------------------------------------------------------------

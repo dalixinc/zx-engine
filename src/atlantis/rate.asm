@@ -28,6 +28,7 @@ step_ticks:     db 1
 spare_lines:    db 0            ; 0..99 shown; the true count is capped
 spare_late:     db 0            ; 1 if the step had already missed the interrupt
 rate_prev:      db 0            ; last frame's Symbol Shift + F
+chord_flash:    db 0            ; steps of border flash left; 0 = normal border
 
 ;------------------------------------------------------------------------------
 ; rate_init - the speed from config.asm, before the menu is shown
@@ -54,7 +55,11 @@ rate_apply:
 ; Symbol Shift is one key, so it is read once and shared. P, F and S are
 ; three more reads. Reading Shift again for each chord was a scanline
 ; the heavy frame does not have.
-; P returns to the menu. F flips the speed. S shows or hides the digits.
+; P returns to the menu. F flips the speed and switches the digits on,
+; so the new "25/s" or "50/s" shows. S shows or hides the digits.
+; F and S also start a short white/black border flash (main_loop's
+; heartbeat), so you can see the chord was heard. P needs no flash: the
+; menu appearing is the answer.
 ; Each one fires on the edge, the moment both keys go down. Holding does
 ; not fire again. The key on its own is not the chord.
 ; Leave is checked first, so a return to the menu does not also flip the
@@ -80,6 +85,10 @@ chords_poll:
         ld a,25
 .setrate:
         call rate_apply
+        ld a,1
+        ld (stats_on),a         ; show the new speed on the stat line
+        ld a,CFG_CHORD_FLASH
+        ld (chord_flash),a
 .stats: call stats_key_s
         and d
         ld hl,stats_chord_prev
@@ -88,6 +97,8 @@ chords_poll:
         ld a,(stats_on)
         xor 1
         ld (stats_on),a
+        ld a,CFG_CHORD_FLASH
+        ld (chord_flash),a
         ret
 
 ; Out: A nonzero if F is down. F is the fourth key on the A-S-D-F-G row,
@@ -97,13 +108,14 @@ rate_key_f:
         ld a,(soak_f)
         cp $FF
         jr z,.hw
-        ret
+        neg                     ; as stats_key_sym: through the real mask
+        jr .mask
 .hw:
     ENDIF
         ld bc,ROW_A_G * 256 + ULA_PORT
         in a,(c)
         cpl
-        and %00001000
+.mask:  and %00001000
         ret
 
 ;------------------------------------------------------------------------------

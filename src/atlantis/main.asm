@@ -455,15 +455,27 @@ SLACK_WARMUP    equ 0
         ; Heartbeat. The digits are hidden by default, so the border is
         ; what shows the frame loop is alive. rrca x3 is / BORDER_FRAMES.
         ; After a hit, hit_flash counts down and the border flashes red
-        ; and black instead, four steps each. With no flash this costs
-        ; 29 T-states more than the heartbeat did.
+        ; and black, four steps each. Otherwise, after a Symbol Shift
+        ; chord, chord_flash blinks it white and black, two steps each.
+        ; A hit wins. With neither flash this costs about 58 T-states
+        ; more than the plain heartbeat did.
         ld a,(hit_flash)
         or a
-        jr z,.beat
+        jr z,.nohit
         dec a
         ld (hit_flash),a
         and 4
         ld a,RED
+        jr nz,.border
+        xor a                   ; BLACK
+        jr .border
+.nohit: ld a,(chord_flash)
+        or a
+        jr z,.beat
+        dec a
+        ld (chord_flash),a
+        and 2
+        ld a,WHITE
         jr nz,.border
         xor a                   ; BLACK
         jr .border
