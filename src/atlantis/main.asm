@@ -926,8 +926,16 @@ DATA_LENGTH     equ data_end - data_start
     IFNDEF SLACK_LINES
     IFNDEF SHOT_FRAME
     IFNDEF MEASURE
+        ; The loading screen goes straight into screen memory: the BASIC
+        ; loads it with LOAD ""SCREEN$, which is a CODE block of 6912
+        ; bytes at 16384. tools/mkloadscreen.py draws it from gfx/*.txt.
+        ORG SCREEN
+loading_screen:
+        INCBIN "../../gfx/loading.scr"
+        ASSERT $ - loading_screen == 6912, "a Spectrum screen is 6912 bytes"
         EMPTYTAP "build/atlantis.tap"
         SAVETAP  "build/atlantis.tap", BASIC, "atlantis", basic_start, BASIC_LENGTH, 10
+        SAVETAP  "build/atlantis.tap", CODE, "atlantis", loading_screen, 6912
         SAVETAP  "build/atlantis.tap", CODE, "atlantc", code_start, CODE_LENGTH
         SAVETAP  "build/atlantis.tap", CODE, "atlantd", data_start, DATA_LENGTH
         SAVESNA  "build/atlantis.sna", entry

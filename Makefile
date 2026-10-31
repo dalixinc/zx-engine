@@ -43,7 +43,7 @@ DEMO_SNA  := build/diver.sna
 
 all: $(TAP)
 
-$(TAP) $(SNA): $(ATL_SRC) $(ATL_GFX) | build
+$(TAP) $(SNA): $(ATL_SRC) $(ATL_GFX) gfx/loading.scr | build
 	$(ASM) --nologo --fullpath=off --lst=build/atlantis.lst --sym=build/atlantis.sym src/atlantis/main.asm
 
 demo: $(DEMO_TAP)
@@ -58,6 +58,11 @@ build:
 # committed too, so you only need Python if you change the .txt art.
 gfx/%.asm: gfx/%.txt tools/gfx2asm.py
 	$(PYTHON) tools/gfx2asm.py $< $@ $*
+
+# The loading screen, drawn from the same sprites. Committed, like the
+# .asm above, so the tape builds without Python.
+gfx/loading.scr: tools/mkloadscreen.py gfx/diver.txt gfx/fish.txt gfx/wheel.txt gfx/torpedo.txt
+	$(PYTHON) tools/mkloadscreen.py $@
 
 run: $(TAP)
 	$(EMU) --machine 48 --auto-load --traps --fastload $(TAP)

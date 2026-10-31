@@ -33,7 +33,9 @@ New to the scrolling ground? Read [docs/SCROLLING.md](docs/SCROLLING.md)**
 | Speed  | Symbol Shift + F       |             |          |
 | Menu   | Symbol Shift + P       |             |          |
 
-The tape opens on a start screen: `1` starts the game, `2` swaps between
+The tape shows a loading screen while the game loads (it is drawn from
+the game's own sprites by `tools/mkloadscreen.py`). The game then opens
+on a start screen: `1` starts the game, `2` swaps between
 50 and 25 frames a second. The choice is kept when you come back to the
 menu.
 
@@ -101,7 +103,7 @@ src/scenery.asm          the demo's water and strip colours
 src/scroll.asm           the demo's two 16-pixel silhouettes
 src/diver.asm            the player: movement, clamping, facing, kick animation
 src/fish.asm             the fish: swims left/right on its own (second sprite)
-src/loader.asm           BASIC loader: CLEAR / LOAD ""CODE / RANDOMIZE USR 32768
+src/loader.asm           BASIC loader: CLEAR / LOAD ""SCREEN$ / LOAD ""CODE x2 / RANDOMIZE USR 32768
 gfx/fish.txt             fish art as ASCII (# ink, - paper, . transparent)
 gfx/fish.asm             GENERATED from fish.txt: 8 shifts x 2 frames x 2 facings
 gfx/diver.txt            diver art, 24 x 15, 3 frames, facing right
@@ -110,9 +112,11 @@ gfx/wheel.txt            wheel bomb, 12 x 12, 4 frames, mirror off (the T stays 
 gfx/wheel.asm            GENERATED from wheel.txt: 8 shifts x 4 frames, one facing
 gfx/torpedo.txt          torpedo, 7 x 2, one frame
 gfx/torpedo.asm          GENERATED from torpedo.txt: 8 shifts x 1 frame x 2 facings
+gfx/loading.scr          GENERATED loading screen, 6912 bytes (tools/mkloadscreen.py)
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
 tools/gfx2asm.py         ASCII art -> pre-shifted masked .asm (Python 3)
+tools/mkloadscreen.py    draws gfx/loading.scr from the sprites (Python 3)
 tools/read-debug.py      reads the demo's X/Y/IMG hex off a screenshot
 tools/make-diver-montage.py  build/montage-diver.png from the art + test shots
 tools/                   also: headless screenshot / input / sprite tests
@@ -121,10 +125,10 @@ Makefile                 Linux / WSL build
 build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
-Atlantis memory: the tape has two code blocks. The instructions are at
-`$8000-$A3DE` (`code_end` is `$A3DF`, 9,183 bytes) and must stay below
-`$C000`. The pictures, menu words and tables are at `$C000-$E714`
-(10,005 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+Atlantis memory: after the loading screen, the tape has two code blocks. The instructions are at
+`$8000-$A462` (`code_end` is `$A463`, 9,315 bytes) and must stay below
+`$C000`. The pictures, menu words and tables are at `$C000-$E368`
+(9,065 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
 A build prints both ends (`atlantis code_end`, `atlantis data_end`), and
 the `ASSERT`s at the end of `src/atlantis/main.asm` stop it if a block
 runs into the next. The wheel bomb is 12 by 12. A shifted row is 2 bytes for shifts 0 to 4
@@ -142,7 +146,8 @@ Engine Demo 1 is smaller: `code_end` is `$A928` (10,536 bytes) and its two
 buffers are `$F000-$F3FF`.
 
 Graphics: `make` regenerates `gfx/fish.asm`, `gfx/diver.asm`,
-`gfx/wheel.asm` and `gfx/torpedo.asm` from the `.txt` art with Python 3 when the art changes. The
+`gfx/wheel.asm` and `gfx/torpedo.asm` from the `.txt` art with Python 3 when the art changes,
+and redraws `gfx/loading.scr` when the art or `tools/mkloadscreen.py` changes. The
 generated files are committed, so Windows users can build with `build.bat`
 without Python. After editing the art, run e.g.
 `python tools\gfx2asm.py gfx\wheel.txt gfx\wheel.asm wheel` first. A line
@@ -192,6 +197,18 @@ choices include 2x, 3x, 4x, hq3x and advmame3x. To make that permanent, add
 `export EMU="fuse -g 3x"` to `~/.bashrc`, or set the filter in Fuse's Options
 menu and choose Options > Save, which writes `~/.fuserc`. `--full-screen`
 works only with the SDL build (`fuse-sdl`).
+
+`make run` loads the tape in a moment, so the loading screen only flashes
+past. To watch it build up line by line at real tape speed, about 100
+seconds, turn off Fuse's tape traps and fast loading:
+
+```
+# Linux
+fuse --machine 48 --no-traps --no-fastload -g 3x build/atlantis.tap
+
+# Windows
+windows-tools/fuse/fuse.exe --machine 48 --no-traps --no-fastload --graphics-filter 3x build/atlantis.tap
+```
 
 ## Set up on Windows
 
