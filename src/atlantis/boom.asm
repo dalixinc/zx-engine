@@ -247,11 +247,10 @@ boom_show_fish:
         jp fish_begin_wait
 
 ;------------------------------------------------------------------------------
-; fish_hit - the fish against the diver. No life is lost.
-; torpedo_fish - a running torpedo against the fish. The torpedo is spent.
-; fish_hit is the burst, and it is only reached when the bomb is away.
-; fish_cheap is the same touch while a bomb is on screen: the fish
-; vanishes, which is cheaper than drawing the burst on that frame.
+; fish_hit - the fish against the diver, bomb away. Costs a life.
+; fish_cheap - the same touch while a bomb is showing. Costs a life.
+; fish_aside - the bomb already hit him; only the fish dies.
+; torpedo_fish - a shot. The fish dies and he does not.
 ;------------------------------------------------------------------------------
 fish_hit:
         ld a,(fish_busy)
@@ -262,7 +261,8 @@ fish_hit:
         ret nz
         call fish_touch
         ret nc
-        jp boom_at_fish
+        call boom_at_fish
+        jp diver_hurt
 
 ; Out: carry set if the diver overlaps the fish. Corrupts AF, B.
 fish_touch:
@@ -280,6 +280,12 @@ fish_touch:
         ret
 
 fish_cheap:
+        call fish_aside
+        ret nc
+        jp diver_hurt
+
+; Out: carry set if a fish was flashing. Carry clear if not touching.
+fish_aside:
         ld a,(diver_y)
         cp FISH_SWIM_Y + FISH_HEIGHT
         ret nc                  ; he is below the fish; the usual heavy frame
@@ -288,7 +294,9 @@ fish_cheap:
         ret nz
         call fish_touch
         ret nc
-        jp fish_flash_begin
+        call fish_flash_begin
+        scf
+        ret
 
 torpedo_fish:
         ld a,(fish_busy)

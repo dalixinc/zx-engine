@@ -96,8 +96,15 @@ hit_check:
 
         call wheel_remove
         call boom_at_bomb
-        call fish_cheap         ; a fish in the same place goes too
-        ld a,60                 ; the x game_reset starts him on
+        call fish_aside         ; a fish in the same place goes too
+        jp diver_hurt
+
+; One column in from the left edge. DIVER_MIN_X is 0.
+DIVER_HIT_X     equ DIVER_MIN_X + 8
+
+; Out: carry set if that was the last life.
+diver_hurt:
+        ld a,DIVER_HIT_X
         ld (diver_x),a
         ld a,CFG_HIT_FLASH
         ld (hit_flash),a
@@ -106,7 +113,7 @@ hit_check:
         ld hl,lives
         dec (hl)
         jr z,.over
-        or a                    ; lives left: carry clear
+        or a
         ret
 .over:  scf
         ret

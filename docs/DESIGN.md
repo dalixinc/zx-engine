@@ -53,18 +53,18 @@ wheel bomb it touches, and is spent. Another cannot be launched until
 
 A hit on a bomb, from the torpedo or from the diver, plays a short
 explosion where the bomb was. The bomb is already gone, so the
-explosion is drawn instead of it. The fish bursts the same way if it meets the diver or a torpedo while
-the bomb is away, and the diver does not lose a life for that. If a
-bomb is already on screen, the fish stops and flashes yellow and red,
-then goes. Either way a new fish swims in from the right after a short
-pause. A bomb hit still costs a life, and puts him back at his start. The burst is four pictures, lined up on a byte, and it stays
+explosion is drawn instead of it. Touching the fish costs a life, the same as touching a bomb: the
+border flashes red and he is put back one column in from the left.
+Shooting the fish does not cost a life. While a bomb is away, the fish
+plays the burst. While a bomb is on screen, the fish stops and flashes
+yellow and red, then goes. A new fish swims in from the right after a
+short pause. The burst is four pictures, lined up on a byte, and it stays
 put while the sea scrolls.
 
-The tape starts at 25 frames a second. The picture frame does the
-same draw and the same one tick as 50. The next television frame
-moves again and does not draw. Key 2 on the menu switches to 50,
-one step every television frame. Symbol Shift + F does the same
-during play.
+The tape starts at 50 frames a second. Key 2 on the menu switches
+to 25, one step every two television frames, and Symbol Shift + F
+does the same during play. At 25 the picture is drawn in the first
+of those frames and the second only moves.
 During play, Symbol Shift + S shows the stat line, Symbol Shift + F
 switches the speed, and Symbol Shift + P returns to the menu. Each
 chord fires once, on the press. The key alone does nothing. S and F
