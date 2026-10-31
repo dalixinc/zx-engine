@@ -43,6 +43,18 @@ CFG_HIT_FLASH       equ 32
 ; second, half a second at 25. 0 turns the blink off.
 CFG_CHORD_FLASH     equ 12
 
+; Television frames before another torpedo can be launched.
+; frame_count ticks once per interrupt, so 48 is about a second
+; at either game speed. One torpedo at a time already applies.
+; This is the extra wait, measured from the launch, and it runs
+; while that shot is still in flight. 0 is a fresh press with
+; no wait. A shot that crosses from the left of the screen takes
+; most of this second, so the wait is felt on a short shot, from
+; the right, rather than as a pause after every one.
+; The check is done only when fire is down. A frame with fire up
+; does not pay for it: the heavy seabed has one scanline spare.
+CFG_FIRE_COOLDOWN   equ 48
+
 ; --- The wheel bomb, the first enemy type ------------------------------------
 ; Bob height: how many pixels the bomb swings above its middle, and the
 ; same number below. 6 is a gentle bob. A bigger number is a taller swing.

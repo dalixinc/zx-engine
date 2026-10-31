@@ -794,22 +794,27 @@ are listed at the top of `src/atlantis/soak.asm`. The checks walk the
 whole screen, so this snapshot runs slower than the game; give it a
 couple of minutes. The two photographs (the seabed, and the title
 rows) are 768 bytes each and sit at `$F300`, which the game leaves
-empty. The checker itself is not on the tape. With the 12 by 12 wheel
-in the program it no longer fits under `$C000` (the soak build's
-`code_end` is `$C4EF`), so that build is allowed past `$C000` the same
-way the spare-scanline sled is. The bytes there are not slowed by the
-display. The tape build is still checked, and it stops at `$BF93`.
-The run with the wheel bomb finished green, with `OK`: the five wheel
-situations happened, and the title rows still matched the first frame.
+empty. The checker itself is not on the tape. The soak build's
+`code_end` is `$ABF1`, still under `$C000`. The tape build is checked
+separately and stops at `$A3DF`. The run with the wheel bomb finished
+green, with `OK`: the five wheel situations happened, and the title
+rows still matched the first frame.
 
 ## Memory
 
+The tape has two code blocks. Instructions are the first. Pictures,
+words and tables are the second, assembled at `$C000` and not mixed
+in with the code. A build prints both ends.
+
 | region            | address        | what |
 |-------------------|----------------|------|
-| code and data     | `$8000-$BF92`  | `code_end` is `$BF93` (16,275 bytes) |
+| instructions      | `$8000-$A3DE`  | `code_end` is `$A3DF` (9,183 bytes) |
+| (free)            | `$A3DF-$BFFF`  | |
+| graphics and text | `$C000-$E714`  | `data_end` is `$E715` (10,005 bytes) |
+| (free)            | `$E715-$EFFF`  | |
 | slow buffer       | `$F000-$F1FF`  | weed then sand, 16 x 32, not on the tape |
 | ground buffer     | `$F200-$F2FF`  | 8 x 32 |
-| (free)            | `$F300-$F9FF`  | |
+| (free)            | `$F300-$F9FF`  | the soak photographs use `$F300` |
 | row address table | `$FA00-$FB7F`  | built at start-up |
 | stack             | grows down from `$FDFC` | must not reach `$FB80` |
 | `JP isr`          | `$FDFD`        | |
