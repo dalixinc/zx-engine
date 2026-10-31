@@ -29,10 +29,16 @@ The diver swims. A fish crosses the water on its own. The seabed
 scrolls in parallax: black ground every frame, yellow sand and green
 weed every other frame.
 
-The wheel bomb is the first Trigon. One is on screen at a time. It
-drifts left, bobs, and spins. It can hit the diver. He has three lives,
-shown as hearts. The last life returns to the menu, which says
-GAME OVER.
+The first Trigon on screen is the pulsar bomb. One is on screen at a
+time. It drifts left, bobs, and pulses. It can hit the diver. He has
+three lives, shown as hearts. The last life returns to the menu, which
+says GAME OVER.
+
+Two more bombs are drawn and stored, and not on screen yet. The
+partial wheel rocks part of the way round. The full wheel turns all
+the way. The order later is pulsar, then the partial wheel, then the
+full wheel. Their pictures are `gfx/wheel-partial.txt` and
+`gfx/wheel-full.txt`.
 
 Fire launches one torpedo, along the row he is facing. It destroys a
 wheel bomb it touches, and is spent. Another cannot be launched until
