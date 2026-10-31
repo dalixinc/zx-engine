@@ -6,3 +6,4 @@ build/*
 # sjasmplus source/binary folders if unpacked here: never commit them
 sjasmplus-*
 __pycache__/
+build/atlantis.tap build/diver.tap
