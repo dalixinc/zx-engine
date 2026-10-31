@@ -34,7 +34,7 @@ Windows: `build.bat` / `build.bat run` / `build.bat demo`.
 
 `build/atlantis.tap`, `build/diver.tap` and `build/*.png` are **committed**. Rebuilding changes the tracked tape, and PRs here include the rebuilt `.tap`. To check a build without touching the tree, assemble a `git archive HEAD` copy somewhere else. `SAVETAP` paths are relative to the cwd.
 
-Graphics: `gfx/*.txt` (ASCII art: `#` ink, `-` paper, `.` transparent; `mirror off` skips the left-facing copy) is turned into `gfx/*.asm` by `tools/gfx2asm.py`. The generated `.asm` files are committed so Windows builds don't need Python. `make` regenerates them when the `.txt` changes.
+Graphics: `gfx/*.txt` (ASCII art: `#` ink, `-` paper, `.` transparent; `mirror off` skips the left-facing copy) is turned into `gfx/*.asm` by `tools/gfx2asm.py`. The generated `.asm` files are committed so Windows builds don't need Python. `make` regenerates them when the `.txt` changes. The tape's loading screen, `gfx/loading.scr` (6912 bytes, committed), is drawn from the same art by `tools/mkloadscreen.py`, which paints at full colour, cuts each 8x8 cell to two colours, and prints any cell that clashed.
 
 ## Testing: there is no unit-test framework
 
