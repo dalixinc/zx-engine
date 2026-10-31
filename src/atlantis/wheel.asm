@@ -151,10 +151,7 @@ wheel_drift:
         cp WHEEL_SPIN
         jr c,.moved
         ld (hl),0
-        ld a,(wheel_frame)
-        inc a
-        and WHEEL_FRAMES - 1
-        ld (wheel_frame),a
+        call wheel_next_frame
 .moved: ld hl,(wheel_x)
         dec hl                      ; WHEEL_SPEED is 1
         ld (wheel_x),hl
@@ -195,12 +192,8 @@ wheel_drift:
 .spin:  cp WHEEL_SPIN
         jr c,.spun
         sub WHEEL_SPIN
-        ld hl,wheel_frame
-        inc (hl)
         push af
-        ld a,(hl)
-        and WHEEL_FRAMES - 1
-        ld (hl),a
+        call wheel_next_frame
         pop af
         jr .spin
 .spun:  ld (wheel_spin_n),a
@@ -245,6 +238,7 @@ wheel_drift:
         ld (wheel_bob_i),a
         ld (wheel_spin_n),a
         ld (wheel_frame),a
+        ld (wheel_step),a
         call wheel_spawn_type
         call wheel_place
         ld a,WHEEL_FLY
@@ -461,6 +455,30 @@ wheel_spawn_type:
         jp wheel_clamp_base
 
 ;------------------------------------------------------------------------------
+; wheel_next_frame - one step along wheel_seq
+; The pictures are stored once each. wheel_seq says which shape this
+; step shows, and that number is what the draw loads. Called only when
+; the spin hold runs out, not while the picture is being copied.
+; Corrupts: AF, HL
+;------------------------------------------------------------------------------
+wheel_next_frame:
+        ld hl,wheel_step
+        ld a,(hl)
+        inc a
+        cp WHEEL_FRAMES
+        jr c,.step
+        xor a
+.step:  ld (hl),a
+        ld hl,wheel_seq
+        add a,l
+        ld l,a
+        jr nc,.got
+        inc h
+.got:   ld a,(hl)
+        ld (wheel_frame),a
+        ret
+
+;------------------------------------------------------------------------------
 ; wheel_reset - the bomb the tape starts with
 ; Fixed height, the start of the sine, just off the right edge. This is
 ; not a spawn: the shift register stays on its seed, so the first bomb
@@ -483,6 +501,7 @@ wheel_reset:
         xor a
         ld (wheel_bob_i),a
         ld (wheel_frame),a
+        ld (wheel_step),a
         ld (wheel_spin_n),a
         ld (wheel_delay),a
         ld (wheel_odd),a
@@ -601,7 +620,7 @@ wheel_draw:
         ld iy,wheel_bg
         call fast_save
 
-        ld a,(wheel_frame)      ; one facing, so the index is the frame
+        ld a,(wheel_frame)      ; shape number, from wheel_seq
         ld hl,wheel_images
         call sprite_image
         call fast_pick          ; HL -> image for this shift
@@ -1338,7 +1357,8 @@ wheel_x:        dw 256
 wheel_y:        db 36           ; matches the base; bob[0] is 0
 wheel_base:     db 36
 wheel_bob_i:    db 0
-wheel_frame:    db 0
+wheel_frame:    db 0            ; which stored shape is on screen
+wheel_step:     db 0            ; where we are in wheel_seq
 wheel_spin_n:   db 0
 wheel_delay:    db 0
 wheel_seed:     db 42

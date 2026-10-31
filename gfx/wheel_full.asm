@@ -10,14 +10,21 @@ WHEEL_FULL_WIDTH  equ 12       ; pixels, as drawn
 WHEEL_FULL_BYTES  equ 3        ; widest shifted row (see wheel_full_shift_bytes)
 WHEEL_FULL_HEIGHT equ 12
 WHEEL_FULL_FRAMES equ 16
+WHEEL_FULL_SHAPES equ 16
+
+; wheel_full_seq - one byte per animation step. The byte is the
+; shape number in the image table. A repeated step does not
+; store the picture again.
+wheel_full_seq:
+        db 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
 
 ; wheel_full_shift_bytes - how many bytes one row occupies at each
 ; pixel shift. The background record is sized for the widest.
 wheel_full_shift_bytes:
         db 2, 2, 2, 2, 2, 3, 3, 3
 
-; wheel_full_images: one entry per (facing, frame); each points to a table of
-;   8 pointers, one per pixel shift 0..7. Index = facing*FRAMES + frame.
+; wheel_full_images: one entry per stored shape. wheel_full_seq picks which.
+; Each entry points to a table of 8 pointers, one per pixel shift.
 wheel_full_images:
         dw wheel_full_right_f0
         dw wheel_full_right_f1
@@ -1861,4 +1868,4 @@ wheel_full_right_f15_s7:  ; facing right, frame 15, shifted right 7
         db %11111111,%00000000, %10001100,%01110011, %01111111,%10000000  ; .........###..###.......
         db %11111111,%00000000, %11100001,%00011110, %11111111,%00000000  ; ...........####.........
 
-; total image bytes: 7296  (1 facings x 16 frames x 8 shifts, width depending on the shift)
+; total image bytes: 7296  (1 facings x 16 shapes x 8 shifts, width depending on the shift)
