@@ -47,19 +47,17 @@ measured from the recordings.
 
 ## Priority
 
-A new sound normally replaces the last. The laser is the lowest:
+The laser **starts the moment the torpedo leaves, over whatever is
+playing**: a crunch, a missile whoosh, even the level jingle. It was first
+written to play only into silence, which made it sound late or go missing
+in a busy game.
 
-- It starts only into silence, or over the laser before it (a quick
-  second shot restarts it).
-- An explosion, or the level jingle, playing is left alone, and any
-  explosion that starts while the laser plays cuts it off. A torpedo
-  that hits something straight away ends its own laser with the crunch.
-- The missile launch whoosh only plays into silence too, so it is
-  skipped while a laser is playing. Both are short, so this is rare.
-
-`snd_laser_start` tells the laser from the jingle by where `snd_tune`
-points: inside `snd_laser` means the laser. The jingle's notes are
-below it, and an `ASSERT` keeps them there.
+- An explosion that starts after it (including the torpedo's own hit)
+  still cuts it short, so hits are always heard.
+- The remaining time from key to sound is the game's at most one frame
+  (fire is read at the start of a step, and the first note plays at the
+  end of the same step), plus the emulator's own audio buffer, which
+  every sound has.
 
 A tune counts a note down before playing it, so a one-tick first note
 would never be heard. The table starts with a one-tick lead-in that is
@@ -74,6 +72,6 @@ used up on the step that fires.
   - at 25: 0 late, 1024 interrupts.
   Starting the tune costs about a scanline on the step that fires.
 - **Soak** at 50: green, OK.
-- **Memory:** 45 bytes of code. `code_end` is `$BEB4`, leaving 332
+- **Memory:** 23 bytes of code. `code_end` is `$BE9E`, leaving 354
   bytes free.
 - **Engine Demo 1:** untouched. The change is in Atlantis-only files.

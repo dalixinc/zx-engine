@@ -180,30 +180,17 @@ snd_laser:
         db 1, 1                 ; the lead-in, never heard
         CFG_LASER
         db 0
-snd_laser_end:
 
 ;------------------------------------------------------------------------------
 ; snd_laser_start - the torpedo leaving
-; Only into silence, or over the laser before it: an explosion, a missile
-; launch or the jingle playing is left to finish. snd_tune is 0 for a
-; noise sound, inside snd_laser only while the laser is playing.
+; At once, over whatever is playing: the player hears his own shot the
+; moment he fires. An explosion that starts later still cuts it short,
+; so a hit is heard too.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 snd_laser_start:
-        ld a,(snd_left)
-        or a
-        jr z,.go
-        ld hl,(snd_tune)
-        ld de,snd_laser
-        or a
-        sbc hl,de
-        ret c                   ; noise (0), or the jingle, which is below
-        ld de,snd_laser_end - snd_laser
-        sbc hl,de
-        ret nc                  ; above: not the laser
-.go:    ld hl,snd_laser
+        ld hl,snd_laser
         jp snd_tune_start
-        ASSERT snd_tune_level < snd_laser, "snd_laser_start takes a tune below snd_laser for the jingle"
 
 ; snd_reset - silence, for a new game and for the knell. Corrupts: AF
 snd_reset:

@@ -225,9 +225,9 @@ CFG_DIVER_SND_PITCH   equ 3
 ; is 7812 / this Hz, so 2 is 3.9 kHz, 4 is 2 kHz, 8 is 980 Hz. 1 to
 ; 255. Each note lasts CFG_LASER_TICKS 1/50 seconds. 2 is the same at
 ; 50 and 25 (one step of 25 is two ticks), 240 ms for these six. It plays only in the spare time at the end of each step, so it is
-; thinner when the diver is on the seabed. It is the least of the
-; sounds: it starts only into silence or over the last laser, so it
-; never cuts off an explosion or the level jingle.
+; thinner when the diver is on the seabed. It starts the moment the
+; torpedo leaves, over any sound that is playing; an explosion that
+; starts after it cuts it short.
 CFG_LASER_TICKS     equ 2
         MACRO CFG_LASER
         LASER_NOTE 2
