@@ -897,9 +897,6 @@ wheel_first:    db 0
         INCLUDE "boom.asm"
         INCLUDE "sound.asm"
         INCLUDE "menu.asm"
-    IFDEF SOAK
-        INCLUDE "soak.asm"
-    ENDIF
 
     IFDEF SLACK_LINES
 slack_loops:    dw 0            ; loops since entry, including the warmup
@@ -938,6 +935,22 @@ code_end:
 CODE_LENGTH     equ code_end - code_start
 
         DISPLAY "atlantis code_end ", code_end
+
+    IFDEF SOAK
+        ; The soak's own code and variables live below the game, in RAM
+        ; nothing else uses: the tape's BASIC ends well short of $6000,
+        ; and the soak is a snapshot, never loaded from tape. With it up
+        ; at $8000 the soak build came within 239 bytes of $C000. This
+        ; RAM is contended, so the checks run a little slower; the soak
+        ; checks pictures and positions, not time.
+SOAK_CODE       equ $6000
+        ORG SOAK_CODE
+soak_start:
+        INCLUDE "soak.asm"
+soak_end:
+        DISPLAY "atlantis soak code ", soak_start, " to ", soak_end
+        ASSERT soak_end <= CODE_START, "the soak's code has run into the game"
+    ENDIF
 
         ; Pictures, words and tables. Above the instructions, below the
         ; scroll buffers. Loaded as the second CODE block on the tape.

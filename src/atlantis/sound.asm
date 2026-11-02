@@ -63,6 +63,7 @@ snd_gate:       db 1            ; 0 = this wait stays quiet (25's picture)
 
 snd_boom_def:   SND_DEF CFG_BOOM_SND_FRAMES, CFG_BOOM_SND_LINES, CFG_BOOM_SND_DENSITY, CFG_BOOM_SND_PITCH
 snd_fish_def:   SND_DEF CFG_FISH_SND_FRAMES, CFG_FISH_SND_LINES, CFG_FISH_SND_DENSITY, CFG_FISH_SND_PITCH
+snd_launch_def: SND_DEF CFG_LAUNCH_SND_FRAMES, CFG_LAUNCH_SND_LINES, CFG_LAUNCH_SND_DENSITY, CFG_LAUNCH_SND_PITCH
 snd_missile_def: SND_DEF CFG_MISSILE_SND_FRAMES, CFG_MISSILE_SND_LINES, CFG_MISSILE_SND_DENSITY, CFG_MISSILE_SND_PITCH
 snd_diver_def:  SND_DEF CFG_DIVER_SND_FRAMES, CFG_DIVER_SND_LINES, CFG_DIVER_SND_DENSITY, CFG_DIVER_SND_PITCH
 
@@ -70,6 +71,7 @@ snd_diver_def:  SND_DEF CFG_DIVER_SND_FRAMES, CFG_DIVER_SND_LINES, CFG_DIVER_SND
 ; snd_boom_start  - a bomb blown up
 ; snd_fish_start  - a fish that dies
 ; snd_missile_start - a missile shot down
+; snd_launch_start - a missile leaving its silo, only into silence
 ; snd_diver_start - the diver losing a life
 ; snd_start       - HL = a six-byte description
 ; Corrupts: AF, BC, DE, HL
@@ -82,6 +84,12 @@ snd_fish_start:
         jr snd_start
 snd_missile_start:
         ld hl,snd_missile_def
+        jr snd_start
+snd_launch_start:
+        ld a,(snd_left)
+        or a
+        ret nz                  ; an explosion is playing: let it finish
+        ld hl,snd_launch_def
         jr snd_start
 snd_diver_start:
         ld hl,snd_diver_def

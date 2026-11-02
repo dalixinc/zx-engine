@@ -143,9 +143,11 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
 Atlantis memory: after the loading screen, the tape has two code blocks. The instructions are at
-`$8000-$A462` (`code_end` is `$A463`, 9,315 bytes) and must stay below
-`$C000`. The pictures, menu words and tables are at `$C000-$E368`
-(9,065 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+`$8000-$B75D` (`code_end` is `$B75E`, 14,174 bytes) and must stay below
+`$C000`. The pictures, menu words and tables are at `$C000-$E76B`
+(10,092 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+The soak build puts its own checks at `$6000` (`atlantis soak code`), in
+RAM the game does not use, so they do not crowd the game's code.
 A build prints both ends (`atlantis code_end`, `atlantis data_end`), and
 the `ASSERT`s at the end of `src/atlantis/main.asm` stop it if a block
 runs into the next. The wheel bomb is 12 by 12. A shifted row is 2 bytes for shifts 0 to 4
@@ -256,8 +258,8 @@ The play screen has no words on it. Open water from the top of the screen
 down to three thin bands at the bottom: a green seaweed plant now and
 then, yellow sand on blue, and a black strip on yellow with rocks and
 missile silos. A silo is a black base, a yellow tower cut out of the
-sand, and a green dome (see `build/silo-before.png`,
-`build/silo-after.png` and `build/silo-zoom.png`). The sand and the weed drift
+sand, and a green dome (see `docs/images/silo-before.png`,
+`docs/images/silo-after.png` and `docs/images/silo-zoom.png`). The sand and the weed drift
 at half the speed of the black strip. A white fish swims to and fro at the
 old depth. A wheel bomb slides in from the right, one pixel a frame,
 bobbing as it goes, and leaves through the left edge. Its legs spin and

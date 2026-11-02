@@ -177,7 +177,11 @@ missile_armed:
         ret nc                  ; not 3, 4 or 5: one more 1/50 second
         ld a,MSL_FLY
         ld (msl_phase),a
+    IFNDEF NO_SOUND
+        jp snd_launch_start     ; whoosh
+    ELSE
         ret
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; missile_pick - arm the missile of a random silo on screen

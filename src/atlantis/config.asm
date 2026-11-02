@@ -148,6 +148,13 @@ CFG_FISH_SND_LINES   equ 48
 CFG_FISH_SND_DENSITY equ 128
 CFG_FISH_SND_PITCH   equ 1
 
+; A missile leaving its silo: a quick, low whoosh. It only starts if
+; nothing else is playing, so it never cuts off an explosion.
+CFG_LAUNCH_SND_FRAMES  equ 6
+CFG_LAUNCH_SND_LINES   equ 40
+CFG_LAUNCH_SND_DENSITY equ 112
+CFG_LAUNCH_SND_PITCH   equ 4
+
 ; A missile shot by a torpedo: short and thin, a crackle.
 CFG_MISSILE_SND_FRAMES  equ 8
 CFG_MISSILE_SND_LINES   equ 56

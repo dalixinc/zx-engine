@@ -18,10 +18,12 @@ seabed:
 | 22 (sand) | a tower with ribs, cut out of the dunes by a blue edge, and the Trigon's serifed T (the wheel bomb's hub) cut into it in blue | yellow on blue, the sand's colours |
 | 23 (ground) | a black base | black on yellow, the ground's colours |
 
-![before](../build/silo-before.png)
-![after](../build/silo-after.png)
+![before](images/silo-before.png)
+![after](images/silo-after.png)
 
-Close up, before and after: `build/silo-zoom.png`.
+Close up, before and after:
+
+![close up](images/silo-zoom.png)
 
 - **No clash.** Each part uses its own row's colours. Every cell the
   dome has ink in is painted green on blue, which is the seaweed's
@@ -105,13 +107,16 @@ change:
   already took one.
 - **A torpedo blows it up**, with its own sound: `snd_missile_def`,
   `CFG_MISSILE_SND_*`. That is 8 thin bursts, a crackle: high and
-  sparse, so it sounds different from the bomb and the fish. Its pitch
-  hasn't been heard yet.
+  sparse, so it sounds different from the bomb and the fish.
+- **A quick whoosh when it leaves the hatch** (`snd_launch_def`,
+  `CFG_LAUNCH_SND_*`): 6 short, low bursts at pitch 4. It only starts
+  if the beeper is silent, so a launch never cuts off an explosion or
+  the diver's crunch.
 
 The frames below are from a scratch build with short gaps: a missile in
 the hatch, one in flight, then a torpedo reaching one, and the burst.
 
-![missiles](../build/missile-flight.png)
+![missiles](images/missile-flight.png)
 
 **Play tests** were done in scratch builds, with the gaps shortened and
 the silo choice moved under the diver:
@@ -166,11 +171,43 @@ picture frame.
 - Engine Demo 1 is byte-identical
   (`git show fc5fe34^:build/diver.tap | cmp - build/diver.tap`).
 - No tapes are committed.
-- **Memory.** The tape build ends at `$B728`, with the data at `$E76C`.
-  The soak build ends at `$BF11`, only 239 bytes short of `$C000`.
-  The silo's picture tables were moved up into the data block to get
-  it there. The next soak addition may need something else moved out
-  of the code.
+- **Memory.** The tape build's code ends at `$B75E`, and its data at
+  `$E76C`. The silo's picture tables are in the data block. The soak
+  build had come within 239 bytes of `$C000`, so its own checks and
+  variables now live at `$6000` (`$6000-$67A3`). That RAM is free in
+  every build: the tape's BASIC ends well before it, and the soak is
+  only ever a snapshot. Its game code now ends at `$B7A4`, about 2 KB
+  short. The RAM is contended, so the checks are slower and the 25
+  soak takes about 3 minutes instead of 2. It still ends green with OK.
+
+## 5. The sounds, recorded
+
+Fuse here can't play sound, but its SDL backend can write what it
+would play to a file (`SDL_AUDIODRIVER=disk`). A scratch build started
+each sound on a schedule, and the recording was cut into one clip per
+sound. The table below is measured from those clips, not heard.
+
+| Sound | Sounding | Loudness (RMS) | Zero crossings per second |
+|---|---|---|---|
+| launch whoosh | 90 ms | 806 | 260, the lowest |
+| missile crackle | 110 ms | 580, the quietest | 367 |
+| bomb | 160 ms | 830 | 300 |
+| fish | 110 ms | 637 | 600, the highest |
+| lost life | 830 ms | 1213 | 323 |
+| death knell | 1.4 s | 4770 | (a tone) |
+
+- **They come out in the intended order:** the fish is the highest,
+  the launch the lowest, and the lost life the longest.
+- **The crackle is the quietest.** Its density is 64, half the others.
+  If it's too faint by ear, `CFG_MISSILE_SND_DENSITY` 96 or 128 brings
+  it up.
+- **The noise sounds are much quieter than the knell.** They only play
+  in each frame's spare scanlines, about a fifth of the frame, while
+  the knell is a solid tone.
+- **One trap for anyone measuring sound:** the screenshot builds
+  (`SHOT_FRAME`, `TIMING_BARS`, `SLACK_LINES`) sync with `wait_frame`,
+  not `spare_count`, so they are silent. Record from the tape build or
+  a `MEASURE` build.
 
 ## Files
 
@@ -184,9 +221,10 @@ picture frame.
 | `src/atlantis/main.asm` | missile restore, draw, update and hit; `silo.asm`, `missile.asm` and `SILO_DATA` included |
 | `src/atlantis/boom.asm` | `boom_at_missile` |
 | `src/atlantis/torpedo.asm` | `torpedo_hit` checks a missile first |
-| `src/atlantis/sound.asm` | `snd_missile_def`, `snd_missile_start` |
-| `src/atlantis/config.asm` | `CFG_MISSILE_GAP_MIN/_MAX`, `_ARM`, `_SPEED`, `CFG_MISSILE_SND_*` |
+| `src/atlantis/sound.asm` | `snd_missile_def`, `snd_missile_start`, `snd_launch_def`, `snd_launch_start` |
+| `src/atlantis/config.asm` | `CFG_MISSILE_GAP_MIN/_MAX`, `_RANGE`, `_ARM`, `_SPEED`, `CFG_MISSILE_SND_*`, `CFG_LAUNCH_SND_*` |
 | `src/atlantis/menu.asm` | `missile_reset` |
-| `Makefile` | `gfx/missile.asm` in the game's graphics |
+| `Makefile` | `gfx/missile.asm` in the game's graphics; boom, sound, silo and missile in the sources |
+| `src/atlantis/main.asm` (soak) | the soak's code at `$6000` |
 | `README.md`, `CLAUDE.md`, `docs/SCROLLING.md` | silos, missiles, `MEAS_MISSILE` |
-| `build/silo-*.png`, `build/missile-flight.png` | the pictures |
+| `docs/images/silo-*.png`, `docs/images/missile-flight.png` | the pictures |
