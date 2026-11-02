@@ -8,6 +8,8 @@ rem   build.bat runsoak   assemble the soak, then open it in Fuse
 rem   build.bat timing    assemble build\atlantis-timing.sna (timing border)
 rem   build.bat runtiming assemble the timing build, then open it in Fuse
 rem   build.bat demo      assemble build\diver.tap (Engine Demo 1)
+rem   build.bat web       assemble, then copy atlantis.sna and atlantis.tap to
+rem                       docs\play\ for the web page (docs\WEB.md); commit, push
 rem
 rem Tools: uses windows-tools\fuse\fuse.exe and
 rem windows-tools\sjasmplus\sjasmplus.exe if they are there, otherwise
@@ -40,6 +42,13 @@ rem ---- the game tape ----
 "%SJASM%" %ASMOPTS% --lst=build\atlantis.lst --sym=build\atlantis.sym src\atlantis\main.asm
 if errorlevel 1 goto failed
 echo Built build\atlantis.tap
+if /i "%1"=="web" (
+    copy /y build\atlantis.sna docs\play\atlantis.sna >nul
+    if errorlevel 1 goto failed
+    copy /y build\atlantis.tap docs\play\atlantis.tap >nul
+    if errorlevel 1 goto failed
+    echo Copied to docs\play\: commit atlantis.sna and .tap and push to update the site
+)
 if /i "%1"=="run" start "" "%EMU%" --graphics-filter %SIZE% --machine 48 --auto-load --traps --fastload build\atlantis.tap
 goto done
 

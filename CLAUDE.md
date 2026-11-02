@@ -28,6 +28,8 @@ The usual full cycle on this machine (Fuse here is the GTK build, called `fuse`)
 make -B && make soak && make run EMU="fuse -g 3x"
 ```
 
+`make web` (or `build.bat web`) copies `build/atlantis.sna` and `.tap` into `docs/play/`, the GitHub Pages version (JSSpeccy 3, `docs/WEB.md`). Those two copies are committed on purpose; `build/` is not.
+
 `-B` forces a full rebuild, which also regenerates `gfx/*.asm` (needs Python 3). `make soak` only assembles `build/atlantis-soak.sna`. To see its result, run it with `fuse -g 3x --machine 48 build/atlantis-soak.sna`.
 
 Windows: `build.bat` / `build.bat run` / `build.bat demo`.

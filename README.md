@@ -20,6 +20,15 @@ black ground, a rock or a silo costs a life.
 New to the scrolling ground? Read [docs/SCROLLING.md](docs/SCROLLING.md)**
 (the demo's seabed first, then the Atlantis section).
 
+## Play in the browser
+
+Once GitHub Pages is switched on for this repository (Settings, then
+Pages, deploying from `main`, folder `/docs`), Atlantis plays at
+**https://dalixinc.github.io/zx-engine/play/** in JSSpeccy 3. Click to
+play, then `1`. Ctrl is Symbol Shift there. `make web` (or
+`build.bat web`) copies a fresh build into `docs/play/`; commit and push
+it to update the site. See [docs/WEB.md](docs/WEB.md).
+
 ## Controls
 
 | Action | Keys            | Alternative | Kempston |
@@ -109,6 +118,7 @@ src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
 src/atlantis/silo.asm    the silo picture, and the code built from it that draws it
 src/atlantis/missile.asm the silos' missiles: arm, fly, hit, their own draw
 src/atlantis/score.asm   the score, the levels, the line on row 1, the banner
+docs/play/               the browser version: page, JSSpeccy 3, snapshot, tape
 src/atlantis/stats.asm   the row-0 stat line, Symbol Shift + S
 src/atlantis/wheel.asm   the wheel bomb: drift, bob, spin, one at a time
 src/atlantis/hit.asm     the bomb and the ground against the diver, and the lives
