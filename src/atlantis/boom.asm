@@ -40,10 +40,11 @@ FISH_YEL        equ BRIGHT | YELLOW | (BLUE << 3)
 FISH_RED        equ BRIGHT | RED | (BLUE << 3)
 boom_col:       db 0            ; screen column, 0..30, of the next draw
 boom_y:         db 0
-boom_dcol:      db 0            ; where the last draw went: the restore's place
-boom_dy:        db 0
+boom_addr:      dw 0            ; screen byte of the drawn burst: the restore's place
+boom_new:       db 0            ; 1 = armed at a new place since the last draw
+boom_shown:     db 0            ; the shape on the screen now
 BOOM_TOP        equ 2 * 8       ; below the digits and the hearts
-BOOM_LOW        equ BACK_ROW * 8 - BOOM_ROWS ; above the seabed copy
+BOOM_LOW        equ (BACK_ROW * 8 - BOOM_ROWS) & $F8 ; above the seabed copy
 boom_bg:        ds BOOM_ROWS * 2
 
 ;------------------------------------------------------------------------------
@@ -53,6 +54,7 @@ boom_reset:
         xor a
         ld (boom_t),a
         ld (boom_got),a
+        ld (boom_new),a
         ld (boom_fish),a
         ld (fish_busy),a
         ld (fish_left),a
@@ -96,6 +98,9 @@ fish_unhold:
 ; photograph held the diver as he was when the fish touched him, and a
 ; hit had since moved him to the left edge.
 fish_flash_begin:
+    IFNDEF NO_SOUND
+        call snd_fish_start
+    ENDIF
         ld a,(fish_x)
         rrca
         rrca
@@ -194,12 +199,30 @@ fish_wait_step:
 ; boom_at_fish - the fish. Hide its draw until the burst ends.
 ;------------------------------------------------------------------------------
 boom_at_bomb:
+    IFNDEF NO_SOUND
+        call snd_boom_start
+    ENDIF
         call boom_show_fish
         ld hl,(wheel_x)
         ld a,(wheel_y)
         jr boom_arm
 
+; The diver: the burst over his middle. boom_arm keeps it above the
+; seabed rows, so on the bottom it shows just above him.
+boom_at_diver:
+        call boom_show_fish
+        ld a,(diver_x)
+        add a,(DIVER_WIDTH - 16) / 2
+        ld l,a
+        ld h,0
+        ld a,(diver_y)
+        add a,(DIVER_HEIGHT - BOOM_ROWS) / 2
+        jr boom_arm
+
 boom_at_fish:
+    IFNDEF NO_SOUND
+        call snd_fish_start
+    ENDIF
         ld a,(boom_fish)
         or a
         jr nz,.arm
@@ -240,6 +263,8 @@ boom_arm:
         ld a,30
 .stcol: ld (boom_col),a
         ld a,(boom_y)
+        add a,4                 ; the nearest character row: it is drawn
+        and $F8                 ; cell by cell, with INC H
         cp BOOM_TOP
         jr nc,.low
         ld a,BOOM_TOP
@@ -253,6 +278,7 @@ boom_arm:
         ld (boom_left),a
         ld a,1
         ld (boom_t),a
+        ld (boom_new),a
         or a                    ; not a lost life
         ret
 
@@ -347,23 +373,90 @@ torpedo_fish:
 
 ;------------------------------------------------------------------------------
 ; boom_step - main_loop's stats_prepare call while a burst is up. The
-; sprites have all been restored: erase the last picture, then draw the
-; next, or finish.
-; Corrupts: AF, BC, DE, HL, IX
+; sprites have all been restored, so the screen under them is the burst
+; as it was drawn.
+;
+; Each shape is shown for two steps. The photograph only has to be taken
+; when the burst is new or has been moved; a new shape in the same place
+; is written over the old one, and a step whose shape has not changed
+; does nothing. So it costs on every other step, about 3 scanlines, and
+; once at the start and the end. Erasing, photographing and drawing it
+; again on every step, through the row table, cost about 10 scanlines a
+; step. With the diver on the seabed that made 187 of 512 steps late.
+; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 boom_step:
         call stats_prepare
 boom_service:
-        ld a,(boom_got)
-        or a
-        call nz,boom_restore
         ld a,(boom_left)
         or a
         jr z,boom_end
+        dec a
+        ld (boom_left),a
         ld b,a
-        ld a,BOOM_HOLD
+        ld a,BOOM_HOLD - 1
         sub b
         srl a                   ; which of the four shapes
+        ld c,a
+        ld a,(boom_new)
+        or a
+        jr nz,.fresh
+        ld a,(boom_shown)
+        cp c
+        ret z                   ; the same shape in the same place
+        ld a,c
+        ld (boom_shown),a
+        call boom_shape
+        ld hl,(boom_addr)
+        jr boom_write           ; the photograph is still the one underneath
+
+.fresh: xor a
+        ld (boom_new),a
+        ld a,c
+        ld (boom_shown),a
+        ld a,(boom_got)
+        or a
+        call nz,boom_restore    ; the last burst, from where it was drawn
+        ld a,1
+        ld (boom_got),a
+        ; The screen byte of the top-left corner. Its row is a whole
+        ; character row: H = 010 RR 000, L = rrr CCCCC.
+        ld a,(boom_y)
+        and $C0
+        rrca
+        rrca
+        rrca
+        or $40
+        ld h,a
+        ld a,(boom_y)
+        add a,a
+        add a,a                 ; rrr into the top 3 bits
+        and $E0
+        ld l,a
+        ld a,(boom_col)
+        or l
+        ld l,a
+        ld (boom_addr),hl
+        ld de,boom_bg
+        call boom_read          ; the photograph
+        call boom_shape
+        ld hl,(boom_addr)
+        jr boom_write
+
+boom_end:
+        ld a,(boom_got)
+        or a
+        call nz,boom_restore
+        xor a
+        ld (boom_t),a
+        ld (boom_got),a
+        ld hl,stats_prepare
+        ld (boom_hook+1),hl
+        jp boom_show_fish
+
+; DE = the 24 bytes of shape (boom_shown). Corrupts: AF, DE, HL
+boom_shape:
+        ld a,(boom_shown)
         ld l,a
         ld h,0
         add hl,hl               ; *2
@@ -375,87 +468,68 @@ boom_service:
         add hl,de               ; *24
         ld de,boom_shapes
         add hl,de
-        call boom_paint
-        ld hl,boom_left
-        dec (hl)
-        ld a,1
-        ld (boom_got),a
+        ex de,hl
         ret
-
-boom_end:
-        xor a
-        ld (boom_t),a
-        ld (boom_got),a
-        ld hl,stats_prepare
-        ld (boom_hook+1),hl
-        jp boom_show_fish
 
 ; Copy boom_bg back onto the screen.
 boom_restore:
-        ld hl,boom_bg
-        jr boom_rows
-
-; Save the screen under the burst, then copy HL (the shape) onto it.
-; The place is kept for the restore: a new burst can be armed first.
-boom_paint:
-        ld a,(boom_col)
-        ld (boom_dcol),a
-        ld a,(boom_y)
-        ld (boom_dy),a
-        push hl
-        call row_table_entry
-        pop hl
+        ld hl,(boom_addr)
         ld de,boom_bg
-        ld b,BOOM_ROWS
-.row:   push bc
-        ld c,(ix+0)
-        ld b,(ix+1)
-        ld a,(boom_col)
-        or c
-        ld c,a
-        ld a,(bc)
-        ld (de),a
-        ld a,(hl)
-        ld (bc),a
+        ; fall through
+
+;------------------------------------------------------------------------------
+; boom_write - DE = 24 bytes onto the screen at HL (a character row's top)
+; boom_read  - the 24 screen bytes at HL into DE
+; Two bytes a row, 8 rows down the first cell, then 4 down the next.
+; Corrupts: AF, B, DE, HL
+;------------------------------------------------------------------------------
+boom_write:
+        push hl
+        ld b,8
+        call .rows
+        pop hl
+        call boom_next_cell
+        ld b,BOOM_ROWS - 8
+.rows:  ld a,(de)
+        ld (hl),a
         inc de
-        inc hl
-        inc c
-        ld a,(bc)
-        ld (de),a
-        ld a,(hl)
-        ld (bc),a
+        inc l
+        ld a,(de)
+        ld (hl),a
         inc de
-        inc hl
-        inc ix
-        inc ix
-        pop bc
-        djnz .row
+        dec l
+        inc h
+        djnz .rows
         ret
 
-; In: HL = 24 bytes to write. No save.
-boom_rows:
+boom_read:
         push hl
-        ld a,(boom_dy)
-        call row_table_entry
+        ld b,8
+        call .rows
         pop hl
-        ld b,BOOM_ROWS
-.row:   push bc
-        ld c,(ix+0)
-        ld b,(ix+1)
-        ld a,(boom_dcol)
-        or c
-        ld c,a
+        call boom_next_cell
+        ld b,BOOM_ROWS - 8
+.rows:  ld a,(hl)
+        ld (de),a
+        inc de
+        inc l
         ld a,(hl)
-        ld (bc),a
-        inc hl
-        inc c
-        ld a,(hl)
-        ld (bc),a
-        inc hl
-        inc ix
-        inc ix
-        pop bc
-        djnz .row
+        ld (de),a
+        inc de
+        dec l
+        inc h
+        djnz .rows
+        ret
+
+; HL = the same column one character row down.
+boom_next_cell:
+        ld a,l
+        add a,32
+        ld l,a
+        ret nc
+        ld a,h
+        add a,8
+        ld h,a
         ret
 
 ; Four shapes, 12 rows, 2 bytes each. A bit set is ink.

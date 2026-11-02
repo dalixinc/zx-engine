@@ -105,6 +105,21 @@ entry:
 ; frame (idle_tick) does the step's shifts and both moves, draws
 ; nothing, and starts on an interrupt.
 ;------------------------------------------------------------------------------
+; The black ground, after the bomb and the fish. Carry set: the last
+; life. Not taken: carry is clear (hit_check returned no carry, and OR A
+; clears it). A measurement build holds Down on the seabed on purpose,
+; so there it only clears the flag.
+        MACRO GROUND_CHECK
+    IFDEF MEASURE
+        xor a
+        ld (diver_touch),a
+    ELSE
+        ld a,(diver_touch)
+        or a
+        call nz,ground_hit
+    ENDIF
+        ENDM
+
 main_loop:
         ; The spare-scanline count already waited for the interrupt at
         ; the end of the previous step. Clear the flag now, so this
@@ -205,6 +220,19 @@ SLACK_WARMUP    equ 0
     IFDEF MEAS_DOWN
         ld a,IN_DOWN
         ld (input_state),a
+    ENDIF
+    IFDEF MEAS_BOOM
+        ; Measurement only. An explosion over the diver all the time: a
+        ; new one starts as soon as the last ends, bomb or no bomb, with
+        ; the life-loss crunch (the longest bursts) each time.
+        ld a,(boom_t)
+        or a
+        jr nz,.meas_boomed
+        call boom_at_diver
+    IFNDEF NO_SOUND
+        call snd_diver_start    ; the longest crunch, again and again
+    ENDIF
+.meas_boomed:
     ENDIF
     IFDEF MEAS_FIRE
         ; Measurement only. Fire goes down on every other step, so a
@@ -446,6 +474,9 @@ step_skip:
         rrca
         rrca
 .border:
+    IFNDEF NO_SOUND
+        ld (snd_border),a       ; the beeper keeps this border colour
+    ENDIF
         call set_border
     ENDIF
     ENDIF
@@ -475,6 +506,8 @@ fish_mv:
         or a
         call nz,torpedo_hit
         call hit_check
+        jp c,game_over
+        GROUND_CHECK
         jp c,game_over
     ENDIF
     ENDIF
@@ -552,7 +585,15 @@ step_moved:
         xor a
         ld (vsync_flag),a       ; this tick owns the frame that just began
         call idle_tick
+    IFNDEF NO_SOUND
+        ld a,1
+        ld (snd_gate),a         ; the sound plays in the idle frame's wait
+    ENDIF
         call spare_count
+    IFNDEF NO_SOUND
+        xor a
+        ld (snd_gate),a         ; and not in the picture frame's
+    ENDIF
         ld a,(spare_lines)
         ld (spare_idle),a
         ld a,(spare_late)
@@ -741,7 +782,10 @@ fish_mv2:
         ld a,(torp_on)
         or a
         call nz,torpedo_hit
-        jp hit_check
+        call hit_check
+        ret c
+        GROUND_CHECK
+        ret
     ENDIF
     ENDIF
         or a
@@ -827,6 +871,7 @@ wheel_first:    db 0
         ; image-index routines. The demo does not include this file.
         INCLUDE "fastsprite.asm"
         INCLUDE "boom.asm"
+        INCLUDE "sound.asm"
         INCLUDE "menu.asm"
     IFDEF SOAK
         INCLUDE "soak.asm"

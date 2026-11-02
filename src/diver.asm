@@ -250,6 +250,11 @@ clamp_to_terrain:
         cp (hl)
         jr nc,.done             ; already at or above the skyline
         ld (hl),a
+        IFDEF ATLANTIS
+        ; He reached the black. In Atlantis that is a hit (hit.asm).
+        ld a,1
+        ld (diver_touch),a
+        ENDIF
 .done:  pop bc
         ret
 

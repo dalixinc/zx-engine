@@ -43,8 +43,13 @@ The diver has three lives (`CFG_LIVES` in `src/atlantis/config.asm`),
 shown as hearts at the top right of the screen. A wheel bomb that
 touches him costs one: the bomb vanishes, a heart goes, and the border
 flashes red. The hit boxes are a little smaller than the pictures, so a
-graze of the flippers or the rim does not count. After the last life
-the game goes back to the menu, which says GAME OVER.
+graze of the flippers or the rim does not count. Sinking onto the black
+ground, a rock or a silo is a hit too: he explodes, loses a heart, and
+starts again at the left edge at his starting depth. Explosions crunch
+on the beeper: high for a fish, middle for a bomb, long and low for a
+lost life (tune them in `config.asm`, `CFG_*_SND_*`). The last life
+plays a death knell, then the game goes back to the menu, which says
+GAME OVER.
 
 Fire launches a torpedo from the nose of his jet unit, the way he is
 facing. It runs along that row until it leaves the screen, and a bomb it
@@ -87,7 +92,8 @@ src/atlantis/scenery.asm water, sand and ground colours
 src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
 src/atlantis/stats.asm   the row-0 stat line, Symbol Shift + S
 src/atlantis/wheel.asm   the wheel bomb: drift, bob, spin, one at a time
-src/atlantis/hit.asm     the bomb against the diver, and the lives
+src/atlantis/hit.asm     the bomb and the ground against the diver, and the lives
+src/atlantis/sound.asm   beeper noise, played in each frame's spare time
 src/atlantis/torpedo.asm the diver's torpedo: fire, run, hit a bomb, its own draw
 src/atlantis/fastsprite.asm  the faster sprite walker the game uses (not the demo)
 src/atlantis/soak.asm    the background-restore check, only with -DSOAK

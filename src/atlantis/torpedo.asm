@@ -191,7 +191,7 @@ torpedo_spent:
 ; torpedo_hit - the running torpedo against the bomb in flight
 ; Call after update_wheel, so both are where this step put them.
 ; main_loop calls this only while a torpedo is running.
-; Corrupts: AF, B, DE, HL
+; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 torpedo_hit:
         ld a,(wheel_phase)

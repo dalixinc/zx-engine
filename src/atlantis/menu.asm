@@ -26,6 +26,9 @@ menu_game_over: db 0            ; 1 = the last life was lost: say GAME OVER
 ; called, so the stack is the main loop's and nothing is left on it.
 ;------------------------------------------------------------------------------
 game_over:
+    IFNDEF NO_SOUND
+        call snd_knell          ; the last picture stays up while it plays
+    ENDIF
         ld a,1
         ld (menu_game_over),a
         ; fall through
@@ -351,8 +354,10 @@ game_reset:
 
         ld a,60
         ld (diver_x),a
-        ld a,110
+        ld a,DIVER_START_Y
         ld (diver_y),a
+        xor a
+        ld (diver_touch),a
         xor a
         ld (diver_facing),a
         ld (diver_moving),a
@@ -368,6 +373,9 @@ game_reset:
         call wheel_reset
         call torpedo_reset
         call boom_reset
+    IFNDEF NO_SOUND
+        call snd_reset
+    ENDIF
 
         di
         ld hl,0
