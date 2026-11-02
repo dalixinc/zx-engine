@@ -154,8 +154,15 @@ CFG_PTS_MISSILE     equ 10
         ENDM
 
 ; How long the "LEVEL n" banner stays up, in 1/50 seconds. 100 is two
-; seconds.
-CFG_BANNER_TIME     equ 100
+; seconds. From level 3 the level's code is under it, and it stays up
+; for _CODE_TIME instead, long enough to read six letters.
+CFG_BANNER_TIME      equ 100
+CFG_BANNER_CODE_TIME equ 200
+
+; Levels with a code (codes.asm): 2 to this. Atlantis is 1 to 10 and
+; Trigon 11 to 20. Each code is worked out from its level number, so
+; changing this changes no code, it only adds or drops some. Up to 31.
+CFG_CODE_LEVELS      equ 20
 
 ; The beeper (sound.asm). Each explosion is white noise, played in
 ; short bursts in the spare time at the end of each step, so it never

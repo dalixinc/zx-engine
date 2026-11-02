@@ -23,6 +23,19 @@ str_opt_start:  db "1  Start game",0
 str_game_over:  db "GAME OVER",0
 str_score:      db "SCORE ",0
 str_high:       db "HIGH  ",0
+; Option 3 and what it turns into. All the same length, so each one
+; covers the last.
+str_opt_code:   db "3  Enter code    ",0
+str_code_ask:   db "3  Code ",0     ; then the letters typed so far
+str_code_bad:   db "3  BAD CODE      ",0
+str_code_dots:  db "......",0
+str_code_word:  db "CODE ",0
+str_level_sp:   db "LEVEL ",0
+
+; Level 2's message (score.asm, teaser).
+str_tease_1:    db "WELL DONE, YOU REACHED LEVEL 2.",0
+str_tease_2:    db "STAY TUNED, MORE IS COMING",0
+str_tease_key:  db "PRESS A KEY",0
 
 ; Row 1 in play: the words, with spaces where score.asm puts the numbers.
 str_hud:        db "SCORE 000000  LEVEL   "
@@ -30,10 +43,35 @@ str_hud:        db "SCORE 000000  LEVEL   "
 str_level:      db "LEVEL"
 
 ; The banner's block letters, three cells by five, bit 2 the left cell.
-banner_font_l:  db %100, %100, %100, %100, %111
-banner_font_e:  db %111, %100, %110, %100, %111
-banner_font_v:  db %101, %101, %101, %101, %010
+; "LEVEL" and the level codes (codes.asm) use the capitals. M, N, Q, W
+; and X are rough at three cells wide, which is why no code uses them.
 banner_font_sp: db 0, 0, 0, 0, 0
+banner_font_a:  db %010, %101, %111, %101, %101 ; A
+                db %110, %101, %110, %101, %110 ; B
+                db %011, %100, %100, %100, %011 ; C
+                db %110, %101, %101, %101, %110 ; D
+                db %111, %100, %110, %100, %111 ; E
+                db %111, %100, %110, %100, %100 ; F
+                db %011, %100, %101, %101, %011 ; G
+                db %101, %101, %111, %101, %101 ; H
+                db %111, %010, %010, %010, %111 ; I
+                db %001, %001, %001, %101, %010 ; J
+                db %101, %101, %110, %101, %101 ; K
+                db %100, %100, %100, %100, %111 ; L
+                db %101, %111, %111, %101, %101 ; M
+                db %110, %101, %101, %101, %101 ; N
+                db %010, %101, %101, %101, %010 ; O
+                db %110, %101, %110, %100, %100 ; P
+                db %010, %101, %101, %110, %011 ; Q
+                db %110, %101, %110, %101, %101 ; R
+                db %011, %100, %010, %001, %110 ; S
+                db %111, %010, %010, %010, %010 ; T
+                db %101, %101, %101, %101, %111 ; U
+                db %101, %101, %101, %101, %010 ; V
+                db %101, %101, %111, %111, %101 ; W
+                db %101, %101, %010, %101, %101 ; X
+                db %101, %101, %010, %010, %010 ; Y
+                db %111, %001, %010, %100, %111 ; Z
 banner_font_0:  db %111, %101, %101, %101, %111
                 db %010, %110, %010, %010, %111
                 db %111, %001, %111, %100, %111
@@ -50,6 +88,9 @@ level_tab:
         CFG_LEVELS
 level_end:
 LEVEL_COUNT_ROWS equ level_rows
+
+; The level codes and the key map (codes.asm).
+        LEVEL_CODES
 
 ; The speed line is one of these two. They are the same length, so
 ; reprinting one on top of the other does not leave a stray letter.
@@ -109,6 +150,11 @@ menu_tab:
         db 4
         dw 0
         dw menu_toggle_rate
+        db 4
+        db CODE_ROW
+        db 4
+        dw str_opt_code
+        dw menu_code
         db 0
 
 ; --- Wheel bomb tables -------------------------------------------------------

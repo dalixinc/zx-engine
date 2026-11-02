@@ -48,6 +48,9 @@ GAME_OVER_ATTR  equ BRIGHT | WHITE | (RED << 3)
 ; The "LEVEL n" banner's blocks (score.asm): yellow cells on the blue sea.
 ; A sprite crossing one is drawn in blue on the yellow.
 BANNER_ATTR     equ BRIGHT | BLUE | (YELLOW << 3)
+; Level 2's message (score.asm): white on black, the code in yellow.
+TEASE_ATTR      equ BRIGHT | WHITE | (BLACK << 3)
+TEASE_CODE_ATTR equ BRIGHT | YELLOW | (BLACK << 3)
 SAND_ATTR       equ BRIGHT | YELLOW | (BLUE << 3)
 WEED_ATTR       equ BRIGHT | GREEN | (BLUE << 3)
 GROUND_ATTR     equ BRIGHT | BLACK | (YELLOW << 3)

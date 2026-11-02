@@ -585,6 +585,7 @@ step_moved:
     IFNDEF SLACK_LINES
     IFNDEF TIMING_BARS
     IFNDEF SHOT_FRAME
+teaser_hook:                    ; level 2's message, once (score.asm)
         call spare_count
         ld a,(step_ticks)
         cp 2
@@ -888,6 +889,7 @@ wheel_first:    db 0
         INCLUDE "wheel.asm"
         INCLUDE "hit.asm"
         INCLUDE "score.asm"      ; before its macros are used
+        INCLUDE "codes.asm"      ; before LEVEL_CODES is used
         INCLUDE "torpedo.asm"
         INCLUDE "missile.asm"
         INCLUDE "../fish.asm"

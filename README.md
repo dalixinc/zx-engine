@@ -45,7 +45,8 @@ it to update the site. See [docs/WEB.md](docs/WEB.md).
 The tape shows a loading screen while the game loads (it is drawn from
 the game's own sprites by `tools/mkloadscreen.py`). The game then opens
 on a start screen: `1` starts the game, `2` swaps between
-50 and 25 frames a second. The choice is kept when you come back to the
+50 and 25 frames a second, and `3` takes a six-letter level code
+(`0` rubs out a letter, Space gives up). The choice is kept when you come back to the
 menu.
 
 The diver has three lives (`CFG_LIVES` in `src/atlantis/config.asm`),
@@ -68,6 +69,13 @@ and the level are on row 1, beside the hearts. Each level has a target
 400 more, and so on). Reaching it puts up a big "LEVEL 2" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
 fly a little faster.
+
+From level 3 the banner also shows the level's code, and the game-over
+screen shows the code of the highest level reached. Typing a code on the
+menu starts a game at that level, with the score it starts at (200 for
+level 2, 500 for level 3, ...). Level 2 is the end of the game for now:
+after its banner, a message and its code stay up until a key is pressed.
+See `docs/LEVEL-CODES.md`.
 
 Now and then a silo near the diver arms a missile: it sits in the hatch
 for half a second, scrolling with the ground, then flies straight up and
@@ -118,6 +126,7 @@ src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
 src/atlantis/silo.asm    the silo picture, and the code built from it that draws it
 src/atlantis/missile.asm the silos' missiles: arm, fly, hit, their own draw
 src/atlantis/score.asm   the score, the levels, the line on row 1, the banner
+src/atlantis/codes.asm   the level codes: table, showing one, checking one typed
 docs/play/               the browser version: page, JSSpeccy 3, snapshot, tape
 src/atlantis/stats.asm   the row-0 stat line, Symbol Shift + S
 src/atlantis/wheel.asm   the wheel bomb: drift, bob, spin, one at a time
@@ -163,9 +172,9 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
 Atlantis memory: after the loading screen, the tape has two code blocks. The instructions are at
-`$8000-$BB2C` (`code_end` is `$BB2D`, 15,149 bytes) and must stay below
-`$C000`. The pictures, menu words and tables are at `$C000-$E807`
-(10,248 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+`$8000-$BDD6` (`code_end` is `$BDD7`, 15,831 bytes) and must stay below
+`$C000`. The pictures, menu words and tables are at `$C000-$E97A`
+(10,619 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
 The soak build puts its own checks at `$6000` (`atlantis soak code`), in
 RAM the game does not use, so they do not crowd the game's code.
 A build prints both ends (`atlantis code_end`, `atlantis data_end`), and
