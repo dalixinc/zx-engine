@@ -3,7 +3,9 @@
 ; From assets/bombs/wheel-full.png. The cross turns all the way
 ; round. His ring wobbled from frame to frame; it is the steady
 ; wide ring from his first frame now. The turning cross is his.
-; Not used by the game yet.
+; The game's second bomb, from level 3: tools/gfx2raw.py keeps every
+; other frame (8) in gfx/wheel_spin.asm, and src/atlantis/wspin.asm
+; shifts them at start-up.
 ; mirror off
 
 mirror off

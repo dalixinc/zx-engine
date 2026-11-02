@@ -187,7 +187,8 @@ wheel_heights:
         db 24                   ; 6
         db WHEEL_LOW_BASE       ; 7  one swing above the weed
 
-; One row per enemy type. The wheel bomb is the only type so far.
+; One row per enemy type: the pulsar, then the spinning wheel. Which one
+; a bomb gets is the level's choice (wheel_type, CFG_LEVELS).
 ; Five bytes:
 ;   bob height     pixels above the middle, and the same below
 ;   bob speed      sine steps per 1/50 second
@@ -214,5 +215,11 @@ enemy_wheel:
         db CFG_WHEEL_WOBBLE
         db 0
         db CFG_WHEEL_INK
-        ; A homing type, when that routine exists, would be a second row:
+enemy_spin:                     ; the spinning wheel (wspin.asm): its ink
+        db CFG_WHEEL_BOB
+        db CFG_WHEEL_BOB_SPEED
+        db CFG_WHEEL_WOBBLE
+        db 0
+        db CFG_SPIN_INK
+        ; A homing type, when that routine exists, would be another row:
         ; db 6, 1, 0, 1, BRIGHT | RED | (BLUE << 3)

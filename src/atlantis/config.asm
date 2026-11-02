@@ -95,6 +95,10 @@ CFG_WHEEL_WOBBLE    equ 0
 ; moves on, the cell is put back.
 CFG_WHEEL_INK       equ BRIGHT | BLACK | (BLUE << 3)
 
+; The second kind of bomb, the spinning wheel (wspin.asm), the same way.
+; Red, so the player sees at once that it is not the pulsar.
+CFG_SPIN_INK        equ BRIGHT | RED | (BLUE << 3)
+
 ; --- Silo missiles (missile.asm) ----------------------------------------------
 ; One at a time. After a random wait, a silo on the screen arms its
 ; missile: it sits in the hatch, scrolling with the ground, then flies
@@ -138,19 +142,25 @@ CFG_PTS_MISSILE     equ 10
 ;   haste    how much faster the bombs fly. 0 is 1 pixel per 1/50
 ;            second. 64 adds a pixel every 4th 1/50 second (a quarter
 ;            faster), 128 every other one (half again). Up to 255.
+;   bomb     which bomb: BOMB_P the pulsar, BOMB_W the spinning wheel.
+;            A bomb already in flight when the level changes keeps its
+;            kind; the next one is the new level's.
 ; Level 1 is the game as it was: the soak expects that. After the last
 ; row, the last row repeats.
+BOMB_P              equ 0       ; the pulsar
+BOMB_W              equ 1       ; the spinning wheel
+
         MACRO CFG_LEVELS
-        ;          points  gap min  gap max  haste
-        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0
-        LEVEL_ROW  300,    70,      185,     24
-        LEVEL_ROW  400,    65,      170,     48
-        LEVEL_ROW  500,    60,      155,     72
-        LEVEL_ROW  600,    55,      140,     96
-        LEVEL_ROW  700,    50,      125,     120
-        LEVEL_ROW  800,    45,      110,     144
-        LEVEL_ROW  900,    40,      95,      168
-        LEVEL_ROW  1000,   35,      80,      192
+        ;          points  gap min  gap max  haste  bomb
+        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P
+        LEVEL_ROW  300,    70,      185,     24,    BOMB_P
+        LEVEL_ROW  400,    65,      170,     48,    BOMB_W
+        LEVEL_ROW  500,    60,      155,     72,    BOMB_W
+        LEVEL_ROW  600,    55,      140,     96,    BOMB_W
+        LEVEL_ROW  700,    50,      125,     120,   BOMB_W
+        LEVEL_ROW  800,    45,      110,     144,   BOMB_W
+        LEVEL_ROW  900,    40,      95,      168,   BOMB_W
+        LEVEL_ROW  1000,   35,      80,      192,   BOMB_W
         ENDM
 
 ; How long the "LEVEL n" banner stays up, in 1/50 seconds. 100 is two

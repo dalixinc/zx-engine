@@ -39,22 +39,25 @@
 ; first), the shortest missile gap, how many values the gap can take
 ; (max - min + 1), and the bomb's haste: what is added to a fraction
 ; each 1/50 second, an extra pixel each time it carries. 0 is the old
-; 1 pixel per 1/50 second; 64 is a quarter faster.
-LEVEL_ROW_BYTES equ 5
+; 1 pixel per 1/50 second; 64 is a quarter faster. Then the bomb's kind
+; (BOMB_P or BOMB_W).
+LEVEL_ROW_BYTES equ 6
 
 level_rows = 0
-        MACRO LEVEL_ROW need, gmin, gmax, haste
+        MACRO LEVEL_ROW need, gmin, gmax, haste, bomb
         ASSERT need >= 1 && need <= 9999, "a level needs 1 to 9999 points"
         ASSERT gmin <= gmax && gmax <= 255 && gmax - gmin + 1 <= 255
         ASSERT haste >= 0 && haste <= 255
+        ASSERT bomb == BOMB_P || bomb == BOMB_W
         IF level_rows == 0
         ; The soak plays level 1 and its frame numbers expect the old game.
         ASSERT haste == 0, "level 1's bombs must keep the old speed"
+        ASSERT bomb == BOMB_P, "level 1's bomb is the pulsar"
         ASSERT gmin == CFG_MISSILE_GAP_MIN && gmax == CFG_MISSILE_GAP_MAX, "level 1's missile wait is CFG_MISSILE_GAP_*"
         ENDIF
         db (((need % 100) / 10) << 4) | (need % 10)
         db (((need / 1000) % 10) << 4) | ((need / 100) % 10)
-        db gmin, gmax - gmin + 1, haste
+        db gmin, gmax - gmin + 1, haste, bomb
 level_rows = level_rows + 1
         ENDM
 
@@ -83,6 +86,7 @@ level_n:        db 1            ; the same, binary, for the codes
 start_level:    db 1            ; binary: where the next game starts (codes.asm)
 level_row:      dw 0            ; this level's row of level_tab
 level_next:     ds 3            ; the score that finishes this level, BCD
+level_bomb:     db BOMB_P       ; this level's bomb (wheel_type)
 
 ; What row 1 needs. Bit 0 the hearts, bit 1 the words and numbers, bit 2
 ; the banner's clock. main_loop tests the byte once a step.
@@ -299,6 +303,9 @@ level_enter:
         inc hl
         ld a,(hl)
         ld (wheel_haste),a
+        inc hl
+        ld a,(hl)
+        ld (level_bomb),a
         ret
 
 ;------------------------------------------------------------------------------
