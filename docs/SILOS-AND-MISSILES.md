@@ -15,7 +15,7 @@ seabed:
 | Row | Part | Colours |
 |---|---|---|
 | 21 (weed) | a dome with a hatch | green on blue, the seaweed's own colours |
-| 22 (sand) | a tower with ribs, cut out of the dunes by a blue edge | yellow on blue, the sand's colours |
+| 22 (sand) | a tower with ribs, cut out of the dunes by a blue edge, and the Trigon's serifed T (the wheel bomb's hub) cut into it in blue | yellow on blue, the sand's colours |
 | 23 (ground) | a black base | black on yellow, the ground's colours |
 
 ![before](../build/silo-before.png)

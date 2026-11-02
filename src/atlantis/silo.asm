@@ -12,12 +12,12 @@
 ;   .##############.
 ;   ################
 ;   -##############-   row 22: the tower. Yellow on blue. The paper down
-;   -#-##########-#-   each side cuts it out of the dunes.
-;   -#-##########-#-
-;   -##############-
-;   -##############-
-;   -#-##########-#-
-;   -#-##########-#-
+;   -#-##########-#-   each side cuts it out of the dunes. In the middle,
+;   -#-##------##-#-   cut in blue, the Trigon's serifed T, the one on
+;   -#-##-#--#-##-#-   the hub of the wheel bomb (gfx/wheel.txt).
+;   -######--######-
+;   -#-####--####-#-
+;   -#-###----###-#-
 ;   -##############-
 ;   ################   row 23: the base, in the ground buffer. Black on
 ;   ################   yellow. Only the ink is used: these 16 bytes
@@ -61,15 +61,17 @@ SILO_O6         equ %0111111111111110
 SILO_D7         equ %1111111111111111
 SILO_O7         equ %1111111111111111
 
+; The T is pixels 5-10, cleared out of the yellow: the bar, the two
+; serifs hanging from its ends, the stem, and the wider foot.
 SILO_TOWER_A    equ %0111111111111110
 SILO_TOWER_B    equ %0101111111111010
 SILO_D8         equ SILO_TOWER_A
 SILO_D9         equ SILO_TOWER_B
-SILO_D10        equ SILO_TOWER_B
-SILO_D11        equ SILO_TOWER_A
-SILO_D12        equ SILO_TOWER_A
-SILO_D13        equ SILO_TOWER_B
-SILO_D14        equ SILO_TOWER_B
+SILO_D10        equ %0101100000011010   ; bar
+SILO_D11        equ %0101101001011010   ; serifs, and the top of the stem
+SILO_D12        equ %0111111001111110   ; stem
+SILO_D13        equ %0101111001111010   ; stem
+SILO_D14        equ %0101110000111010   ; foot
 SILO_D15        equ SILO_TOWER_A
 SILO_O_TOWER    equ %1111111111111111
 

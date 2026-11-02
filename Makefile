@@ -31,7 +31,8 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/scenery.asm src/atlantis/scroll.asm \
              src/atlantis/stats.asm src/atlantis/rate.asm \
              src/atlantis/menu.asm src/atlantis/wheel.asm src/atlantis/hit.asm src/atlantis/torpedo.asm \
-             src/atlantis/fastsprite.asm \
+             src/atlantis/fastsprite.asm src/atlantis/boom.asm src/atlantis/sound.asm \
+             src/atlantis/silo.asm src/atlantis/missile.asm \
              src/atlantis/soak.asm $(SHARED)
 
 TAP       := build/atlantis.tap
