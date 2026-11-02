@@ -51,9 +51,10 @@ lost life (tune them in `config.asm`, `CFG_*_SND_*`). The last life
 plays a death knell, then the game goes back to the menu, which says
 GAME OVER.
 
-Now and then a silo arms a missile: it sits in the hatch for half a
-second, scrolling with the ground, then flies straight up and is gone
-below the hearts. Touching it is a hit, the same as a bomb. One is up
+Now and then a silo near the diver arms a missile: it sits in the hatch
+for half a second, scrolling with the ground, then flies straight up and
+is gone below the hearts. Only a silo whose missile will leave within
+`CFG_MISSILE_RANGE` pixels of him fires, so they come up close. Touching it is a hit, the same as a bomb. One is up
 at a time; the wait between them, the warning and the speed are
 `CFG_MISSILE_*` in `config.asm`.
 

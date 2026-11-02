@@ -106,6 +106,12 @@ CFG_WHEEL_INK       equ BRIGHT | BLACK | (BLUE << 3)
 CFG_MISSILE_GAP_MIN  equ 75
 CFG_MISSILE_GAP_MAX  equ 200
 
+; Only a silo near the diver fires: its missile must leave within this
+; many pixels, either side, of the middle of the diver. Smaller is more
+; dangerous: 0 is straight up under him. Until a silo comes that close,
+; the wait is over but nothing fires. Up to 127. 40 is five characters.
+CFG_MISSILE_RANGE    equ 40
+
 ; How long it sits in the hatch first, in 1/50 seconds: the warning.
 ; It leaves a few frames later than this, when the ground has put it
 ; where it is cheapest to draw. Up to 64.

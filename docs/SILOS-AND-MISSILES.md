@@ -67,7 +67,18 @@ change:
 `src/atlantis/missile.asm`, art in `gfx/missile.txt` (6×8, white on blue).
 
 - **One at a time.** After a random wait (`CFG_MISSILE_GAP_MIN`,
-  `_MAX`, in 1/50 s), a random silo on screen arms its missile.
+  `_MAX`, in 1/50 s), a silo on screen near the diver arms its missile.
+- **Only near the diver.** A silo can fire only if its missile will
+  leave within `CFG_MISSILE_RANGE` pixels (40) of the middle of the
+  diver. If several can, one is chosen at random.
+  - The test uses where the missile will be when it leaves, not where
+    the silo is now. The ground carries the silo about
+    `CFG_MISSILE_ARM + 4` pixels left while it waits in the hatch.
+  - Until a silo comes that close, the wait is over but nothing fires.
+  - In play the diver, sitting still, lost all three lives in under
+    half a minute.
+  - `MEAS_MISSILE` ignores the range, so a measurement always has a
+    missile up.
 - **The warning.** It sits in the hatch for `CFG_MISSILE_ARM`
   (half a second), scrolling with the ground. Its position comes from
   the silo's world column, so it stays on the silo at both speeds.

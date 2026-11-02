@@ -2,7 +2,8 @@
 ; missile.asm - the silos fire missiles straight up
 ;
 ; One missile at a time. After a random wait (CFG_MISSILE_GAP_MIN to
-; _MAX), a silo on screen is picked and its missile sits in the hatch,
+; _MAX), a silo on screen near the diver (CFG_MISSILE_RANGE) is picked,
+; at random if there are several, and its missile sits in the hatch,
 ; scrolling with the ground, for CFG_MISSILE_ARM. That is the warning.
 ; Then it leaves, straight up, CFG_MISSILE_SPEED pixels per 1/50 second,
 ; and keeps the screen column it left from. It is gone below the hearts
@@ -61,6 +62,8 @@ MHIT_Y_SPAN     equ HIT_DIVER_B - MHIT_Y_LO + 1
         ASSERT CFG_MISSILE_GAP_MAX - CFG_MISSILE_GAP_MIN + 1 <= 255
         ASSERT CFG_MISSILE_ARM <= 64, "it would scroll off the left before it leaves"
         ASSERT MSL_PICK_MIN <= MSL_PICK_MAX
+        ASSERT MSL_PICK_MIN * 8 + MSL_LEAD >= 0, "the missile's x when it leaves would be negative"
+        ASSERT CFG_MISSILE_RANGE >= 0 && CFG_MISSILE_RANGE <= 127
 
 ; One masked byte: save what is under it at (BC), then
 ;   screen = (screen AND mask) OR data
@@ -183,12 +186,49 @@ missile_armed:
 ;------------------------------------------------------------------------------
         MACRO MSL_CANDIDATE     ; Z clear: A is not a column that can fire
         cp MSL_PICK_MIN
-        jr c,1F                 ; -1 is 255, so it fails the next test
+        jr c,1F                 ; NZ: below. -1 is 255, so it fails next.
         cp MSL_PICK_MAX + 1
-        jr nc,1F
-        cp a                    ; Z: it can
+        jr c,2F
+        or a                    ; NZ: above (CP left Z on MSL_PICK_MAX + 1)
+        jr 1F
+2:
+    IFDEF MEAS_MISSILE
+        cp a                    ; measurement: any silo, so one is always up
+    ELSE
+        call msl_near           ; Z: it will leave close to the diver
+    ENDIF
 1:
         ENDM
+
+; Only a silo near the diver fires: one whose missile will leave
+; within CFG_MISSILE_RANGE pixels of his middle. It is armed now and
+; leaves about CFG_MISSILE_ARM + 4 pixels further left (the ground
+; scrolls a pixel each 1/50 second, and it waits for front_fine 3..5),
+; so that is where it is measured.
+; In: A = the silo's aligned column, MSL_PICK_MIN..MSL_PICK_MAX.
+; Out: Z if it is near. Preserves A, BC, HL. Corrupts: F, DE
+MSL_LEAD        equ MSL_DX - CFG_MISSILE_ARM - 4
+MSL_AIM         equ (DIVER_WIDTH - MISSILE_WIDTH) / 2
+
+msl_near:
+        ld d,a
+        add a,a
+        add a,a
+        add a,a                 ; the silo's x now (n <= 29: no carry)
+        add a,MSL_LEAD          ; the missile's x when it leaves
+        ld e,a
+        ld a,(diver_x)
+        add a,MSL_AIM           ; a missile there would hit his middle
+        sub e
+        jr nc,.abs
+        neg
+.abs:   cp CFG_MISSILE_RANGE + 1
+        ld a,d
+        jr nc,.far
+        cp a                    ; Z
+        ret
+.far:   or a                    ; NZ: a column that can fire is never 0
+        ret
 
 missile_pick:
         ld a,(silo_n)
