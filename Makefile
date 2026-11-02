@@ -9,6 +9,8 @@
 # make shot       headless screenshot of Atlantis (Linux, needs xvfb)
 # make input-test headless key/Kempston test of the DEMO (it reads row 22)
 # make sprite-test headless diver + fish test of the DEMO
+# make web       rebuild, then copy the snapshot and the tape to docs/play/
+#                 for the browser version (docs/WEB.md). Commit and push them.
 # make clean
 
 ASM       ?= sjasmplus
@@ -40,7 +42,7 @@ SNA       := build/atlantis.sna
 DEMO_TAP  := build/diver.tap
 DEMO_SNA  := build/diver.sna
 
-.PHONY: all run run-sna shot timing demo run-demo input-test sprite-test soak clean
+.PHONY: all run run-sna shot timing demo run-demo input-test sprite-test soak web clean
 
 all: $(TAP)
 
@@ -97,6 +99,14 @@ timing: $(ATL_SRC) $(ATL_GFX) | build
 # 1024 scripted frames; the checks themselves are slow, so give it two minutes.
 soak: $(ATL_SRC) $(ATL_GFX) | build
 	$(ASM) --nologo --fullpath=off -DSOAK --lst=build/atlantis-soak.lst src/atlantis/main.asm
+
+# The web page (docs/play/index.html, JSSpeccy 3) plays the snapshot and
+# offers the tape to download. The copies are committed, because GitHub
+# Pages serves docs/ straight from git.
+web: $(TAP) $(SNA)
+	cp $(SNA) docs/play/atlantis.sna
+	cp $(TAP) docs/play/atlantis.tap
+	@echo "docs/play/atlantis.sna and .tap updated: commit them and push to update the site"
 
 clean:
 	rm -f build/*.tap build/*.sna build/*.lst build/*.sym build/*.png
