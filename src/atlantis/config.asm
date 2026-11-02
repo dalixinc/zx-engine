@@ -112,6 +112,9 @@ CFG_MISSILE_GAP_MAX  equ 200
 ; the wait is over but nothing fires. Up to 127. 40 is five characters.
 CFG_MISSILE_RANGE    equ 40
 
+; (The wait above is level 1's. Later levels take theirs from
+; CFG_LEVELS, below.)
+
 ; How long it sits in the hatch first, in 1/50 seconds: the warning.
 ; It leaves a few frames later than this, when the ground has put it
 ; where it is cheapest to draw. Up to 64.
@@ -120,6 +123,39 @@ CFG_MISSILE_ARM      equ 25
 ; Pixels it climbs per 1/50 second. From the hatch to the top of the
 ; water is about 150 pixels: 2 takes a second and a half, 3 one second.
 CFG_MISSILE_SPEED    equ 2
+
+; --- Score and levels (score.asm) ---------------------------------------------
+; Points for each thing the torpedo hits. Something that runs into the
+; diver scores nothing. 0 to 99 each.
+CFG_PTS_FISH        equ 1
+CFG_PTS_BOMB        equ 2
+CFG_PTS_MISSILE     equ 10
+
+; The levels, one row each, in order:
+;   points   what this level needs, on top of the last level's target
+;   gap min, gap max   the missile wait for this level (see above), in
+;            1/50 seconds
+;   haste    how much faster the bombs fly. 0 is 1 pixel per 1/50
+;            second. 64 adds a pixel every 4th 1/50 second (a quarter
+;            faster), 128 every other one (half again). Up to 255.
+; Level 1 is the game as it was: the soak expects that. After the last
+; row, the last row repeats.
+        MACRO CFG_LEVELS
+        ;          points  gap min  gap max  haste
+        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0
+        LEVEL_ROW  300,    70,      185,     24
+        LEVEL_ROW  400,    65,      170,     48
+        LEVEL_ROW  500,    60,      155,     72
+        LEVEL_ROW  600,    55,      140,     96
+        LEVEL_ROW  700,    50,      125,     120
+        LEVEL_ROW  800,    45,      110,     144
+        LEVEL_ROW  900,    40,      95,      168
+        LEVEL_ROW  1000,   35,      80,      192
+        ENDM
+
+; How long the "LEVEL n" banner stays up, in 1/50 seconds. 100 is two
+; seconds.
+CFG_BANNER_TIME     equ 100
 
 ; The beeper (sound.asm). Each explosion is white noise, played in
 ; short bursts in the spare time at the end of each step, so it never

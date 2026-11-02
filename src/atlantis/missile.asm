@@ -103,6 +103,8 @@ msl_world:      dw 0            ; world column of its silo's left half
 msl_x:          db 0            ; left pixel of the picture
 msl_y:          db 0            ; top pixel row
 msl_seed:       db $C3          ; its own shift register. Never 0.
+msl_gap_min:    db CFG_MISSILE_GAP_MIN  ; this level's wait (score.asm sets
+msl_gap_span:   db CFG_MISSILE_GAP_MAX - CFG_MISSILE_GAP_MIN + 1 ; them)
 
 ; What the last draw covered: bytes a row (1 or 2), plus MSL_LOW when it
 ; was drawn after the copy. 0 = nothing on screen. Restore clears it.
@@ -121,7 +123,7 @@ missile_reset:
     IFDEF MEAS_MISSILE
         ld (msl_wait),a
     ELSE
-        ld a,CFG_MISSILE_GAP_MIN
+        ld a,(msl_gap_min)
         ld (msl_wait),a
     ENDIF
         ret
@@ -287,12 +289,15 @@ missile_gone:
         ld (msl_wait),a         ; measurement: the next one at once
         ret
     ELSE
+        ld a,(msl_gap_span)
+        ld b,a
         call msl_rng
-        ld b,CFG_MISSILE_GAP_MAX - CFG_MISSILE_GAP_MIN + 1
 .mod:   sub b
         jr nc,.mod
         add a,b
-        add a,CFG_MISSILE_GAP_MIN
+        ld b,a
+        ld a,(msl_gap_min)
+        add a,b
         ld (msl_wait),a
         ret
     ENDIF
@@ -383,6 +388,8 @@ missile_shot:
         call boom_at_missile
         call missile_gone
         call torpedo_spent
+        PTS_BCD CFG_PTS_MISSILE
+        call score_add
         scf
         ret
 

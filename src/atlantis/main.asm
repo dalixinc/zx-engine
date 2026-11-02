@@ -340,9 +340,9 @@ boom_hook:
                                 ; the beam is about to read that row.
                                 ; boom_step while an explosion is up: it
                                 ; goes under the sprites (boom.asm).
-        ld a,(lives_dirty)      ; the hearts, while no sprite is on screen
-        or a
-        call nz,lives_draw
+        ld a,(hud_dirty)        ; row 1: hearts, score, level, and the
+        or a                    ; banner's clock, while no sprite is on
+        call nz,hud_draw        ; the screen (score.asm)
     IFDEF SOAK
         call soak_after_restore
     ENDIF
@@ -887,6 +887,7 @@ wheel_first:    db 0
         INCLUDE "rate.asm"
         INCLUDE "wheel.asm"
         INCLUDE "hit.asm"
+        INCLUDE "score.asm"      ; before its macros are used
         INCLUDE "torpedo.asm"
         INCLUDE "missile.asm"
         INCLUDE "../fish.asm"
@@ -999,7 +1000,8 @@ DATA_LENGTH     equ data_end - data_start
         ASSERT FISH_SWIM_Y == 76, "the fish stays at the demo's depth"
         ASSERT FISH_SWIM_Y + FISH_HEIGHT <= BACK_ROW * 8, "the fish reaches the seabed; it is drawn before the blit"
         ASSERT TORPEDO_WIDTH == 7 && TORPEDO_BYTES == 2, "the torpedo is one or two bytes a row"
-        ASSERT 2 * (TORP_SPEED + WHEEL_SPEED) < TORP_X_SPAN, "at 25 a torpedo could jump over a bomb"
+        ; A hasty level's bomb can move a second pixel in a 1/50 second.
+        ASSERT 2 * (TORP_SPEED + WHEEL_SPEED + 1) < TORP_X_SPAN, "at 25 a torpedo could jump over a bomb"
         ASSERT CFG_LIVES >= 1 && CFG_LIVES <= 9, "the stat line has one digit for the lives"
         ASSERT HIT_X_SPAN > 0 && HIT_Y_SPAN > 0, "a hit box has no size"
         ASSERT BORDER_FRAMES == 8, "the rrca x3 above assumes BORDER_FRAMES = 8"

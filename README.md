@@ -49,7 +49,16 @@ starts again at the left edge at his starting depth. Explosions crunch
 on the beeper: high for a fish, middle for a bomb, long and low for a
 lost life (tune them in `config.asm`, `CFG_*_SND_*`). The last life
 plays a death knell, then the game goes back to the menu, which says
-GAME OVER.
+GAME OVER with your score. The menu always shows the high score, kept
+until the machine is switched off.
+
+Shooting scores: 1 for a fish, 2 for a bomb, 10 for a missile
+(`CFG_PTS_*`). Something that runs into him scores nothing. The score
+and the level are on row 1, beside the hearts. Each level has a target
+(`CFG_LEVELS` in `config.asm`: 200 points for level 1, then 300 more,
+400 more, and so on). Reaching it puts up a big "LEVEL 2" banner, plays
+a jingle, and the next level's missiles come more often and its bombs
+fly a little faster.
 
 Now and then a silo near the diver arms a missile: it sits in the hatch
 for half a second, scrolling with the ground, then flies straight up and
@@ -99,6 +108,7 @@ src/atlantis/scenery.asm water, sand and ground colours
 src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
 src/atlantis/silo.asm    the silo picture, and the code built from it that draws it
 src/atlantis/missile.asm the silos' missiles: arm, fly, hit, their own draw
+src/atlantis/score.asm   the score, the levels, the line on row 1, the banner
 src/atlantis/stats.asm   the row-0 stat line, Symbol Shift + S
 src/atlantis/wheel.asm   the wheel bomb: drift, bob, spin, one at a time
 src/atlantis/hit.asm     the bomb and the ground against the diver, and the lives
@@ -143,9 +153,9 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
 Atlantis memory: after the loading screen, the tape has two code blocks. The instructions are at
-`$8000-$B75D` (`code_end` is `$B75E`, 14,174 bytes) and must stay below
-`$C000`. The pictures, menu words and tables are at `$C000-$E76B`
-(10,092 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+`$8000-$BB2C` (`code_end` is `$BB2D`, 15,149 bytes) and must stay below
+`$C000`. The pictures, menu words and tables are at `$C000-$E807`
+(10,248 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
 The soak build puts its own checks at `$6000` (`atlantis soak code`), in
 RAM the game does not use, so they do not crowd the game's code.
 A build prints both ends (`atlantis code_end`, `atlantis data_end`), and

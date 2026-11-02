@@ -46,7 +46,6 @@ HIT_Y_SPAN      equ HIT_DIVER_B - HIT_WHEEL_T - HIT_Y_LO + 1
 
 lives:          db CFG_LIVES
 diver_touch:    db 0            ; 1 = the terrain clamp stopped him on the black
-lives_dirty:    db 1            ; 1 = the hearts on row 1 need drawing again
 hit_flash:      db 0            ; steps of red border left; 0 = the heartbeat
 
 ; The hearts sit at the right-hand end of row 1, one cell each. Row 0 is
@@ -131,8 +130,8 @@ diver_hurt:
         ld (diver_x),a
         ld a,CFG_HIT_FLASH
         ld (hit_flash),a
-        ld a,1
-        ld (lives_dirty),a
+        ld hl,hud_dirty
+        set HUD_HEARTS,(hl)     ; the hearts on row 1 need drawing again
         ld hl,lives
         dec (hl)
         jr z,.over
@@ -146,7 +145,7 @@ diver_hurt:
 
 ;------------------------------------------------------------------------------
 ; lives_draw - the hearts on row 1, one for each life left
-; main_loop calls this only when lives_dirty is set, straight after the
+; hud_draw calls this only when HUD_HEARTS is set, straight after the
 ; restores and before any sprite photographs the screen. Every sprite is
 ; off the screen then, so no photograph holds the old hearts, and the
 ; next restore cannot paint one back.
@@ -155,8 +154,8 @@ diver_hurt:
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 lives_draw:
-        xor a
-        ld (lives_dirty),a
+        ld hl,hud_dirty
+        res HUD_HEARTS,(hl)
         ld a,(lives)
         ld c,a                  ; hearts still to draw
         ld hl,LIVES_SCREEN

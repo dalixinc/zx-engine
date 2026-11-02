@@ -21,6 +21,35 @@ str_ctrl_speed: db "Symbol Shift + F  speed",0
 str_ctrl_menu:  db "Symbol Shift + P  menu",0
 str_opt_start:  db "1  Start game",0
 str_game_over:  db "GAME OVER",0
+str_score:      db "SCORE ",0
+str_high:       db "HIGH  ",0
+
+; Row 1 in play: the words, with spaces where score.asm puts the numbers.
+str_hud:        db "SCORE 000000  LEVEL   "
+        ASSERT $ - str_hud == HUD_LEN
+str_level:      db "LEVEL"
+
+; The banner's block letters, three cells by five, bit 2 the left cell.
+banner_font_l:  db %100, %100, %100, %100, %111
+banner_font_e:  db %111, %100, %110, %100, %111
+banner_font_v:  db %101, %101, %101, %101, %010
+banner_font_sp: db 0, 0, 0, 0, 0
+banner_font_0:  db %111, %101, %101, %101, %111
+                db %010, %110, %010, %010, %111
+                db %111, %001, %111, %100, %111
+                db %111, %001, %011, %001, %111
+                db %101, %101, %111, %001, %001
+                db %111, %100, %111, %001, %111
+                db %111, %100, %111, %101, %111
+                db %111, %001, %010, %010, %010
+                db %111, %101, %111, %101, %111
+                db %111, %101, %111, %001, %111
+
+; The levels (config.asm, score.asm).
+level_tab:
+        CFG_LEVELS
+level_end:
+LEVEL_COUNT_ROWS equ level_rows
 
 ; The speed line is one of these two. They are the same length, so
 ; reprinting one on top of the other does not leave a stray letter.

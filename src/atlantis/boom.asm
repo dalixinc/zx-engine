@@ -383,6 +383,8 @@ torpedo_fish:
         cp 22                   ; 15 + TORPEDO_WIDTH
         ret nc
         call torpedo_spent
+        PTS_BCD CFG_PTS_FISH
+        call score_add          ; a shot fish scores; one that bumps him does not
         ld a,(wheel_phase)
         or a
         jp z,boom_at_fish       ; bomb is away: the full burst

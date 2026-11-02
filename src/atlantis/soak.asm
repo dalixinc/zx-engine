@@ -945,9 +945,11 @@ soak_title_check:
 .bad:   ld a,10
         jp soak_fail
 
-; Row 1 against what lives_draw puts there: water up to LIVES_COL, then
-; a heart for each life left, then empty cells. The soak takes no hits,
-; so this is CFG_LIVES hearts, put back by every restore that crossed them.
+; Row 1 against what score.asm and lives_draw put there: the score line
+; (hud_text, one character a cell, from the font), water up to LIVES_COL,
+; then a heart for each life left, then empty cells. The soak takes no
+; hits and shoots nothing, so the line says SCORE 000000 LEVEL 1 and the
+; hearts are CFG_LIVES, put back by every restore that crossed them.
 ; Out: Z if it matched. Corrupts: AF, BC, DE, HL, IX
 soak_hearts_row:
         ld a,LIVES_ROW * 8
@@ -958,6 +960,8 @@ soak_hearts_row:
         ld h,(ix+1)
         ld b,0                  ; column
 .byte:  ld a,b
+        cp HUD_LEN
+        jr c,.text
         sub LIVES_COL
         jr c,.water
         push hl
@@ -982,6 +986,31 @@ soak_hearts_row:
         jr nz,.line
         xor a
         ret
+        ; Column B is a character of the score line. Its font byte for
+        ; this pixel line (8 - C) is the one that should be there.
+.text:  push de
+        push hl
+        ld e,b
+        ld d,0
+        ld hl,hud_text
+        add hl,de
+        ld a,(hl)
+        ld l,a
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld de,FONT_BASE + 8
+        add hl,de
+        ld a,l
+        sub c                   ; + 8 - C: this line of the glyph
+        ld l,a
+        jr nc,.got
+        dec h
+.got:   ld a,(hl)
+        pop hl
+        pop de
+        jr .cmp
 
 ; In:  A = character row, HL -> buffer (advanced by 8*32)
 ;      soak_title_mode 0 = compare, 1 = capture

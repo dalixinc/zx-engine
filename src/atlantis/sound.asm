@@ -47,6 +47,7 @@ snd_pitch:      db 1            ; passes each noise value is held
 snd_seed:       db $5A          ; the LFSR. Never 0.
 snd_border:     db 0            ; border colour, from main_loop's heartbeat
 snd_gate:       db 1            ; 0 = this wait stays quiet (25's picture)
+snd_tune:       dw 0            ; the next note of a tune; 0 = a noise sound
 
 ; A description, in the order the variables above are kept.
         MACRO SND_DEF frames, lines, density, pitch
@@ -97,12 +98,81 @@ snd_start:
         ld de,snd_left
         ld bc,6
         ldir
+        ld hl,0
+        ld (snd_tune),hl        ; a noise sound ends any tune
+        ld hl,snd_op_noise
+        ; fall through
+
+; HL = the seven bytes snd_tick steps its value with: noise or tone.
+snd_set_op:
+        ld de,snd_tick.op
+        ld bc,7
+        ldir
         ret
+
+;------------------------------------------------------------------------------
+; snd_tune_start - a tune: HL = notes, two bytes each, 0 to end.
+;   half-period  scanlines each half of the square wave lasts. The tone
+;                is 15625 / (2 * this) Hz: 15 is C5, 12 E5, 10 G5.
+;   length       in 1/50 seconds
+; The tune plays in the same spare time as the noise, one note after
+; another, at the same tempo at 50 and 25. A noise sound started over it
+; ends it.
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+snd_tune_start:
+        ld (snd_tune),hl
+        ld hl,snd_op_tone
+        call snd_set_op
+        ; fall through
+
+; The next note into snd_pitch and snd_left, or silence at the end.
+; Corrupts: AF, HL
+snd_next_note:
+        ld hl,(snd_tune)
+        ld a,(hl)
+        or a
+        jr z,.end
+        ld (snd_pitch),a
+        inc hl
+        ld a,(hl)
+        ld (snd_left),a
+        inc hl
+        ld (snd_tune),hl
+        ret
+.end:   ld (snd_left),a         ; 0: silent
+        ld l,a
+        ld h,a
+        ld (snd_tune),hl
+        ret
+
+; snd_tick's step, as noise or as a tone. Both are 7 bytes and 27
+; T-states, so a pass stays one scanline whichever is in.
+snd_op_noise:
+        srl d                   ; Galois LFSR: shift, and XOR the taps
+        sbc a,a
+        and $B8
+        xor d
+        ld d,a
+snd_op_tone:
+        ld a,d                  ; 0 and $FF in turn: under and over the
+        cpl                     ; density, so the speaker is a square wave
+        ld d,a
+        and $FF                 ; padding, 7 T-states
+        nop
+        nop
+        ASSERT $ - snd_op_tone == 7 && snd_op_tone - snd_op_noise == 7
+
+; The level jingle: G4, C5, E5, G5, a breath of E5, then G5 held.
+snd_tune_level:
+        db 20, 5, 15, 5, 12, 5, 10, 10, 12, 4, 10, 20, 0
 
 ; snd_reset - silence, for a new game and for the knell. Corrupts: AF
 snd_reset:
         xor a
         ld (snd_left),a
+        ld (snd_tune),a
+        ld (snd_tune + 1),a
         ret
 
 ;------------------------------------------------------------------------------
@@ -118,6 +188,11 @@ snd_reset:
 ; Corrupts: AF, BC, DE, HL, IX
 ;------------------------------------------------------------------------------
 snd_tick:
+        ld b,a
+        ld a,(snd_tune + 1)     ; tunes are above $00FF
+        or a
+        jp nz,.tune
+        ld a,b
         dec a
         ld (snd_left),a
         ld a,(snd_density)
@@ -161,10 +236,10 @@ snd_tick:
         jr .held
 .step:  ld a,ixh                ; step: 12 + 8 + 8 + 27 = 55
         ld ixl,a
-        srl d                   ; Galois LFSR: shift, and XOR the taps
+.op:    srl d                   ; Galois LFSR: shift, and XOR the taps
         sbc a,a                 ; when a 1 fell out. No branch, so every
-        and $B8                 ; pass is the same length.
-        xor d
+        and $B8                 ; pass is the same length. A tune puts
+        xor d                   ; snd_op_tone here instead.
         ld d,a
 .held:  ld a,d
         cp c                    ; carry: below the density
@@ -192,6 +267,35 @@ snd_tick:
         ld de,vsync_flag
         or 1                    ; NZ: the frame is over
         ret
+
+        ; A tune. This step's 1/50 seconds come off the note; at the end
+        ; of it, the next one. Then a burst of the tone that lasts until
+        ; the interrupt: the whole of the spare time.
+.tune:  ld a,(step_ticks)
+        ld c,a
+        ld a,b
+        sub c
+        jr z,.next
+        jr nc,.keep
+.next:  call snd_next_note
+        ld a,(snd_left)
+        or a
+        jr nz,.play
+        ld hl,0                 ; the tune is over: nothing played
+        ld de,vsync_flag
+        ret                     ; Z
+.keep:  ld (snd_left),a
+.play:  ld c,128                ; the tone's middle
+        ld b,255                ; lines: until the interrupt
+        ld a,(snd_pitch)
+        ld ixh,a
+        ld ixl,1
+        ld d,0
+        ld a,(snd_border)
+        and 7
+        ld e,a
+        ld hl,0
+        jp .line
 
 ;------------------------------------------------------------------------------
 ; snd_knell - the last life. A Pac-Man style death: falling "wah"s, each

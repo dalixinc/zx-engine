@@ -226,6 +226,8 @@ torpedo_hit:
 
         call wheel_remove
         call boom_at_bomb
+        PTS_BCD CFG_PTS_BOMB
+        call score_add
         jr torpedo_spent
 
 ;------------------------------------------------------------------------------

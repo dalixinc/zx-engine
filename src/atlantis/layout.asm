@@ -45,6 +45,9 @@ WATER_ATTR      equ BRIGHT | WHITE | (BLUE << 3)
 TITLE_ATTR      equ BRIGHT | YELLOW | (BLUE << 3)
 ; GAME OVER on the menu. White on red stands out from the yellow title.
 GAME_OVER_ATTR  equ BRIGHT | WHITE | (RED << 3)
+; The "LEVEL n" banner's blocks (score.asm): yellow cells on the blue sea.
+; A sprite crossing one is drawn in blue on the yellow.
+BANNER_ATTR     equ BRIGHT | BLUE | (YELLOW << 3)
 SAND_ATTR       equ BRIGHT | YELLOW | (BLUE << 3)
 WEED_ATTR       equ BRIGHT | GREEN | (BLUE << 3)
 GROUND_ATTR     equ BRIGHT | BLACK | (YELLOW << 3)
