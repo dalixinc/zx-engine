@@ -220,6 +220,24 @@ CFG_DIVER_SND_LINES   equ 72
 CFG_DIVER_SND_DENSITY equ 128
 CFG_DIVER_SND_PITCH   equ 3
 
+; The torpedo leaving: a laser "pew", a quick falling tone. Each
+; LASER_NOTE is the half-period of a square wave in scanlines: the tone
+; is 7812 / this Hz, so 2 is 3.9 kHz, 4 is 2 kHz, 8 is 980 Hz. 1 to
+; 255. Each note lasts CFG_LASER_TICKS 1/50 seconds. 2 is the same at
+; 50 and 25 (one step of 25 is two ticks), 240 ms for these six. It plays only in the spare time at the end of each step, so it is
+; thinner when the diver is on the seabed. It is the least of the
+; sounds: it starts only into silence or over the last laser, so it
+; never cuts off an explosion or the level jingle.
+CFG_LASER_TICKS     equ 2
+        MACRO CFG_LASER
+        LASER_NOTE 2
+        LASER_NOTE 3
+        LASER_NOTE 4
+        LASER_NOTE 5
+        LASER_NOTE 7
+        LASER_NOTE 9
+        ENDM
+
 ; The last life: the death knell, played through before GAME OVER, while
 ; the last picture stays on the screen. Nothing else is running then,
 ; so it is a plain tone and can take as long as it likes. It is a run

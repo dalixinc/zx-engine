@@ -140,7 +140,11 @@ torpedo_fire:
         ld de,CFG_FIRE_COOLDOWN
         add hl,de
         ld (fire_ready),hl
+    IFNDEF NO_SOUND
+        jp snd_laser_start      ; pew
+    ELSE
         ret
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; torpedo_move - one step along its row. main_loop calls this only while

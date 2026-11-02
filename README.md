@@ -55,7 +55,8 @@ touches him costs one: the bomb vanishes, a heart goes, and the border
 flashes red. The hit boxes are a little smaller than the pictures, so a
 graze of the flippers or the rim does not count. Sinking onto the black
 ground, a rock or a silo is a hit too: he explodes, loses a heart, and
-starts again at the left edge at his starting depth. Explosions crunch
+starts again at the left edge at his starting depth. Each torpedo leaves with a falling laser
+"pew" (`CFG_LASER`). Explosions crunch
 on the beeper: high for a fish, middle for a bomb, long and low for a
 lost life (tune them in `config.asm`, `CFG_*_SND_*`). The last life
 plays a death knell, then the game goes back to the menu, which says
@@ -174,7 +175,7 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
 Atlantis memory: after the loading screen, the tape has two code blocks. The instructions are at
-`$8000-$BE86` (`code_end` is `$BE87`, 16,007 bytes) and must stay below
+`$8000-$BEB3` (`code_end` is `$BEB4`, 16,052 bytes) and must stay below
 `$C000`. The pictures, menu words and tables are at `$C000-$EBA0`
 (11,169 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
 The spinning wheel's shifted pictures are built at start-up in
