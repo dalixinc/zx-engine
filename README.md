@@ -9,12 +9,12 @@ Atlantis is the same diver, the same fish, and the same scroll, with a
 different seabed. The bottom row is black ground, 8 pixels tall, one pixel
 per frame. Above it is yellow sand, 8 pixels, one pixel every other frame.
 Above the sand, now and then, a green seaweed plant that scrolls with the
-sand. Everything above that is open water. A silo is still 16 pixels tall,
-so it pokes up into the sand and is drawn in the sand's colours there.
-That clash is left visible. The diver can sink over the sand and the weed.
-He cannot touch the black: his lowest pixel stays one pixel above the
-ground, a rock, or a silo, including the part of the silo that stands in
-the sand.
+sand. Everything above that is open water. A missile silo is 16 pixels
+wide and stands up through all three bands: a black base in the ground,
+a yellow tower in the sand, and a green dome in the weed row. Each part
+uses its own row's colours, so it does not clash with the sand or a
+plant. The diver can sink over the sand and the weed, but touching the
+black ground, a rock or a silo costs a life.
 
 **New to the sprite code? Read [docs/SPRITES.md](docs/SPRITES.md).
 New to the scrolling ground? Read [docs/SCROLLING.md](docs/SCROLLING.md)**
@@ -49,11 +49,27 @@ starts again at the left edge at his starting depth. Explosions crunch
 on the beeper: high for a fish, middle for a bomb, long and low for a
 lost life (tune them in `config.asm`, `CFG_*_SND_*`). The last life
 plays a death knell, then the game goes back to the menu, which says
-GAME OVER.
+GAME OVER with your score. The menu always shows the high score, kept
+until the machine is switched off.
+
+Shooting scores: 1 for a fish, 2 for a bomb, 10 for a missile
+(`CFG_PTS_*`). Something that runs into him scores nothing. The score
+and the level are on row 1, beside the hearts. Each level has a target
+(`CFG_LEVELS` in `config.asm`: 200 points for level 1, then 300 more,
+400 more, and so on). Reaching it puts up a big "LEVEL 2" banner, plays
+a jingle, and the next level's missiles come more often and its bombs
+fly a little faster.
+
+Now and then a silo near the diver arms a missile: it sits in the hatch
+for half a second, scrolling with the ground, then flies straight up and
+is gone below the hearts. Only a silo whose missile will leave within
+`CFG_MISSILE_RANGE` pixels of him fires, so they come up close. Touching it is a hit, the same as a bomb. One is up
+at a time; the wait between them, the warning and the speed are
+`CFG_MISSILE_*` in `config.asm`.
 
 Fire launches a torpedo from the nose of his jet unit, the way he is
-facing. It runs along that row until it leaves the screen, and a bomb it
-touches is gone. One at a time: a new press fires again once the last one
+facing. It runs along that row until it leaves the screen, and a bomb or
+a missile it touches blows up. One at a time: a new press fires again once the last one
 has gone. It does not follow him up or down.
 
 The three Symbol Shift chords fire once, the moment both keys go down.
@@ -90,6 +106,9 @@ src/atlantis/menu.asm    the start screen, and Symbol Shift + P back to it
 src/atlantis/rate.asm    50 or 25 frames a second, the chords, the spare-scanline count
 src/atlantis/scenery.asm water, sand and ground colours
 src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
+src/atlantis/silo.asm    the silo picture, and the code built from it that draws it
+src/atlantis/missile.asm the silos' missiles: arm, fly, hit, their own draw
+src/atlantis/score.asm   the score, the levels, the line on row 1, the banner
 src/atlantis/stats.asm   the row-0 stat line, Symbol Shift + S
 src/atlantis/wheel.asm   the wheel bomb: drift, bob, spin, one at a time
 src/atlantis/hit.asm     the bomb and the ground against the diver, and the lives
@@ -118,6 +137,8 @@ gfx/wheel.txt            wheel bomb, 12 x 12, 4 frames, mirror off (the T stays 
 gfx/wheel.asm            GENERATED from wheel.txt: 8 shifts x 4 frames, one facing
 gfx/torpedo.txt          torpedo, 7 x 2, one frame
 gfx/torpedo.asm          GENERATED from torpedo.txt: 8 shifts x 1 frame x 2 facings
+gfx/missile.txt          silo missile, 6 x 8, one frame, mirror off
+gfx/missile.asm          GENERATED from missile.txt: 8 shifts x 1 frame
 gfx/loading.scr          GENERATED loading screen, 6912 bytes (tools/mkloadscreen.py)
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
@@ -132,9 +153,11 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
 Atlantis memory: after the loading screen, the tape has two code blocks. The instructions are at
-`$8000-$A462` (`code_end` is `$A463`, 9,315 bytes) and must stay below
-`$C000`. The pictures, menu words and tables are at `$C000-$E368`
-(9,065 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+`$8000-$BB2C` (`code_end` is `$BB2D`, 15,149 bytes) and must stay below
+`$C000`. The pictures, menu words and tables are at `$C000-$E807`
+(10,248 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+The soak build puts its own checks at `$6000` (`atlantis soak code`), in
+RAM the game does not use, so they do not crowd the game's code.
 A build prints both ends (`atlantis code_end`, `atlantis data_end`), and
 the `ASSERT`s at the end of `src/atlantis/main.asm` stop it if a block
 runs into the next. The wheel bomb is 12 by 12. A shifted row is 2 bytes for shifts 0 to 4
@@ -152,7 +175,7 @@ Engine Demo 1 is smaller: `code_end` is `$A928` (10,536 bytes) and its two
 buffers are `$F000-$F3FF`.
 
 Graphics: `make` regenerates `gfx/fish.asm`, `gfx/diver.asm`,
-`gfx/wheel.asm` and `gfx/torpedo.asm` from the `.txt` art with Python 3 when the art changes,
+`gfx/wheel.asm`, `gfx/torpedo.asm` and `gfx/missile.asm` from the `.txt` art with Python 3 when the art changes,
 and redraws `gfx/loading.scr` when the art or `tools/mkloadscreen.py` changes. The
 generated files are committed, so Windows users can build with `build.bat`
 without Python. After editing the art, run e.g.
@@ -243,10 +266,10 @@ windows-tools/fuse/fuse.exe --machine 48 --no-traps --no-fastload --graphics-fil
 blue, the controls, and the numbered options over the seabed. Press `1`.
 The play screen has no words on it. Open water from the top of the screen
 down to three thin bands at the bottom: a green seaweed plant now and
-then, yellow sand on blue, and a black strip on yellow with rocks and a
-missile silo. The silo's top half stands in the sand and is drawn yellow
-on blue, because that cell's colours are the sand's. The hatch holes show
-blue. That is the colour clash, left visible. The sand and the weed drift
+then, yellow sand on blue, and a black strip on yellow with rocks and
+missile silos. A silo is a black base, a yellow tower cut out of the
+sand, and a green dome (see `docs/images/silo-before.png`,
+`docs/images/silo-after.png` and `docs/images/silo-zoom.png`). The sand and the weed drift
 at half the speed of the black strip. A white fish swims to and fro at the
 old depth. A wheel bomb slides in from the right, one pixel a frame,
 bobbing as it goes, and leaves through the left edge. Its legs spin and

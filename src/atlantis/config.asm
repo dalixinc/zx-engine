@@ -95,6 +95,68 @@ CFG_WHEEL_WOBBLE    equ 0
 ; moves on, the cell is put back.
 CFG_WHEEL_INK       equ BRIGHT | BLACK | (BLUE << 3)
 
+; --- Silo missiles (missile.asm) ----------------------------------------------
+; One at a time. After a random wait, a silo on the screen arms its
+; missile: it sits in the hatch, scrolling with the ground, then flies
+; straight up and keeps its column. A torpedo blows it up. Touching the
+; diver is a hit, the same as a bomb.
+;
+; The wait, in 1/50 seconds, from one missile ending to the next being
+; armed: a random number from _MIN to _MAX. 50 is a second. Up to 255.
+CFG_MISSILE_GAP_MIN  equ 75
+CFG_MISSILE_GAP_MAX  equ 200
+
+; Only a silo near the diver fires: its missile must leave within this
+; many pixels, either side, of the middle of the diver. Smaller is more
+; dangerous: 0 is straight up under him. Until a silo comes that close,
+; the wait is over but nothing fires. Up to 127. 40 is five characters.
+CFG_MISSILE_RANGE    equ 40
+
+; (The wait above is level 1's. Later levels take theirs from
+; CFG_LEVELS, below.)
+
+; How long it sits in the hatch first, in 1/50 seconds: the warning.
+; It leaves a few frames later than this, when the ground has put it
+; where it is cheapest to draw. Up to 64.
+CFG_MISSILE_ARM      equ 25
+
+; Pixels it climbs per 1/50 second. From the hatch to the top of the
+; water is about 150 pixels: 2 takes a second and a half, 3 one second.
+CFG_MISSILE_SPEED    equ 2
+
+; --- Score and levels (score.asm) ---------------------------------------------
+; Points for each thing the torpedo hits. Something that runs into the
+; diver scores nothing. 0 to 99 each.
+CFG_PTS_FISH        equ 1
+CFG_PTS_BOMB        equ 2
+CFG_PTS_MISSILE     equ 10
+
+; The levels, one row each, in order:
+;   points   what this level needs, on top of the last level's target
+;   gap min, gap max   the missile wait for this level (see above), in
+;            1/50 seconds
+;   haste    how much faster the bombs fly. 0 is 1 pixel per 1/50
+;            second. 64 adds a pixel every 4th 1/50 second (a quarter
+;            faster), 128 every other one (half again). Up to 255.
+; Level 1 is the game as it was: the soak expects that. After the last
+; row, the last row repeats.
+        MACRO CFG_LEVELS
+        ;          points  gap min  gap max  haste
+        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0
+        LEVEL_ROW  300,    70,      185,     24
+        LEVEL_ROW  400,    65,      170,     48
+        LEVEL_ROW  500,    60,      155,     72
+        LEVEL_ROW  600,    55,      140,     96
+        LEVEL_ROW  700,    50,      125,     120
+        LEVEL_ROW  800,    45,      110,     144
+        LEVEL_ROW  900,    40,      95,      168
+        LEVEL_ROW  1000,   35,      80,      192
+        ENDM
+
+; How long the "LEVEL n" banner stays up, in 1/50 seconds. 100 is two
+; seconds.
+CFG_BANNER_TIME     equ 100
+
 ; The beeper (sound.asm). Each explosion is white noise, played in
 ; short bursts in the spare time at the end of each step, so it never
 ; makes a frame late: a burst stops at the interrupt, however long it
@@ -121,6 +183,19 @@ CFG_FISH_SND_FRAMES  equ 6
 CFG_FISH_SND_LINES   equ 48
 CFG_FISH_SND_DENSITY equ 128
 CFG_FISH_SND_PITCH   equ 1
+
+; A missile leaving its silo: a quick, low whoosh. It only starts if
+; nothing else is playing, so it never cuts off an explosion.
+CFG_LAUNCH_SND_FRAMES  equ 6
+CFG_LAUNCH_SND_LINES   equ 40
+CFG_LAUNCH_SND_DENSITY equ 112
+CFG_LAUNCH_SND_PITCH   equ 4
+
+; A missile shot by a torpedo: short and thin, a crackle.
+CFG_MISSILE_SND_FRAMES  equ 8
+CFG_MISSILE_SND_LINES   equ 56
+CFG_MISSILE_SND_DENSITY equ 64
+CFG_MISSILE_SND_PITCH   equ 1
 
 ; The diver losing a life (not the last): longer and lower.
 CFG_DIVER_SND_FRAMES  equ 24

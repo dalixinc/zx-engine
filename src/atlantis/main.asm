@@ -257,11 +257,12 @@ SLACK_WARMUP    equ 0
         ; the other) is put back first.
         ;
         ; Draw order:
-        ;   up in the water, before the seabed copy: the higher of the
+        ;   up in the water, before the seabed copy: a silo's missile
+        ;       (first, over the burst), the higher of the
         ;       diver and the wheel, then the lower one, then the fish.
         ;       The torpedo goes straight after the diver: it is new at
         ;       his height, so it shares his place in the race.
-        ;   on the seabed, after the copy: diver, wheel, torpedo
+        ;   on the seabed, after the copy: missile, diver, wheel, torpedo
         ; The beam runs down the picture while this happens. A sprite is
         ; missing from the picture if the beam reaches it after it was
         ; erased and before it is drawn again. With a fixed order, the
@@ -294,6 +295,9 @@ SLACK_WARMUP    equ 0
         ld a,(diver_late)
         or a
         call nz,diver_restore_fast
+        ld a,(msl_vn)           ; drawn after the copy, before the diver
+        rla
+        call c,missile_restore
 fish_rest_call:
         call fish_restore_fast
     IFNDEF NO_WHEEL
@@ -326,18 +330,28 @@ fish_rest_call:
         call z,wheel_restore
 .restored:
     ENDIF
+        ld a,(msl_vn)           ; 1 or 2: drawn first, up in the water
+        dec a
+        cp 2
+        call c,missile_restore
 boom_hook:
         call stats_prepare      ; drop the digits if a sprite is about to
                                 ; photograph row 0. Otherwise leave them:
                                 ; the beam is about to read that row.
                                 ; boom_step while an explosion is up: it
                                 ; goes under the sprites (boom.asm).
-        ld a,(lives_dirty)      ; the hearts, while no sprite is on screen
-        or a
-        call nz,lives_draw
+        ld a,(hud_dirty)        ; row 1: hearts, score, level, and the
+        or a                    ; banner's clock, while no sprite is on
+        call nz,hud_draw        ; the screen (score.asm)
     IFDEF SOAK
         call soak_after_restore
     ENDIF
+        ; A silo's missile up in the water: the first sprite over the
+        ; burst. It is small and quick, so near the top it is back on
+        ; the screen soonest after its restore.
+        ld a,(msl_phase)
+        or a
+        call nz,missile_draw_early
 
         ; Which half each is drawn in. Once the diver's feet reach the
         ; weed he is drawn after the copy (draw_late), or the copy would
@@ -498,6 +512,7 @@ fish_mv:
         ld a,(input_state)
         and IN_FIRE
         call nz,torpedo_fire
+        call missile_update
     IFNDEF NO_WHEEL
         call update_wheel
     IFNDEF SOAK
@@ -508,6 +523,8 @@ fish_mv:
         call hit_check
         jp c,game_over
         GROUND_CHECK
+        jp c,game_over
+        call missile_hit
         jp c,game_over
     ENDIF
     ENDIF
@@ -776,6 +793,7 @@ fish_mv2:
         ld a,(input_state)
         and IN_FIRE
         call nz,torpedo_fire
+        call missile_update
     IFNDEF NO_WHEEL
         call update_wheel
     IFNDEF SOAK
@@ -785,7 +803,8 @@ fish_mv2:
         call hit_check
         ret c
         GROUND_CHECK
-        ret
+        ret c
+        jp missile_hit
     ENDIF
     ENDIF
         or a
@@ -814,6 +833,9 @@ idle_hold:
 ; Corrupts: AF, BC, DE, HL, IX, IY
 ;------------------------------------------------------------------------------
 draw_late:
+        ld a,(msl_phase)        ; a missile in the hatch, under the others
+        or a
+        call nz,missile_draw_late
         ld a,(diver_late)
         or a
         jr z,.diver_done
@@ -859,12 +881,15 @@ wheel_first:    db 0
         INCLUDE "../input.asm"
         INCLUDE "../sprite.asm"
         INCLUDE "scenery.asm"
+        INCLUDE "silo.asm"       ; before scroll.asm: its sizes are used there
         INCLUDE "scroll.asm"
         INCLUDE "stats.asm"
         INCLUDE "rate.asm"
         INCLUDE "wheel.asm"
         INCLUDE "hit.asm"
+        INCLUDE "score.asm"      ; before its macros are used
         INCLUDE "torpedo.asm"
+        INCLUDE "missile.asm"
         INCLUDE "../fish.asm"
         INCLUDE "../diver.asm"
         ; After the fish and the diver, so the wrappers can call their
@@ -873,9 +898,6 @@ wheel_first:    db 0
         INCLUDE "boom.asm"
         INCLUDE "sound.asm"
         INCLUDE "menu.asm"
-    IFDEF SOAK
-        INCLUDE "soak.asm"
-    ENDIF
 
     IFDEF SLACK_LINES
 slack_loops:    dw 0            ; loops since entry, including the warmup
@@ -915,6 +937,22 @@ CODE_LENGTH     equ code_end - code_start
 
         DISPLAY "atlantis code_end ", code_end
 
+    IFDEF SOAK
+        ; The soak's own code and variables live below the game, in RAM
+        ; nothing else uses: the tape's BASIC ends well short of $6000,
+        ; and the soak is a snapshot, never loaded from tape. With it up
+        ; at $8000 the soak build came within 239 bytes of $C000. This
+        ; RAM is contended, so the checks run a little slower; the soak
+        ; checks pictures and positions, not time.
+SOAK_CODE       equ $6000
+        ORG SOAK_CODE
+soak_start:
+        INCLUDE "soak.asm"
+soak_end:
+        DISPLAY "atlantis soak code ", soak_start, " to ", soak_end
+        ASSERT soak_end <= CODE_START, "the soak's code has run into the game"
+    ENDIF
+
         ; Pictures, words and tables. Above the instructions, below the
         ; scroll buffers. Loaded as the second CODE block on the tape.
         ORG DATA_START
@@ -924,6 +962,8 @@ data_start:
         INCLUDE "../../gfx/diver.asm"
         INCLUDE "../../gfx/wheel.asm"
         INCLUDE "../../gfx/torpedo.asm"
+        INCLUDE "../../gfx/missile.asm"
+        SILO_DATA               ; silo.asm
 data_end:
 DATA_LENGTH     equ data_end - data_start
         DISPLAY "atlantis data_end ", data_end
@@ -951,7 +991,7 @@ DATA_LENGTH     equ data_end - data_start
         ASSERT (GROUND_BUF & 31) == 0, "each ground row must be 32-byte aligned"
         ASSERT BACK_PX == 16, "the slow buffer is weed (8) plus sand (8)"
         ASSERT GROUND_PX == 8, "the ground row is one character tall"
-        ASSERT SILO_H == 16, "a silo has to stand up out of the ground row"
+        ASSERT SILO_H == 24, "a silo is base, tower and dome, one row each"
         ASSERT BACK_ROW == 21, "seaweed is the row above the sand"
         ASSERT SAND_ROW == 22, "sand is the row above the ground"
         ASSERT GROUND_ROW == 23, "the black ground is the bottom row"
@@ -960,7 +1000,8 @@ DATA_LENGTH     equ data_end - data_start
         ASSERT FISH_SWIM_Y == 76, "the fish stays at the demo's depth"
         ASSERT FISH_SWIM_Y + FISH_HEIGHT <= BACK_ROW * 8, "the fish reaches the seabed; it is drawn before the blit"
         ASSERT TORPEDO_WIDTH == 7 && TORPEDO_BYTES == 2, "the torpedo is one or two bytes a row"
-        ASSERT 2 * (TORP_SPEED + WHEEL_SPEED) < TORP_X_SPAN, "at 25 a torpedo could jump over a bomb"
+        ; A hasty level's bomb can move a second pixel in a 1/50 second.
+        ASSERT 2 * (TORP_SPEED + WHEEL_SPEED + 1) < TORP_X_SPAN, "at 25 a torpedo could jump over a bomb"
         ASSERT CFG_LIVES >= 1 && CFG_LIVES <= 9, "the stat line has one digit for the lives"
         ASSERT HIT_X_SPAN > 0 && HIT_Y_SPAN > 0, "a hit box has no size"
         ASSERT BORDER_FRAMES == 8, "the rrca x3 above assumes BORDER_FRAMES = 8"

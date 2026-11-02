@@ -152,9 +152,18 @@ wheel_drift:
         jr c,.moved
         ld (hl),0
         call wheel_next_frame
-.moved: ld hl,(wheel_x)
+.moved: ; One pixel, and one more each time the level's haste carries
+        ; out of the fraction (score.asm). Haste 0 never carries.
+        ld a,(wheel_haste)
+        ld b,a
+        ld a,(wheel_frac)
+        add a,b
+        ld (wheel_frac),a
+        ld hl,(wheel_x)
         dec hl                      ; WHEEL_SPEED is 1
-        ld (wheel_x),hl
+        jr nc,.one
+        dec hl
+.one:   ld (wheel_x),hl
         ld de,WHEEL_WIDTH
         add hl,de
         bit 7,h
@@ -199,8 +208,19 @@ wheel_drift:
 .spun:  ld (wheel_spin_n),a
 
         ; One pixel per 1/50 second, times the step. WHEEL_SPEED is 1.
+        ; Each 1/50 second also adds the level's haste to the fraction,
+        ; and a carry is one pixel more.
         ld a,(step_ticks)
+        ld b,a
         ld c,a
+        ld a,(wheel_haste)
+        ld e,a
+        ld a,(wheel_frac)
+.haste: add a,e
+        jr nc,.slow
+        inc c
+.slow:  djnz .haste
+        ld (wheel_frac),a
         ld b,WHEEL_SPEED - 1    ; 0. A speed above 1 would need a real multiply.
         ld hl,(wheel_x)
         or a
@@ -1363,6 +1383,8 @@ wheel_spin_n:   db 0
 wheel_delay:    db 0
 wheel_seed:     db 42
 wheel_odd:      db 0            ; 1 = the last nudge may have jumped the rectangle
+wheel_haste:    db 0            ; this level's extra speed, /256 of a pixel
+wheel_frac:     db 0            ; the fraction it adds up in
 
 ; The heights and the sine live with the other tables, above $C000.
 ; See data.asm.

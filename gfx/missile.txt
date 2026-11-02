@@ -1,0 +1,19 @@
+; missile.txt - a silo's missile, 6 x 8. It flies straight up.
+;
+;   #  = ink   -  = paper (opaque)   .  = transparent
+;
+; Six pixels wide, so it fits one byte at shifts 0, 1 and 2. It leaves
+; its silo only when the ground has put it at one of those, and then
+; keeps its column, so in flight it is one byte a row (missile.asm).
+; mirror off: it points up either way.
+
+mirror off
+frame 0
+..##..
+.####.
+.####.
+.####.
+.####.
+######
+##..##
+#....#

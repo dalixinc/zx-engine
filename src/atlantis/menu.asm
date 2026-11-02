@@ -29,6 +29,7 @@ game_over:
     IFNDEF NO_SOUND
         call snd_knell          ; the last picture stays up while it plays
     ENDIF
+        call score_game_over    ; a new high score?
         ld a,1
         ld (menu_game_over),a
         ; fall through
@@ -108,14 +109,54 @@ menu_loop:
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 menu_draw_game_over:
+        ld a,WATER_ATTR
+        ld (text_attr),a
+        ld hl,str_high          ; the high score, always
+        ld bc,(19 << 8) | 10
+        call print_string
+        ld hl,hiscore
+        call menu_print_score
         ld a,(menu_game_over)
         or a
         ret z
+        ld hl,str_score         ; the last game's, after GAME OVER
+        ld bc,(17 << 8) | 10
+        call print_string
+        ld hl,score
+        call menu_print_score
         ld a,GAME_OVER_ATTR
         ld (text_attr),a
         ld hl,str_game_over
         ld bc,(15 << 8) | 11
         jp print_string
+
+; HL = a BCD score, low byte first. Six digits at B, C.
+; Corrupts: AF, DE, HL. C advances by 6.
+menu_print_score:
+        inc hl
+        inc hl                  ; the top byte first
+        ld e,3
+.pair:  ld a,(hl)
+        push hl
+        push de
+        push af
+        rrca
+        rrca
+        rrca
+        rrca
+        and 15
+        add a,'0'
+        call print_char
+        pop af
+        and 15
+        add a,'0'
+        call print_char
+        pop de
+        pop hl
+        dec hl
+        dec e
+        jr nz,.pair
+        ret
 
 ;------------------------------------------------------------------------------
 ; menu_draw - title, four control lines, then every row of menu_tab
@@ -346,8 +387,7 @@ game_reset:
 
         ld a,CFG_LIVES
         ld (lives),a
-        ld a,1
-        ld (lives_dirty),a
+        call score_reset        ; 0 points, level 1, row 1 to be drawn
         xor a
         ld (hit_flash),a
         ld (menu_game_over),a
@@ -372,6 +412,7 @@ game_reset:
 
         call wheel_reset
         call torpedo_reset
+        call missile_reset
         call boom_reset
     IFNDEF NO_SOUND
         call snd_reset

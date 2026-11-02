@@ -42,13 +42,14 @@ Verification means assembling a variant build with `-D` flags and running it in 
 
 | Flag | What it does |
 |------|--------------|
-| `-DSOAK` | `src/atlantis/soak.asm` plays a scripted dive and checks background restore, colours and the terrain clamp after every frame. **Green border + "OK"** = pass. Red border + reason number + frame = first failure (reasons are listed in soak.asm's header). It takes about 2 minutes. |
+| `-DSOAK` | `src/atlantis/soak.asm` plays a scripted dive and checks background restore, colours and the terrain clamp after every frame. **Green border + "OK"** = pass. Red border + reason number + frame = first failure (reasons are listed in soak.asm's header). It takes about 2 minutes at 50 and 3 at 25. |
 | `-DTIMING_BARS` | Border colour per phase. The legend is in main.asm's header. |
 | `-DMEASURE` | Runs warmup + 512 steps, then halts and prints hex on row 2: min spare scanlines, late-step count, max spare, interrupts. Row 3 is the same for the 25 fps idle frame (ending in loops). Options: `-DMEAS_DOWN` (hold Down, the heavy seabed case), `-DMEAS_FIRE` (tap fire every other step, so a torpedo is nearly always running), `MEAS_RATE`, `MEAS_WARMUP`, `MEAS_WINDOW`. Judge the speed by interrupts: 1 per step at 50, 2 at 25. At 50 the heavy case shows a handful of late steps that overrun by a few T-states and catch up; that count moves by 1-2 with schedule alignment alone. |
 | `-DSLACK_LINES=n` | Adds an n-scanline NOP sled. Green/red border shows whether the frame still fits. Optional `SLACK_WARMUP`. |
 | `-DSHOT_FRAME=n` | Halts after loop n for a deterministic screenshot. |
 | `-DNO_WHEEL` | Leaves the wheel bomb out, for measurement. |
 | `-DMEAS_BOOM` | With `-DMEASURE`: an explosion over the diver all the time (a new one as soon as the last ends), with its sound. The worst case for the explosion's cost. |
+| `-DMEAS_MISSILE` | With `-DMEASURE`: a silo missile armed or flying all the time (no gap). A missile that reaches the measuring diver passes through him. |
 | `-DNO_SOUND` | Leaves the beeper out of any build, so timing can be compared with and without sound. |
 
 Example: `sjasmplus --nologo --fullpath=off -DMEASURE -DMEAS_DOWN src/atlantis/main.asm`, then `fuse-sdl --machine 48 build/atlantis-measure.sna`.
@@ -63,18 +64,23 @@ After a change that touches the frame loop, sprites, scroll, stats or input, run
 1. `chords_poll` (Symbol Shift + P/F/S, edge-triggered via `rising_edge`), then `read_input`, which gives one `000FUDLR` byte in `input_state`
 2. Restore sprites in **reverse** draw order: diver, wheel, fish
 3. `stats_prepare`. Draw sprites that are still above the seabed (row 21) *before* the seabed copy
-4. `scroll_blit` copies the off-screen buffers to rows 21-23 and stamps silo tops. `draw_late` then draws the sprites that overlap the seabed, so they photograph this frame's ground
+4. `scroll_blit` copies the off-screen buffers to rows 21-23 and stamps the silo towers and domes. `draw_late` then draws the sprites that overlap the seabed, so they photograph this frame's ground
 5. Rotate the ground buffer (1px per 1/50 s) and the slow sand/weed buffer (every other 1/50 s, tracked by `slow_phase`)
 6. Stats overlay, then `update_diver` / `update_fish` / `update_wheel`
 7. `spare_count` (`src/atlantis/rate.asm`) busy-waits in an exact 224-T-state loop until the interrupt. **This wait is the vsync**, and it also measures spare scanlines
 
 **50/25 fps**: every speed is written per 1/50 s. `step_ticks` is 1 or 2. At 25 each step is two television frames: the picture frame only restores, draws and copies the seabed, and `idle_tick` (the next frame) shifts the ground twice and the slow buffer once, then runs the movement twice on the one-pixel paths. `rate_apply` patches the two jumps in `main_loop` (`step_jp_shift`, `step_jp_move`) that skip the shifts and the moves on the picture frame. The wheel applies `step_ticks` internally, so don't call it twice.
 
-**Hits and sound**: a bomb, a fish, or sinking onto the black (`clamp_to_terrain` sets `diver_touch` under `IFDEF ATLANTIS`) all go through `diver_hurt` and an explosion (`boom.asm`). A MEASURE build only clears `diver_touch`, so `MEAS_DOWN` can sit on the seabed. The explosion is the bottom layer: `boom_hook` (the `call stats_prepare` after the restores) is patched to `boom_step` while one is up. Sound (`sound.asm`) plays only inside `spare_count`'s wait for the interrupt, one scanline per pass, so it cannot make a frame late; at 25 only the idle frame's wait plays it (`snd_gate`). Each sound is a six-byte `SND_DEF` (bursts, length, density, pitch); a new one replaces the last. The game-over knell (`snd_knell`) is the one blocking sound.
+**Missiles** (`missile.asm`): one at a time, armed after a random gap in a silo on screen whose missile will leave within `CFG_MISSILE_RANGE` of the diver (`msl_near`), then straight up. It leaves only at a ground shift that puts it in one byte, so in flight it is one byte a row. Up in the water it is the first sprite drawn after the explosion and the last restored; in the hatch it is the first late sprite. `msl_vn` records which, like `torp_vn`.
+
+**Score and row 1** (`score.asm`): BCD score (3 bytes, low first), levels from `CFG_LEVELS` (target, missile gap, bomb haste; level 1 must stay the old game), high score. Row 1 holds the score line and the hearts. It is drawn by `hud_draw` straight after the restores, when no sprite is on screen, and only when a bit of `hud_dirty` is set, so sprites photograph it like water. Row 0 stays the debug line's. The "LEVEL n" banner is attribute cells only (rows 7-11), so no sprite photograph is involved.
+
+**Hits and sound**: a bomb, a fish, a missile, or sinking onto the black (`clamp_to_terrain` sets `diver_touch` under `IFDEF ATLANTIS`) all go through `diver_hurt` and an explosion (`boom.asm`). A MEASURE build only clears `diver_touch`, so `MEAS_DOWN` can sit on the seabed. The explosion is the bottom layer: `boom_hook` (the `call stats_prepare` after the restores) is patched to `boom_step` while one is up. Sound (`sound.asm`) plays only inside `spare_count`'s wait for the interrupt, one scanline per pass, so it cannot make a frame late; at 25 only the idle frame's wait plays it (`snd_gate`). Each sound is a six-byte `SND_DEF` (bursts, length, density, pitch); a new one replaces the last. A tune (`snd_tune_start`, the level jingle) swaps the 7-byte noise step in `snd_tick` for an equal-time tone step (`snd_op_tone`). The game-over knell (`snd_knell`) is the one blocking sound.
 
 **Sprites**: masked, pre-shifted copies (8 shifts per frame), so drawing involves no run-time bit shifting. Each sprite has a background record (`BG_*` offsets in `src/sprite.asm`) addressed through IY. Save, draw, then restore next frame. `fastsprite.asm` is Atlantis's faster walker, which also clips at the left and right edges. The ISR only preserves AF and HL, and the fast walker relies on that.
 
 **Memory map** (`src/constants.asm`, `src/atlantis/layout.asm`; enforced by `ASSERT`s at the end of main.asm):
+- `$6000` the soak's own code and variables, soak build only (contended RAM; it checks pictures, not time)
 - `$8000` code, up to `code_end`, which must be ≤ `$C000`
 - `$C000` data: graphics, tables and `data.asm`, loaded as a second tape block
 - `$F000` scroll buffers. These are built at run time and must be page-aligned, because the rotate uses `DEC L`
@@ -85,7 +91,7 @@ The ROM font at `$3D00` is read directly, and no ROM routines are called.
 
 **Tuning knobs** are in `src/atlantis/config.asm`. That file is numbers only. Several values are pinned by `ASSERT`s, because the soak's frame numbers depend on them.
 
-**Seabed layout**: row 21 is weed and row 22 is sand (together the slow 16px buffer); row 23 is ground (the fast 8px buffer). Silos are 16px tall: their bottom half lives in the ground buffer and their top half is stamped onto the sand. The colour clash this causes is intentional. The diver is clamped one pixel above the black ground (`clamp_to_terrain` in `src/diver.asm`).
+**Seabed layout**: row 21 is weed and row 22 is sand (together the slow 16px buffer); row 23 is ground (the fast 8px buffer). A silo is two tile columns (`TILE_SILO`, `TILE_SILO_R`), 16 wide and 24 tall: its base lives in the ground buffer, and its tower (row 22) and dome (row 21) are drawn every frame by code that `src/atlantis/silo.asm` builds at assembly time from the art there, one straight run per shift. The dome's cells are painted the weed's green (`silo_cells` in scroll.asm), so nothing clashes. On the frame that does not copy the weed, the domes are wiped by copying their bytes back from the slow buffer (`silo_unstamp`). The diver is clamped one pixel above the black ground (`clamp_to_terrain` in `src/diver.asm`).
 
 ## Docs
 

@@ -10,26 +10,29 @@
 ;         the full 8 pixels, so it sits on the dune instead of floating.
 ;   FAST  row 23, its own buffer. Black ground, rocks, the bottom half
 ;         of a silo. 1 pixel every frame.
-;   SILO  16 pixels. The bottom 8 travel in the fast buffer, so they
-;         stay nailed to the column. The top 8 are stamped onto row 22
-;         after the sand is copied, using the same fine-scroll, so the
-;         two halves stay joined. Stamping is a few columns, not another
-;         full-width rotate. A fourth strip did not leave enough of the
-;         frame. Row 22 keeps its sand colours, so the top half is drawn
-;         yellow on blue. That is the clash, on purpose.
-;
+;   SILO  16 wide, 24 tall, one character row in each band. The base
+;         is two columns of the fast buffer, so it stays nailed to the
+;         ground. The tower (row 22) and the dome (row 21) are stamped
+;         on after the copy, at the same fine scroll, from pictures
+;         already shifted (gfx/silo.txt), so the three parts stay
+;         joined. Each part is drawn in its own row's colours: black on
+;         yellow, yellow on blue, and green on blue for the dome, whose
+;         cells are painted the seaweed's colour (silo_cells). Nothing
+;         clashes, even where a plant and a dome share a cell.
+
 ; Every frame copies all three bands, then rotates the fast buffer, and
 ; rotates the slow buffer on every other frame. The demo could not copy
 ; and rotate both of its 16-pixel strips in one frame, so it split the
 ; far strip into a show frame and a prepare frame. These strips are 8
-; pixels of ground plus 16 of the slow layer, and the silo top is not a
-; strip, so the split is not used. The numbers are in SCROLLING.md.
+; pixels of ground plus 16 of the slow layer, and the silo's upper
+; parts are not a strip, so the split is not used. The numbers are in
+; SCROLLING.md.
 ;
 ; PER FRAME (see main_loop):
 ;   1. restore both sprites
 ;   2. draw anyone still above row 21
 ;   3. copy the slow buffer (weed, then sand)
-;   4. stamp silo tops onto the sand
+;   4. stamp the silo towers and domes onto the sand and the weed
 ;   5. copy the ground
 ;   6. draw the diver if his feet are on the seabed, so he saves THIS ground
 ;   7. rotate the ground buffer
@@ -39,7 +42,7 @@
 ; the seabed completely, so a photograph taken before the copy is last
 ; frame's ground.
 ;
-; SILOS, FOR LATER (missiles are not in this version)
+; SILOS
 ; The fast strip is a ring of 32 tile ids, plus the column still sliding
 ; in from the right.
 ;
@@ -51,20 +54,21 @@
 ; front_fine is 0..7. front_head is the slot under the left edge of the
 ; screen. Aligned column 32 is front_pending / front_h_pending: it is not
 ; in the ring until front_fine wraps, and its world column is
-; front_origin+32. TILE_SILO (2) is a silo. Its height is 16, hatch
-; included: the clear bits in the picture are not a gap. The top of that
-; column on screen is pixel y = NEAR_BOTTOM - 16 = 176, the top of row 22.
-; The bytes are pat_silo, top byte first. The art is a placeholder.
+; front_origin+32. A silo is two columns: TILE_SILO (2), the left half,
+; then TILE_SILO_R (3). Both are SILO_H (24) tall, dome included, so the
+; diver touches the top of the dome, pixel y = NEAR_BOTTOM - 24 = 168,
+; the top of row 21.
 ;
 ; level_silo_gap and level_index are the demo's table. Poke level_index
 ; (0 .. LEVEL_COUNT-1) before scroll_init. Column N is a silo when
-; N mod gap = 0. Rocks are column mod 10 = 4, unless that column was
-; already a silo.
+; N mod gap = 0, and N+1 is its right half. Rocks are column mod 10 = 4,
+; unless that column was already part of a silo.
 ;==============================================================================
 
 TILE_FLAT       equ 0
 TILE_ROCK       equ 1
-TILE_SILO       equ 2
+TILE_SILO       equ 2           ; the left half
+TILE_SILO_R     equ 3           ; the right half
 TILE_WEED       equ 1           ; slow-strip id. Flat is 0 on both strips.
                                 ; Same number as TILE_ROCK, different strip.
 
@@ -107,6 +111,11 @@ scroll_init:
         ld (back_head),a
         ld (slow_phase),a
         ld (silo_left),a        ; column 0 is a silo (0 mod gap = 0)
+        ld (silo_right),a
+        ld (silo_rest_n),a      ; nothing stamped on the weed row yet
+        ld (silo_cells_n),a     ; and no dome cells painted
+        dec a
+        ld (silo_sig_s),a       ; $FF matches no ink pattern: the first stamp paints
         ld (weed_wait),a
         ld a,4
         ld (rock_left),a        ; a rock when the column mod 10 = 4
@@ -186,17 +195,20 @@ scroll_init:
         ret
 
 ;------------------------------------------------------------------------------
-; scroll_blit - put the buffers on screen, then the silo tops.
+; scroll_blit - put the buffers on screen, then the silo towers and domes.
 ;
 ; The slow buffer only changes every other frame (main_loop rotates it
 ; after this, when slow_phase is 0). On that frame the picture already
 ; on screen is this buffer: the sprites have been restored, so the weed
 ; does not need copying again. The sand row does, because last frame's
-; silo tops are still drawn on it and the ground has moved. Copying just
-; those 8 rows wipes them. The other frame (slow_phase != 0) is the one
-; that shows the buffer the rotate just produced, so it copies all 16
-; and repaints the weed colours while it is there. The sand-only frame
-; does not: the colours already match the pixels still on screen.
+; silo towers are still drawn on it and the ground has moved. Copying
+; just those 8 rows wipes them. The domes on the weed row are wiped by
+; copying back only the bytes they covered (silo_unstamp), which is
+; still the buffer's picture on this frame. The other frame
+; (slow_phase != 0) is the one that shows the buffer the rotate just
+; produced, so it copies all 16 and repaints the weed colours while it
+; is there. The sand-only frame does not: the colours already match the
+; pixels still on screen.
 ; Corrupts: AF, BC, DE, HL, IX
 ;------------------------------------------------------------------------------
 ; The sand is the bottom 8 rows of the slow buffer. The weed is the top 8.
@@ -219,6 +231,7 @@ scroll_blit:
         call paint_weed_attrs
         jr .tops
 .sand_only:
+        call silo_unstamp
         ld a,SAND_ROW * 8
         ld b,8
         ld hl,SAND_BUF
@@ -416,50 +429,436 @@ shift_rows_left:
         ret
 
 ;------------------------------------------------------------------------------
-; stamp_silos - OR every silo's top 8 pixels onto row 22
+; stamp_silos - draw every silo's dome (row 21) and tower (row 22)
 ;
-; The ground buffer holds the BOTTOM 8 bytes of pat_silo, and the shift
-; has already moved them by front_fine. The top 8 bytes are not in that
-; buffer. This draws them at the same fine-scroll so the picture is one
-; column, not two.
+; The ground buffer holds the base, already moved by front_fine. The
+; dome and the tower are in no buffer. They are drawn here at the same
+; fine scroll, from gfx/silo.asm, which holds the picture already
+; shifted to each of the 8 pixel positions, so nothing is shifted at
+; run time and the parts cannot come apart.
 ;
-; Aligned column n (the column the silo occupies when front_fine is 0)
-; is slot (front_head + n) & 31, or front_pending when n is 32. After k
-; pixels of left scroll its screen x is n*8 - k. An 8-pixel column
-; shifted left by k lands in column n-1 (the bits that fell off) and
-; column n (the rest). k = 0 stays entirely in column n. n = 32 is the
-; column still entering: only its spill, in column 31, is on screen.
+; A silo whose left half is aligned column n has its left pixel at
+; x = n*8 - front_fine. Its picture is shift x & 7, three bytes a row,
+; from column x >> 3: n when front_fine is 0, n-1 otherwise. A silo
+; wholly on screen is drawn by that shift's own code (silo.asm), about
+; 5 scanlines. One hanging off an edge goes through SILO_ROWS, the
+; masked loop over the same picture as data, which leaves out the bytes
+; that are off the screen.
 ;
-; Worked example, hatch byte %00100100, k = 4:
-;   bits that fall off the left  ->  %00000010  in column n-1
-;   bits that remain             ->  %01000000  in column n
-; The routine builds those two bytes with the same RL the buffer uses,
-; so it cannot disagree with the half that is already on row 23.
+; The old stamp shifted each row of an 8 x 8 top a bit at a time and
+; wrote each byte through a call. With two silos on screen it cost up
+; to 49 scanlines of the heavy seabed frame. The masked loop alone,
+; on every silo, still left 11 of 512 seabed steps late at 50.
 ;
-; Walking all 33 columns every frame, and calling front_tile for each,
-; did not fit. The closest silos are 8 columns apart, so at most five of
-; them (plus the one still off the right) are in this window. silo_at is
-; that list. silo_build fills it once at start-up. silo_after_wrap keeps
-; it when a column scrolls off: every entry moves one column left, a 0
-; falls off, and the new pending column is appended if it is a silo.
+; silo_at lists the silos on screen, as the aligned column of the left
+; half: -1 (only the right half is left) to 32 (the left half is still
+; sliding in). The closest silos are 8 columns apart, so it holds at
+; most five. silo_build fills it once at start-up, and silo_after_wrap
+; keeps it when a column scrolls off.
 ;
+; Each draw notes the weed-row bytes it covered (silo_rest) for
+; silo_unstamp, and the cells its dome has ink in (silo_cells).
 ; Corrupts: AF, BC, DE, HL, IX
 ;------------------------------------------------------------------------------
+SILO_SCR21      equ $50A0       ; screen byte of row 21, top line, column 0
+SILO_ATTR21     equ ATTRS + BACK_ROW * 32
+        ASSERT (SILO_SCR21 & 31) == 0 && (SILO_ATTR21 & 31) == 0
+        ASSERT (BACK_BUF & 255) == 0, "silo_unstamp walks the weed rows with L alone"
+
+; Draw cnt bytes of every row, from byte j0 of the picture, at DE (row
+; 21, top line). The dome's 8 lines, then the tower's 8, one character
+; row down. Each byte: screen = (screen AND mask) OR data.
+; 153 T-states a line for three bytes.
+        MACRO SILO_ROWS j0, cnt
+        IF j0 > 0
+        ld bc,2 * j0
+        add hl,bc
+        ENDIF
+        ld c,2                  ; the dome's row, then the tower's
+1:      ld b,8
+2:
+        IF cnt > 1
+        DUP cnt - 1
+        ld a,(de)
+        and (hl)
+        inc hl
+        or (hl)
+        inc hl
+        ld (de),a
+        inc e
+        EDUP
+        ENDIF
+        ld a,(de)
+        and (hl)
+        inc hl
+        or (hl)
+        inc hl
+        ld (de),a
+        IF cnt > 1
+        DUP cnt - 1
+        dec e
+        EDUP
+        ENDIF
+        IF cnt < 3
+        DUP SILO_ROW_BYTES - 2 * cnt
+        inc hl                  ; the bytes this edge leaves out
+        EDUP
+        ENDIF
+        inc d
+        djnz 2B
+        ld a,e
+        add a,32                ; the next character row: rows 21 and 22
+        ld e,a                  ; are in the same third, so no carry
+        ld a,d
+        sub 8
+        ld d,a
+        dec c
+        jp nz,1B
+        ENDM
+
 stamp_silos:
+        xor a
+        ld (silo_rest_n),a
+        ld a,(front_fine)
+        neg
+        and 7
+        ld (silo_shift),a       ; one shift for every silo this frame
+        ld c,a
+        add a,a
+        ld e,a
+        ld d,0
+        ld hl,silo_code_tab
+        add hl,de
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        ld (silo_code),de       ; the code that draws that shift
+        ld l,c
+        ld h,0
+        add hl,hl               ; *2
+        ld e,l
+        ld d,h
+        add hl,hl               ; *4
+        add hl,de               ; *6
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl               ; *96, SILO_PIC_BYTES
+        ld de,silo_pics
+        add hl,de
+        ld (silo_pic),hl        ; and the same picture as data, for the edges
+        ; The dome cells only change when the column origin does, or
+        ; the shift moves the ink into another byte (2 or 3 frames in
+        ; 8). Otherwise the cells painted last time still hold.
+        ld hl,silo_cellbits
+        ld a,c
+        add a,l
+        ld l,a
+        ld a,0
+        adc a,h
+        ld h,a
+        ld c,(hl)               ; which picture bytes have dome ink
+        ld a,(front_origin)
+        ld b,a
+        ld hl,silo_sig_o
+        xor (hl)
+        ld (hl),b
+        ld b,a                  ; 0 if the origin is the same
+        ld a,c
+        ld hl,silo_sig_s
+        xor (hl)
+        ld (hl),c
+        or b
+        ld (silo_cells_new),a   ; 0: the same cells as last time
+        xor a
+        ld (silo_new_n),a
+
         ld a,(silo_n)
         or a
-        ret z
+        jr z,.done
         ld b,a
         ld hl,silo_at
 .one:   push bc
         push hl
-        ld a,(hl)
-        ld (stamp_n),a
-        call stamp_one_silo
+        ld a,(front_fine)
+        or a
+        ld a,(hl)               ; n
+        jr z,.aligned
+        dec a                   ; shifted: the first byte is one column left
+.aligned:
+        call silo_draw
         pop hl
         pop bc
         inc hl
         djnz .one
+.done:  ld a,(silo_cells_new)
+        or a
+        ret z
+        jp silo_cells_update
+
+; Draw one silo. In: A = its first column, -2..32 (signed).
+; Corrupts: AF, BC, DE, HL
+silo_draw:
+        cp 30
+        jr nc,.edge             ; 30, 31, 32, and the negatives
+        ld c,a
+        ld b,3
+        ld e,0
+        call silo_note
+        ld a,low SILO_SCR21
+        or c
+        ld l,a
+        ld h,high SILO_SCR21
+        ld de,(silo_code)
+        push de
+        ret                     ; into this shift's code, which returns
+.edge:  cp 30
+        jp z,.c30
+        cp 31
+        jp z,.c31
+        cp -1
+        jp z,.cm1
+        cp -2
+        ret nz                  ; 32: nothing on screen yet
+        ld c,0                  ; -2: only the third byte, in column 0
+        ld b,1
+        ld e,2
+        call silo_note
+        call silo_screen
+        ld hl,(silo_pic)
+        SILO_ROWS 2, 1
+        ret
+.cm1:   ld c,0                  ; -1: the second and third bytes
+        ld b,2
+        ld e,1
+        call silo_note
+        call silo_screen
+        ld hl,(silo_pic)
+        SILO_ROWS 1, 2
+        ret
+.c30:   ld c,a                  ; the first two bytes
+        ld b,2
+        ld e,0
+        call silo_note
+        call silo_screen
+        ld hl,(silo_pic)
+        SILO_ROWS 0, 2
+        ret
+.c31:   ld c,a                  ; the first byte
+        ld b,1
+        ld e,0
+        call silo_note
+        call silo_screen
+        ld hl,(silo_pic)
+        SILO_ROWS 0, 1
+        ret
+
+; In: C = screen column. Out: DE = row 21's top line at that column.
+silo_screen:
+        ld a,low SILO_SCR21
+        or c
+        ld e,a
+        ld d,high SILO_SCR21
+        ret
+
+; Note one silo's drawn place. In: C = first screen column, B = bytes,
+; E = the first picture byte drawn (0..2). Preserves C.
+; Corrupts: AF, B, DE, HL
+silo_note:
+        ld hl,silo_rest_n       ; the weed-row bytes, for silo_unstamp
+        ld a,(hl)
+        inc (hl)
+        add a,a
+        add a,low silo_rest
+        ld l,a
+        ld a,0
+        adc a,high silo_rest
+        ld h,a
+        ld (hl),c
+        inc hl
+        ld (hl),b
+        ld a,(silo_cells_new)
+        or a
+        ret z                   ; the dome cells have not changed
+        ; The cells this dome has ink in: bit j of silo_cellbits is
+        ; picture byte j. Start at byte E.
+        ld hl,silo_cellbits
+        ld a,(silo_shift)
+        add a,l
+        ld l,a
+        ld a,0
+        adc a,h
+        ld h,a
+        ld a,(hl)
+        inc e
+        jr .shift
+.drop:  rrca                    ; the bytes left of the screen
+.shift: dec e
+        jr nz,.drop
+        ld e,a
+        ld a,c
+        push bc
+        ld c,a                  ; the column of this byte
+.cell:  rr e
+        jr nc,.next
+        ld hl,silo_new_n
+        ld a,(hl)
+        inc (hl)
+        add a,low silo_new
+        ld l,a
+        ld a,0
+        adc a,high silo_new
+        ld h,a
+        ld (hl),c
+.next:  inc c
+        djnz .cell
+        pop bc
+        ret
+
+;------------------------------------------------------------------------------
+; silo_unstamp - wipe last frame's domes off the weed row
+; Only on the frame that does not copy the weed. That frame's picture
+; on screen is still the slow buffer (the rotate comes after it), so the
+; bytes are copied back from there, and nothing had to be saved. The
+; frame that copies the weed wipes them with the copy.
+; Corrupts: AF, BC, DE, HL, IX
+;------------------------------------------------------------------------------
+silo_unstamp:
+        ld a,(silo_rest_n)
+        or a
+        ret z
+        ld ix,silo_rest
+.one:   push af
+        ld a,(ix+0)             ; first column
+        ld l,a                  ; HL = the weed's top line in the buffer
+        ld h,high BACK_BUF
+        or low SILO_SCR21
+        ld e,a
+        ld d,high SILO_SCR21    ; DE = the same byte on the screen
+        ld a,(ix+1)
+        cp 3
+        jr nz,.edge
+        ld bc,$08FF             ; B = lines. C only keeps LDI off B.
+.line3: ldi
+        ldi
+        ldi
+        ld a,l
+        add a,32 - 3            ; the next buffer line: rows 0-7 of the
+        ld l,a                  ; buffer are one page, so no carry
+        ld a,e
+        sub 3
+        ld e,a
+        inc d
+        djnz .line3
+        jr .next
+.edge:  ld c,a                  ; one or two bytes, at an edge
+        ld b,8
+.line:  push bc
+        push de
+        push hl
+        ld b,0
+        ldir
+        pop hl
+        pop de
+        pop bc
+        ld a,l
+        add a,32
+        ld l,a
+        inc d
+        djnz .line
+.next:  inc ix
+        inc ix
+        pop af
+        dec a
+        jr nz,.one
+        ret
+
+;------------------------------------------------------------------------------
+; The dome's colour. The dome is drawn in row 21, which is painted per
+; cell: green on blue where a plant is, water elsewhere. Every cell a
+; dome has ink in is painted green on blue as well, the seaweed's own
+; colour, so a plant and a dome in one cell cannot clash. When the dome
+; moves on, the cell gets back the colour paint_weed_attrs would give it.
+;
+; silo_cells is the list painted now. stamp_silos builds silo_new only
+; when the origin has changed, or the shift has moved the ink into
+; another byte (most frames the cells are the same), then silo_cells_update puts the old cells back and paints
+; the new. paint_weed_attrs repaints the whole row, so it ends with
+; silo_paint_cells.
+;------------------------------------------------------------------------------
+; Corrupts: AF, BC, DE, HL
+silo_cells_update:
+        ld a,(silo_cells_n)
+        or a
+        jr z,.paint
+        ld b,a
+        ld de,silo_cells
+.old:   ld a,(de)
+        ld c,a
+        call weed_cell_attr     ; A = the colour without the dome
+        ld l,c
+        ld h,0
+        push de
+        ld de,SILO_ATTR21
+        add hl,de
+        pop de
+        ld (hl),a
+        inc de
+        djnz .old
+.paint: ld a,(silo_new_n)
+        ld (silo_cells_n),a
+        or a
+        ret z
+        ld c,a
+        ld b,0
+        ld hl,silo_new
+        ld de,silo_cells
+        ldir
+        ; fall through
+
+; Green on blue on every cell in silo_cells. Corrupts: AF, B, DE, HL
+silo_paint_cells:
+        ld a,(silo_cells_n)
+        or a
+        ret z
+        ld b,a
+        ld de,silo_cells
+        ld h,high SILO_ATTR21
+.cell:  ld a,(de)
+        or low SILO_ATTR21
+        ld l,a
+        ld (hl),WEED_ATTR
+        inc de
+        djnz .cell
+        ret
+
+; The colour paint_weed_attrs gives column C of row 21. It reads the
+; same paint_tiles that routine filled, which still match the screen:
+; the slow layer only moves on the frame that repaints them.
+; In: C = column. Out: A = attribute. Preserves BC, DE.
+weed_cell_attr:
+        ld hl,paint_tiles
+        ld a,l
+        add a,c
+        ld l,a
+        jr nc,.got
+        inc h
+.got:   ld a,(back_fine)
+        cp WEED_LEAVE_AT
+        jr nc,.spill            ; fine >= 7: nothing of its own plant is left
+        ld a,(hl)
+        cp TILE_WEED
+        jr z,.green
+.spill: ld a,(back_fine)
+        cp WEED_SPILL_AT
+        jr c,.water
+        inc hl
+        ld a,(hl)               ; the next column (pending, for column 31)
+        cp TILE_WEED
+        jr z,.green
+.water: ld a,WATER_ATTR
+        ret
+.green: ld a,WEED_ATTR
         ret
 
 ; Fill silo_at from the ring and the pending column. Init only.
@@ -498,6 +897,8 @@ silo_append:
         ret
 
 ; Called at the end of a ground wrap, after front_pending is the new one.
+; Every silo moves one column left. One whose left half was already at
+; -1 has gone: its right half was column 0, which has just left.
 ; Corrupts: AF, BC, DE, HL
 silo_after_wrap:
         ld a,(silo_n)
@@ -509,10 +910,10 @@ silo_after_wrap:
         ld c,0
 .one:   ld a,(hl)
         inc hl
-        or a
-        jr z,.skip              ; aligned column 0 has left the screen
-        dec a                   ; every other column moves one to the left
-        ld (de),a               ; (32, the old pending, becomes 31)
+        dec a                   ; one column to the left
+        cp -2
+        jr z,.skip              ; it was -1: the whole silo is off the left
+        ld (de),a
         inc de
         inc c
 .skip:  djnz .one
@@ -523,91 +924,6 @@ silo_after_wrap:
         ret nz
         ld b,32                 ; the new pending is aligned column 32
         jp silo_append
-
-stamp_one_silo:
-        ld a,SAND_ROW * 8
-        call row_table_entry
-        ld e,(ix+0)
-        ld d,(ix+1)             ; DE = leftmost byte of the top sand line
-        ld hl,pat_silo
-        ld b,8
-.row:   push bc
-        push de
-        push hl
-        ld a,(hl)               ; this row of the silo top
-        call silo_split         ; stamp_hi = column n, stamp_lo = column n-1
-        ld a,(front_fine)
-        or a
-        jr z,.aligned
-
-        ld a,(stamp_n)
-        or a
-        jr z,.main              ; n = 0: the spill is off the left edge
-        dec a
-        ld c,a
-        ld a,(stamp_lo)
-        call or_col
-.main:  ld a,(stamp_n)
-        cp 32
-        jr nc,.done             ; n = 32: the unspilled half is off the right
-        ld c,a
-        ld a,(stamp_hi)
-        call or_col
-        jr .done
-
-.aligned:
-        ld a,(stamp_n)
-        cp 32
-        jr nc,.done
-        ld c,a
-        ld a,(stamp_hi)
-        call or_col
-.done:  pop hl
-        pop de
-        pop bc
-        inc hl
-        inc d                   ; next line of this same character cell
-        djnz .row
-        ret
-
-; In: A = pattern byte. front_fine = k.
-; Out: stamp_hi / stamp_lo set. Corrupts: AF, BC.
-silo_split:
-        ld c,a
-        ld a,(front_fine)
-        or a
-        jr z,.zero
-        ld b,a
-        ld a,c
-        ld c,0
-.sl:    add a,a                 ; bit 7 falls into the carry: it has left this column
-        rl c                    ; and joins the spill, leftmost bit first
-        djnz .sl
-        ld (stamp_hi),a
-        ld a,c
-        ld (stamp_lo),a
-        ret
-.zero:  ld a,c
-        ld (stamp_hi),a
-        xor a
-        ld (stamp_lo),a
-        ret
-
-; OR A onto the screen row at DE, column C. C >= 32 is off screen: skip.
-; Corrupts: AF, B. Preserves C, DE, HL.
-or_col:
-        ld b,a
-        ld a,c
-        cp 32
-        ret nc
-        push de
-        add a,e                 ; low 5 bits of a row address are 0, and
-        ld e,a                  ; the column fits in them, so this cannot carry
-        ld a,(de)
-        or b
-        ld (de),a
-        pop de
-        ret
 
 ; In: A = aligned column 0..32. Out: A = tile id. Corrupts: DE, HL.
 front_tile:
@@ -666,6 +982,7 @@ back_tile:
 ; not leave enough of the frame. This copies the 32 tiles into column
 ; order, with the pending column in the extra byte, and then walks that
 ; list once. paint_tiles[i+1] is exactly "the next column".
+; Every cell a silo's dome has ink in is then painted green as well.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 paint_weed_attrs:
@@ -721,20 +1038,21 @@ paint_weed_attrs:
         inc de
         inc hl
         djnz .cell
-        ret
+        jp silo_paint_cells     ; the domes are green too
 
 ; --- which tile is the next world column? ------------------------------------
 ; Both routines consume one column and return the tile id in A.
 ; They fill the bytes at (pat_dest), top byte first.
 ;   fast column: 8 bytes, the ground row. column_h is the solid height
 ;                from the bottom of the screen (8 for a full ground row,
-;                16 for a silo — the extra 8 are the stamped top).
+;                24 for either half of a silo: the tower and the dome are
+;                stamped above it).
 ;   slow column: 16 bytes. Top 8 are the weed or zeros. Bottom 8 are the
 ;                sand. column_h is the sand height, 1..8, and is not stored:
 ;                the diver does not collide with sand.
 ;
-; A silo every `silo_gap` columns, a rock every 10 (when that column is
-; not already a silo). Counting down is the demo's rule. Dividing on the
+; A silo every `silo_gap` columns, and its right half in the column after
+; it. A rock every 10, when that column is not already part of a silo. Counting down is the demo's rule. Dividing on the
 ; frame a column arrives was part of what used to miss the interrupt.
 ;
 ; Seaweed tries on the same countdown the demo used (first try at column
@@ -773,7 +1091,10 @@ next_front_tile:
         ld (rock_left),a
         inc a
         ld (rock_hit),a
-.silo:  ld a,(silo_left)
+.silo:  ld a,(silo_right)
+        or a
+        jr nz,.silo_r           ; the column after a silo is its right half
+        ld a,(silo_left)
         or a
         jr z,.silo_now
         dec a
@@ -789,7 +1110,16 @@ next_front_tile:
         ld a,(silo_gap)
         dec a
         ld (silo_left),a
+        ld a,1
+        ld (silo_right),a
         ld a,TILE_SILO
+        jp build_front_pat
+.silo_r:
+        xor a
+        ld (silo_right),a
+        ld hl,silo_left         ; it counts towards the next silo, as any
+        dec (hl)                ; column does. The gap is at least 8.
+        ld a,TILE_SILO_R
         jp build_front_pat
 
 next_back_tile:
@@ -849,14 +1179,14 @@ next_back_tile:
 ; --- pixels for one fast column ----------------------------------------------
 ; A flat column is column_h solid bytes at the bottom of the 8, zeros
 ; above. A rock is OR-ed on top of that and may raise the height to
-; ROCK_H. A silo REPLACES the 8 bytes with the bottom half of pat_silo
-; and reports height 16. The top half is not stored here; stamp_silos
-; reads it from pat_silo when it sees TILE_SILO.
+; ROCK_H. A silo half REPLACES the 8 bytes with its half of the base,
+; rows 16-23 of gfx/silo.txt, and reports height SILO_H. The tower and
+; the dome are not stored here; stamp_silos draws them.
 
 build_front_pat:
         ld (build_tile),a
         cp TILE_SILO
-        jr z,.silo
+        jr nc,.silo             ; either half
         cp TILE_ROCK
         jr z,.rock
         ld de,(pat_dest)
@@ -881,8 +1211,10 @@ build_front_pat:
         ld a,ROCK_H
         ld (column_h),a
         jr .id
-.silo:  ld hl,pat_silo + GROUND_PX
-        ld de,(pat_dest)
+.silo:  ld hl,silo_base_l       ; the base, silo.asm
+        jr z,.half
+        ld hl,silo_base_r
+.half:  ld de,(pat_dest)
         ld b,GROUND_PX
         call copy_bytes
         ld a,SILO_H
@@ -961,10 +1293,7 @@ near_profile:
 
 ; --- fixed shapes ------------------------------------------------------------
 ; Bit 7 is the leftmost pixel. Top byte is the top pixel row.
-; pat_silo is the demo's placeholder, unchanged. Top 8 bytes are stamped
-; onto row 22 (yellow ink, blue paper). Bottom 8 go in the ground buffer
-; (black ink, yellow paper). The hatch is in the top half, so its holes
-; show the blue water, not the yellow the art was drawn against.
+; The silo is gfx/silo.txt.
 
 pat_rock:
         db %00000000            ; two clear rows, then a mound ROCK_H tall
@@ -972,23 +1301,6 @@ pat_rock:
         db %00011000
         db %00111100
         db %01111110
-        db %11111111
-        db %11111111
-        db %11111111
-pat_silo:
-        db %00011000            ; tip
-        db %00011000
-        db %00111100            ; cap
-        db %00100100            ; hatch. Clear bits are paper, not a gap.
-        db %00100100
-        db %00111100
-        db %01111110
-        db %01000010
-        db %11111111            ; row 23 starts here
-        db %11100111
-        db %11100111
-        db %11111111
-        db %11111111
         db %11111111
         db %11111111
         db %11111111
@@ -1010,8 +1322,21 @@ rock_hit:       db 0
 weed_left:      db 0            ; columns until the next weed try
 weed_wait:      db 0            ; 1 = a try missed its dune; plant on the next full one
 paint_tiles:    ds 33           ; columns 0..31 in order, then the pending column
+silo_right:     db 0            ; 1 = the next column is a silo's right half
 silo_n:         db 0            ; how many silos are in silo_at (0..8)
-silo_at:        ds 8            ; their aligned columns, 0..32
+silo_at:        ds 8            ; their left halves' aligned columns, -1..32
+silo_shift:     db 0            ; the picture's shift this frame
+silo_pic:       dw 0            ; row 0 of the picture at that shift
+silo_code:      dw 0            ; the code that draws that shift
+silo_rest_n:    db 0            ; domes drawn on the weed row
+silo_rest:      ds 2 * 8        ; their first column and byte count
+silo_sig_o:     db 0            ; front_origin and the dome's ink bytes,
+silo_sig_s:     db 0            ; when its cells were last worked out
+silo_cells_new: db 0            ; 0 = the same cells as last frame
+silo_cells_n:   db 0            ; dome cells painted green now
+silo_cells:     ds 3 * 8
+silo_new_n:     db 0            ; this frame's cells, while they are built
+silo_new:       ds 3 * 8
 
 front_column:   dw 0            ; next world column next_front_tile will issue
 back_column:    dw 0
@@ -1039,6 +1364,3 @@ column_pat:     ds BACK_PX      ; top byte first. The ground uses the first 8.
 build_tile:     db 0
 init_col:       db 0
 init_tile:      db 0
-stamp_n:        db 0            ; aligned column currently being stamped
-stamp_hi:       db 0            ; silo byte that stays in column n
-stamp_lo:       db 0            ; silo byte that spilled into column n-1
