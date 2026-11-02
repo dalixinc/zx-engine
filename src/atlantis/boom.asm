@@ -3,8 +3,19 @@
 ;
 ; Four pictures, 16 wide by 12 tall, one copy each. x is snapped to the
 ; nearest byte, so nothing is pre-shifted. The burst does not scroll.
-; It is drawn from wheel_draw's idle path, which runs only while the
-; bomb is not on screen, so a heavy frame still draws the bomb alone.
+;
+; It is the bottom layer. main_loop's call to stats_prepare, straight
+; after the sprite restores, is patched to boom_step while a burst is
+; up. Every sprite is off the screen then, so the burst's photograph is
+; only the background, and the sprites drawn after it photograph the
+; burst. Restores run in the reverse order, so each one puts back what
+; was really under it. A burst drawn among the sprites photographed
+; the diver; when a hit moved him to the left edge, putting that
+; photograph back left a piece of him behind.
+;
+; It stays between rows 2 and 20. Row 0 is the stat digits and row 1
+; the hearts, which are rewritten under it, and the seabed rows are
+; copied over it.
 ;
 ; Pixels are ink bits. On open water that ink is bright white, the same
 ; as the sea, so the burst needs no attribute write.
@@ -27,8 +38,12 @@ FISH_FLASHES    equ 4
 FISH_GAP        equ 20          ; game steps, then a new fish from the right
 FISH_YEL        equ BRIGHT | YELLOW | (BLUE << 3)
 FISH_RED        equ BRIGHT | RED | (BLUE << 3)
-boom_col:       db 0            ; screen column, 0..30
+boom_col:       db 0            ; screen column, 0..30, of the next draw
 boom_y:         db 0
+boom_dcol:      db 0            ; where the last draw went: the restore's place
+boom_dy:        db 0
+BOOM_TOP        equ 2 * 8       ; below the digits and the hearts
+BOOM_LOW        equ BACK_ROW * 8 - BOOM_ROWS ; above the seabed copy
 boom_bg:        ds BOOM_ROWS * 2
 
 ;------------------------------------------------------------------------------
@@ -46,6 +61,8 @@ boom_reset:
         ld (fish_draw_call+1),hl
         ld hl,fish_restore_fast
         ld (fish_rest_call+1),hl
+        ld hl,stats_prepare
+        ld (boom_hook+1),hl
         jp fish_unhold
 
 ; The patched call lands here while a fish burst is showing. The restore
@@ -54,9 +71,6 @@ boom_reset:
 fish_draw_skip:
         ld iy,fish_bg
         ld (iy+BG_VALID),0
-        ret
-
-fish_draw_none:
         ret
 
 fish_move_skip:
@@ -76,7 +90,11 @@ fish_unhold:
         ret
 
 ; The fish stays where it was drawn. Four attribute passes, yellow then
-; red, then the photograph is put back and the fish is gone.
+; red, then the fish is gone. It is still restored and drawn every step
+; in its usual places, held still. Leaving it on the screen undrawn and
+; putting its photograph back at the end did that out of turn: the
+; photograph held the diver as he was when the fish touched him, and a
+; hit had since moved him to the left edge.
 fish_flash_begin:
         ld a,(fish_x)
         rrca
@@ -92,16 +110,16 @@ fish_flash_begin:
         ld (fish_left),a
         ld a,1
         ld (fish_busy),a
-        ld hl,fish_flash_step
-        ld (fish_rest_call+1),hl
-        ld hl,fish_draw_none
+        ld hl,fish_flash_draw
         ld (fish_draw_call+1),hl
         jp fish_hold
 
-fish_flash_step:
+; In the fish's draw place. Its restore has just run.
+fish_flash_draw:
         ld a,(fish_left)
         or a
         jr z,.gone
+        call fish_draw_fast
         ld a,(fish_tint)
         or a
         ld a,FISH_YEL
@@ -114,13 +132,10 @@ fish_flash_step:
         ld hl,fish_left
         dec (hl)
         ret
-.gone:  call fish_restore_fast  ; the pixels, once the colours are done
+.gone:  ld iy,fish_bg          ; the restore took the fish away: not drawn again
+        ld (iy+BG_VALID),0
         ld a,WATER_ATTR
         call fish_paint
-        ld iy,fish_bg
-        ld (iy+BG_VALID),0
-        ld hl,fish_restore_fast
-        ld (fish_rest_call+1),hl
         jp fish_begin_wait
 
 ; A = attribute. Three columns, two rows, the fish's footprint.
@@ -200,13 +215,11 @@ boom_at_fish:
         ld a,(fish_y)
 
 ; In: HL = pixel x (may be off the left), A = pixel y
+; This runs while the sprites are on the screen, so it draws nothing and
+; puts nothing back. A burst already showing is put back by the next
+; boom_step, from where it was drawn, before the new one is painted.
 boom_arm:
         ld (boom_y),a
-        ld a,(boom_got)
-        or a
-        call nz,boom_restore    ; do not leave the previous burst up
-        xor a
-        ld (boom_got),a
         ld de,4                 ; nearest byte
         add hl,de
         bit 7,h
@@ -227,11 +240,16 @@ boom_arm:
         ld a,30
 .stcol: ld (boom_col),a
         ld a,(boom_y)
-        cp 181
+        cp BOOM_TOP
+        jr nc,.low
+        ld a,BOOM_TOP
+.low:   cp BOOM_LOW + 1
         jr c,.sty
-        ld a,180
-        ld (boom_y),a
-.sty:   ld a,BOOM_HOLD
+        ld a,BOOM_LOW
+.sty:   ld (boom_y),a
+        ld hl,boom_step
+        ld (boom_hook+1),hl
+        ld a,BOOM_HOLD
         ld (boom_left),a
         ld a,1
         ld (boom_t),a
@@ -328,13 +346,14 @@ torpedo_fish:
         jp fish_flash_begin
 
 ;------------------------------------------------------------------------------
-; boom_service - erase the last picture, then draw the next, or finish
-; Called from wheel_draw when the bomb is not showing.
+; boom_step - main_loop's stats_prepare call while a burst is up. The
+; sprites have all been restored: erase the last picture, then draw the
+; next, or finish.
+; Corrupts: AF, BC, DE, HL, IX
 ;------------------------------------------------------------------------------
+boom_step:
+        call stats_prepare
 boom_service:
-        ld a,(boom_t)
-        or a
-        ret z
         ld a,(boom_got)
         or a
         call nz,boom_restore
@@ -367,6 +386,8 @@ boom_end:
         xor a
         ld (boom_t),a
         ld (boom_got),a
+        ld hl,stats_prepare
+        ld (boom_hook+1),hl
         jp boom_show_fish
 
 ; Copy boom_bg back onto the screen.
@@ -375,9 +396,13 @@ boom_restore:
         jr boom_rows
 
 ; Save the screen under the burst, then copy HL (the shape) onto it.
+; The place is kept for the restore: a new burst can be armed first.
 boom_paint:
-        push hl
+        ld a,(boom_col)
+        ld (boom_dcol),a
         ld a,(boom_y)
+        ld (boom_dy),a
+        push hl
         call row_table_entry
         pop hl
         ld de,boom_bg
@@ -410,14 +435,14 @@ boom_paint:
 ; In: HL = 24 bytes to write. No save.
 boom_rows:
         push hl
-        ld a,(boom_y)
+        ld a,(boom_dy)
         call row_table_entry
         pop hl
         ld b,BOOM_ROWS
 .row:   push bc
         ld c,(ix+0)
         ld b,(ix+1)
-        ld a,(boom_col)
+        ld a,(boom_dcol)
         or c
         ld c,a
         ld a,(hl)

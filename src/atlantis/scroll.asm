@@ -203,16 +203,11 @@ scroll_init:
 SAND_BUF        equ BACK_BUF + 8 * 32
 
 scroll_blit:
-        ; At 25 the picture is drawn every other television frame, and
-        ; the slow shift lands on the frame that is not drawn. A sand-only
-        ; copy would move the dune and leave the plant where it was.
-        ld a,(step_ticks)
-        cp 2
-        jr z,.both
+        ; At 25 the idle frame shifts the slow buffer and sets the phase
+        ; to 1, so every picture frame there takes this full copy.
         ld a,(slow_phase)
         or a
         jr z,.sand_only
-.both:
         ld a,BACK_ROW * 8       ; weed, then the sand falls out in row 22
         ld b,BACK_PX
         ld hl,BACK_BUF
