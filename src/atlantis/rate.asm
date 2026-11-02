@@ -58,6 +58,13 @@ rate_apply:
         ld (step_jp_shift+1),hl
         ld (step_jp_move+1),de
         pop de
+    IFNDEF NO_SOUND
+        ; 50 plays sound in every wait. 25 opens the gate only for the
+        ; idle frame's (main_loop).
+        ld a,(step_ticks)
+        and 1
+        ld (snd_gate),a
+    ENDIF
         ; The digits reprint every eight steps. A new speed should show
         ; on the next step, so the counter is set to reprint then.
         ld a,7
@@ -202,6 +209,17 @@ spare_count:
         or a
         jr nz,.none
         ld hl,0
+    IFNDEF NO_SOUND
+        ; A sound plays in this wait, in the same one-scanline passes
+        ; (sound.asm). The 25 picture frame's wait has the gate shut.
+        ld a,(snd_gate)
+        or a
+        jr z,.line
+        ld a,(snd_left)
+        or a
+        call nz,snd_tick
+        jr nz,.got              ; the interrupt came during the burst
+    ENDIF
 .line:  inc hl
         ld a,(de)
         or a

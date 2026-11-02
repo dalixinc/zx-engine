@@ -48,6 +48,8 @@ Verification means assembling a variant build with `-D` flags and running it in 
 | `-DSLACK_LINES=n` | Adds an n-scanline NOP sled. Green/red border shows whether the frame still fits. Optional `SLACK_WARMUP`. |
 | `-DSHOT_FRAME=n` | Halts after loop n for a deterministic screenshot. |
 | `-DNO_WHEEL` | Leaves the wheel bomb out, for measurement. |
+| `-DMEAS_BOOM` | With `-DMEASURE`: an explosion over the diver all the time (a new one as soon as the last ends), with its sound. The worst case for the explosion's cost. |
+| `-DNO_SOUND` | Leaves the beeper out of any build, so timing can be compared with and without sound. |
 
 Example: `sjasmplus --nologo --fullpath=off -DMEASURE -DMEAS_DOWN src/atlantis/main.asm`, then `fuse-sdl --machine 48 build/atlantis-measure.sna`.
 
@@ -67,6 +69,8 @@ After a change that touches the frame loop, sprites, scroll, stats or input, run
 7. `spare_count` (`src/atlantis/rate.asm`) busy-waits in an exact 224-T-state loop until the interrupt. **This wait is the vsync**, and it also measures spare scanlines
 
 **50/25 fps**: every speed is written per 1/50 s. `step_ticks` is 1 or 2. At 25 each step is two television frames: the picture frame only restores, draws and copies the seabed, and `idle_tick` (the next frame) shifts the ground twice and the slow buffer once, then runs the movement twice on the one-pixel paths. `rate_apply` patches the two jumps in `main_loop` (`step_jp_shift`, `step_jp_move`) that skip the shifts and the moves on the picture frame. The wheel applies `step_ticks` internally, so don't call it twice.
+
+**Hits and sound**: a bomb, a fish, or sinking onto the black (`clamp_to_terrain` sets `diver_touch` under `IFDEF ATLANTIS`) all go through `diver_hurt` and an explosion (`boom.asm`). A MEASURE build only clears `diver_touch`, so `MEAS_DOWN` can sit on the seabed. The explosion is the bottom layer: `boom_hook` (the `call stats_prepare` after the restores) is patched to `boom_step` while one is up. Sound (`sound.asm`) plays only inside `spare_count`'s wait for the interrupt, one scanline per pass, so it cannot make a frame late; at 25 only the idle frame's wait plays it (`snd_gate`).
 
 **Sprites**: masked, pre-shifted copies (8 shifts per frame), so drawing involves no run-time bit shifting. Each sprite has a background record (`BG_*` offsets in `src/sprite.asm`) addressed through IY. Save, draw, then restore next frame. `fastsprite.asm` is Atlantis's faster walker, which also clips at the left and right edges. The ISR only preserves AF and HL, and the fast walker relies on that.
 

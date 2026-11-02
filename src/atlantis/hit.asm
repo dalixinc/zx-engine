@@ -45,6 +45,7 @@ HIT_Y_LO        equ HIT_DIVER_T - HIT_WHEEL_B
 HIT_Y_SPAN      equ HIT_DIVER_B - HIT_WHEEL_T - HIT_Y_LO + 1
 
 lives:          db CFG_LIVES
+diver_touch:    db 0            ; 1 = the terrain clamp stopped him on the black
 lives_dirty:    db 1            ; 1 = the hearts on row 1 need drawing again
 hit_flash:      db 0            ; steps of red border left; 0 = the heartbeat
 
@@ -99,12 +100,34 @@ hit_check:
         call fish_aside         ; a fish in the same place goes too
         jp diver_hurt
 
+;------------------------------------------------------------------------------
+; ground_hit - he sank onto the black ground (or a rock or a silo top)
+; clamp_to_terrain sets diver_touch when it has to hold him up. That is
+; a hit, the same as a bomb: the explosion where he was, a life, and back
+; to the left edge. He also goes back up to the depth a game starts at:
+; still holding Down at the bottom, he would touch again on the next
+; step and lose every life in three steps.
+; main_loop calls this only when diver_touch is set.
+; Out: carry set if that was the last life.
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+ground_hit:
+        xor a
+        ld (diver_touch),a
+        call boom_at_diver
+        ld a,DIVER_START_Y
+        ld (diver_y),a
+        jp diver_hurt
+
 ; One column in from the left edge. DIVER_MIN_X is 0.
 DIVER_HIT_X     equ DIVER_MIN_X + 8
+DIVER_START_Y   equ 110             ; game_reset puts him here too
 
 ; Out: carry set if that was the last life.
 diver_hurt:
-        ld a,DIVER_HIT_X
+        xor a
+        ld (diver_touch),a      ; one hit a step: a bomb and the ground together
+        ld a,DIVER_HIT_X        ; cost one life
         ld (diver_x),a
         ld a,CFG_HIT_FLASH
         ld (hit_flash),a

@@ -94,3 +94,21 @@ CFG_WHEEL_WOBBLE    equ 0
 ; of ground also loses its yellow paper and becomes blue. When the bomb
 ; moves on, the cell is put back.
 CFG_WHEEL_INK       equ BRIGHT | BLACK | (BLUE << 3)
+
+; The explosion's crunch on the beeper (sound.asm). It is white noise,
+; played in short bursts in the spare time at the end of each step, so
+; it never makes a frame late: a burst stops at the interrupt, however
+; long it was meant to be. Each burst is shorter and sparser than the
+; one before, so the crunch fades out.
+;   CFG_BOOM_SND_FRAMES   bursts, one a step (at 25, in the idle frame)
+;   CFG_BOOM_SND_LINES    the first burst, in scanlines (64 us each).
+;                         A heavy frame has fewer spare lines than this,
+;                         and its burst is cut short.
+;   CFG_BOOM_SND_DENSITY  how often the speaker is pushed out, out of 256,
+;                         in the first burst. 128 is the loudest hiss;
+;                         lower is a thinner crackle.
+; The lines and the density both fall by a FRAMES-th each burst.
+; Assemble with -DNO_SOUND to leave the beeper out altogether.
+CFG_BOOM_SND_FRAMES  equ 10
+CFG_BOOM_SND_LINES   equ 60
+CFG_BOOM_SND_DENSITY equ 128

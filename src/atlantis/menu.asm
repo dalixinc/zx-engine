@@ -351,8 +351,10 @@ game_reset:
 
         ld a,60
         ld (diver_x),a
-        ld a,110
+        ld a,DIVER_START_Y
         ld (diver_y),a
+        xor a
+        ld (diver_touch),a
         xor a
         ld (diver_facing),a
         ld (diver_moving),a
@@ -368,6 +370,9 @@ game_reset:
         call wheel_reset
         call torpedo_reset
         call boom_reset
+    IFNDEF NO_SOUND
+        call snd_reset
+    ENDIF
 
         di
         ld hl,0
