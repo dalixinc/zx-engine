@@ -26,6 +26,9 @@ menu_game_over: db 0            ; 1 = the last life was lost: say GAME OVER
 ; called, so the stack is the main loop's and nothing is left on it.
 ;------------------------------------------------------------------------------
 game_over:
+    IFNDEF NO_SOUND
+        call snd_knell          ; the last picture stays up while it plays
+    ENDIF
         ld a,1
         ld (menu_game_over),a
         ; fall through

@@ -95,20 +95,42 @@ CFG_WHEEL_WOBBLE    equ 0
 ; moves on, the cell is put back.
 CFG_WHEEL_INK       equ BRIGHT | BLACK | (BLUE << 3)
 
-; The explosion's crunch on the beeper (sound.asm). It is white noise,
-; played in short bursts in the spare time at the end of each step, so
-; it never makes a frame late: a burst stops at the interrupt, however
-; long it was meant to be. Each burst is shorter and sparser than the
-; one before, so the crunch fades out.
-;   CFG_BOOM_SND_FRAMES   bursts, one a step (at 25, in the idle frame)
-;   CFG_BOOM_SND_LINES    the first burst, in scanlines (64 us each).
-;                         A heavy frame has fewer spare lines than this,
-;                         and its burst is cut short.
-;   CFG_BOOM_SND_DENSITY  how often the speaker is pushed out, out of 256,
-;                         in the first burst. 128 is the loudest hiss;
-;                         lower is a thinner crackle.
+; The beeper (sound.asm). Each explosion is white noise, played in
+; short bursts in the spare time at the end of each step, so it never
+; makes a frame late: a burst stops at the interrupt, however long it
+; was meant to be. Each burst is shorter and sparser than the one
+; before, so the sound fades out.
+;   _FRAMES   bursts, one a step (at 25, in the idle frame)
+;   _LINES    the first burst, in scanlines (64 us each). A heavy frame
+;             has fewer spare lines than this, and its burst is cut short.
+;   _DENSITY  how often the speaker is pushed out, out of 256, in the
+;             first burst. 128 is the loudest hiss; lower is thinner.
+;   _PITCH    scanlines each noise value is held. 1 is the highest
+;             hiss; 2 is an octave lower; 3 lower still.
 ; The lines and the density both fall by a FRAMES-th each burst.
 ; Assemble with -DNO_SOUND to leave the beeper out altogether.
+
+; A bomb shot by a torpedo.
 CFG_BOOM_SND_FRAMES  equ 10
 CFG_BOOM_SND_LINES   equ 60
 CFG_BOOM_SND_DENSITY equ 128
+CFG_BOOM_SND_PITCH   equ 2
+
+; A fish that dies: shorter and higher.
+CFG_FISH_SND_FRAMES  equ 6
+CFG_FISH_SND_LINES   equ 48
+CFG_FISH_SND_DENSITY equ 128
+CFG_FISH_SND_PITCH   equ 1
+
+; The diver losing a life (not the last): longer and lower.
+CFG_DIVER_SND_FRAMES  equ 24
+CFG_DIVER_SND_LINES   equ 72
+CFG_DIVER_SND_DENSITY equ 128
+CFG_DIVER_SND_PITCH   equ 3
+
+; The last life: the death knell, played through before GAME OVER, while
+; the last picture stays on the screen. Nothing else is running then,
+; so it is a plain tone and can take as long as it likes. It is a run
+; of falling "wah"s, each a little lower and shorter than the last, then
+; two low pops. This is how many wahs (snd_knell in sound.asm).
+CFG_KNELL_WAHS        equ 9

@@ -113,7 +113,8 @@ attribute writes. The `MEAS_FIRE` runs above include those shots.
   scanlines (3.8 ms) at density 128/256, which is the loudest hiss.
   Each burst after it is a tenth shorter and a tenth sparser.
 - **Tune it by ear** in `config.asm`: `CFG_BOOM_SND_FRAMES`,
-  `CFG_BOOM_SND_LINES`, `CFG_BOOM_SND_DENSITY`.
+  `CFG_BOOM_SND_LINES`, `CFG_BOOM_SND_DENSITY` (and, since item 4,
+  `_PITCH`, plus a set for the fish and the diver).
 - **At 25** only the idle frame's wait plays. `snd_gate` is shut for
   the picture frame.
 - **For other sounds later:** a sound is a run of bursts (count,
@@ -145,6 +146,57 @@ crunch plays, has more than 99 lines spare.
 **I couldn't listen to it.** This Fuse build can't record audio, so
 the crunch's sound and its tuning need checking by ear.
 
+## 4. A sound for each kind of hit, and the death knell
+
+These were added after the brief, at Dale's request.
+
+| What happened | Sound | Settings in `config.asm` |
+|---|---|---|
+| A fish dies (shot, touched, or caught in a bomb hit) | short, **higher** crunch: 6 bursts from 48 lines, pitch 1 | `CFG_FISH_SND_*` |
+| A bomb is shot | the original crunch, now pitch 2: 10 bursts from 60 lines | `CFG_BOOM_SND_*` |
+| The diver loses a life (not the last) | **longer, lower** crunch: 24 bursts from 72 lines, pitch 3 | `CFG_DIVER_SND_*` |
+| The last life | the **death knell** | `CFG_KNELL_WAHS` |
+
+- **Pitch:** the noise loop now holds each random value for `_PITCH`
+  passes (scanlines) before stepping the LFSR. 1 is the highest hiss
+  (about 15.6 kHz sampling), and 2 and 3 are lower. Both paths of the
+  hold are 55 T-states, so a pass is still exactly 224, and the burst
+  still stops at the interrupt. The hold counter is in IXL/IXH, so
+  `snd_tick` now corrupts IX. Nothing after `spare_count` relies on it.
+- **One sound at a time.** A new sound replaces the one playing. The
+  order of the calls makes the right one win: a bomb that hits the
+  diver starts the bomb sound, the fish sound if a fish goes with it,
+  and then his, which is the one that plays.
+- **Each sound is a six-byte description** (`SND_DEF`: bursts, first
+  length, length drop, density, density drop, pitch), copied in by
+  `snd_start`. A shot or a silo missile only needs a new `SND_DEF` and
+  a three-line `snd_*_start`.
+- **The death knell** (`snd_knell`) is Pac-Man style: 9 falling "wah"
+  sweeps, each starting a little lower and falling a little less, then
+  two short low pops. It plays from `game_over`. The game has stopped
+  then, so it is a plain square wave (`snd_sweep`) played straight
+  through, about a second, while the last picture stays on the screen.
+  Then GAME OVER appears. No frame budget is involved.
+
+**Measured again** (heaviest case: seabed, explosion every step, each
+one starting the longest sound, the lost-life crunch):
+
+| Build | late | interrupts | min spare (picture) |
+|---|---|---|---|
+| 50, sound | 31 | 512 | 0 |
+| 50, `NO_SOUND` | 28 | 512 | 0 |
+| 50 + firing, sound | 62 | 512 | 0 |
+| 50, no explosion, sound | 0 | 512 | 0 |
+| 25, sound | 0 | 1024 | 22 lines |
+| 25, `NO_SOUND` | 0 | 1024 | 24 lines |
+
+That is the same picture as before: no lateness from the sound.
+
+**Played at 50 and 25:** holding Down until all three lives went, each
+lost life shows the explosion, and the third freezes the picture for
+about a second, which is the knell, before GAME OVER. I still couldn't
+hear any of it, so the pitches, lengths and the knell want an ear.
+
 ## Checks
 
 - `make`, `make timing`, `make soak` and a `-DNO_SOUND` build assemble
@@ -160,9 +212,9 @@ the crunch's sound and its tuning need checking by ear.
 | `src/diver.asm` | `IFDEF ATLANTIS`: the clamp sets `diver_touch` |
 | `src/atlantis/hit.asm` | `diver_touch`, `ground_hit`, `DIVER_START_Y`; `diver_hurt` clears the touch |
 | `src/atlantis/boom.asm` | `boom_at_diver`; cell-aligned explosion; redraw only on a shape change; starts the sound |
-| `src/atlantis/sound.asm` | new: `snd_boom_start`, `snd_tick`, `snd_reset` |
+| `src/atlantis/sound.asm` | new: `snd_start` and the three `snd_*_start`, `snd_tick` (noise with pitch), `snd_reset`, `snd_knell`, `snd_sweep` |
 | `src/atlantis/rate.asm` | `spare_count` plays the burst in its wait; `rate_apply` sets `snd_gate` |
 | `src/atlantis/main.asm` | `GROUND_CHECK` in both ticks; `MEAS_BOOM`; border colour kept for the beeper; 25's idle gate |
 | `src/atlantis/menu.asm` | start depth from `DIVER_START_Y`; clears the touch and the sound |
-| `src/atlantis/config.asm` | `CFG_BOOM_SND_FRAMES`, `_LINES`, `_DENSITY` |
+| `src/atlantis/config.asm` | `CFG_BOOM_SND_*`, `CFG_FISH_SND_*`, `CFG_DIVER_SND_*` (frames, lines, density, pitch), `CFG_KNELL_WAHS` |
 | `README.md`, `CLAUDE.md` | the ground kill, the sound, `MEAS_BOOM`, `NO_SOUND` |

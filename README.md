@@ -46,8 +46,10 @@ flashes red. The hit boxes are a little smaller than the pictures, so a
 graze of the flippers or the rim does not count. Sinking onto the black
 ground, a rock or a silo is a hit too: he explodes, loses a heart, and
 starts again at the left edge at his starting depth. Explosions crunch
-on the beeper (tune it in `config.asm`, `CFG_BOOM_SND_*`). After the
-last life the game goes back to the menu, which says GAME OVER.
+on the beeper: high for a fish, middle for a bomb, long and low for a
+lost life (tune them in `config.asm`, `CFG_*_SND_*`). The last life
+plays a death knell, then the game goes back to the menu, which says
+GAME OVER.
 
 Fire launches a torpedo from the nose of his jet unit, the way he is
 facing. It runs along that row until it leaves the screen, and a bomb it

@@ -62,7 +62,7 @@ LIVES_SCREEN    equ SCREEN + LIVES_ROW * 32 + LIVES_COL
 ; Out: carry set if that was the last life. The caller jumps to game_over,
 ;      so the menu starts from the main loop's stack and not from inside
 ;      a call.
-; Corrupts: AF, B, DE, HL
+; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 hit_check:
         ld a,(wheel_phase)
@@ -136,6 +136,9 @@ diver_hurt:
         ld hl,lives
         dec (hl)
         jr z,.over
+    IFNDEF NO_SOUND
+        call snd_diver_start    ; the last life gets the knell instead
+    ENDIF
         or a
         ret
 .over:  scf

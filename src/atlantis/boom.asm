@@ -98,6 +98,9 @@ fish_unhold:
 ; photograph held the diver as he was when the fish touched him, and a
 ; hit had since moved him to the left edge.
 fish_flash_begin:
+    IFNDEF NO_SOUND
+        call snd_fish_start
+    ENDIF
         ld a,(fish_x)
         rrca
         rrca
@@ -196,6 +199,9 @@ fish_wait_step:
 ; boom_at_fish - the fish. Hide its draw until the burst ends.
 ;------------------------------------------------------------------------------
 boom_at_bomb:
+    IFNDEF NO_SOUND
+        call snd_boom_start
+    ENDIF
         call boom_show_fish
         ld hl,(wheel_x)
         ld a,(wheel_y)
@@ -214,6 +220,9 @@ boom_at_diver:
         jr boom_arm
 
 boom_at_fish:
+    IFNDEF NO_SOUND
+        call snd_fish_start
+    ENDIF
         ld a,(boom_fish)
         or a
         jr nz,.arm
@@ -270,9 +279,6 @@ boom_arm:
         ld a,1
         ld (boom_t),a
         ld (boom_new),a
-    IFNDEF NO_SOUND
-        call snd_boom_start
-    ENDIF
         or a                    ; not a lost life
         ret
 

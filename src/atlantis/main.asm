@@ -223,10 +223,16 @@ SLACK_WARMUP    equ 0
     ENDIF
     IFDEF MEAS_BOOM
         ; Measurement only. An explosion over the diver all the time: a
-        ; new one starts as soon as the last ends, bomb or no bomb.
+        ; new one starts as soon as the last ends, bomb or no bomb, with
+        ; the life-loss crunch (the longest bursts) each time.
         ld a,(boom_t)
         or a
-        call z,boom_at_diver
+        jr nz,.meas_boomed
+        call boom_at_diver
+    IFNDEF NO_SOUND
+        call snd_diver_start    ; the longest crunch, again and again
+    ENDIF
+.meas_boomed:
     ENDIF
     IFDEF MEAS_FIRE
         ; Measurement only. Fire goes down on every other step, so a
