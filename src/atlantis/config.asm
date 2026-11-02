@@ -95,6 +95,26 @@ CFG_WHEEL_WOBBLE    equ 0
 ; moves on, the cell is put back.
 CFG_WHEEL_INK       equ BRIGHT | BLACK | (BLUE << 3)
 
+; --- Silo missiles (missile.asm) ----------------------------------------------
+; One at a time. After a random wait, a silo on the screen arms its
+; missile: it sits in the hatch, scrolling with the ground, then flies
+; straight up and keeps its column. A torpedo blows it up. Touching the
+; diver is a hit, the same as a bomb.
+;
+; The wait, in 1/50 seconds, from one missile ending to the next being
+; armed: a random number from _MIN to _MAX. 50 is a second. Up to 255.
+CFG_MISSILE_GAP_MIN  equ 75
+CFG_MISSILE_GAP_MAX  equ 200
+
+; How long it sits in the hatch first, in 1/50 seconds: the warning.
+; It leaves a few frames later than this, when the ground has put it
+; where it is cheapest to draw. Up to 64.
+CFG_MISSILE_ARM      equ 25
+
+; Pixels it climbs per 1/50 second. From the hatch to the top of the
+; water is about 150 pixels: 2 takes a second and a half, 3 one second.
+CFG_MISSILE_SPEED    equ 2
+
 ; The beeper (sound.asm). Each explosion is white noise, played in
 ; short bursts in the spare time at the end of each step, so it never
 ; makes a frame late: a burst stops at the interrupt, however long it
@@ -121,6 +141,12 @@ CFG_FISH_SND_FRAMES  equ 6
 CFG_FISH_SND_LINES   equ 48
 CFG_FISH_SND_DENSITY equ 128
 CFG_FISH_SND_PITCH   equ 1
+
+; A missile shot by a torpedo: short and thin, a crackle.
+CFG_MISSILE_SND_FRAMES  equ 8
+CFG_MISSILE_SND_LINES   equ 56
+CFG_MISSILE_SND_DENSITY equ 64
+CFG_MISSILE_SND_PITCH   equ 1
 
 ; The diver losing a life (not the last): longer and lower.
 CFG_DIVER_SND_FRAMES  equ 24

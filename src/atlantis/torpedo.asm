@@ -10,7 +10,7 @@
 ;
 ; A torpedo that touches any pixel of a wheel bomb's picture takes it
 ; away, the same way the bomb leaves through the left edge, and is spent
-; itself.
+; itself. A silo's missile in its way is blown up first (missile_shot).
 ;
 ; It does not follow him. Once launched it keeps the row it left on,
 ; so a diver who sinks after firing leaves it running above him.
@@ -188,12 +188,15 @@ torpedo_spent:
         ret
 
 ;------------------------------------------------------------------------------
-; torpedo_hit - the running torpedo against the bomb in flight
+; torpedo_hit - the running torpedo against a missile, then the bomb in
+; flight, then the fish
 ; Call after update_wheel, so both are where this step put them.
 ; main_loop calls this only while a torpedo is running.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 torpedo_hit:
+        call missile_shot       ; a missile in the way goes first
+        ret c
         ld a,(wheel_phase)
         or a
         jp z,torpedo_fish       ; no bomb: the fish, if it is in the way

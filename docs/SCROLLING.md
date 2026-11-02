@@ -491,12 +491,16 @@ row   21     seaweed, 8 pixels. Green ink, blue paper, and only in the
              cells a plant is actually in. Part of the slow layer.
 row   22     yellow sand, 8 pixels. Yellow ink, blue paper, every column,
              painted once. The other half of the slow layer.
-             A silo is 16 pixels tall, so its top half stands in this row
-             and is drawn in THIS row's colours.
+             A silo's tower stands in this row, in this row's colours.
 row   23     black ground, 8 pixels. Black ink, yellow paper, every
              column, painted once. The fast layer. Rocks stay inside
-             these 8 pixels. The bottom half of a silo is here.
+             these 8 pixels. A silo's base is here.
 ```
+
+Since the silos-and-missiles change, a silo is 16 wide and 24 tall,
+and its dome stands in row 21 with its cells painted the weed's green.
+The paragraphs below describe the older 16-pixel silo and its "tops".
+`docs/SILOS-AND-MISSILES.md` has the new stamp and its timings.
 
 The slow layer moves 1 pixel every 2 frames. The ground moves 1 pixel
 every frame. Same speeds as the demo, shorter strips.

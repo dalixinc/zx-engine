@@ -21,7 +21,7 @@ ASM       ?= sjasmplus
 EMU       ?= fuse-sdl
 PYTHON    ?= python3
 GFX       := gfx/fish.asm gfx/diver.asm
-ATL_GFX   := $(GFX) gfx/wheel.asm gfx/torpedo.asm
+ATL_GFX   := $(GFX) gfx/wheel.asm gfx/torpedo.asm gfx/missile.asm
 SHARED    := src/constants.asm src/interrupts.asm src/screen.asm src/text.asm \
              src/input.asm src/sprite.asm src/fish.asm src/diver.asm \
              src/loader.asm

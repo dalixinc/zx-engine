@@ -197,6 +197,7 @@ fish_wait_step:
 ;------------------------------------------------------------------------------
 ; boom_at_bomb - the bomb has just been removed. Burst where it was.
 ; boom_at_fish - the fish. Hide its draw until the burst ends.
+; boom_at_missile - a silo's missile, shot or on the diver.
 ;------------------------------------------------------------------------------
 boom_at_bomb:
     IFNDEF NO_SOUND
@@ -205,6 +206,22 @@ boom_at_bomb:
         call boom_show_fish
         ld hl,(wheel_x)
         ld a,(wheel_y)
+        jr boom_arm
+
+; Over the missile's middle. In the hatch, boom_arm lifts it clear of
+; the seabed rows.
+boom_at_missile:
+    IFNDEF NO_SOUND
+        call snd_missile_start
+    ENDIF
+        call boom_show_fish
+        ld a,(msl_x)
+        ld l,a
+        ld h,0
+        ld de,(MISSILE_WIDTH - 16) / 2
+        add hl,de               ; it can be left of the screen: boom_arm clips
+        ld a,(msl_y)
+        add a,(MISSILE_HEIGHT - BOOM_ROWS) / 2
         jr boom_arm
 
 ; The diver: the burst over his middle. boom_arm keeps it above the

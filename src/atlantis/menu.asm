@@ -372,6 +372,7 @@ game_reset:
 
         call wheel_reset
         call torpedo_reset
+        call missile_reset
         call boom_reset
     IFNDEF NO_SOUND
         call snd_reset
