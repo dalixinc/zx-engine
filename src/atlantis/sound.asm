@@ -167,6 +167,31 @@ snd_op_tone:
 snd_tune_level:
         db 20, 5, 15, 5, 12, 5, 10, 10, 12, 4, 10, 20, 0
 
+; The torpedo's laser (CFG_LASER). A tune counts down a note before it
+; plays it, so a one-tick first note is never heard. The lead-in is
+; that note: it is used up on the step that fires, which then plays the
+; first of CFG_LASER at once, at 50 and at 25.
+        MACRO LASER_NOTE half
+        ASSERT half >= 1 && half <= 255
+        db half, CFG_LASER_TICKS
+        ENDM
+        ASSERT CFG_LASER_TICKS >= 1 && CFG_LASER_TICKS <= 255
+snd_laser:
+        db 1, 1                 ; the lead-in, never heard
+        CFG_LASER
+        db 0
+
+;------------------------------------------------------------------------------
+; snd_laser_start - the torpedo leaving
+; At once, over whatever is playing: the player hears his own shot the
+; moment he fires. An explosion that starts later still cuts it short,
+; so a hit is heard too.
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+snd_laser_start:
+        ld hl,snd_laser
+        jp snd_tune_start
+
 ; snd_reset - silence, for a new game and for the knell. Corrupts: AF
 snd_reset:
         xor a

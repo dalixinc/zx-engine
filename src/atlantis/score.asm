@@ -39,22 +39,25 @@
 ; first), the shortest missile gap, how many values the gap can take
 ; (max - min + 1), and the bomb's haste: what is added to a fraction
 ; each 1/50 second, an extra pixel each time it carries. 0 is the old
-; 1 pixel per 1/50 second; 64 is a quarter faster.
-LEVEL_ROW_BYTES equ 5
+; 1 pixel per 1/50 second; 64 is a quarter faster. Then the bomb's kind
+; (BOMB_P or BOMB_W).
+LEVEL_ROW_BYTES equ 6
 
 level_rows = 0
-        MACRO LEVEL_ROW need, gmin, gmax, haste
+        MACRO LEVEL_ROW need, gmin, gmax, haste, bomb
         ASSERT need >= 1 && need <= 9999, "a level needs 1 to 9999 points"
         ASSERT gmin <= gmax && gmax <= 255 && gmax - gmin + 1 <= 255
         ASSERT haste >= 0 && haste <= 255
+        ASSERT bomb == BOMB_P || bomb == BOMB_W
         IF level_rows == 0
         ; The soak plays level 1 and its frame numbers expect the old game.
         ASSERT haste == 0, "level 1's bombs must keep the old speed"
+        ASSERT bomb == BOMB_P, "level 1's bomb is the pulsar"
         ASSERT gmin == CFG_MISSILE_GAP_MIN && gmax == CFG_MISSILE_GAP_MAX, "level 1's missile wait is CFG_MISSILE_GAP_*"
         ENDIF
         db (((need % 100) / 10) << 4) | (need % 10)
         db (((need / 1000) % 10) << 4) | ((need / 100) % 10)
-        db gmin, gmax - gmin + 1, haste
+        db gmin, gmax - gmin + 1, haste, bomb
 level_rows = level_rows + 1
         ENDM
 
@@ -64,12 +67,26 @@ level_rows = level_rows + 1
         ld a,((pts / 10) << 4) | (pts % 10)
         ENDM
 
+; Level 2's message stops the game until a key is pressed. Builds
+; that run on their own (soak, measure, timing, sled, screenshot) leave
+; it out: nobody is there to press the key.
+    IFNDEF IDLE_HOLD
+    IFNDEF MEASURE
+    IFNDEF SOAK
+        DEFINE TEASER
+    ENDIF
+    ENDIF
+    ENDIF
+
 ; --- state ----------------------------------------------------------------------
 score:          ds 3            ; BCD, low byte first
 hiscore:        ds 3            ; kept while the machine is on
 level:          db 1            ; BCD
+level_n:        db 1            ; the same, binary, for the codes
+start_level:    db 1            ; binary: where the next game starts (codes.asm)
 level_row:      dw 0            ; this level's row of level_tab
 level_next:     ds 3            ; the score that finishes this level, BCD
+level_bomb:     db BOMB_P       ; this level's bomb (wheel_type)
 
 ; What row 1 needs. Bit 0 the hearts, bit 1 the words and numbers, bit 2
 ; the banner's clock. main_loop tests the byte once a step.
@@ -88,6 +105,8 @@ banner_until:   dw 0            ; frame_count when the banner comes down
 banner_col:     db 0            ; its first column
 banner_len:     db 0            ; characters in it
 banner_chars:   ds 8            ; "LEVEL" and the number
+banner_code:    db 0            ; 1 = code_buf goes under it
+teaser_due:     db 0            ; 1 = the level 2 message, once the banner is down
 
         ASSERT HUD_LEN <= LIVES_COL, "the score line runs into the hearts"
 
@@ -114,11 +133,35 @@ score_reset:
 .clr:   ld (hl),a
         inc hl
         djnz .clr
-        ld a,1
+        ld (banner_code),a
+        ld (teaser_due),a
+    IFDEF TEASER
+        ; A game can end in the step that level 2's banner came down,
+        ; with the message still due. Without this the next game would
+        ; show it in level 1.
+        ld hl,spare_count
+        ld (teaser_hook+1),hl
+    ENDIF
+        inc a
         ld (level),a
+        ld (level_n),a
         ld hl,level_tab
         call level_enter
-        ld a,(1 << HUD_HEARTS) | (1 << HUD_TEXT)
+        ; A code: go up to its level quietly, with the score each level
+        ; starts at, so the points to the next level are the usual ones.
+        ld a,(start_level)
+        dec a
+        jr z,.go
+        ld b,a
+.skip:  push bc
+        ld hl,level_next
+        ld de,score
+        ld bc,3
+        ldir
+        call level_advance
+        pop bc
+        djnz .skip
+.go:    ld a,(1 << HUD_HEARTS) | (1 << HUD_TEXT)
         ld (hud_dirty),a
         ret
 
@@ -174,16 +217,51 @@ score_add:
         jr .check
 
 ;------------------------------------------------------------------------------
-; level_up - the target is reached: the next row, the banner, the jingle
+; level_up - the target is reached: the next row, the banner, its code,
+;            the jingle. Level 2 also gets the message (teaser).
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 level_up:
+        call level_advance
+        ld hl,hud_dirty
+        set HUD_TEXT,(hl)
+        bit HUD_BANNER,(hl)     ; a banner still up comes down first,
+        call nz,banner_erase    ; with its own code line
+        ; The code goes under the banner from level 3. Level 2's is in
+        ; the message that follows its banner.
+        xor a
+        ld (banner_code),a
+        ld a,(level_n)
+        cp 2
+        jr nz,.code
+    IFDEF TEASER
+        ld (teaser_due),a       ; not 0
+    ENDIF
+        jr .show
+.code:  cp CFG_CODE_LEVELS + 1
+        jr nc,.show             ; past the last code
+        call code_text
+        ld a,1
+        ld (banner_code),a
+.show:  call banner_show
+    IFNDEF NO_SOUND
+        ld hl,snd_tune_level
+        jp snd_tune_start
+    ELSE
+        ret
+    ENDIF
+
+; The next level and its row of the table, without the banner.
+; Corrupts: AF, BC, DE, HL
+level_advance:
         ld a,(level)
         cp $99
         jr z,.same              ; level 99 is as far as two digits go
         add a,1
         daa
         ld (level),a
+        ld hl,level_n
+        inc (hl)
 .same:  ld hl,(level_row)
         ld de,LEVEL_ROW_BYTES
         add hl,de
@@ -193,16 +271,7 @@ level_up:
         add hl,de
         jr c,.row
         ld hl,level_end - LEVEL_ROW_BYTES ; past the table: the last row again
-.row:   call level_enter
-        ld hl,hud_dirty
-        set HUD_TEXT,(hl)
-        call banner_show
-    IFNDEF NO_SOUND
-        ld hl,snd_tune_level
-        jp snd_tune_start
-    ELSE
-        ret
-    ENDIF
+.row:   ; fall through
 
 ; HL = a row of level_tab. Its target goes on top of the last one, and
 ; its missile gap and bomb haste take over.
@@ -241,6 +310,9 @@ level_enter:
         inc hl
         ld a,(hl)
         ld (wheel_haste),a
+        inc hl
+        ld a,(hl)
+        ld (level_bomb),a
         ret
 
 ;------------------------------------------------------------------------------
@@ -423,19 +495,35 @@ banner_show:
         call banner_paint
         ld hl,(frame_count)
         ld de,CFG_BANNER_TIME
-        add hl,de
+        ld a,(banner_code)
+        or a
+        jr z,.time
+        ld de,CFG_BANNER_CODE_TIME ; longer, to read the code
+.time:  add hl,de
         ld (banner_until),hl
         ld hl,hud_dirty
         set HUD_BANNER,(hl)
         ret
 
-; Each step while it is up: time to take it down?
+; Each step while it is up: time to take it down? After level 2's,
+; the message, at the end of this step.
 banner_tick:
         ld hl,(frame_count)
         ld de,(banner_until)
         or a
         sbc hl,de
         ret c
+    IFDEF TEASER
+        call banner_erase
+        ld a,(teaser_due)
+        or a
+        ret z
+        xor a
+        ld (teaser_due),a
+        ld hl,teaser
+        ld (teaser_hook+1),hl   ; main_loop's call to spare_count
+        ret
+    ENDIF
         ; fall through
 
 banner_erase:
@@ -450,16 +538,39 @@ banner_erase:
 ; Corrupts: AF, BC, DE, HL
 banner_paint:
         ld (banner_ink),a
+        ld a,BANNER_ROW
+        ld (banner_row),a
         ld a,(banner_col)
         ld c,a
         ld hl,banner_chars
         ld a,(banner_len)
         ld b,a
+        call banner_line
+        ld a,(banner_code)
+        or a
+        jr z,banner_bomb
+        ld a,BANNER_ROW + 6     ; the code, a row of cells under it
+        ld (banner_row),a
+        ld c,(32 - CODE_LEN * 4 + 1) / 2
+        ld hl,code_buf
+        ld b,CODE_LEN
+        call banner_line
+banner_bomb:
+        ld a,(wheel_attr_n)
+        or a
+        ret z
+        xor a
+        ld (wheel_shown),a      ; not the ink: the bomb repaints its cells
+        ret
+
+; HL = characters, B = how many, C = the first column; (banner_row).
+banner_line:
 .char:  push bc
         push hl
         ld a,(hl)
         call banner_glyph       ; DE -> five rows of three bits
-        ld b,BANNER_ROW
+        ld a,(banner_row)
+        ld b,a
 .row:   push bc
         call attr_addr          ; HL -> the row's first cell of this letter
         ld a,(de)
@@ -480,9 +591,10 @@ banner_paint:
         djnz .blk
         pop bc
         inc b
-        ld a,b
-        cp BANNER_ROW + 5
-        jr c,.row
+        ld a,(banner_row)
+        add a,5
+        cp b
+        jr nz,.row
         pop hl
         pop bc
         inc hl
@@ -490,38 +602,114 @@ banner_paint:
         add a,4
         ld c,a
         djnz .char
-        ld a,(wheel_attr_n)
-        or a
-        ret z
-        xor a
-        ld (wheel_shown),a      ; not the ink: the bomb repaints its cells
         ret
 
 banner_ink:     db 0
+banner_row:     db 0
 
-; A = 'L', 'E', 'V', ' ' or a digit. Out: DE -> its five rows.
+; A = a capital letter, ' ' or a digit. Out: DE -> its five rows.
 ; Corrupts: AF, HL
 banner_glyph:
-        ld de,banner_font_l
-        cp 'L'
-        ret z
-        ld de,banner_font_e
-        cp 'E'
-        ret z
-        ld de,banner_font_v
-        cp 'V'
-        ret z
         ld de,banner_font_sp
         cp ' '
         ret z
+        ld de,banner_font_0
         sub '0'
-        ld l,a
+        cp 10
+        jr c,.got
+        ld de,banner_font_a
+        sub 'A' - '0'
+.got:   ld l,a
         add a,a
         add a,a
         add a,l                 ; *5
         ld l,a
         ld h,0
-        ld de,banner_font_0
         add hl,de
         ex de,hl
         ret
+
+    IFDEF TEASER
+;------------------------------------------------------------------------------
+; teaser - level 2's message, until a key is pressed
+; banner_tick points main_loop's call to spare_count here for one step,
+; once level 2's banner is down. So it comes at the end of a step, with
+; the sprites on the screen, and the picture stays still behind the
+; panel for as long as the player likes: time for a screenshot. Then
+; the panel's rows go back to empty water. Every sprite photographed
+; water there this step, so the next restores and draws find what they
+; expect. The step after it is late, once.
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+TEASE_ROW       equ 6
+TEASE_ROWS      equ 9
+
+teaser:
+        ld hl,spare_count
+        ld (teaser_hook+1),hl   ; this step only
+        ld a,TEASE_ATTR
+        call teaser_fill
+        ld (text_attr),a
+        ld hl,str_tease_1
+        ld bc,((TEASE_ROW + 1) << 8) | 0
+        call print_string
+        ld hl,str_tease_2
+        ld bc,((TEASE_ROW + 3) << 8) | 3
+        call print_string
+        ld hl,str_tease_key
+        ld bc,((TEASE_ROW + 7) << 8) | 10
+        call print_string
+        ld a,2
+        call code_text          ; before the row goes in B
+        ld hl,str_code_word
+        ld bc,((TEASE_ROW + 5) << 8) | 10
+        call print_string
+        ld a,TEASE_CODE_ATTR
+        ld (text_attr),a
+        ld hl,code_buf
+        call print_string
+        call keys_up            ; he is holding a direction, or fire
+.wait:  call wait_frame
+        call any_key
+        jr z,.wait
+        call keys_up            ; the key that ended it does not fire
+        ld a,WATER_ATTR
+        call teaser_fill
+        call banner_bomb        ; the bomb's ink, if the panel covered it
+        jp spare_count
+
+; A = attribute for the panel's rows, whose pixels are cleared.
+; Corrupts: F, BC, DE, HL
+teaser_fill:
+        ld hl,ATTRS + TEASE_ROW * 32
+        ld de,ATTRS + TEASE_ROW * 32 + 1
+        ld bc,TEASE_ROWS * 32 - 1
+        ld (hl),a
+        ldir
+        push af
+        ld b,TEASE_ROW
+.row:   push bc
+        ld c,0
+        call char_addr
+        ld c,8
+.line:  push hl
+        ld d,h
+        ld e,l
+        inc de
+        ld (hl),0
+        push bc
+        ld bc,31
+        ldir
+        pop bc
+        pop hl
+        inc h
+        dec c
+        jr nz,.line
+        pop bc
+        inc b
+        ld a,b
+        cp TEASE_ROW + TEASE_ROWS
+        jr c,.row
+        pop af
+        ret
+    ENDIF

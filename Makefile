@@ -23,7 +23,7 @@ ASM       ?= sjasmplus
 EMU       ?= fuse-sdl
 PYTHON    ?= python3
 GFX       := gfx/fish.asm gfx/diver.asm
-ATL_GFX   := $(GFX) gfx/wheel.asm gfx/torpedo.asm gfx/missile.asm
+ATL_GFX   := $(GFX) gfx/wheel.asm gfx/wheel_spin.asm gfx/torpedo.asm gfx/missile.asm
 SHARED    := src/constants.asm src/interrupts.asm src/screen.asm src/text.asm \
              src/input.asm src/sprite.asm src/fish.asm src/diver.asm \
              src/loader.asm
@@ -34,7 +34,7 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/stats.asm src/atlantis/rate.asm \
              src/atlantis/menu.asm src/atlantis/wheel.asm src/atlantis/hit.asm src/atlantis/torpedo.asm \
              src/atlantis/fastsprite.asm src/atlantis/boom.asm src/atlantis/sound.asm \
-             src/atlantis/silo.asm src/atlantis/missile.asm src/atlantis/score.asm \
+             src/atlantis/silo.asm src/atlantis/missile.asm src/atlantis/score.asm src/atlantis/codes.asm src/atlantis/wspin.asm \
              src/atlantis/soak.asm $(SHARED)
 
 TAP       := build/atlantis.tap
@@ -61,6 +61,11 @@ build:
 # committed too, so you only need Python if you change the .txt art.
 gfx/%.asm: gfx/%.txt tools/gfx2asm.py
 	$(PYTHON) tools/gfx2asm.py $< $@ $*
+
+# The spinning wheel bomb: every other frame of its art, unshifted. The
+# game shifts it at start-up (src/atlantis/wspin.asm).
+gfx/wheel_spin.asm: gfx/wheel-full.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ wspin 2
 
 # The loading screen, drawn from the same sprites. Committed, like the
 # .asm above, so the tape builds without Python.

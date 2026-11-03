@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Atlantis</title>
+<!-- No favicon file: an empty one stops the browser asking for
+     /favicon.ico, which was the console's one error (a 404). -->
+<link rel="icon" href="data:,">
 <!--
   Atlantis, a ZX Spectrum 48K game, running in JSSpeccy 3 (GPL-3.0,
   https://github.com/gasman/jsspeccy3), whose files are in jsspeccy/.
@@ -93,6 +96,7 @@
   <table class="keys">
     <tr><td>Start a game (on the menu)</td><td><kbd>1</kbd></td></tr>
     <tr><td>50 or 25 frames a second (menu)</td><td><kbd>2</kbd></td></tr>
+    <tr><td>Enter a level code (menu)</td><td><kbd>3</kbd>, then six letters</td></tr>
     <tr><td>Swim up, down, left, right</td><td><kbd>Q</kbd> <kbd>A</kbd> <kbd>O</kbd> <kbd>P</kbd> &nbsp;or&nbsp; <kbd>7</kbd> <kbd>6</kbd> <kbd>5</kbd> <kbd>8</kbd></td></tr>
     <tr><td>Fire a torpedo</td><td><kbd>Space</kbd> or <kbd>0</kbd></td></tr>
     <tr><td>Back to the menu</td><td><kbd>Ctrl</kbd> + <kbd>P</kbd></td></tr>
@@ -132,6 +136,22 @@
       autoStart: true,
       sandbox: true              // no "open a file" in its menus
     });
+    // JSSpeccy listens for keys on its own box (the div it gives
+    // tabindex 0), and only focuses it once the snapshot has been
+    // fetched. The button that had the focus is gone by then, so the
+    // first key went nowhere until a second click. Focus the box now,
+    // inside the click, and again for the next few seconds while
+    // JSSpeccy starts, unless the player has clicked elsewhere.
+    var box = stage.querySelector('[tabindex]');
+    if (box) {
+      box.focus();
+      var tries = 0;
+      var keep = setInterval(function () {
+        var a = document.activeElement;
+        if (a === document.body || a === null) box.focus();
+        if (++tries >= 50) clearInterval(keep);
+      }, 100);
+    }
   });
 </script>
 </body>

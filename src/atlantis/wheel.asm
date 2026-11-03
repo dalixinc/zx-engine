@@ -450,6 +450,45 @@ wheel_clamp_base:
         ret
 
 ;------------------------------------------------------------------------------
+; wheel_type - this level's kind of bomb: its five settings, its pictures
+; level_bomb (from CFG_LEVELS) picks the pulsar or the spinning wheel.
+; The pictures are switched by patching two operands, the draw's table
+; and the animation's order, so the draw costs exactly what it did. Only
+; called when a bomb appears, never while one is on the screen.
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+wheel_type:
+        ld a,(level_bomb)
+    IFDEF MEAS_SPIN
+        ld a,BOMB_W             ; measure the spinning wheel at level 1
+    ENDIF
+        ld hl,enemy_wheel
+        ld de,wheel_pics
+        cp BOMB_W
+        jr nz,.got
+        ld hl,enemy_spin
+        ld de,spin_pics
+.got:   push de
+        ld de,wheel_swing
+        ld bc,ENEMY_ROW
+        ldir
+        pop hl
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        inc hl
+        ld (wheel_draw.img + 1),de
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        ld (wheel_next_frame.seq + 1),de
+        ret
+
+; Each kind's pictures and animation order.
+wheel_pics:     dw wheel_images, wheel_seq
+spin_pics:      dw wspin_images, wspin_seq
+
+;------------------------------------------------------------------------------
 ; wheel_spawn_type - copy the settings onto this bomb
 ; Five bytes: swing, bob speed, wobble, kind, colour. With wobble above
 ; 0 the new bomb also starts somewhere else on the sine, and takes one
@@ -458,10 +497,7 @@ wheel_clamp_base:
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 wheel_spawn_type:
-        ld hl,enemy_wheel
-        ld de,wheel_swing
-        ld bc,ENEMY_ROW
-        ldir
+        call wheel_type
         ld a,(wheel_swing)
         add a,a
         ld (wheel_swing_max),a
@@ -489,7 +525,8 @@ wheel_next_frame:
         jr c,.step
         xor a
 .step:  ld (hl),a
-        ld hl,wheel_seq
+.seq:
+        ld hl,wheel_seq         ; or wspin_seq: patched by wheel_type
         add a,l
         ld l,a
         jr nc,.got
@@ -506,10 +543,7 @@ wheel_next_frame:
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 wheel_reset:
-        ld hl,enemy_wheel
-        ld de,wheel_swing
-        ld bc,ENEMY_ROW
-        ldir
+        call wheel_type
         ld a,(wheel_swing)
         add a,a
         ld (wheel_swing_max),a
@@ -641,7 +675,8 @@ wheel_draw:
         call fast_save
 
         ld a,(wheel_frame)      ; shape number, from wheel_seq
-        ld hl,wheel_images
+.img:
+        ld hl,wheel_images      ; or wspin_images: patched by wheel_type
         call sprite_image
         call fast_pick          ; HL -> image for this shift
 

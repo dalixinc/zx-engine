@@ -45,7 +45,8 @@ it to update the site. See [docs/WEB.md](docs/WEB.md).
 The tape shows a loading screen while the game loads (it is drawn from
 the game's own sprites by `tools/mkloadscreen.py`). The game then opens
 on a start screen: `1` starts the game, `2` swaps between
-50 and 25 frames a second. The choice is kept when you come back to the
+50 and 25 frames a second, and `3` takes a six-letter level code
+(`0` rubs out a letter, Space gives up). The choice is kept when you come back to the
 menu.
 
 The diver has three lives (`CFG_LIVES` in `src/atlantis/config.asm`),
@@ -54,7 +55,8 @@ touches him costs one: the bomb vanishes, a heart goes, and the border
 flashes red. The hit boxes are a little smaller than the pictures, so a
 graze of the flippers or the rim does not count. Sinking onto the black
 ground, a rock or a silo is a hit too: he explodes, loses a heart, and
-starts again at the left edge at his starting depth. Explosions crunch
+starts again at the left edge at his starting depth. Each torpedo leaves with a falling laser
+"pew" (`CFG_LASER`). Explosions crunch
 on the beeper: high for a fish, middle for a bomb, long and low for a
 lost life (tune them in `config.asm`, `CFG_*_SND_*`). The last life
 plays a death knell, then the game goes back to the menu, which says
@@ -67,7 +69,15 @@ and the level are on row 1, beside the hearts. Each level has a target
 (`CFG_LEVELS` in `config.asm`: 200 points for level 1, then 300 more,
 400 more, and so on). Reaching it puts up a big "LEVEL 2" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
-fly a little faster.
+fly a little faster. From level 3 the bomb is a red spinning wheel
+instead of the black pulsar (the last column of `CFG_LEVELS`).
+
+From level 3 the banner also shows the level's code, and the game-over
+screen shows the code of the highest level reached. Typing a code on the
+menu starts a game at that level, with the score it starts at (200 for
+level 2, 500 for level 3, ...). Level 2 is the end of the game for now:
+after its banner, a message and its code stay up until a key is pressed.
+See `docs/LEVEL-CODES.md`.
 
 Now and then a silo near the diver arms a missile: it sits in the hatch
 for half a second, scrolling with the ground, then flies straight up and
@@ -118,6 +128,8 @@ src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
 src/atlantis/silo.asm    the silo picture, and the code built from it that draws it
 src/atlantis/missile.asm the silos' missiles: arm, fly, hit, their own draw
 src/atlantis/score.asm   the score, the levels, the line on row 1, the banner
+src/atlantis/codes.asm   the level codes: table, showing one, checking one typed
+src/atlantis/wspin.asm   the spinning wheel bomb's pictures, shifted at start-up
 docs/play/               the browser version: page, JSSpeccy 3, snapshot, tape
 src/atlantis/stats.asm   the row-0 stat line, Symbol Shift + S
 src/atlantis/wheel.asm   the wheel bomb: drift, bob, spin, one at a time
@@ -163,9 +175,11 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
 Atlantis memory: after the loading screen, the tape has two code blocks. The instructions are at
-`$8000-$BB2C` (`code_end` is `$BB2D`, 15,149 bytes) and must stay below
-`$C000`. The pictures, menu words and tables are at `$C000-$E807`
-(10,248 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+`$8000-$BEA3` (`code_end` is `$BEA4`, 16,036 bytes) and must stay below
+`$C000`. The pictures, menu words and tables are at `$C000-$EBA0`
+(11,169 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
+The spinning wheel's shifted pictures are built at start-up in
+`$7000-$7E3F` (3,648 bytes, from 384 on the tape; see `docs/WHEEL-BOMB.md`).
 The soak build puts its own checks at `$6000` (`atlantis soak code`), in
 RAM the game does not use, so they do not crowd the game's code.
 A build prints both ends (`atlantis code_end`, `atlantis data_end`), and

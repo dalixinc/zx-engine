@@ -73,6 +73,7 @@ entry:
         ld sp,STACK_TOP
         call im2_init
         call build_row_table
+        call wspin_build        ; the spinning wheel's shifted pictures
 
         call rate_init
 
@@ -585,6 +586,7 @@ step_moved:
     IFNDEF SLACK_LINES
     IFNDEF TIMING_BARS
     IFNDEF SHOT_FRAME
+teaser_hook:                    ; level 2's message, once (score.asm)
         call spare_count
         ld a,(step_ticks)
         cp 2
@@ -886,8 +888,10 @@ wheel_first:    db 0
         INCLUDE "stats.asm"
         INCLUDE "rate.asm"
         INCLUDE "wheel.asm"
+        INCLUDE "wspin.asm"
         INCLUDE "hit.asm"
         INCLUDE "score.asm"      ; before its macros are used
+        INCLUDE "codes.asm"      ; before LEVEL_CODES is used
         INCLUDE "torpedo.asm"
         INCLUDE "missile.asm"
         INCLUDE "../fish.asm"
@@ -941,7 +945,8 @@ CODE_LENGTH     equ code_end - code_start
         ; The soak's own code and variables live below the game, in RAM
         ; nothing else uses: the tape's BASIC ends well short of $6000,
         ; and the soak is a snapshot, never loaded from tape. With it up
-        ; at $8000 the soak build came within 239 bytes of $C000. This
+        ; at $8000 the soak build came within 239 bytes of $C000. It must
+        ; end below $7000, the spinning wheel's pictures (wspin.asm). This
         ; RAM is contended, so the checks run a little slower; the soak
         ; checks pictures and positions, not time.
 SOAK_CODE       equ $6000
@@ -950,7 +955,7 @@ soak_start:
         INCLUDE "soak.asm"
 soak_end:
         DISPLAY "atlantis soak code ", soak_start, " to ", soak_end
-        ASSERT soak_end <= CODE_START, "the soak's code has run into the game"
+        ASSERT soak_end <= WSPIN_BUF, "the soak's code has run into the spinning wheel"
     ENDIF
 
         ; Pictures, words and tables. Above the instructions, below the
@@ -961,6 +966,8 @@ data_start:
         INCLUDE "../../gfx/fish.asm"
         INCLUDE "../../gfx/diver.asm"
         INCLUDE "../../gfx/wheel.asm"
+        INCLUDE "../../gfx/wheel_spin.asm"
+        WSPIN_DATA              ; wspin.asm
         INCLUDE "../../gfx/torpedo.asm"
         INCLUDE "../../gfx/missile.asm"
         SILO_DATA               ; silo.asm
@@ -983,6 +990,7 @@ DATA_LENGTH     equ data_end - data_start
         ASSERT WHEEL_BOB == 6, "the sine table is drawn for a swing of 6"
         ASSERT WHEEL_TOP_BASE == CFG_WHEEL_BOB, "the surface spawn is one swing below the top"
         ASSERT WHEEL_LOW_BASE + CFG_WHEEL_BOB + WHEEL_HEIGHT <= BACK_ROW * 8, "the lowest spawn enters the seaweed"
+        ASSERT WSPIN_BUF_END <= CODE_START, "the spinning wheel has run into the game"
         ASSERT code_end <= DATA_START, "instructions have run into the pictures"
         ASSERT data_end <= SCROLL_BASE, "pictures have run into the scroll buffers"
         ASSERT SCROLL_BUF_END <= ROW_TABLE, "scroll buffers run into the row table"

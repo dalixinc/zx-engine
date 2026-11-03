@@ -17,6 +17,9 @@
 ; clean one.
 ;==============================================================================
 
+CODE_ROW        equ 13          ; option 3, and the code typed into it
+CODE_COL        equ 12          ; its first letter
+
 menu_prev:      db 0            ; last frame's 1-2-3-4-5 keys
 leave_prev:     db 0            ; last frame's Symbol Shift + P
 menu_game_over: db 0            ; 1 = the last life was lost: say GAME OVER
@@ -124,10 +127,46 @@ menu_draw_game_over:
         call print_string
         ld hl,score
         call menu_print_score
+        call menu_print_code
         ld a,GAME_OVER_ATTR
         ld (text_attr),a
         ld hl,str_game_over
         ld bc,(15 << 8) | 11
+        jp print_string
+
+; The highest level reached and its code, under the score: the level
+; the game ended on, since levels only go up. Past the last code, the
+; last code. Level 1 has none. Corrupts: AF, BC, DE, HL
+menu_print_code:
+        ld a,(level_n)
+        cp CFG_CODE_LEVELS + 1
+        jr c,.has
+        ld a,CFG_CODE_LEVELS
+.has:   cp 2
+        ret c
+        push af
+        call code_text
+        ld hl,str_level_sp
+        ld bc,(18 << 8) | 6
+        call print_string
+        pop af
+        ld e,'0'                ; tens
+.tens:  cp 10
+        jr c,.units
+        sub 10
+        inc e
+        jr .tens
+.units: push af
+        ld a,e
+        cp '0'
+        call nz,print_char
+        pop af
+        add a,'0'
+        call print_char
+        inc c
+        ld hl,str_code_word
+        call print_string
+        ld hl,code_buf
         jp print_string
 
 ; HL = a BCD score, low byte first. Six digits at B, C.
@@ -324,7 +363,91 @@ menu_arm:
 ; menu_toggle_rate  flips the speed, reprints the line, carry clear.
 ;------------------------------------------------------------------------------
 menu_start:
+        ld a,1
+        ld (start_level),a
         scf
+        ret
+
+;------------------------------------------------------------------------------
+; menu_code - option 3: six letters, then a game at that code's level
+; The letters go in on the option's own line. 0 (or Delete, which is
+; Caps Shift + 0) rubs one out, Space gives up. The sixth letter checks
+; the code: a good one starts the game (carry set), a bad one says BAD
+; CODE for a moment and puts the option back (carry clear).
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+menu_code:
+        ld a,WATER_ATTR
+        ld (text_attr),a
+        ld hl,str_code_ask
+        ld bc,(CODE_ROW << 8) | 4
+        call print_string
+        ld hl,str_code_dots
+        call print_string
+        ld e,0                  ; letters so far
+.key:   push de
+        call keys_up            ; the 3, or the last letter, let go
+.wait:  call wait_frame
+        call key_char
+        or a
+        jr z,.wait
+        pop de
+        cp ' '
+        jr z,.back
+        cp '0'
+        jr z,.rub
+        cp 'A'
+        jr c,.key               ; the other digits and Enter
+        ld hl,code_buf
+        ld d,0
+        add hl,de
+        ld (hl),a
+        ld hl,(CODE_ROW << 8) | CODE_COL
+        add hl,de
+        ld b,h
+        ld c,l
+        inc e
+        push de
+        call print_char
+        pop de
+        ld a,e
+        cp CODE_LEN
+        jr c,.key
+        call code_level
+        or a
+        jr z,.bad
+        ld (start_level),a
+        scf
+        ret
+.rub:   ld a,e
+        or a
+        jr z,.key
+        dec e
+        ld hl,(CODE_ROW << 8) | CODE_COL
+        add hl,de
+        ld b,h
+        ld c,l
+        ld a,'.'
+        push de
+        call print_char
+        pop de
+        jr .key
+.bad:   ld a,GAME_OVER_ATTR
+        ld (text_attr),a
+        ld hl,str_code_bad
+        ld bc,(CODE_ROW << 8) | 4
+        call print_string
+        ld b,75                 ; a second and a half
+.pause: call wait_frame
+        djnz .pause
+.back:  ld a,WATER_ATTR
+        ld (text_attr),a
+        ld hl,str_opt_code
+        ld bc,(CODE_ROW << 8) | 4
+        call print_string
+        call keys_up
+        call menu_arm
+        or a
         ret
 
 menu_toggle_rate:

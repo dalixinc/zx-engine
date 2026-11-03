@@ -95,6 +95,10 @@ CFG_WHEEL_WOBBLE    equ 0
 ; moves on, the cell is put back.
 CFG_WHEEL_INK       equ BRIGHT | BLACK | (BLUE << 3)
 
+; The second kind of bomb, the spinning wheel (wspin.asm), the same way.
+; Red, so the player sees at once that it is not the pulsar.
+CFG_SPIN_INK        equ BRIGHT | RED | (BLUE << 3)
+
 ; --- Silo missiles (missile.asm) ----------------------------------------------
 ; One at a time. After a random wait, a silo on the screen arms its
 ; missile: it sits in the hatch, scrolling with the ground, then flies
@@ -138,24 +142,37 @@ CFG_PTS_MISSILE     equ 10
 ;   haste    how much faster the bombs fly. 0 is 1 pixel per 1/50
 ;            second. 64 adds a pixel every 4th 1/50 second (a quarter
 ;            faster), 128 every other one (half again). Up to 255.
+;   bomb     which bomb: BOMB_P the pulsar, BOMB_W the spinning wheel.
+;            A bomb already in flight when the level changes keeps its
+;            kind; the next one is the new level's.
 ; Level 1 is the game as it was: the soak expects that. After the last
 ; row, the last row repeats.
+BOMB_P              equ 0       ; the pulsar
+BOMB_W              equ 1       ; the spinning wheel
+
         MACRO CFG_LEVELS
-        ;          points  gap min  gap max  haste
-        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0
-        LEVEL_ROW  300,    70,      185,     24
-        LEVEL_ROW  400,    65,      170,     48
-        LEVEL_ROW  500,    60,      155,     72
-        LEVEL_ROW  600,    55,      140,     96
-        LEVEL_ROW  700,    50,      125,     120
-        LEVEL_ROW  800,    45,      110,     144
-        LEVEL_ROW  900,    40,      95,      168
-        LEVEL_ROW  1000,   35,      80,      192
+        ;          points  gap min  gap max  haste  bomb
+        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P
+        LEVEL_ROW  300,    70,      185,     24,    BOMB_P
+        LEVEL_ROW  400,    65,      170,     48,    BOMB_W
+        LEVEL_ROW  500,    60,      155,     72,    BOMB_W
+        LEVEL_ROW  600,    55,      140,     96,    BOMB_W
+        LEVEL_ROW  700,    50,      125,     120,   BOMB_W
+        LEVEL_ROW  800,    45,      110,     144,   BOMB_W
+        LEVEL_ROW  900,    40,      95,      168,   BOMB_W
+        LEVEL_ROW  1000,   35,      80,      192,   BOMB_W
         ENDM
 
 ; How long the "LEVEL n" banner stays up, in 1/50 seconds. 100 is two
-; seconds.
-CFG_BANNER_TIME     equ 100
+; seconds. From level 3 the level's code is under it, and it stays up
+; for _CODE_TIME instead, long enough to read six letters.
+CFG_BANNER_TIME      equ 100
+CFG_BANNER_CODE_TIME equ 200
+
+; Levels with a code (codes.asm): 2 to this. Atlantis is 1 to 10 and
+; Trigon 11 to 20. Each code is worked out from its level number, so
+; changing this changes no code, it only adds or drops some. Up to 31.
+CFG_CODE_LEVELS      equ 20
 
 ; The beeper (sound.asm). Each explosion is white noise, played in
 ; short bursts in the spare time at the end of each step, so it never
@@ -202,6 +219,24 @@ CFG_DIVER_SND_FRAMES  equ 24
 CFG_DIVER_SND_LINES   equ 72
 CFG_DIVER_SND_DENSITY equ 128
 CFG_DIVER_SND_PITCH   equ 3
+
+; The torpedo leaving: a laser "pew", a quick falling tone. Each
+; LASER_NOTE is the half-period of a square wave in scanlines: the tone
+; is 7812 / this Hz, so 2 is 3.9 kHz, 4 is 2 kHz, 8 is 980 Hz. 1 to
+; 255. Each note lasts CFG_LASER_TICKS 1/50 seconds. 2 is the same at
+; 50 and 25 (one step of 25 is two ticks), 240 ms for these six. It plays only in the spare time at the end of each step, so it is
+; thinner when the diver is on the seabed. It starts the moment the
+; torpedo leaves, over any sound that is playing; an explosion that
+; starts after it cuts it short.
+CFG_LASER_TICKS     equ 2
+        MACRO CFG_LASER
+        LASER_NOTE 2
+        LASER_NOTE 3
+        LASER_NOTE 4
+        LASER_NOTE 5
+        LASER_NOTE 7
+        LASER_NOTE 9
+        ENDM
 
 ; The last life: the death knell, played through before GAME OVER, while
 ; the last picture stays on the screen. Nothing else is running then,
