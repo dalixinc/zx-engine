@@ -154,26 +154,59 @@ CFG_PTS_MISSILE     equ 10
 ;   bomb     which bomb: BOMB_P the pulsar, BOMB_W the spinning wheel.
 ;            A bomb already in flight when the level changes keeps its
 ;            kind; the next one is the new level's.
+; Then how the level looks (level.asm):
+;   ink      the bomb's cell colour, as CFG_WHEEL_INK above.
+;   bmove    how the bomb moves: MOVE_BOB, today's small bob, or
+;            MOVE_WAVE, the wave below (CFG_BOMB_WAVE_*).
+;   fmove    how the fish moves: MOVE_STRAIGHT, at a fixed depth, or
+;            MOVE_WAVE, up and down (CFG_FISH_WAVE_*).
+;   fspeed   the fish's haste, the same way as the bomb's: 0 is a pixel
+;            per 1/50 second, 64 a quarter faster. Only with MOVE_WAVE;
+;            MOVE_STRAIGHT is the old fish and must have 0.
+;   border   a border colour (BLACK to WHITE), or BORDER_BEAT for the
+;            heartbeat, the slow round of colours level 1 has.
 ; Level 1 is the game as it was: the soak expects that. After the last
 ; row, the last row repeats.
 BOMB_P              equ 0       ; the pulsar
 BOMB_W              equ 1       ; the spinning wheel
+MOVE_BOB            equ 0       ; bomb: the small bob
+MOVE_STRAIGHT       equ 0       ; fish: straight across
+MOVE_WAVE           equ 1       ; either: the wave
+BORDER_BEAT         equ $FF     ; the heartbeat's round of colours
+CFG_L2_INK          equ BRIGHT | YELLOW | (BLUE << 3)
 
         MACRO CFG_LEVELS
-        ;          points  gap min  gap max  haste  bomb
-        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P
-        LEVEL_ROW  300,    70,      185,     24,    BOMB_P
-        LEVEL_ROW  400,    65,      170,     48,    BOMB_W
-        LEVEL_ROW  500,    60,      155,     72,    BOMB_W
-        LEVEL_ROW  600,    55,      140,     96,    BOMB_W
-        LEVEL_ROW  700,    50,      125,     120,   BOMB_W
-        LEVEL_ROW  800,    45,      110,     144,   BOMB_W
-        LEVEL_ROW  900,    40,      95,      168,   BOMB_W
-        LEVEL_ROW  1000,   35,      80,      192,   BOMB_W
+        ;          points  gap min  gap max  haste  bomb    ink            bmove      fmove          fspeed border
+        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P, CFG_WHEEL_INK, MOVE_BOB, MOVE_STRAIGHT, 0, BORDER_BEAT
+        LEVEL_ROW  300,    70,      185,     24,    BOMB_P, CFG_L2_INK,    MOVE_WAVE, MOVE_WAVE,     48,    CYAN
+        LEVEL_ROW  400,    65,      170,     48,    BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
+        LEVEL_ROW  500,    60,      155,     72,    BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
+        LEVEL_ROW  600,    55,      140,     96,    BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
+        LEVEL_ROW  700,    50,      125,     120,   BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
+        LEVEL_ROW  800,    45,      110,     144,   BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
+        LEVEL_ROW  900,    40,      95,      168,   BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
+        LEVEL_ROW  1000,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
         ENDM
 
+; The waves (MOVE_WAVE). A wave is a sine, AMP pixels above the middle
+; and AMP below. SPEED is how far along it each 1/50 second goes: one
+; whole wave takes 256 / SPEED 1/50 seconds, so 2 is about 2.6 seconds
+; and 3 about 1.7. Keep the slope gentle: AMP * 6.3 * SPEED / 256 is the
+; most it climbs in a 1/50 second, and above 1 pixel the bomb's colour
+; has to be repainted whole on that step, which costs time.
+; The bomb: 16 and 2 climb at most 0.8 of a pixel. Its middle is kept
+; AMP clear of the top and of the seaweed. The bomb still crosses at the
+; level's haste, and is still worth CFG_PTS_BOMB.
+CFG_BOMB_WAVE_AMP    equ 16
+CFG_BOMB_WAVE_SPEED  equ 2
+; The fish swims about its usual depth (pixel row 76), AMP up and down.
+; 12 and 3 climb at most 0.9 of a pixel. Level 2's fspeed of 48 makes it
+; about a fifth faster across. It is still worth CFG_PTS_FISH.
+CFG_FISH_WAVE_AMP    equ 12
+CFG_FISH_WAVE_SPEED  equ 3
+
 ; How long the "LEVEL n" banner stays up, in 1/50 seconds. 100 is two
-; seconds. From level 3 the level's code is under it, and it stays up
+; seconds. From level 4 the level's code is under it, and it stays up
 ; for _CODE_TIME instead, long enough to read six letters.
 CFG_BANNER_TIME      equ 100
 CFG_BANNER_CODE_TIME equ 200

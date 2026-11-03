@@ -971,6 +971,7 @@ wheel_first:    db 0
         ; image-index routines. The demo does not include this file.
         INCLUDE "fastsprite.asm"
         INCLUDE "boom.asm"
+        INCLUDE "level.asm"      ; each level's look: the waves, the border
         INCLUDE "sound.asm"
         COLD
         INCLUDE "death.asm"      ; a death stops the game: no hurry there

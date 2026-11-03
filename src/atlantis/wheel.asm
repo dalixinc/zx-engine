@@ -43,8 +43,11 @@
 ; of row 20, one above the seaweed.
 ;==============================================================================
 
-; Kind values. wheel_kind picks a row of wheel_kind_tab.
-WHEEL_KIND_DRIFT equ 0          ; the only kind so far: straight left
+; Kind values. wheel_kind picks a row of wheel_kind_tab. The level
+; (CFG_LEVELS, bmove) sets it for each new bomb.
+WHEEL_KIND_DRIFT equ 0          ; straight left, with the small bob
+WHEEL_KIND_WAVE  equ 1          ; straight left, on a wave (level.asm)
+        ASSERT WHEEL_KIND_DRIFT == MOVE_BOB && WHEEL_KIND_WAVE == MOVE_WAVE
 
 ; --- Tuning. Names are the knobs. -------------------------------------------
 ; One pixel a frame, the same speed as the diver, so this first bomb is
@@ -95,18 +98,21 @@ WHEEL_WAIT      equ 0
 update_wheel:
         ld a,(wheel_kind)
         or a
-        jp z,wheel_drift
-        ; Kind 1 is reserved for a bomb that homes in on the diver.
-        ; That routine is not written. Falling out here, instead of
-        ; jumping through the table, means a 1 in the settings cannot
-        ; land in the middle of the drift code. The slot is the
-        ; commented line under wheel_kind_tab.
+        jp z,wheel_drift        ; level 1's bomb: the test costs it nothing more
+        dec a
+        jp z,wheel_wave
+        ; Kind 2 is reserved for a bomb that homes in on the diver.
+        ; That routine is not written. Falling out here means a 2 in the
+        ; settings cannot land in the middle of other code. The slot is
+        ; the commented line under wheel_kind_tab.
         ret
 
-; Kind 0 is the straight-left bomb. The next line is the homing bomb,
-; when that routine exists. Do not point a settings row at it before then.
+; Kind 0 is the straight-left bomb and kind 1 the wave. The next line is
+; the homing bomb, when that routine exists. update_wheel tests the
+; kinds in turn rather than jumping through this table.
 wheel_kind_tab:
         dw wheel_drift
+        dw wheel_wave
         ; dw wheel_home
 
 ;------------------------------------------------------------------------------
@@ -145,7 +151,7 @@ wheel_drift:
         add a,(hl)
         ld (wheel_y),a
 
-        ld hl,wheel_spin_n
+.spin1: ld hl,wheel_spin_n      ; the wave joins here at 50 (level.asm)
         inc (hl)
         ld a,(hl)
         cp WHEEL_SPIN
@@ -192,7 +198,7 @@ wheel_drift:
         call wheel_apply_wobble
         call wheel_place
 
-        ; Spin. The hold is 8 frames and a step is 1 or 2, so this
+.spin2: ; The wave joins here at 25 (level.asm). Spin. The hold is 8 frames and a step is 1 or 2, so this
         ; advances the picture at most once per step at the normal hold.
         ld a,(step_ticks)
         ld b,a
@@ -472,6 +478,14 @@ wheel_type:
         ld de,wheel_swing
         ld bc,ENEMY_ROW
         ldir
+        ; The level's colour and movement (CFG_LEVELS) over the row's.
+        ; MEAS_SPIN keeps the spinning wheel's own red at level 1.
+    IFNDEF MEAS_SPIN
+        ld a,(level_ink)
+        ld (wheel_ink),a
+    ENDIF
+        ld a,(level_bmove)
+        ld (wheel_kind),a
         pop hl
         ld e,(hl)
         inc hl

@@ -40,24 +40,35 @@
 ; (max - min + 1), and the bomb's haste: what is added to a fraction
 ; each 1/50 second, an extra pixel each time it carries. 0 is the old
 ; 1 pixel per 1/50 second; 64 is a quarter faster. Then the bomb's kind
-; (BOMB_P or BOMB_W).
-LEVEL_ROW_BYTES equ 6
+; (BOMB_P or BOMB_W). Then the five bytes of how the level looks, in
+; the order of level_look (level.asm): the bomb's ink and movement, the
+; fish's movement and haste, the border.
+LEVEL_ROW_BYTES equ 11
 
 level_rows = 0
-        MACRO LEVEL_ROW need, gmin, gmax, haste, bomb
+        MACRO LEVEL_ROW need, gmin, gmax, haste, bomb, ink, bmove, fmove, fspeed, border
         ASSERT need >= 1 && need <= 9999, "a level needs 1 to 9999 points"
         ASSERT gmin <= gmax && gmax <= 255 && gmax - gmin + 1 <= 255
         ASSERT haste >= 0 && haste <= 255
         ASSERT bomb == BOMB_P || bomb == BOMB_W
+        ASSERT ink >= 0 && ink <= 255
+        ASSERT bmove == MOVE_BOB || bmove == MOVE_WAVE
+        ASSERT fmove == MOVE_STRAIGHT || fmove == MOVE_WAVE
+        ASSERT fspeed >= 0 && fspeed <= 255
+        ASSERT fmove == MOVE_WAVE || fspeed == 0, "a straight fish keeps the old speed: fspeed 0"
+        ASSERT border == BORDER_BEAT || (border >= 0 && border <= 7)
         IF level_rows == 0
         ; The soak plays level 1 and its frame numbers expect the old game.
         ASSERT haste == 0, "level 1's bombs must keep the old speed"
         ASSERT bomb == BOMB_P, "level 1's bomb is the pulsar"
         ASSERT gmin == CFG_MISSILE_GAP_MIN && gmax == CFG_MISSILE_GAP_MAX, "level 1's missile wait is CFG_MISSILE_GAP_*"
+        ASSERT ink == CFG_WHEEL_INK && bmove == MOVE_BOB, "level 1's bomb is the old one"
+        ASSERT fmove == MOVE_STRAIGHT && border == BORDER_BEAT, "level 1's fish and border are the old ones"
         ENDIF
         db (((need % 100) / 10) << 4) | (need % 10)
         db (((need / 1000) % 10) << 4) | ((need / 100) % 10)
         db gmin, gmax - gmin + 1, haste, bomb
+        db ink, bmove, fmove, fspeed, border
 level_rows = level_rows + 1
         ENDM
 
@@ -83,7 +94,11 @@ level_rows = level_rows + 1
 ; hiscore: in bss.asm (zeroed at start-up, not on the tape)  ; kept while the machine is on
 level:          db 1            ; BCD
 level_n:        db 1            ; the same, binary, for the codes
+    IFDEF MEAS_LEVEL
+start_level:    db MEAS_LEVEL   ; a measurement of a later level
+    ELSE
 start_level:    db 1            ; binary: where the next game starts (codes.asm)
+    ENDIF
 level_row:      dw 0            ; this level's row of level_tab
 ; level_next: in bss.asm (zeroed at start-up, not on the tape)  ; the score that finishes this level, BCD
 level_bomb:     db BOMB_P       ; this level's bomb (wheel_type)
@@ -106,7 +121,8 @@ banner_col:     db 0            ; its first column
 banner_len:     db 0            ; characters in it
 ; banner_chars: in bss.asm (zeroed at start-up, not on the tape)  ; "LEVEL" and the number
 banner_code:    db 0            ; 1 = code_buf goes under it
-teaser_due:     db 0            ; 1 = the level 2 message, once the banner is down
+teaser_due:     db 0            ; 1 = the level 2 or 3 message, once the banner is down
+TEASE_LAST      equ 3           ; levels 2 to this get the message, with the code in it
 
         ASSERT HUD_LEN <= LIVES_COL, "the score line runs into the hearts"
 
@@ -230,18 +246,27 @@ level_up:
         set HUD_TEXT,(hl)
         bit HUD_BANNER,(hl)     ; a banner still up comes down first,
         call nz,banner_erase    ; with its own code line
-        ; The code goes under the banner from level 3. Level 2's is in
-        ; the message that follows its banner.
+        ; The code goes under the banner from level 4. Levels 2 and 3
+        ; have theirs in the message that follows the banner.
         xor a
         ld (banner_code),a
         ld a,(level_n)
-        cp 2
-        jr nz,.code
+        cp TEASE_LAST + 1
+        jr nc,.code
     IFDEF TEASER
         ld (teaser_due),a       ; not 0
     ENDIF
         jr .show
-.code:  cp CFG_CODE_LEVELS + 1
+.code:
+    IFDEF TEASER
+        ; A message still due from level 2 or 3 is for a level now
+        ; passed (only a test that scores very fast gets here).
+        push af
+        xor a
+        ld (teaser_due),a
+        pop af
+    ENDIF
+        cp CFG_CODE_LEVELS + 1
         jr nc,.show             ; past the last code
         call code_text
         ld a,1
@@ -316,7 +341,8 @@ level_enter:
         inc hl
         ld a,(hl)
         ld (level_bomb),a
-        ret
+        inc hl
+        jp level_style          ; how it looks (level.asm)
 
         COLD
 ;------------------------------------------------------------------------------
@@ -637,7 +663,9 @@ banner_glyph:
 
     IFDEF TEASER
 ;------------------------------------------------------------------------------
-; teaser - level 2's message, until a key is pressed
+; teaser - the message for reaching level 2 or 3, until a key is pressed
+; Level 2's says it starts now; level 3's, the end of level 2 for now,
+; says more is coming. Both give the level's code, then play goes on.
 ; banner_tick points main_loop's call to spare_count here for one step,
 ; once level 2's banner is down. So it comes at the end of a step, with
 ; the sprites on the screen, and the picture stays still behind the
@@ -657,16 +685,24 @@ teaser:
         ld a,TEASE_ATTR
         call teaser_fill
         ld (text_attr),a
+        ld a,(level_n)
+        add a,'0'
+        ld (str_tease_n),a      ; "... LEVEL n."
         ld hl,str_tease_1
         ld bc,((TEASE_ROW + 1) << 8) | 0
         call print_string
-        ld hl,str_tease_2
-        ld bc,((TEASE_ROW + 3) << 8) | 3
-        call print_string
+        ld hl,str_tease_go      ; level 2: it starts now
+        ld bc,((TEASE_ROW + 3) << 8) | TEASE_GO_COL
+        ld a,(level_n)
+        cp 2
+        jr z,.line2
+        ld hl,str_tease_2       ; level 3: more is coming
+        ld c,TEASE_2_COL
+.line2: call print_string
         ld hl,str_tease_key
         ld bc,((TEASE_ROW + 7) << 8) | 10
         call print_string
-        ld a,2
+        ld a,(level_n)
         call code_text          ; before the row goes in B
         ld hl,str_code_word
         ld bc,((TEASE_ROW + 5) << 8) | 10
