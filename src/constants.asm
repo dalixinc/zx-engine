@@ -99,4 +99,9 @@ ROW_TABLE       equ $FA00       ; $FA00-$FB7F, in the "buffers" part of the map
 ; The demo does not mention DATA_START: its pictures stay inside the one
 ; code block, and that tape is unchanged. The scroll buffers at $F000,
 ; the row table, the stack and the interrupt table stay where they are.
-DATA_START      equ $C000
+; $C400 leaves the data a few hundred bytes to grow before it reaches
+; the fish's and the pulsar's shifted copies (src/atlantis/preshift.asm),
+; which end at the scroll buffers. $C500 would still fit today, with
+; under a hundred to spare. If the data grows past them, the build
+; stops (main.asm), and the line comes down by $100.
+DATA_START      equ $C400

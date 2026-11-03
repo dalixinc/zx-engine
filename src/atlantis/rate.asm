@@ -65,10 +65,12 @@ rate_apply:
         and 1
         ld (snd_gate),a
     ENDIF
+    IFDEF STATS
         ; The digits reprint every eight steps. A new speed should show
         ; on the next step, so the counter is set to reprint then.
         ld a,7
         ld (stats_phase),a
+    ENDIF
         ret
 
 ;------------------------------------------------------------------------------
@@ -106,11 +108,15 @@ chords_poll:
         ld a,25
 .setrate:
         call rate_apply
+    IFDEF STATS
         ld a,1
         ld (stats_on),a         ; show the new speed on the stat line
+    ENDIF
         ld a,CFG_CHORD_FLASH
         ld (chord_flash),a
-.stats: call stats_key_s
+.stats:
+    IFDEF STATS
+        call stats_key_s
         and d
         ld hl,stats_chord_prev
         call rising_edge
@@ -121,6 +127,9 @@ chords_poll:
         ld a,CFG_CHORD_FLASH
         ld (chord_flash),a
         ret
+    ELSE
+        ret                     ; no stat line in the tape
+    ENDIF
 
 ; Out: A nonzero if F is down. F is the fourth key on the A-S-D-F-G row,
 ; counting from A. Corrupts: AF, BC.
@@ -160,6 +169,7 @@ rising_edge:
 .held:  xor a
         ret
 
+        COLD
 ;------------------------------------------------------------------------------
 ; rate_arm - remember the chord as it is now, so a key that is already
 ;            down when play starts does not flip the speed at once
@@ -172,6 +182,8 @@ rate_arm:
         and e
         ld (rate_prev),a
         ret
+
+        HOT
 
 ;------------------------------------------------------------------------------
 ; spare_count - how many whole scanlines are left in this television frame

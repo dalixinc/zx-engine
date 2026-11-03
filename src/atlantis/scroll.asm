@@ -86,6 +86,7 @@ level_index:    db 0
 WEED_SPILL_AT   equ 3           ; fine >= this: the plant enters the left cell
 WEED_LEAVE_AT   equ 7           ; fine >= this: no set pixel remains in its own cell
 
+        COLD
 ;------------------------------------------------------------------------------
 ; scroll_init - first 32 columns, the column waiting off the right, one copy
 ; Corrupts: AF, BC, DE, HL, IX
@@ -213,6 +214,8 @@ scroll_init:
 ;------------------------------------------------------------------------------
 ; The sand is the bottom 8 rows of the slow buffer. The weed is the top 8.
 SAND_BUF        equ BACK_BUF + 8 * 32
+
+        HOT
 
 scroll_blit:
         ; At 25 the idle frame shifts the slow buffer and sets the phase
@@ -1321,22 +1324,22 @@ rock_left:      db 0
 rock_hit:       db 0
 weed_left:      db 0            ; columns until the next weed try
 weed_wait:      db 0            ; 1 = a try missed its dune; plant on the next full one
-paint_tiles:    ds 33           ; columns 0..31 in order, then the pending column
+; paint_tiles: in bss.asm (zeroed at start-up, not on the tape)  ; columns 0..31 in order, then the pending column
 silo_right:     db 0            ; 1 = the next column is a silo's right half
 silo_n:         db 0            ; how many silos are in silo_at (0..8)
-silo_at:        ds 8            ; their left halves' aligned columns, -1..32
+; silo_at: in bss.asm (zeroed at start-up, not on the tape)  ; their left halves' aligned columns, -1..32
 silo_shift:     db 0            ; the picture's shift this frame
 silo_pic:       dw 0            ; row 0 of the picture at that shift
 silo_code:      dw 0            ; the code that draws that shift
 silo_rest_n:    db 0            ; domes drawn on the weed row
-silo_rest:      ds 2 * 8        ; their first column and byte count
+; silo_rest: in bss.asm (zeroed at start-up, not on the tape)  ; their first column and byte count
 silo_sig_o:     db 0            ; front_origin and the dome's ink bytes,
 silo_sig_s:     db 0            ; when its cells were last worked out
 silo_cells_new: db 0            ; 0 = the same cells as last frame
 silo_cells_n:   db 0            ; dome cells painted green now
-silo_cells:     ds 3 * 8
+; silo_cells: in bss.asm (zeroed at start-up, not on the tape)
 silo_new_n:     db 0            ; this frame's cells, while they are built
-silo_new:       ds 3 * 8
+; silo_new: in bss.asm (zeroed at start-up, not on the tape)
 
 front_column:   dw 0            ; next world column next_front_tile will issue
 back_column:    dw 0
@@ -1351,16 +1354,16 @@ back_head:      db 0
 front_pending:  db 0            ; tile id of the column entering on the right
 back_pending:   db 0
 front_h_pending: db 0           ; its solid height (the diver's clamp, right edge)
-front_tiles:    ds 32
-front_h:        ds 32           ; solid pixels from the bottom of the screen
-back_tiles:     ds 32
+; front_tiles: in bss.asm (zeroed at start-up, not on the tape)
+; front_h: in bss.asm (zeroed at start-up, not on the tape)  ; solid pixels from the bottom of the screen
+; back_tiles: in bss.asm (zeroed at start-up, not on the tape)
 
-ground_feed:    ds GROUND_PX    ; pixels still to shift in, bit 7 next
-slow_feed:      ds BACK_PX
+; ground_feed: in bss.asm (zeroed at start-up, not on the tape)  ; pixels still to shift in, bit 7 next
+; slow_feed: in bss.asm (zeroed at start-up, not on the tape)
 
 column_h:       db 0
 pat_dest:       dw column_pat
-column_pat:     ds BACK_PX      ; top byte first. The ground uses the first 8.
+; column_pat: in bss.asm (zeroed at start-up, not on the tape)  ; top byte first. The ground uses the first 8.
 build_tile:     db 0
 init_col:       db 0
 init_tile:      db 0

@@ -9,7 +9,8 @@
 ; Distances are per 1/50 second. At 25 frames a second the loop waits for
 ; a second interrupt and every distance is applied twice, so a minute of
 ; swimming covers the same water. The pictures and the tables live at
-; DATA_START ($C000), above the instructions.
+; DATA_START ($C400), above the instructions. Code that only runs on the
+; menu or at start-up is in a cold block at $6000 (COLD, below).
 ;
 ; Assemble with -DTIMING_BARS for build/atlantis-timing.sna. The border is
 ; a clock for that build:
@@ -43,6 +44,28 @@
         INCLUDE "layout.asm"
         INCLUDE "config.asm"
 
+        ; The debug stat line (stats.asm) is in every test build, and
+        ; left out of the tape: Symbol Shift + S does nothing there.
+        ; -DSTATS puts it in the tape; -DNO_STATS takes it out of a test
+        ; build, to check that build against the tape's code.
+    IFNDEF NO_STATS
+    IFDEF SOAK
+        DEFINE STATS
+    ENDIF
+    IFDEF MEASURE
+        DEFINE STATS
+    ENDIF
+    IFDEF TIMING_BARS
+        DEFINE STATS
+    ENDIF
+    IFDEF SLACK_LINES
+        DEFINE STATS
+    ENDIF
+    IFDEF SHOT_FRAME
+        DEFINE STATS
+    ENDIF
+    ENDIF
+
     IFDEF MEASURE
         IFNDEF MEAS_STATS
 MEAS_STATS      equ 0
@@ -62,6 +85,31 @@ MEAS_WINDOW     equ 512
         ENDIF
     ENDIF
 
+;------------------------------------------------------------------------------
+; Hot and cold code
+; Everything that runs while the game is played lives at $8000 and up,
+; out of the RAM the ULA slows down. Code and words that only run on the
+; menu, at start-up, or once in a while (a new game, game over, level 2's
+; message) live at COLD_START instead, in the contended RAM from $6000.
+; It is slower there, and nothing in it is timed. COLD and HOT switch
+; between the two in the middle of a file, so a routine stays next to
+; the code it belongs with. Each must come at a routine boundary.
+;------------------------------------------------------------------------------
+COLD_START      equ $6000
+
+cold_ptr = COLD_START
+hot_ptr = CODE_START
+
+        MACRO COLD
+hot_ptr = $
+        ORG cold_ptr
+        ENDM
+
+        MACRO HOT
+cold_ptr = $
+        ORG hot_ptr
+        ENDM
+
         ORG CODE_START
 code_start:
 
@@ -71,9 +119,19 @@ code_start:
 entry:
         di
         ld sp,STACK_TOP
+        jp boot
+
+        COLD
+; The rest of the start-up, once, in the cold block.
+boot:
+        ld hl,BSS_START         ; the buffers the tape no longer carries
+        ld de,BSS_START + 1
+        ld bc,BSS_LENGTH - 1
+        ld (hl),0
+        ldir
         call im2_init
         call build_row_table
-        call wspin_build        ; the spinning wheel's shifted pictures
+        call preshift_all       ; the fish's and the bombs' shifted pictures
 
         call rate_init
 
@@ -98,6 +156,7 @@ entry:
     ENDIF
     ENDIF
     ENDIF
+        HOT
 
 ;------------------------------------------------------------------------------
 ; main_loop - one step
@@ -408,7 +467,9 @@ fish_draw_call:
         ; If a sprite is on row 0, the digits go back on top now,
         ; after the photograph and before we spend the frame on the seabed.
         ; The wheel is included: it can bob up to y = 0.
+    IFDEF STATS
         call stats_overlay_if_row0
+    ENDIF
 
         ; At 50: the blit, one shift, the border, one move. At 25 this
         ; frame only draws. The idle frame after it does both shifts and
@@ -498,7 +559,9 @@ step_skip:
 
         ; No sprite on row 0: refresh the digits now, after the beam has
         ; left the row. A sprite on row 0 was already handled above.
+    IFDEF STATS
         call stats_overlay_if_clear
+    ENDIF
 
         ; One pixel each, at 50. At 25 the idle frame moves twice.
 step_jp_move:
@@ -879,19 +942,27 @@ wheel_first:    db 0
 ;------------------------------------------------------------------------------
         INCLUDE "../interrupts.asm"
         INCLUDE "../screen.asm"
-        INCLUDE "../text.asm"
+        COLD
+        INCLUDE "../text.asm"    ; the menu's and the message's words only
+        HOT
         INCLUDE "../input.asm"
         INCLUDE "../sprite.asm"
-        INCLUDE "scenery.asm"
+        COLD
+        INCLUDE "scenery.asm"    ; a new seabed: the menu and a new game
+        HOT
         INCLUDE "silo.asm"       ; before scroll.asm: its sizes are used there
         INCLUDE "scroll.asm"
         INCLUDE "stats.asm"
         INCLUDE "rate.asm"
         INCLUDE "wheel.asm"
-        INCLUDE "wspin.asm"
+        COLD
+        INCLUDE "preshift.asm"   ; the shifter runs once, at start-up
+        HOT
         INCLUDE "hit.asm"
         INCLUDE "score.asm"      ; before its macros are used
+        COLD
         INCLUDE "codes.asm"      ; before LEVEL_CODES is used
+        HOT
         INCLUDE "torpedo.asm"
         INCLUDE "missile.asm"
         INCLUDE "../fish.asm"
@@ -939,35 +1010,27 @@ meas_zeros2:    dw 0
 code_end:
 CODE_LENGTH     equ code_end - code_start
 
-        DISPLAY "atlantis code_end ", code_end
-
     IFDEF SOAK
-        ; The soak's own code and variables live below the game, in RAM
-        ; nothing else uses: the tape's BASIC ends well short of $6000,
-        ; and the soak is a snapshot, never loaded from tape. With it up
-        ; at $8000 the soak build came within 239 bytes of $C000. It must
-        ; end below $7000, the spinning wheel's pictures (wspin.asm). This
-        ; RAM is contended, so the checks run a little slower; the soak
-        ; checks pictures and positions, not time.
-SOAK_CODE       equ $6000
-        ORG SOAK_CODE
-soak_start:
-        INCLUDE "soak.asm"
-soak_end:
-        DISPLAY "atlantis soak code ", soak_start, " to ", soak_end
-        ASSERT soak_end <= WSPIN_BUF, "the soak's code has run into the spinning wheel"
+        ; The soak's two photographs, 768 bytes each, in the free room
+        ; after the game's code. ($F300, where they were, is bss.asm's.)
+soak_photos:
+        ds 2 * 768
+soak_photos_end:
+        ASSERT soak_photos_end <= DATA_START, "the soak's photographs have run into the pictures"
     ENDIF
+
+        DISPLAY "atlantis code_end ", code_end
 
         ; Pictures, words and tables. Above the instructions, below the
         ; scroll buffers. Loaded as the second CODE block on the tape.
         ORG DATA_START
 data_start:
         INCLUDE "data.asm"
-        INCLUDE "../../gfx/fish.asm"
+        INCLUDE "../../gfx/fish_raw.asm"   ; shifted at start-up (preshift.asm)
         INCLUDE "../../gfx/diver.asm"
-        INCLUDE "../../gfx/wheel.asm"
+        INCLUDE "../../gfx/wheel_raw.asm"  ; the pulsar, likewise
         INCLUDE "../../gfx/wheel_spin.asm"
-        WSPIN_DATA              ; wspin.asm
+        PRESHIFT_DATA           ; the three's pointer tables (preshift.asm)
         INCLUDE "../../gfx/torpedo.asm"
         INCLUDE "../../gfx/missile.asm"
         SILO_DATA               ; silo.asm
@@ -975,6 +1038,28 @@ data_end:
 DATA_LENGTH     equ data_end - data_start
         DISPLAY "atlantis data_end ", data_end
         DISPLAY "atlantis data bytes ", DATA_LENGTH
+
+        ; The cold block: COLD_START up to here. Loaded as its own CODE
+        ; block, before the instructions.
+cold_end        equ cold_ptr
+COLD_LENGTH     equ cold_end - COLD_START
+        DISPLAY "atlantis cold_end ", cold_end
+
+        INCLUDE "bss.asm"       ; after the pictures: it needs their sizes
+        DISPLAY "atlantis bss ", BSS_START, " to ", BSS_END
+
+    IFDEF SOAK
+        ; The soak's own code and variables follow the cold block. The
+        ; soak is a snapshot, never loaded from tape. This RAM is
+        ; contended, so the checks run a little slower; the soak checks
+        ; pictures and positions, not time.
+        ORG cold_end
+soak_start:
+        INCLUDE "soak.asm"
+soak_end:
+        DISPLAY "atlantis soak code ", soak_start, " to ", soak_end
+        ASSERT soak_end <= WSPIN_BUF, "the soak's code has run into the spinning wheel"
+    ENDIF
 
         ASSERT (ANIM_FRAMES & (ANIM_FRAMES - 1)) == 0, "ANIM_FRAMES must be a power of 2"
         ASSERT DIVER_ANIM_STEP == 4, "diver_image_index divides by 4 with two RRCAs"
@@ -991,9 +1076,12 @@ DATA_LENGTH     equ data_end - data_start
         ASSERT WHEEL_TOP_BASE == CFG_WHEEL_BOB, "the surface spawn is one swing below the top"
         ASSERT WHEEL_LOW_BASE + CFG_WHEEL_BOB + WHEEL_HEIGHT <= BACK_ROW * 8, "the lowest spawn enters the seaweed"
         ASSERT WSPIN_BUF_END <= CODE_START, "the spinning wheel has run into the game"
+        ASSERT cold_end <= WSPIN_BUF, "the cold block has run into the spinning wheel"
         ASSERT code_end <= DATA_START, "instructions have run into the pictures"
-        ASSERT data_end <= SCROLL_BASE, "pictures have run into the scroll buffers"
+        ASSERT data_end <= PRESHIFT_START, "pictures have run into the fish's and the pulsar's shifted copies"
+        ASSERT WHEEL_BUF + WHEEL_SHIFTED == SCROLL_BASE
         ASSERT SCROLL_BUF_END <= ROW_TABLE, "scroll buffers run into the row table"
+        ASSERT BSS_START >= SCROLL_BUF_END && BSS_END <= ROW_TABLE, "the run-time buffers do not fit below the row table"
         ASSERT (SCROLL_BASE & 255) == 0, "shift_one_row uses DEC L, so a row must not cross a page"
         ASSERT (BACK_BUF & 31) == 0, "each slow row must be 32-byte aligned"
         ASSERT (GROUND_BUF & 31) == 0, "each ground row must be 32-byte aligned"
@@ -1038,6 +1126,7 @@ loading_screen:
         EMPTYTAP "build/atlantis.tap"
         SAVETAP  "build/atlantis.tap", BASIC, "atlantis", basic_start, BASIC_LENGTH, 10
         SAVETAP  "build/atlantis.tap", CODE, "atlantis", loading_screen, 6912
+        SAVETAP  "build/atlantis.tap", CODE, "atlantm", COLD_START, COLD_LENGTH
         SAVETAP  "build/atlantis.tap", CODE, "atlantc", code_start, CODE_LENGTH
         SAVETAP  "build/atlantis.tap", CODE, "atlantd", data_start, DATA_LENGTH
         SAVESNA  "build/atlantis.sna", entry

@@ -68,7 +68,7 @@ torp_r1:        dw 0            ; and of its second row
 ; when nothing is on screen. Restore clears it.
 torp_vn:        db 0
 torp_vcol:      db 0            ; first column on screen
-torp_save:      ds 4            ; row 0 bytes 0 and 1, then row 1 bytes 0 and 1
+; torp_save: in bss.asm (zeroed at start-up, not on the tape)  ; row 0 bytes 0 and 1, then row 1 bytes 0 and 1
 fire_ready:     dw 0            ; frame_count at which the next launch is allowed
 
 ;------------------------------------------------------------------------------
@@ -390,6 +390,7 @@ torpedo_draw:
         ld (torp_vcol),a
         ret
 
+        COLD
 ;------------------------------------------------------------------------------
 ; torpedo_reset - none running, nothing to put back. Corrupts: AF
 ;------------------------------------------------------------------------------
@@ -400,3 +401,4 @@ torpedo_reset:
         ld (fire_ready),a
         ld (fire_ready+1),a
         ret
+        HOT

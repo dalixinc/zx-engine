@@ -3,6 +3,10 @@
 Branch `claudelet/dev`. Quartus's brief, item 3. Items 1, 2 and 4 are in
 [LEVEL-CODES.md](LEVEL-CODES.md).
 
+> Since the memory reorganisation ([MEMORY.md](MEMORY.md)) the pictures
+> are at `$71C0-$7FFF`, and `preshift.asm` (was `wspin.asm`) builds them
+> along with the fish's and the pulsar's.
+
 ![A red spinning wheel at level 3](images/wheel-level3.png)
 
 ## What it is

@@ -68,8 +68,8 @@ key_map:
 
         ASSERT CFG_CODE_LEVELS >= 2 && CFG_CODE_LEVELS <= 31, "a level is 5 bits of the code"
 
-code_buf:       ds CODE_LEN + 1 ; six letters and a 0, for print_string
-code_in:        ds 3            ; a typed code, as 24 bits
+; code_buf: in bss.asm (zeroed at start-up, not on the tape)  ; six letters and a 0, for print_string
+; code_in: in bss.asm (zeroed at start-up, not on the tape)  ; a typed code, as 24 bits
 
 ;------------------------------------------------------------------------------
 ; code_text - the letters of a level's code into code_buf

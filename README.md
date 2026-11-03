@@ -38,7 +38,7 @@ it to update the site. See [docs/WEB.md](docs/WEB.md).
 | Left   | O               | 5           | left     |
 | Right  | P               | 8           | right    |
 | Fire   | SPACE                  | 0           | fire     |
-| Stats  | Symbol Shift + S       |             |          |
+| Stats  | Symbol Shift + S (test builds only) | |          |
 | Speed  | Symbol Shift + F       |             |          |
 | Menu   | Symbol Shift + P       |             |          |
 
@@ -120,7 +120,7 @@ The demo still prints its digits on rows 22 and 23. It has no overlay.
 src/atlantis/main.asm    Atlantis entry, main loop, output directives
 src/atlantis/config.asm  the numbers you change: diver range, start speed, bomb bob
 src/atlantis/layout.asm  the game's rows, colours, buffer addresses
-src/atlantis/data.asm    menu words, stat-line template, sine table (at $C000)
+src/atlantis/data.asm    menu words, stat-line template, sine table (at $C400)
 src/atlantis/menu.asm    the start screen, and Symbol Shift + P back to it
 src/atlantis/rate.asm    50 or 25 frames a second, the chords, the spare-scanline count
 src/atlantis/scenery.asm water, sand and ground colours
@@ -129,9 +129,10 @@ src/atlantis/silo.asm    the silo picture, and the code built from it that draws
 src/atlantis/missile.asm the silos' missiles: arm, fly, hit, their own draw
 src/atlantis/score.asm   the score, the levels, the line on row 1, the banner
 src/atlantis/codes.asm   the level codes: table, showing one, checking one typed
-src/atlantis/wspin.asm   the spinning wheel bomb's pictures, shifted at start-up
+src/atlantis/preshift.asm the fish's and both bombs' pictures, shifted at start-up
+src/atlantis/bss.asm     the buffers that start empty, at $F300, not on the tape
 docs/play/               the browser version: page, JSSpeccy 3, snapshot, tape
-src/atlantis/stats.asm   the row-0 stat line, Symbol Shift + S
+src/atlantis/stats.asm   the row-0 stat line, Symbol Shift + S (test builds only)
 src/atlantis/wheel.asm   the wheel bomb: drift, bob, spin, one at a time
 src/atlantis/hit.asm     the bomb and the ground against the diver, and the lives
 src/atlantis/sound.asm   beeper noise, played in each frame's spare time
@@ -174,19 +175,24 @@ Makefile                 Linux / WSL build
 build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
-Atlantis memory: after the loading screen, the tape has two code blocks. The instructions are at
-`$8000-$BEA3` (`code_end` is `$BEA4`, 16,036 bytes) and must stay below
-`$C000`. The pictures, menu words and tables are at `$C000-$EBA0`
-(11,169 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
-The spinning wheel's shifted pictures are built at start-up in
-`$7000-$7E3F` (3,648 bytes, from 384 on the tape; see `docs/WHEEL-BOMB.md`).
-The soak build puts its own checks at `$6000` (`atlantis soak code`), in
-RAM the game does not use, so they do not crowd the game's code.
-A build prints both ends (`atlantis code_end`, `atlantis data_end`), and
-the `ASSERT`s at the end of `src/atlantis/main.asm` stop it if a block
-runs into the next. The wheel bomb is 12 by 12. A shifted row is 2 bytes for shifts 0 to 4
-and 3 bytes for shifts 5 to 7, so the picture is smaller than a 16 by 16
-sprite stored at one width.
+Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
+after the loading screen, the tape has three code blocks. The cold block
+at `$6000-$6905` (2,310 bytes) is the menu, the level codes, start-up and
+anything else that runs once; it is contended RAM, so nothing that runs
+every frame goes there. The instructions are at `$8000-$B1AE` (`code_end`
+is `$B1AF`, 12,719 bytes) and must stay below `$C400`. The pictures and
+tables are at `$C400-$E45A` (8,283 bytes; the pre-shifted diver alone is
+5,760 bytes). The fish's and the pulsar's shifted pictures are built at
+start-up at `$E5B0-$EFFF`, and the spinning wheel's at `$71C0-$7FFF`, from
+624 bytes of art on the tape. The buffers that start empty are at
+`$F300-$F517`, zeroed at start-up. The tape build has no stat line.
+The soak build puts its checks after the cold block and its photographs
+after the game's code.
+A build prints the ends (`atlantis code_end`, `data_end`, `cold_end`,
+`bss`), and the `ASSERT`s at the end of `src/atlantis/main.asm` stop it
+if a block runs into the next. The wheel bomb is 12 by 12. A shifted row
+is 2 bytes for shifts 0 to 4 and 3 bytes for shifts 5 to 7, so the
+picture is smaller than a 16 by 16 sprite stored at one width.
 The scroll buffers are ordinary RAM at `$F000-$F2FF` (768 bytes: 16 slow
 rows, then 8 ground rows, built at start-up, not stored on the tape). The
 pixel-row address table (also built at start-up) is at `$FA00-$FB7F`. The

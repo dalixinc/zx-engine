@@ -102,4 +102,8 @@ fish_image_index:
 fish_x:         db 180          ; pixels
 fish_y:         db FISH_SWIM_Y
 fish_facing:    db FACE_LEFT
+    IFNDEF ATLANTIS
 fish_bg:        ds BG_DATA + FISH_BYTES * FISH_HEIGHT   ; background record
+    ELSE
+; fish_bg: in src/atlantis/bss.asm, built at run time
+    ENDIF

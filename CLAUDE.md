@@ -36,7 +36,7 @@ Windows: `build.bat` / `build.bat run` / `build.bat demo`.
 
 The tapes (`build/atlantis.tap`, `build/diver.tap`) are **not tracked** any more: `make` builds them, and `.gitignore` ignores them. `build/*.png` is still committed. To check that Engine Demo 1 is unchanged, compare a fresh `make demo` with the last committed copy: `git show fc5fe34^:build/diver.tap | cmp - build/diver.tap`. `SAVETAP` paths are relative to the cwd.
 
-Graphics: `gfx/wheel_spin.asm` is the exception: `tools/gfx2raw.py` writes every other frame of `gfx/wheel-full.txt` unshifted, and the game shifts it at start-up. Otherwise `gfx/*.txt` (ASCII art: `#` ink, `-` paper, `.` transparent; `mirror off` skips the left-facing copy) is turned into `gfx/*.asm` by `tools/gfx2asm.py`. The generated `.asm` files are committed so Windows builds don't need Python. `make` regenerates them when the `.txt` changes. The tape's loading screen, `gfx/loading.scr` (6912 bytes, committed), is drawn from the same art by `tools/mkloadscreen.py`, which paints at full colour, cuts each 8x8 cell to two colours, and prints any cell that clashed.
+Graphics: the fish, the pulsar and the spinning wheel are the exception: `tools/gfx2raw.py` writes their art unshifted (`gfx/fish_raw.asm`, `gfx/wheel_raw.asm`, and every other frame of `gfx/wheel-full.txt` in `gfx/wheel_spin.asm`), and `preshift.asm` makes gfx2asm.py's bytes and tables from it at start-up. Engine Demo 1 still uses `gfx/fish.asm`. Otherwise `gfx/*.txt` (ASCII art: `#` ink, `-` paper, `.` transparent; `mirror off` skips the left-facing copy) is turned into `gfx/*.asm` by `tools/gfx2asm.py`. The generated `.asm` files are committed so Windows builds don't need Python. `make` regenerates them when the `.txt` changes. The tape's loading screen, `gfx/loading.scr` (6912 bytes, committed), is drawn from the same art by `tools/mkloadscreen.py`, which paints at full colour, cuts each 8x8 cell to two colours, and prints any cell that clashed.
 
 ## Testing: there is no unit-test framework
 
@@ -51,7 +51,8 @@ Verification means assembling a variant build with `-D` flags and running it in 
 | `-DSHOT_FRAME=n` | Halts after loop n for a deterministic screenshot. |
 | `-DNO_WHEEL` | Leaves the wheel bomb out, for measurement. |
 | `-DMEAS_BOOM` | With `-DMEASURE`: an explosion over the diver all the time (a new one as soon as the last ends), with its sound. The worst case for the explosion's cost. |
-| `-DMEAS_SPIN` | With `-DMEASURE`: every bomb is the spinning wheel (level 3's bomb), whose pictures are read from contended RAM at `$7000`. Compare with the same build without it. |
+| `-DMEAS_SPIN` | With `-DMEASURE`: every bomb is the spinning wheel (level 3's bomb), whose pictures are read from contended RAM at `$71C0`. Compare with the same build without it. |
+| `-DNO_STATS` / `-DSTATS` | The stat line (`stats.asm`, Symbol Shift + S) is in every test build above and left out of the tape. `-DNO_STATS` takes it out of a test build (to compare it with the tape's code); `-DSTATS` puts it in the tape. |
 | `-DMEAS_MISSILE` | With `-DMEASURE`: a silo missile armed or flying all the time (no gap). A missile that reaches the measuring diver passes through him. |
 | `-DNO_SOUND` | Leaves the beeper out of any build, so timing can be compared with and without sound. |
 
@@ -69,7 +70,7 @@ After a change that touches the frame loop, sprites, scroll, stats or input, run
 3. `stats_prepare`. Draw sprites that are still above the seabed (row 21) *before* the seabed copy
 4. `scroll_blit` copies the off-screen buffers to rows 21-23 and stamps the silo towers and domes. `draw_late` then draws the sprites that overlap the seabed, so they photograph this frame's ground
 5. Rotate the ground buffer (1px per 1/50 s) and the slow sand/weed buffer (every other 1/50 s, tracked by `slow_phase`)
-6. Stats overlay, then `update_diver` / `update_fish` / `update_wheel`
+6. Stats overlay (test builds only), then `update_diver` / `update_fish` / `update_wheel`
 7. `spare_count` (`src/atlantis/rate.asm`) busy-waits in an exact 224-T-state loop until the interrupt. **This wait is the vsync**, and it also measures spare scanlines
 
 **50/25 fps**: every speed is written per 1/50 s. `step_ticks` is 1 or 2. At 25 each step is two television frames: the picture frame only restores, draws and copies the seabed, and `idle_tick` (the next frame) shifts the ground twice and the slow buffer once, then runs the movement twice on the one-pixel paths. `rate_apply` patches the two jumps in `main_loop` (`step_jp_shift`, `step_jp_move`) that skip the shifts and the moves on the picture frame. The wheel applies `step_ticks` internally, so don't call it twice.
@@ -83,10 +84,12 @@ After a change that touches the frame loop, sprites, scroll, stats or input, run
 **Sprites**: masked, pre-shifted copies (8 shifts per frame), so drawing involves no run-time bit shifting. Each sprite has a background record (`BG_*` offsets in `src/sprite.asm`) addressed through IY. Save, draw, then restore next frame. `fastsprite.asm` is Atlantis's faster walker, which also clips at the left and right edges. The ISR only preserves AF and HL, and the fast walker relies on that.
 
 **Memory map** (`src/constants.asm`, `src/atlantis/layout.asm`; enforced by `ASSERT`s at the end of main.asm):
-- `$6000` the soak's own code and variables, soak build only (contended RAM; it checks pictures, not time)
-- `$7000` the spinning wheel's shifted pictures (`$7000-$7E3F`), built at start-up by `wspin_build` from `gfx/wheel_spin.asm` (contended, but measured to cost nothing at 50; see `docs/WHEEL-BOMB.md`)
-- `$8000` code, up to `code_end`, which must be ≤ `$C000`
-- `$C000` data: graphics, tables and `data.asm`, loaded as a second tape block
+- `$6000` the **cold block**, up to `cold_end`: code and words that only run on the menu, at start-up or once in a while (menu, level codes, `preshift`, resets, the level 2 message, `text.asm`). Its own tape block, loaded first (the BASIC is `CLEAR 24575`). Contended RAM, so **nothing that runs every frame may go there**. A routine is moved by putting `COLD` before it and `HOT` after it (main.asm), at routine boundaries. The soak build's own code follows it.
+- `$71C0-$7FFF` the spinning wheel's shifted pictures, built at start-up by `preshift` from `gfx/wheel_spin.asm` (contended, but measured to cost nothing at 50; see `docs/WHEEL-BOMB.md`)
+- `$8000` code, up to `code_end`, which must be ≤ `DATA_START` (`$C400`, in constants.asm). The soak build's photographs follow it.
+- `$C400` data: graphics, tables and `data.asm`, loaded as its own tape block, up to `data_end`, which must be ≤ `$E5B0`
+- `$E5B0-$EFFF` the fish's and the pulsar's shifted pictures, built at start-up by `preshift` (`preshift.asm`) from `gfx/fish_raw.asm` and `gfx/wheel_raw.asm`
+- `$F300` the buffers that start empty (`bss.asm`, one list for the whole game; a new `ds` buffer goes there, not in its file), zeroed by `boot`, not on the tape
 - `$F000` scroll buffers. These are built at run time and must be page-aligned, because the rotate uses `DEC L`
 - `$FA00` pixel-row address table (built at start-up)
 - the stack grows down from `$FDFC`; `$FDFD` holds `JP isr`; `$FE00` is the 257-byte IM2 vector table of `$FD`
@@ -99,7 +102,7 @@ The ROM font at `$3D00` is read directly, and no ROM routines are called.
 
 ## Docs
 
-`docs/SPRITES.md` (screen layout, masking, pre-shifting), `docs/SCROLLING.md` (demo seabed, then Atlantis, with timing measurements), `docs/ENGINE-DEEP-DIVE-V1.md` (long walkthrough, describes tag `doc-v1`). When the README's memory figures and a build disagree, trust the `DISPLAY` output of the build (`atlantis code_end`, `data_end`), and update the README.
+`docs/MEMORY.md` (the memory map, the cold block, what is built at start-up), `docs/SPRITES.md` (screen layout, masking, pre-shifting), `docs/SCROLLING.md` (demo seabed, then Atlantis, with timing measurements), `docs/ENGINE-DEEP-DIVE-V1.md` (long walkthrough, describes tag `doc-v1`). When the README's memory figures and a build disagree, trust the `DISPLAY` output of the build (`atlantis code_end`, `data_end`), and update the README.
 
 ## Style
 

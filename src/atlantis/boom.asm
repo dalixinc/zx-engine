@@ -45,8 +45,9 @@ boom_new:       db 0            ; 1 = armed at a new place since the last draw
 boom_shown:     db 0            ; the shape on the screen now
 BOOM_TOP        equ 2 * 8       ; below the digits and the hearts
 BOOM_LOW        equ (BACK_ROW * 8 - BOOM_ROWS) & $F8 ; above the seabed copy
-boom_bg:        ds BOOM_ROWS * 2
+; boom_bg: in bss.asm (zeroed at start-up, not on the tape)
 
+        COLD
 ;------------------------------------------------------------------------------
 ; boom_reset - no burst, and the fish draws itself again
 ;------------------------------------------------------------------------------
@@ -66,6 +67,8 @@ boom_reset:
         ld hl,stats_prepare
         ld (boom_hook+1),hl
         jp fish_unhold
+
+        HOT
 
 ; The patched call lands here while a fish burst is showing. The restore
 ; this frame already put the fish's photograph back. Drop it so the next
