@@ -171,11 +171,11 @@ snd_tune_level:
 ; plays it, so a one-tick first note is never heard. The lead-in is
 ; that note: it is used up on the step that fires, which then plays the
 ; first of CFG_LASER at once, at 50 and at 25.
-        MACRO LASER_NOTE half
+        MACRO LASER_NOTE half, ticks
         ASSERT half >= 1 && half <= 255
-        db half, CFG_LASER_TICKS
+        ASSERT ticks >= 1 && ticks <= 255
+        db half, ticks
         ENDM
-        ASSERT CFG_LASER_TICKS >= 1 && CFG_LASER_TICKS <= 255
 snd_laser:
         db 1, 1                 ; the lead-in, never heard
         CFG_LASER
@@ -183,12 +183,15 @@ snd_laser:
 
 ;------------------------------------------------------------------------------
 ; snd_laser_start - the torpedo leaving
-; At once, over whatever is playing: the player hears his own shot the
-; moment he fires. An explosion that starts later still cuts it short,
-; so a hit is heard too.
+; At once, on the step that fires, but only into silence: it never cuts
+; off a sound that is playing (an explosion, the jingle). An explosion
+; that starts later still cuts it short, so a hit is heard too.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 snd_laser_start:
+        ld a,(snd_left)
+        or a
+        ret nz                  ; something is playing: let it finish
         ld hl,snd_laser
         jp snd_tune_start
 
