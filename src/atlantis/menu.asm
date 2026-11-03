@@ -508,6 +508,7 @@ leave_arm:
 ; Corrupts: AF, BC, DE, HL, IX
 ;------------------------------------------------------------------------------
 game_reset:
+        call death_reset        ; a death cut short by Symbol Shift + P
         ld a,WATER_ATTR
         call cls
         xor a

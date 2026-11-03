@@ -71,7 +71,12 @@ rate_apply:
         ld a,7
         ld (stats_phase),a
     ENDIF
-        ret
+        ; Symbol Shift + F while the diver is dying changes the speed
+        ; the game comes back at, and leaves the death as it is.
+        ld a,(death_t)
+        or a
+        ret z
+        jp death_freeze
 
 ;------------------------------------------------------------------------------
 ; chords_poll - Symbol Shift + P, F or S, once per step

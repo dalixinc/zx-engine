@@ -165,8 +165,8 @@ boot:
 ; frame (idle_tick) does the step's shifts and both moves, draws
 ; nothing, and starts on an interrupt.
 ;------------------------------------------------------------------------------
-; The black ground, after the bomb and the fish. Carry set: the last
-; life. Not taken: carry is clear (hit_check returned no carry, and OR A
+; The black ground, after the bomb and the fish. Carry set: a hit.
+; Not taken: carry is clear (hit_check returned no carry, and OR A
 ; clears it). A measurement build holds Down on the seabed on purpose,
 ; so there it only clears the flag.
         MACRO GROUND_CHECK
@@ -585,11 +585,11 @@ fish_mv:
         or a
         call nz,torpedo_hit
         call hit_check
-        jp c,game_over
+        jp c,death_hit          ; the game stops while he dies (death.asm)
         GROUND_CHECK
-        jp c,game_over
+        jp c,death_hit
         call missile_hit
-        jp c,game_over
+        jp c,death_hit
     ENDIF
     ENDIF
     IFDEF SOAK
@@ -811,7 +811,7 @@ teaser_hook:                    ; level 2's message, once (score.asm)
 ; The picture frame only drew. This frame does the step's two 1/50
 ; seconds of work: the ground moves two pixels, the slow buffer one,
 ; and everything moves twice, each time on the fast one-pixel paths
-; (step_ticks is 1 while it runs). hit_check may jump to game_over.
+; (step_ticks is 1 while it runs). A hit starts the death (death.asm).
 ; Corrupts: AF, BC, DE, HL, IX, IY
 ;------------------------------------------------------------------------------
 idle_tick:
@@ -845,9 +845,9 @@ idle_tick:
         out (ULA_PORT),a
     ENDIF
         ret nc
-        jp game_over
+        jp death_begin          ; a hit: it returns to main_loop
 
-; One 1/50 second of movement. Out: carry set if that was the last life.
+; One 1/50 second of movement. Out: carry set if the diver was hit.
 idle_move:
         call update_diver
 fish_mv2:
@@ -972,6 +972,9 @@ wheel_first:    db 0
         INCLUDE "fastsprite.asm"
         INCLUDE "boom.asm"
         INCLUDE "sound.asm"
+        COLD
+        INCLUDE "death.asm"      ; a death stops the game: no hurry there
+        HOT
         INCLUDE "menu.asm"
 
     IFDEF SLACK_LINES

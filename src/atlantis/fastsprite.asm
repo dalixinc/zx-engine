@@ -527,8 +527,11 @@ diver_restore_fast:
         ld iy,diver_bg
         jp fast_restore
 
+; While a dead diver is gone, death_hide (death.asm) writes a JP over
+; the first three bytes here and death_reset puts them back.
 diver_draw_fast:
         ld a,(diver_y)
+.patched:                       ; the end of the bytes death_hide covers
         ld b,a
         ld a,(diver_x)
         ld c,a

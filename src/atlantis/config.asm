@@ -41,6 +41,15 @@ CFG_LIVES           equ 3
 ; twice that at 25. 0 turns the flash off.
 CFG_HIT_FLASH       equ 32
 
+; When the diver is hit, the game stops for a moment: nothing moves, he
+; flashes through four colours for CFG_DEATH_FLASH 1/50 seconds, then
+; blows up where he was and is gone. CFG_DEATH_TIME after the hit, the
+; game carries on: the next life, or GAME OVER. Both are in 1/50
+; seconds and the same at 50 and 25 (a death runs at 50 at either
+; speed). 25 and 90 are half a second and 1.8 seconds.
+CFG_DEATH_FLASH     equ 25
+CFG_DEATH_TIME      equ 90
+
 ; Symbol Shift + S or F blinks the border white and black, so you can
 ; see the chord was heard. This is how many game steps the blink lasts.
 ; 12 is three blinks: about a quarter of a second at 50 frames a
@@ -214,11 +223,14 @@ CFG_MISSILE_SND_LINES   equ 56
 CFG_MISSILE_SND_DENSITY equ 64
 CFG_MISSILE_SND_PITCH   equ 1
 
-; The diver losing a life (not the last): longer and lower.
-CFG_DIVER_SND_FRAMES  equ 24
-CFG_DIVER_SND_LINES   equ 72
+; The diver losing a life: a long, deep rumble that dies away, through
+; the whole death (CFG_DEATH_TIME), one burst a 1/50 second. Nothing
+; moves then, so each frame has plenty of time to spare and the bursts
+; are long. FRAMES must not be more than CFG_DEATH_TIME.
+CFG_DIVER_SND_FRAMES  equ 85
+CFG_DIVER_SND_LINES   equ 255
 CFG_DIVER_SND_DENSITY equ 128
-CFG_DIVER_SND_PITCH   equ 3
+CFG_DIVER_SND_PITCH   equ 6
 
 ; The torpedo leaving: a short zap, two falling notes. Each LASER_NOTE
 ; is the half-period of a square wave in scanlines (the tone is 7812 /
