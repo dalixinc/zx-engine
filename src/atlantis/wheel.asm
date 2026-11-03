@@ -535,6 +535,7 @@ wheel_next_frame:
         ld (wheel_frame),a
         ret
 
+        COLD
 ;------------------------------------------------------------------------------
 ; wheel_reset - the bomb the tape starts with
 ; Fixed height, the start of the sine, just off the right edge. This is
@@ -566,6 +567,8 @@ wheel_reset:
         ld a,WHEEL_FLY
         ld (wheel_phase),a
         ret
+
+        HOT
 
 ;------------------------------------------------------------------------------
 ; wheel_is_low - carry clear if this bomb has to be drawn after the seabed
@@ -1446,4 +1449,4 @@ wheel_c1:       db 0
 wheel_r0:       db 0
 wheel_r1:       db 0
 
-wheel_bg:       ds BG_DATA + WHEEL_BYTES * WHEEL_HEIGHT
+; wheel_bg: in bss.asm (zeroed at start-up, not on the tape)

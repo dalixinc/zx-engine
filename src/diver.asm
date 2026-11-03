@@ -265,4 +265,8 @@ diver_facing:   db FACE_RIGHT
 diver_moving:   db 0            ; 1 if a direction was held last update
 diver_anim:     db 0            ; frames spent moving (wraps; only low bits used)
 diver_frame:    db 0            ; art frame last chosen (debug)
+    IFNDEF ATLANTIS
 diver_bg:       ds BG_DATA + DIVER_BYTES * DIVER_HEIGHT  ; background record
+    ELSE
+; diver_bg: in src/atlantis/bss.asm, built at run time
+    ENDIF

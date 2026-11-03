@@ -110,8 +110,9 @@ msl_gap_span:   db CFG_MISSILE_GAP_MAX - CFG_MISSILE_GAP_MIN + 1 ; them)
 ; was drawn after the copy. 0 = nothing on screen. Restore clears it.
 msl_vn:         db 0
 msl_vaddr:      dw 0            ; screen byte of its top-left corner
-msl_save:       ds MSL_ROWS * 2
+; msl_save: in bss.asm (zeroed at start-up, not on the tape)
 
+        COLD
 ;------------------------------------------------------------------------------
 ; missile_reset - none armed, none on screen, the first one a gap away
 ; Corrupts: AF
@@ -127,6 +128,8 @@ missile_reset:
         ld (msl_wait),a
     ENDIF
         ret
+
+        HOT
 
 ;------------------------------------------------------------------------------
 ; missile_update - one 1/50 second. main_loop calls it once a step at 50,

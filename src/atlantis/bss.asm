@@ -1,0 +1,73 @@
+;==============================================================================
+; bss.asm - the buffers that start empty, built at run time
+;
+; These used to be DS lines in each file, so the tape carried their
+; zeros. Now they are only addresses: boot (main.asm) zeroes BSS_START
+; up to BSS_END once, and nothing is loaded there. They live in the
+; uncontended RAM above the scroll buffers, from $F300, because the
+; frame reads most of them.
+;
+; Each one is listed here, not in its own file, because a DEFL counter
+; cannot take a size that is defined further down, and the sprite sizes
+; come from the pictures, which are assembled after the code. Its own
+; file has a comment where it used to be.
+;
+; The order is the order the files had them, so buffers that were next
+; to each other still are. A buffer never crosses a 256-byte page: the
+; counter skips to the next page instead, so INC L walks are safe.
+;==============================================================================
+
+BSS_START       equ SCROLL_BUF_END
+
+bss_ptr = BSS_START
+
+        ; BSS name, size: name is the next free address, then the counter
+        ; moves on. (A comparison is -1 when true, so & 1 makes it 1.)
+        MACRO BSS name?, size?
+bss_ptr = bss_ptr + ((((bss_ptr & 255) + (size?)) > 256) & 1) * ((256 - (bss_ptr & 255)) & 255)
+name?   equ bss_ptr
+bss_ptr = bss_ptr + (size?)
+        ENDM
+
+; --- scroll.asm: the seabed's columns
+        BSS paint_tiles, 33             ; columns 0..31 in order, then the pending column
+        BSS silo_at, 8                  ; their left halves' aligned columns, -1..32
+        BSS silo_rest, 2 * 8            ; their first column and byte count
+        BSS silo_cells, 3 * 8
+        BSS silo_new, 3 * 8
+        BSS front_tiles, 32
+        BSS front_h, 32                 ; solid pixels from the bottom of the screen
+        BSS back_tiles, 32
+        BSS ground_feed, GROUND_PX      ; pixels still to shift in, bit 7 next
+        BSS slow_feed, BACK_PX
+        BSS column_pat, BACK_PX         ; top byte first. The ground uses the first 8.
+
+; --- stats.asm: the test builds' stat line
+    IFDEF STATS
+        BSS stats_screen, 32            ; the character on each cell
+        BSS stats_force, 4              ; one bit per column to draw again
+    ENDIF
+
+; --- the sprites' background records, and the wheel's shifter
+        BSS wheel_bg, BG_DATA + WHEEL_BYTES * WHEEL_HEIGHT
+        BSS preshift_row, 6             ; preshift.asm: mask 24 bits, then ink 24 bits
+
+; --- score.asm and codes.asm
+        BSS score, 3                    ; BCD, low byte first
+        BSS hiscore, 3                  ; kept while the machine is on
+        BSS level_next, 3               ; the score that finishes this level, BCD
+        BSS hud_text, HUD_LEN           ; what each cell shows, 0 = not drawn yet
+        BSS hud_new, HUD_LEN
+        BSS banner_chars, 8             ; "LEVEL" and the number
+        BSS code_buf, CODE_LEN + 1      ; six letters and a 0, for print_string
+        BSS code_in, 3                  ; a typed code, as 24 bits
+
+; --- what the torpedo, the missile, the fish, the diver and a burst cover
+        BSS torp_save, 4                ; row 0 bytes 0 and 1, then row 1 bytes 0 and 1
+        BSS msl_save, MSL_ROWS * 2
+        BSS fish_bg, BG_DATA + FISH_BYTES * FISH_HEIGHT
+        BSS diver_bg, BG_DATA + DIVER_BYTES * DIVER_HEIGHT
+        BSS boom_bg, BOOM_ROWS * 2
+
+BSS_END         equ bss_ptr
+BSS_LENGTH      equ BSS_END - BSS_START

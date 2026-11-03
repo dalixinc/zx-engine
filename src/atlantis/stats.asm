@@ -51,43 +51,10 @@
 ; before the sprite is drawn, so the sprite's own pixels are not wiped.
 ;==============================================================================
 
-STATS_ROW       equ 0
-
-stats_on:       db 0            ; 1 = the line is in use
-stats_dirty:    db 0            ; 1 = digit pixels are on the screen now
-stats_template_up: db 0         ; 1 = the words have been drawn this time
-stats_chord_prev: db 0          ; last frame's chord, for the edge
-
-; What is actually on each cell. A draw is skipped when the new character
-; is the one already stored here. 32 bytes, one per column.
-stats_screen:   ds 32
-
-; One bit per column. Set when a sprite wiped that column and it has to
-; be drawn again even though the character has not changed. Four bytes
-; is 32 bits, and clearing them is four stores, not a walk of the row.
-stats_force:    ds 4
-
-; Last value actually written into the digits. 255 means "not yet",
-; so the first update after the words are drawn always fills them.
-stats_prev_spare: db 255
-stats_prev_x:   db 255
-stats_prev_y:   db 255
-stats_prev_rate: db 255
-stats_prev_lives: db 255
-
-; Counts 0 to 7. The numbers are reprinted when this lands on 0.
-; It starts at 7 so the first step after the words are drawn fills them.
-stats_phase:    db 7
-
-; Remember the chord as it is now, so a key that is already down when
-; play starts does not flip the line at once.
-stats_arm:
-        call stats_key_sym
-        ld e,a
-        call stats_key_s
-        and e
-        ld (stats_chord_prev),a
-        ret
+; The two key readers come first: rate.asm's chords use them in every
+; build, the tape included. The rest is the stat line itself, only in
+; the test builds (STATS, main.asm). The tape keeps a stats_prepare that
+; returns at once, because boom.asm patches that call.
 
 ; Out: A nonzero if that key is down. Corrupts: AF, BC.
 ; The two keys are on different half-rows, so this is not a ghost.
@@ -132,6 +99,45 @@ stats_key_s:
         in a,(c)
         cpl
 .mask:  and %00000010
+        ret
+
+    IFDEF STATS
+STATS_ROW       equ 0
+
+stats_on:       db 0            ; 1 = the line is in use
+stats_dirty:    db 0            ; 1 = digit pixels are on the screen now
+stats_template_up: db 0         ; 1 = the words have been drawn this time
+stats_chord_prev: db 0          ; last frame's chord, for the edge
+
+; What is actually on each cell. A draw is skipped when the new character
+; is the one already stored here. 32 bytes, one per column.
+; stats_screen: in bss.asm (zeroed at start-up, not on the tape)
+
+; One bit per column. Set when a sprite wiped that column and it has to
+; be drawn again even though the character has not changed. Four bytes
+; is 32 bits, and clearing them is four stores, not a walk of the row.
+; stats_force: in bss.asm (zeroed at start-up, not on the tape)
+
+; Last value actually written into the digits. 255 means "not yet",
+; so the first update after the words are drawn always fills them.
+stats_prev_spare: db 255
+stats_prev_x:   db 255
+stats_prev_y:   db 255
+stats_prev_rate: db 255
+stats_prev_lives: db 255
+
+; Counts 0 to 7. The numbers are reprinted when this lands on 0.
+; It starts at 7 so the first step after the words are drawn fills them.
+stats_phase:    db 7
+
+; Remember the chord as it is now, so a key that is already down when
+; play starts does not flip the line at once.
+stats_arm:
+        call stats_key_sym
+        ld e,a
+        call stats_key_s
+        and e
+        ld (stats_chord_prev),a
         ret
 
 ;------------------------------------------------------------------------------
@@ -732,3 +738,8 @@ stats_mark:
         ld (hl),a
         pop bc
         ret
+
+    ELSE
+stats_prepare:
+        ret
+    ENDIF

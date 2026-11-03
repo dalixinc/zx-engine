@@ -101,12 +101,11 @@ soak_f:         db 0            ; 0 up, 1 down. Not $FF: the soak never
 soak_p:         db 0            ; reads the real keyboard for these
 soak_keys:      db 0            ; the 1-2-3-4-5 row, as a mask
 
-; The two photographs are 768 bytes each. Leaving them in the program
-; pushed this test build past $C000 (the shipping game does not include
-; them, and it still ends at the code_end printed by the tape build).
-; $F300 is the first byte the scroll buffers do not use. $F900 is still
-; short of the row table at $FA00.
-SOAK_SNAP       equ $F300               ; rows 21-23 after the last blit
+; The two photographs are 768 bytes each. They sit in the free room
+; after the game's code (soak_photos, main.asm), which the shipping game
+; leaves empty. $F300, where they used to be, is the run-time buffers'
+; (bss.asm).
+SOAK_SNAP       equ soak_photos             ; rows 21-23 after the last blit (main.asm)
 SOAK_TITLE      equ SOAK_SNAP + 24 * 32 ; rows 2, 4 and 5, taken on frame 1
 SOAK_BUF_END    equ SOAK_TITLE + 3 * 8 * 32
 soak_ox:        db 0

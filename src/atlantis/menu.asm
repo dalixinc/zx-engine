@@ -24,6 +24,10 @@ menu_prev:      db 0            ; last frame's 1-2-3-4-5 keys
 leave_prev:     db 0            ; last frame's Symbol Shift + P
 menu_game_over: db 0            ; 1 = the last life was lost: say GAME OVER
 
+        ; The menu runs from the cold block (main.asm), apart from
+        ; leave_key_p, which chords_poll reads every step.
+        COLD
+
 ;------------------------------------------------------------------------------
 ; game_over - the last life is gone. Jumped to from the main loop, never
 ; called, so the stack is the main loop's and nothing is left on it.
@@ -82,8 +86,10 @@ enter_menu:
         ld (fish_bg),a
         ld (wheel_bg),a
         ld (wheel_attr_n),a
+    IFDEF STATS
         ld (stats_dirty),a
         ld (stats_template_up),a
+    ENDIF
         call torpedo_reset
 
         call draw_scenery
@@ -213,14 +219,19 @@ menu_draw:
         ld hl,str_ctrl_swim
         ld bc,(5 << 8) | 4
         call print_string
+    IFDEF STATS
         ld hl,str_ctrl_stats
         ld bc,(6 << 8) | 4
         call print_string
+CTRL_ROW        equ 7
+    ELSE
+CTRL_ROW        equ 6           ; the tape has no stat line to switch on
+    ENDIF
         ld hl,str_ctrl_speed
-        ld bc,(7 << 8) | 4
+        ld bc,(CTRL_ROW << 8) | 4
         call print_string
         ld hl,str_ctrl_menu
-        ld bc,(8 << 8) | 4
+        ld bc,((CTRL_ROW + 1) << 8) | 4
         call print_string
 
         ld hl,menu_tab
@@ -461,6 +472,7 @@ menu_toggle_rate:
         or a
         ret
 
+        HOT
 ; Out: A nonzero if P is down. P is the outside key on its half-row.
 ; The chord itself is chords_poll, which reads Symbol Shift once for
 ; all three chords.
@@ -479,6 +491,7 @@ leave_key_p:
 .mask:  and %00000001
         ret
 
+        COLD
 leave_arm:
         call stats_key_sym
         ld e,a
@@ -502,11 +515,13 @@ game_reset:
         ld (fish_bg),a
         ld (wheel_bg),a
         ld (wheel_attr_n),a
+    IFDEF STATS
         ld (stats_on),a
         ld (stats_dirty),a
         ld (stats_template_up),a
         ld a,7
         ld (stats_phase),a
+    ENDIF
 
         ld a,CFG_LIVES
         ld (lives),a
@@ -584,8 +599,10 @@ game_reset:
     ENDIF
 
     IFDEF MEASURE
+    IFDEF STATS
         ld a,MEAS_STATS
         ld (stats_on),a
+    ENDIF
         ld a,MEAS_RATE
         call rate_apply
     ENDIF
@@ -593,12 +610,16 @@ game_reset:
         ; The border clock can be asked to turn the digits on, so a
         ; stripe shows what they cost. Left out, the digits stay off.
         IFDEF MEAS_STATS
+        IFDEF STATS
         ld a,MEAS_STATS
         ld (stats_on),a
         ENDIF
+        ENDIF
     ENDIF
 
+    IFDEF STATS
         call stats_arm
+    ENDIF
         call rate_arm
         call leave_arm
         call draw_scenery
@@ -606,3 +627,4 @@ game_reset:
         ; begins while the beam is still in the top border.
         call wait_frame
         jp main_loop
+        HOT

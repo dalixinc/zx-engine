@@ -79,13 +79,13 @@ level_rows = level_rows + 1
     ENDIF
 
 ; --- state ----------------------------------------------------------------------
-score:          ds 3            ; BCD, low byte first
-hiscore:        ds 3            ; kept while the machine is on
+; score: in bss.asm (zeroed at start-up, not on the tape)  ; BCD, low byte first
+; hiscore: in bss.asm (zeroed at start-up, not on the tape)  ; kept while the machine is on
 level:          db 1            ; BCD
 level_n:        db 1            ; the same, binary, for the codes
 start_level:    db 1            ; binary: where the next game starts (codes.asm)
 level_row:      dw 0            ; this level's row of level_tab
-level_next:     ds 3            ; the score that finishes this level, BCD
+; level_next: in bss.asm (zeroed at start-up, not on the tape)  ; the score that finishes this level, BCD
 level_bomb:     db BOMB_P       ; this level's bomb (wheel_type)
 
 ; What row 1 needs. Bit 0 the hearts, bit 1 the words and numbers, bit 2
@@ -98,18 +98,19 @@ HUD_BANNER      equ 2
 HUD_SCORE_COL   equ 6
 HUD_LEVEL_COL   equ 20
 HUD_LEN         equ 22
-hud_text:       ds HUD_LEN      ; what each cell shows, 0 = not drawn yet
-hud_new:        ds HUD_LEN
+; hud_text: in bss.asm (zeroed at start-up, not on the tape)  ; what each cell shows, 0 = not drawn yet
+; hud_new: in bss.asm (zeroed at start-up, not on the tape)
 
 banner_until:   dw 0            ; frame_count when the banner comes down
 banner_col:     db 0            ; its first column
 banner_len:     db 0            ; characters in it
-banner_chars:   ds 8            ; "LEVEL" and the number
+; banner_chars: in bss.asm (zeroed at start-up, not on the tape)  ; "LEVEL" and the number
 banner_code:    db 0            ; 1 = code_buf goes under it
 teaser_due:     db 0            ; 1 = the level 2 message, once the banner is down
 
         ASSERT HUD_LEN <= LIVES_COL, "the score line runs into the hearts"
 
+        COLD
 ;------------------------------------------------------------------------------
 ; score_reset - a new game: 0 points, level 1, the line to be drawn
 ; Corrupts: AF, BC, DE, HL
@@ -164,6 +165,8 @@ score_reset:
 .go:    ld a,(1 << HUD_HEARTS) | (1 << HUD_TEXT)
         ld (hud_dirty),a
         ret
+
+        HOT
 
 ;------------------------------------------------------------------------------
 ; score_add - points for a shot
@@ -315,6 +318,7 @@ level_enter:
         ld (level_bomb),a
         ret
 
+        COLD
 ;------------------------------------------------------------------------------
 ; score_game_over - the last life: a new high score?
 ; Corrupts: AF, B, DE, HL
@@ -336,6 +340,8 @@ score_game_over:
         ld bc,3
         ldir
         ret
+
+        HOT
 
 ;------------------------------------------------------------------------------
 ; hud_draw - row 1, while no sprite is on the screen
@@ -644,6 +650,7 @@ banner_glyph:
 TEASE_ROW       equ 6
 TEASE_ROWS      equ 9
 
+        COLD
 teaser:
         ld hl,spare_count
         ld (teaser_hook+1),hl   ; this step only
@@ -712,4 +719,5 @@ teaser_fill:
         jr c,.row
         pop af
         ret
+        HOT
     ENDIF

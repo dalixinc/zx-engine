@@ -1,22 +1,26 @@
 ;==============================================================================
 ; data.asm - words and lookup tables
 ;
-; These bytes are not instructions. They live at DATA_START ($C000),
-; above the code, so the code area below $C000 has room to grow. The
+; These bytes are not instructions. They live at DATA_START ($C400),
+; above the code, so the code area below it has room to grow. The
 ; pictures follow this file in the same region. Nothing here may reach
-; the scroll buffers at $F000.
+; the fish's and the pulsar's shifted copies (preshift.asm), which are
+; built below the scroll buffers at $F000.
 ;
 ; The bytes do not change while the game runs. Each bomb keeps its own
 ; copy of the numbers it needs, in ordinary RAM next to the wheel code.
 ;==============================================================================
 
+        COLD                    ; read by the menu and the message only
 ; --- The start screen --------------------------------------------------------
 ; Drawn by menu.asm. The play screen has none of these words: row 0 is
 ; kept clear for the stat line, and the water is empty apart from that.
 
 str_title:      db "ATLANTIS",0
 str_ctrl_swim:  db "QAOP or 5678 to swim",0
+    IFDEF STATS
 str_ctrl_stats: db "Symbol Shift + S  stats",0
+    ENDIF
 str_ctrl_speed: db "Symbol Shift + F  speed",0
 str_ctrl_menu:  db "Symbol Shift + P  menu",0
 str_opt_start:  db "1  Start game",0
@@ -36,6 +40,7 @@ str_level_sp:   db "LEVEL ",0
 str_tease_1:    db "WELL DONE, YOU REACHED LEVEL 2.",0
 str_tease_2:    db "STAY TUNED, MORE IS COMING",0
 str_tease_key:  db "PRESS A KEY",0
+        HOT
 
 ; Row 1 in play: the words, with spaces where score.asm puts the numbers.
 str_hud:        db "SCORE 000000  LEVEL   "
@@ -90,6 +95,7 @@ level_end:
 LEVEL_COUNT_ROWS equ level_rows
 
 ; The level codes and the key map (codes.asm).
+        COLD
         LEVEL_CODES
 
 ; The speed line is one of these two. They are the same length, so
@@ -97,6 +103,7 @@ LEVEL_COUNT_ROWS equ level_rows
 ; "50" and "25" are the only difference.
 str_rate50:     db "2  50 frames a second",0
 str_rate25:     db "2  25 frames a second",0
+        HOT
 
 ; The stat line, 32 characters, one per cell of row 0.
 ;   scan   spare scanlines in the last frame (two digits)
@@ -106,10 +113,12 @@ str_rate25:     db "2  25 frames a second",0
 ;   f      the television frame counter
 ; The digits are written over the zeros. The words stay put. The x and
 ; y digits sit against their letters, to make room for the lives.
+    IFDEF STATS
 stats_template:
         db "scan 00 50/s x000 y000 L0 f00000"
 STATS_TEMPLATE_LEN equ $ - stats_template
         ASSERT STATS_TEMPLATE_LEN == 32, "the stat line has to be one row"
+    ENDIF
 
 ; --- A life ------------------------------------------------------------------
 ; One heart for each life left, on row 1 (hit.asm). The eight zero bytes
@@ -125,6 +134,7 @@ lives_heart:
         db %00000000
         ds 8, 0
 
+        COLD
 ; --- Menu options ------------------------------------------------------------
 ; One row per option. menu.asm walks this list to draw the menu and to
 ; notice a key. To add an option later:
@@ -156,6 +166,7 @@ menu_tab:
         dw str_opt_code
         dw menu_code
         db 0
+        HOT
 
 ; --- Wheel bomb tables -------------------------------------------------------
 ; The sine is one full swing, 32 steps, stored for a height of 6 pixels.
