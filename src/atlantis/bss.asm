@@ -50,7 +50,8 @@ bss_ptr = bss_ptr + (size?)
 
 ; --- the sprites' background records, and the wheel's shifter
         BSS wheel_bg, BG_DATA + WHEEL_BYTES * WHEEL_HEIGHT
-        BSS preshift_row, 6             ; preshift.asm: mask 24 bits, then ink 24 bits
+        BSS preshift_row, 8             ; preshift.asm: 4 mask,ink pairs, left byte first
+        BSS preshift_ptr, 2 * 8         ; preshift.asm: where each shift's copy has got to
 
 ; --- score.asm and codes.asm
         BSS score, 3                    ; BCD, low byte first

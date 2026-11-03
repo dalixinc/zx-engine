@@ -1,66 +1,151 @@
-# Atlantis memory reorganisation
+# Atlantis memory
 
-Branch `claudelet/dev`. Quartus's housekeeping brief: more room, a
-shorter tape, and no gameplay changes. Items 1 to 5 are done. Item 6
-(ZX0) is not; see the end.
+How the 48K is laid out, what is built at start-up, and how the tape is
+packed. The map below is the current one. Under it are the two briefs
+that made it: Quartus's **squeeze** brief (November 2026) and, before
+it, the **housekeeping** brief (PR #23).
 
 ## The map
 
-| Address | Before | After |
-|---|---|---|
-| `$4000-$5AFF` | screen | screen |
-| `$5B00-$5FFF` | BASIC (`CLEAR 32767`) | BASIC (`CLEAR 24575`) |
-| `$6000-$6905` | free (the soak build's code) | **cold block**: menu, level codes, start-up, resets, level 2 message, menu words (2,310 bytes, loaded from tape) |
-| `$6906-$71BF` | free | free (2,234) |
-| `$7000-$7E3F` | the spinning wheel's shifted pictures | |
-| `$71C0-$7FFF` | | the spinning wheel's shifted pictures, packed against `$8000` (built at start-up) |
-| `$8000` | code, to `code_end` `$BEA4` | code, to `code_end` `$B1AF` |
-| code/data line | `$C000` | **`$C400`** |
-| data | `$C000-$EBA0` | `$C400-$E45A` |
-| `$E5B0-$EC6F` | (in the data block) | the fish's shifted pictures (built at start-up) |
-| `$EC70-$EFFF` | (in the data block) | the pulsar's shifted pictures (built at start-up) |
-| `$F000-$F2FF` | scroll buffers | scroll buffers |
-| `$F300-$F517` | free (the soak's photographs) | **the buffers that start empty** (`bss.asm`, zeroed at start-up) |
-| `$FA00-$FB7F` | row table | row table |
-| `$FDFC` down | stack | stack |
-| `$FDFD`, `$FE00` | `JP isr`, IM2 table | `JP isr`, IM2 table |
+| Address | What |
+|---|---|
+| `$4000-$5AFF` | screen |
+| `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
+| `$6000-$6FBA` | **cold block** (4,027 bytes): menu, level codes, start-up, resets, level 2 message, the death (`death.asm`), menu words, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver) |
+| `$6FBB-$71BF` | free (517) |
+| `$71C0-$7FFF` | the spinning wheel's shifted pictures (built at start-up) |
+| `$8000-$B1A7` | code (`code_end` `$B1A8`) |
+| `$B1A8-$C3FF` | free (4,696) |
+| `$C400-$CB6A` | data: graphics, tables, `data.asm` (`data_end` `$CB6B`) |
+| `$CB6B-$CF2F` | free (965) |
+| `$CF30-$E5AF` | the diver's shifted pictures (5,760, built at start-up) |
+| `$E5B0-$EC6F` | the fish's shifted pictures (built at start-up) |
+| `$EC70-$EFFF` | the pulsar's shifted pictures (built at start-up) |
+| `$F000-$F2FF` | scroll buffers |
+| `$F300-$F517` | the buffers that start empty (`bss.asm`, zeroed at start-up) |
+| `$F518-$F8FF` | free (1,000), up to `BSS_LIMIT` `$F900`, which the loader shares |
+| `$FA00-$FB7F` | row table |
+| `$FDFC` down | stack (`STACK_NEED`, 128 bytes, is kept clear above the row table) |
+| `$FDFD`, `$FE00` | `JP isr`, IM2 table |
 
 Everything from `$6000` to `$7FFF` is contended: the ULA slows each
 access while it draws the picture. Only the spinning wheel's pictures
-are read there in play, as before (measured to cost nothing at 50, see
+are read there in play (measured to cost nothing at 50, see
 [WHEEL-BOMB.md](WHEEL-BOMB.md)). No code that runs every frame is below
-`$8000`.
+`$8000`. The death runs from the cold block, but only while the game is
+stopped, and a frozen step has plenty of time to spare.
 
-## Free bytes, before and after
+The ends come from the build's `DISPLAY` lines (`atlantis code_end`,
+`data_end`, `cold_end`). The `ASSERT`s at the end of main.asm stop the
+build if any of them runs into the next thing up.
+
+While the tape loads, two more things sit in memory for a moment: the
+unpacker and the packed loading screen from the page after `cold_end`
+(`$7000-$76EC`), and the packed game from the page after `data_end`
+(`$CC00-$F623`). Start-up builds the shifted pictures over both.
+
+## The squeeze brief: free bytes, before and after
+
+Before is `main` after PR #23 (`3aaa365`). After is `claudelet/dev` at
+the end of the brief.
 
 | Area | Before | After |
 |---|---|---|
-| code (`code_end` to the line) | 348 | **4,689** |
-| data (`data_end` to the next thing up) | 1,119 | 341 |
-| code and data together (`$8000-$EFFF`) | 1,467 | **5,030** |
-| `$6000-$7FFF` | 4,544 (soak only) | 2,234 |
-| `$F300-$F9FF` | 1,792 (soak only) | 1,256 |
+| code (`code_end` to `$C400`) | 4,689 | 4,696 |
+| data (`data_end` to the next thing up) | 341 | **965** |
+| code and data together | 5,030 | **5,661** |
+| cold block (`cold_end` to `$71C0`) | 2,234 | 517 |
+| empty buffers (`$F518` to `$F900`) | 1,000 | 1,000 |
 
-The code and data share one stretch of fast RAM, and the line only
-divides it. At `$C400` the data has 341 bytes to grow. `$C500` would
-still fit today, with 85 to spare. If the data grows past `$E5B0`, the
-build stops and the line comes down by `$100`.
+The cold block gave the most. It took the raw art that only start-up
+reads (624 bytes of fish, pulsar and wheel, then the diver's 540) and the
+death (442).
 
 ## The tape
 
 | Block | Before | After |
 |---|---|---|
-| BASIC | 57 | 62 |
-| loading screen | 6,912 | 6,912 |
-| cold block, `$6000` | - | 2,310 |
-| code, `$8000` | 16,036 | 12,719 |
-| data | 11,169 | 8,283 |
-| **`.tap` file** | **34,274** | **30,411** |
+| BASIC | 62 | 63 |
+| loading screen | 6,912 | packed into the next block |
+| unpacker, dzx0 and the packed screen | - | 1,772 |
+| cold block | 2,310 | packed into the next block |
+| code | 12,719 | packed into the next block |
+| data | 8,283 | packed into the next block |
+| the packed game (cold, code, data) | - | 10,787 |
+| **`.tap` file** | **30,411** | **12,697** |
 
-That's 3,863 bytes shorter, about 20 seconds less loading on a real
-Spectrum.
+Most of the gain is ZX0 (item 5): before the death went in, the tape
+was 25,320 unpacked and 12,382 packed. The diver's start-up shifting
+(item 4) took 5,091 bytes off before that.
 
-## What each item did
+Unpacking takes 7 frames for the screen (0.14 s, while the second
+block is still loading) and 27 for the game (0.54 s), measured by
+`make unpack-check`, whose sums of the unpacked screen, cold block,
+code and data match the files' (`build/*.bin`, `gfx/loading.scr`).
+Start-up then shifts all four sprites in 22 frames (0.44 s).
+
+## The squeeze brief, item by item
+
+| Item | Commit | What |
+|---|---|---|
+| 1 | `621d7ab` | The raw fish, pulsar and wheel art (624 bytes) into the cold block. Data free 341 to 965. All shifted bytes identical. |
+| 2 | `7f56c5c` | Real asserts: the BASIC's CLEAR, `STACK_NEED` above the row table, one `BSS_LIMIT` (`$F900`) shared with the loader, and the soak's photographs. Each was tripped on purpose. |
+| 3 | `b1cf1b5` | `fast_draw_gap` kept the row gap in the alternate A, which the ADD then overwrote, so a bomb clipped at either edge was drawn scrambled. The gap is now patched into each width's ADD once per draw. Timing unchanged. |
+| 4 | `5f6023c` | The diver shifted at start-up like the fish: `gfx2raw.py` takes 24-pixel art, `preshift` a 4-byte working row. His 5,760-byte copies are built just below the fish's, from 540 bytes of art in the cold block. Same bytes as gfx2asm.py's. |
+| - | `a671db8` | Each game starts just after an interrupt. Without it, how long start-up took decided where the first step fell in the frame, and item 4 changed that. |
+| 5 | `302dc5a` | ZX0. The compressor is Einar Saukas's C source (`tools/zx0/`, BSD-3), built by make as `build/zx0`. The decoder is `tools/dzx0_standard.asm`. main.asm writes the blocks (`build/*.bin`) and an unpacked tape (`build/atlantis-plain.tap`), and `tape.asm` packs them behind the unpacker. The `.sna` and the web build are unchanged. |
+| 6 | `fcf3426` | The torpedo's zap: two notes, 60 ms (was 240), and only into silence ([LASER.md](LASER.md)). |
+| 7 | `27f3f78` | The diver's death: the game stops, he flashes, he blows up, then the life ([DEATH.md](DEATH.md)). |
+
+Item 8 (shifting the diver on demand) was left out, as the brief asked.
+
+### Timing at the end of the brief
+
+| Build | Rate | Min spare | Late | Interrupts |
+|---|---|---|---|---|
+| MEAS_DOWN | 50 | 9 | 0 | 512 |
+| MEAS_DOWN + MEAS_FIRE | 50 | 2 | 0 | 512 |
+| MEAS_DOWN + MEAS_SPIN | 50 | 9 | 0 | 512 |
+| MEAS_DOWN + MEAS_MISSILE | 50 | 4 | 0 | 512 |
+| MEAS_BOOM | 50 | 0 | 1 | 512 |
+| MEAS_DOWN | 25 | 48 | 0 | 1024 |
+| MEAS_DOWN + MEAS_FIRE | 25 | 47 | 0 | 1024 |
+| MEAS_DOWN + MEAS_SPIN | 25 | 47 | 0 | 1024 |
+
+MEAS_FIRE at 50 was 8 in the housekeeping table below. That figure
+depended on how long start-up took, which item 4 changed. Since
+`a671db8`, it is 2 every time, on `main`'s code as well. The rest are
+unchanged. The soak is green at 50 and 25, and Engine Demo 1 is
+byte-identical.
+
+## The housekeeping brief (PR #23)
+
+Quartus's earlier brief: more room, a shorter tape, and no gameplay
+changes. Its map, before and after:
+
+| Address | Before | After |
+|---|---|---|
+| `$4000-$5AFF` | screen | screen |
+| `$5B00-$5FFF` | BASIC (`CLEAR 32767`) | BASIC (`CLEAR 24575`) |
+| `$6000-$6905` | free (the soak build's code) | **cold block** (2,310 bytes) |
+| `$6906-$71BF` | free | free (2,234) |
+| `$7000-$7E3F` | the spinning wheel's shifted pictures | |
+| `$71C0-$7FFF` | | the spinning wheel's shifted pictures, packed against `$8000` |
+| `$8000` | code, to `code_end` `$BEA4` | code, to `code_end` `$B1AF` |
+| code/data line | `$C000` | **`$C400`** |
+| data | `$C000-$EBA0` | `$C400-$E45A` |
+| `$E5B0-$EFFF` | (in the data block) | the fish's and the pulsar's shifted pictures |
+| `$F300-$F517` | free (the soak's photographs) | **the buffers that start empty** |
+
+| Free bytes | Before | After |
+|---|---|---|
+| code | 348 | 4,689 |
+| data | 1,119 | 341 |
+| `$6000-$7FFF` | 4,544 (soak only) | 2,234 |
+
+The tape went from 34,274 to 30,411 bytes.
+
+### What each item did
 
 **1. The line** moved from `$C000` to `$C400` (`DATA_START`, constants.asm).
 The demo doesn't use it.
@@ -135,7 +220,7 @@ gfx2asm.py's own bytes for the same art gave the same sums:
 Start-up takes about a quarter of a second longer than before, before
 the menu appears.
 
-## Checks
+### Checks
 
 - **Level 1 plays identically.** SHOT_FRAME screenshots at loops 300 and
   1,200 are pixel-identical to `main`'s (the build with the stat line and
@@ -165,16 +250,3 @@ the menu appears.
   at normal speed.
 - **Engine Demo 1:** byte-identical.
 - `make web` refreshed `docs/play/`.
-
-## Not done: ZX0 (item 6)
-
-There is no ZX0 compressor on this machine, and doing it means bringing
-in third-party code (the compressor, and Einar Saukas's Z80 unpacker,
-BSD-3). The obvious target is the diver's 5,760 bytes of pre-shifted
-pictures. They could be loaded packed into the spinning wheel's area
-(`$71C0`) and unpacked before `preshift` fills it, which costs no RAM.
-
-The other way is to shift the diver at start-up like the fish, with no
-new code from outside. `preshift` would need 3-byte rows for him (he's
-24 pixels wide), and he'd come to about 540 bytes on the tape. That
-would save more than 5K of tape and cost about 50 bytes of cold code.

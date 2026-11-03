@@ -4,7 +4,9 @@
 ; Once per step, after everything has moved, the bomb's box is tested
 ; against the diver's. A hit costs a life, the bomb is taken away the
 ; same way it leaves through the left edge, and the border flashes red.
-; The last life sends the game back to the menu, which says GAME OVER.
+; The game then stops while he dies (death.asm), and the life is taken
+; at the end of that. The last life sends the game back to the menu,
+; which says GAME OVER.
 ;
 ; There is no time without hits after one. The bomb is gone at once, the
 ; next waits WHEEL_GAP and then starts off the right edge, and the
@@ -58,9 +60,9 @@ LIVES_SCREEN    equ SCREEN + LIVES_ROW * 32 + LIVES_COL
 
 ;------------------------------------------------------------------------------
 ; hit_check - the bomb against the diver
-; Out: carry set if that was the last life. The caller jumps to game_over,
-;      so the menu starts from the main loop's stack and not from inside
-;      a call.
+; Out: carry set if the diver was hit. The caller stops the step and
+;      starts the death (death_hit, death_begin). The other hit
+;      routines (ground_hit, fish_hit, missile_hit) say the same.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 hit_check:
@@ -102,45 +104,32 @@ hit_check:
 ;------------------------------------------------------------------------------
 ; ground_hit - he sank onto the black ground (or a rock or a silo top)
 ; clamp_to_terrain sets diver_touch when it has to hold him up. That is
-; a hit, the same as a bomb: the explosion where he was, a life, and back
-; to the left edge. He also goes back up to the depth a game starts at:
-; still holding Down at the bottom, he would touch again on the next
-; step and lose every life in three steps.
+; a hit, the same as a bomb. When he comes back he also goes back up to
+; the depth a game starts at (death_lift): still holding Down at the
+; bottom, he would touch again on the next step and lose every life in
+; three steps.
 ; main_loop calls this only when diver_touch is set.
-; Out: carry set if that was the last life.
-; Corrupts: AF, BC, DE, HL
+; Out: carry set (a hit).
+; Corrupts: AF
 ;------------------------------------------------------------------------------
 ground_hit:
-        xor a
-        ld (diver_touch),a
-        call boom_at_diver
-        ld a,DIVER_START_Y
-        ld (diver_y),a
-        jp diver_hurt
+        ld a,1
+        ld (death_lift),a
+        ; fall through
 
 ; One column in from the left edge. DIVER_MIN_X is 0.
 DIVER_HIT_X     equ DIVER_MIN_X + 8
 DIVER_START_Y   equ 110             ; game_reset puts him here too
 
-; Out: carry set if that was the last life.
+; Every hit ends here. The step stops at the first one, so a bomb and
+; the ground together cost one life. death_begin does the rest.
+; Out: carry set (a hit). Corrupts: AF
 diver_hurt:
         xor a
-        ld (diver_touch),a      ; one hit a step: a bomb and the ground together
-        ld a,DIVER_HIT_X        ; cost one life
-        ld (diver_x),a
+        ld (diver_touch),a
         ld a,CFG_HIT_FLASH
         ld (hit_flash),a
-        ld hl,hud_dirty
-        set HUD_HEARTS,(hl)     ; the hearts on row 1 need drawing again
-        ld hl,lives
-        dec (hl)
-        jr z,.over
-    IFNDEF NO_SOUND
-        call snd_diver_start    ; the last life gets the knell instead
-    ENDIF
-        or a
-        ret
-.over:  scf
+        scf
         ret
 
 ;------------------------------------------------------------------------------

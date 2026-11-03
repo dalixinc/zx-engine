@@ -508,6 +508,7 @@ leave_arm:
 ; Corrupts: AF, BC, DE, HL, IX
 ;------------------------------------------------------------------------------
 game_reset:
+        call death_reset        ; a death cut short by Symbol Shift + P
         ld a,WATER_ATTR
         call cls
         xor a
@@ -556,6 +557,11 @@ game_reset:
         call snd_reset
     ENDIF
 
+        ; Start just after an interrupt, so the first step is always at
+        ; the same point in the frame, however long the menu or the
+        ; start-up took. The test builds' results depend on it.
+        ei
+        halt
         di
         ld hl,0
         ld (frame_count),hl

@@ -131,7 +131,7 @@ boot:
         ldir
         call im2_init
         call build_row_table
-        call preshift_all       ; the fish's and the bombs' shifted pictures
+        call preshift_all       ; the diver's, the fish's and the bombs' shifted pictures
 
         call rate_init
 
@@ -165,8 +165,8 @@ boot:
 ; frame (idle_tick) does the step's shifts and both moves, draws
 ; nothing, and starts on an interrupt.
 ;------------------------------------------------------------------------------
-; The black ground, after the bomb and the fish. Carry set: the last
-; life. Not taken: carry is clear (hit_check returned no carry, and OR A
+; The black ground, after the bomb and the fish. Carry set: a hit.
+; Not taken: carry is clear (hit_check returned no carry, and OR A
 ; clears it). A measurement build holds Down on the seabed on purpose,
 ; so there it only clears the flag.
         MACRO GROUND_CHECK
@@ -585,11 +585,11 @@ fish_mv:
         or a
         call nz,torpedo_hit
         call hit_check
-        jp c,game_over
+        jp c,death_hit          ; the game stops while he dies (death.asm)
         GROUND_CHECK
-        jp c,game_over
+        jp c,death_hit
         call missile_hit
-        jp c,game_over
+        jp c,death_hit
     ENDIF
     ENDIF
     IFDEF SOAK
@@ -811,7 +811,7 @@ teaser_hook:                    ; level 2's message, once (score.asm)
 ; The picture frame only drew. This frame does the step's two 1/50
 ; seconds of work: the ground moves two pixels, the slow buffer one,
 ; and everything moves twice, each time on the fast one-pixel paths
-; (step_ticks is 1 while it runs). hit_check may jump to game_over.
+; (step_ticks is 1 while it runs). A hit starts the death (death.asm).
 ; Corrupts: AF, BC, DE, HL, IX, IY
 ;------------------------------------------------------------------------------
 idle_tick:
@@ -845,9 +845,9 @@ idle_tick:
         out (ULA_PORT),a
     ENDIF
         ret nc
-        jp game_over
+        jp death_begin          ; a hit: it returns to main_loop
 
-; One 1/50 second of movement. Out: carry set if that was the last life.
+; One 1/50 second of movement. Out: carry set if the diver was hit.
 idle_move:
         call update_diver
 fish_mv2:
@@ -972,6 +972,9 @@ wheel_first:    db 0
         INCLUDE "fastsprite.asm"
         INCLUDE "boom.asm"
         INCLUDE "sound.asm"
+        COLD
+        INCLUDE "death.asm"      ; a death stops the game: no hurry there
+        HOT
         INCLUDE "menu.asm"
 
     IFDEF SLACK_LINES
@@ -1011,12 +1014,18 @@ code_end:
 CODE_LENGTH     equ code_end - code_start
 
     IFDEF SOAK
-        ; The soak's two photographs, 768 bytes each, in the free room
-        ; after the game's code. ($F300, where they were, is bss.asm's.)
+        ; The soak's two photographs, 768 bytes each, and its own code,
+        ; in the free room after the game's code. The soak is a
+        ; snapshot, never loaded from tape. ($F300, where the photographs
+        ; were, is bss.asm's, and the cold block has no room for the code.)
 soak_photos:
         ds 2 * 768
 soak_photos_end:
-        ASSERT soak_photos_end <= DATA_START, "the soak's photographs have run into the pictures"
+soak_start:
+        INCLUDE "soak.asm"
+soak_end:
+        DISPLAY "atlantis soak ", soak_photos, " to ", soak_end
+        ASSERT soak_end <= DATA_START, "the soak has run into the pictures"
     ENDIF
 
         DISPLAY "atlantis code_end ", code_end
@@ -1027,7 +1036,7 @@ soak_photos_end:
 data_start:
         INCLUDE "data.asm"
         INCLUDE "../../gfx/fish_raw.asm"   ; shifted at start-up (preshift.asm)
-        INCLUDE "../../gfx/diver.asm"
+        INCLUDE "../../gfx/diver_raw.asm"  ; shifted at start-up, likewise
         INCLUDE "../../gfx/wheel_raw.asm"  ; the pulsar, likewise
         INCLUDE "../../gfx/wheel_spin.asm"
         PRESHIFT_DATA           ; the three's pointer tables (preshift.asm)
@@ -1035,6 +1044,15 @@ data_start:
         INCLUDE "../../gfx/missile.asm"
         SILO_DATA               ; silo.asm
 data_end:
+
+        ; The raw art that preshift reads once, at start-up, goes in the
+        ; cold block: the data block keeps only what play reads.
+        COLD
+        DIVER_ART
+        FISH_ART
+        WHEEL_ART
+        WSPIN_ART
+        HOT
 DATA_LENGTH     equ data_end - data_start
         DISPLAY "atlantis data_end ", data_end
         DISPLAY "atlantis data bytes ", DATA_LENGTH
@@ -1048,18 +1066,6 @@ COLD_LENGTH     equ cold_end - COLD_START
         INCLUDE "bss.asm"       ; after the pictures: it needs their sizes
         DISPLAY "atlantis bss ", BSS_START, " to ", BSS_END
 
-    IFDEF SOAK
-        ; The soak's own code and variables follow the cold block. The
-        ; soak is a snapshot, never loaded from tape. This RAM is
-        ; contended, so the checks run a little slower; the soak checks
-        ; pictures and positions, not time.
-        ORG cold_end
-soak_start:
-        INCLUDE "soak.asm"
-soak_end:
-        DISPLAY "atlantis soak code ", soak_start, " to ", soak_end
-        ASSERT soak_end <= WSPIN_BUF, "the soak's code has run into the spinning wheel"
-    ENDIF
 
         ASSERT (ANIM_FRAMES & (ANIM_FRAMES - 1)) == 0, "ANIM_FRAMES must be a power of 2"
         ASSERT DIVER_ANIM_STEP == 4, "diver_image_index divides by 4 with two RRCAs"
@@ -1078,10 +1084,12 @@ soak_end:
         ASSERT WSPIN_BUF_END <= CODE_START, "the spinning wheel has run into the game"
         ASSERT cold_end <= WSPIN_BUF, "the cold block has run into the spinning wheel"
         ASSERT code_end <= DATA_START, "instructions have run into the pictures"
-        ASSERT data_end <= PRESHIFT_START, "pictures have run into the fish's and the pulsar's shifted copies"
-        ASSERT WHEEL_BUF + WHEEL_SHIFTED == SCROLL_BASE
+        ASSERT data_end <= PRESHIFT_START, "pictures have run into the diver's, the fish's and the pulsar's shifted copies"
+        ASSERT COLD_START - 1 == 24575, "the BASIC's CLEAR 24575 (loader.asm) must sit just below the cold block"
         ASSERT SCROLL_BUF_END <= ROW_TABLE, "scroll buffers run into the row table"
-        ASSERT BSS_START >= SCROLL_BUF_END && BSS_END <= ROW_TABLE, "the run-time buffers do not fit below the row table"
+        ASSERT BSS_START >= SCROLL_BUF_END && BSS_END <= BSS_LIMIT, "the run-time buffers run into the BASIC's scratch at BSS_LIMIT"
+        ASSERT BSS_LIMIT <= ROW_TABLE, "BSS_LIMIT is past the row table"
+        ASSERT ROW_TABLE_END <= STACK_TOP - STACK_NEED, "the row table leaves the stack less than STACK_NEED bytes"
         ASSERT (SCROLL_BASE & 255) == 0, "shift_one_row uses DEC L, so a row must not cross a page"
         ASSERT (BACK_BUF & 31) == 0, "each slow row must be 32-byte aligned"
         ASSERT (GROUND_BUF & 31) == 0, "each ground row must be 32-byte aligned"
@@ -1106,7 +1114,7 @@ soak_end:
         ASSERT CFG_WHEEL_WOBBLE == 0, "the soak expects a smooth bob"
         ASSERT CFG_WHEEL_BOB == 6, "the soak expects a swing of 6"
         ASSERT CFG_WHEEL_BOB_SPEED == 1, "the soak expects one sine step per frame"
-        ASSERT SOAK_BUF_END <= ROW_TABLE, "soak photographs run into the row table"
+        ASSERT SOAK_BUF_END <= soak_photos_end, "the soak's photographs are bigger than the room kept for them"
     ENDIF
 
         INCLUDE "../loader.asm"
@@ -1123,12 +1131,24 @@ soak_end:
 loading_screen:
         INCBIN "../../gfx/loading.scr"
         ASSERT $ - loading_screen == 6912, "a Spectrum screen is 6912 bytes"
-        EMPTYTAP "build/atlantis.tap"
-        SAVETAP  "build/atlantis.tap", BASIC, "atlantis", basic_start, BASIC_LENGTH, 10
-        SAVETAP  "build/atlantis.tap", CODE, "atlantis", loading_screen, 6912
-        SAVETAP  "build/atlantis.tap", CODE, "atlantm", COLD_START, COLD_LENGTH
-        SAVETAP  "build/atlantis.tap", CODE, "atlantc", code_start, CODE_LENGTH
-        SAVETAP  "build/atlantis.tap", CODE, "atlantd", data_start, DATA_LENGTH
+        ; The plain tape: every block as it is in memory. The Makefile
+        ; packs the same blocks (SAVEBIN, below) into build/atlantis.tap
+        ; with ZX0 (src/atlantis/tape.asm). This one needs nothing but
+        ; sjasmplus, so a build without the packer still has a tape.
+        EMPTYTAP "build/atlantis-plain.tap"
+        SAVETAP  "build/atlantis-plain.tap", BASIC, "atlantis", basic_start, BASIC_LENGTH, 10
+        SAVETAP  "build/atlantis-plain.tap", CODE, "atlantis", loading_screen, 6912
+        SAVETAP  "build/atlantis-plain.tap", CODE, "atlantm", COLD_START, COLD_LENGTH
+        SAVETAP  "build/atlantis-plain.tap", CODE, "atlantc", code_start, CODE_LENGTH
+        SAVETAP  "build/atlantis-plain.tap", CODE, "atlantd", data_start, DATA_LENGTH
+        SAVEBIN  "build/atlantis-cold.bin", COLD_START, COLD_LENGTH
+        SAVEBIN  "build/atlantis-code.bin", code_start, CODE_LENGTH
+        SAVEBIN  "build/atlantis-data.bin", data_start, DATA_LENGTH
+        ; What tape.asm needs to know: --exp=build/atlantis.exp
+        EXPORT cold_end
+        EXPORT code_end
+        EXPORT data_end
+        EXPORT entry
         SAVESNA  "build/atlantis.sna", entry
     ENDIF
     ENDIF

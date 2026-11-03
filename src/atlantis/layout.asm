@@ -69,3 +69,14 @@ SCROLL_BASE     equ $F000
 BACK_BUF        equ SCROLL_BASE
 GROUND_BUF      equ BACK_BUF + BACK_PX * 32
 SCROLL_BUF_END  equ GROUND_BUF + GROUND_PX * 32
+
+; The run-time buffers (bss.asm) start at SCROLL_BUF_END and must stop
+; here: the tape's BASIC is assembled at BSS_LIMIT (loader.asm), as
+; scratch, and both checks use this one number.
+BSS_LIMIT       equ $F900
+
+; Room the stack needs below STACK_TOP. A soak run went 20 bytes deep
+; ($FDE9); 128 leaves room for the menu's paths, which it does not walk.
+; main.asm checks that the row table stops below it.
+STACK_NEED      equ 128
+ROW_TABLE_END   equ ROW_TABLE + 192 * 2

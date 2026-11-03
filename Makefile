@@ -1,5 +1,8 @@
 # ATLANTIS - ZX Spectrum 48K
-# make            build build/atlantis.tap (+ .sna snapshot and .lst listing)
+# make            build build/atlantis.tap (+ .sna snapshot and .lst listing).
+#                 The tape is packed with ZX0 (build/zx0, compiled from
+#                 tools/zx0/ with $(CC)); build/atlantis-plain.tap is the
+#                 same game unpacked, which needs nothing but sjasmplus.
 # make run        build and launch in Fuse. EMU=fuse-sdl by default;
 #                 EMU=fuse (or fuse-gtk) if that is the one installed.
 # make timing     build/atlantis-timing.sna: border colour shows where the
@@ -23,7 +26,7 @@ ASM       ?= sjasmplus
 EMU       ?= fuse-sdl
 PYTHON    ?= python3
 GFX       := gfx/fish.asm gfx/diver.asm
-ATL_GFX   := gfx/diver.asm gfx/fish_raw.asm gfx/wheel_raw.asm gfx/wheel_spin.asm gfx/torpedo.asm gfx/missile.asm
+ATL_GFX   := gfx/diver_raw.asm gfx/fish_raw.asm gfx/wheel_raw.asm gfx/wheel_spin.asm gfx/torpedo.asm gfx/missile.asm
 SHARED    := src/constants.asm src/interrupts.asm src/screen.asm src/text.asm \
              src/input.asm src/sprite.asm src/fish.asm src/diver.asm \
              src/loader.asm
@@ -36,18 +39,42 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/fastsprite.asm src/atlantis/boom.asm src/atlantis/sound.asm \
              src/atlantis/silo.asm src/atlantis/missile.asm src/atlantis/score.asm src/atlantis/codes.asm src/atlantis/preshift.asm src/atlantis/bss.asm \
              src/atlantis/soak.asm $(SHARED)
+ZX0       := build/zx0
+CC        ?= cc
 
 TAP       := build/atlantis.tap
 SNA       := build/atlantis.sna
 DEMO_TAP  := build/diver.tap
 DEMO_SNA  := build/diver.sna
 
-.PHONY: all run run-sna shot timing demo run-demo input-test sprite-test soak web clean
+.PHONY: all run run-sna shot timing demo run-demo input-test sprite-test soak web clean unpack-check
 
-all: $(TAP)
+all: $(TAP) $(SNA)
 
-$(TAP) $(SNA): $(ATL_SRC) $(ATL_GFX) gfx/loading.scr | build
-	$(ASM) --nologo --fullpath=off --lst=build/atlantis.lst --sym=build/atlantis.sym src/atlantis/main.asm
+# main.asm writes the snapshot, the plain tape and the three blocks as
+# they are in memory, with their ends in build/atlantis.exp.
+ATL_BLOCKS := build/atlantis-cold.bin build/atlantis-code.bin build/atlantis-data.bin
+$(SNA) $(ATL_BLOCKS) build/atlantis.exp build/atlantis-plain.tap &: $(ATL_SRC) $(ATL_GFX) gfx/loading.scr | build
+	$(ASM) --nologo --fullpath=off --lst=build/atlantis.lst --sym=build/atlantis.sym --exp=build/atlantis.exp src/atlantis/main.asm
+
+# ZX0 packs them and the loading screen, and tape.asm puts them on the
+# tape behind its unpacker (docs/MEMORY.md).
+$(ZX0): tools/zx0/zx0.c tools/zx0/optimize.c tools/zx0/compress.c tools/zx0/memory.c tools/zx0/zx0.h | build
+	$(CC) -O2 -o $@ tools/zx0/zx0.c tools/zx0/optimize.c tools/zx0/compress.c tools/zx0/memory.c
+
+build/%.zx0: build/%.bin $(ZX0)
+	$(ZX0) -f $< $@ >/dev/null
+
+build/loading.zx0: gfx/loading.scr $(ZX0)
+	$(ZX0) -f $< $@ >/dev/null
+
+$(TAP): src/atlantis/tape.asm src/atlantis/tapecheck.asm tools/dzx0_standard.asm build/atlantis.exp build/loading.zx0 $(ATL_BLOCKS:.bin=.zx0)
+	$(ASM) --nologo --fullpath=off src/atlantis/tape.asm
+
+# A test tape: it unpacks, then prints the sums of what it unpacked and
+# how long that took, instead of starting the game.
+unpack-check: $(TAP)
+	$(ASM) --nologo --fullpath=off -DUNPACK_CHECK src/atlantis/tape.asm
 
 demo: $(DEMO_TAP)
 
@@ -71,6 +98,8 @@ gfx/fish_raw.asm: gfx/fish.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ fish 1
 gfx/wheel_raw.asm: gfx/wheel.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ wheel 1
+gfx/diver_raw.asm: gfx/diver.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ diver 1
 
 # The loading screen, drawn from the same sprites. Committed, like the
 # .asm above, so the tape builds without Python.
@@ -119,4 +148,5 @@ web: $(TAP) $(SNA)
 	@echo "docs/play/atlantis.sna and .tap updated: commit them and push to update the site"
 
 clean:
-	rm -f build/*.tap build/*.sna build/*.lst build/*.sym build/*.png
+	rm -f build/*.tap build/*.sna build/*.lst build/*.sym build/*.png \
+	      build/*.bin build/*.zx0 build/*.exp $(ZX0)

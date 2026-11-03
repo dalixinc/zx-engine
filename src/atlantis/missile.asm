@@ -317,7 +317,7 @@ msl_rng:
 ;------------------------------------------------------------------------------
 ; missile_hit - the missile against the diver
 ; Call after hit_check: a bomb that has just cost a life gets the step.
-; Out: carry set if that was the last life.
+; Out: carry set if the diver was hit.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 missile_hit:

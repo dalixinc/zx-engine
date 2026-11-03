@@ -9,6 +9,7 @@ WHEEL_WIDTH   equ 12
 WHEEL_HEIGHT  equ 12
 WHEEL_FRAMES  equ 8
 WHEEL_PICS    equ 2
+WHEEL_RAW     equ 2
 WHEEL_BYTES   equ 3
 WHEEL_WIDE    equ 5
 
@@ -25,6 +26,9 @@ wheel_shift_bytes:
         db 2, 2, 2, 2, 2, 3, 3, 3
         ENDIF
 
+; WHEEL_ART - the art itself. Only preshift reads it, once, at start-up,
+; so main.asm puts it in the cold block, not with the data.
+        MACRO WHEEL_ART
 wheel_src:
         ; picture 0
         db %11110000,%11111111, %00001111,%00000000  ; ....####....
@@ -52,3 +56,4 @@ wheel_src:
         db %10111111,%11011111, %01000000,%00100000  ; .#........#.
         db %11000110,%00111111, %00111001,%11000000  ; ..###..###..
         db %11111001,%11111111, %00000110,%00000000  ; .....##.....
+        ENDM

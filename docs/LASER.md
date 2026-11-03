@@ -1,34 +1,30 @@
 # The torpedo's laser sound
 
 Branch `claudelet/dev`. When the diver fires, the torpedo leaves with a
-high, falling "pew".
+short, high zap.
 
 ## What it is
 
-It's a short tune, played through the same player as the level jingle:
+It's a two-note tune, played through the same player as the level
+jingle:
 
-| Note | Half-period (scanlines) | Pitch |
-|---|---|---|
-| 1 | 2 | 3.9 kHz |
-| 2 | 3 | 2.6 kHz |
-| 3 | 4 | 2.0 kHz |
-| 4 | 5 | 1.6 kHz |
-| 5 | 7 | 1.1 kHz |
-| 6 | 9 | 870 Hz |
+| Note | Half-period (scanlines) | Pitch | Length |
+|---|---|---|---|
+| 1 | 2 | 3.9 kHz | 2/50 s |
+| 2 | 5 | 1.6 kHz | 1/50 s |
 
-Each note lasts 2/50 s (`CFG_LASER_TICKS`), so the sweep takes 240 ms
-at both 50 and 25 fps. The notes are the `CFG_LASER` list in
-`config.asm`. A note is its half-period in scanlines, and the pitch is
-7812 / half-period Hz.
+That is 60 ms at 50 fps. At 25 a step is two ticks and plays one note
+whatever its length, so it is 80 ms. The notes are the `CFG_LASER` list
+in `config.asm`, each a half-period in scanlines (the pitch is
+7812 / half-period Hz) and a length in 1/50 s.
 
 ## Choosing it
 
-Four sweeps were recorded headless from Fuse (sound to a file) and
-compared: 2-3-4-5-7-9; 1 to 8; 3-4-5-6-8-10-13; and 2-3-5-8, one note per
-1/50 s. The first was chosen **as it sounds at 25 fps**, because it
-stands out from the game's other sounds, which are all noise. At 25 each
-note lasts a two-tick step, so the notes were made two ticks long at 50
-too.
+The first version was a six-note falling sweep, 2-3-4-5-7-9, two ticks
+a note: 240 ms. It was chosen from four sweeps recorded headless from
+Fuse, as it sounds at 25, because it stands out from the game's other
+sounds, which are all noise. In play it was too long, so it was cut to
+its first and fourth notes, a quarter of the length.
 
 ## How it sounds at 50 and at 25
 
@@ -47,17 +43,17 @@ measured from the recordings.
 
 ## Priority
 
-The laser **starts the moment the torpedo leaves, over whatever is
-playing**: a crunch, a missile whoosh, even the level jingle. It was first
-written to play only into silence, which made it sound late or go missing
-in a busy game.
+The laser **starts on the step that fires, but only into silence**. It
+never cuts off a sound that is playing: an explosion, a missile's
+whoosh or the level jingle plays to its end, and that shot is silent.
+(It was once the other way round, and the laser cut off a fish's
+explosion when the diver fired during it.)
 
 - An explosion that starts after it (including the torpedo's own hit)
   still cuts it short, so hits are always heard.
-- The remaining time from key to sound is the game's at most one frame
-  (fire is read at the start of a step, and the first note plays at the
-  end of the same step), plus the emulator's own audio buffer, which
-  every sound has.
+- From key to sound is at most one frame (fire is read at the start of
+  a step, and the first note plays at the end of the same step), plus
+  the emulator's own audio buffer, which every sound has.
 
 A tune counts a note down before playing it, so a one-tick first note
 would never be heard. The table starts with a one-tick lead-in that is
