@@ -9,6 +9,7 @@ FISH_WIDTH   equ 16
 FISH_HEIGHT  equ 9
 FISH_FRAMES  equ 2
 FISH_PICS    equ 4
+FISH_RAW     equ 2
 FISH_BYTES   equ 3
 FISH_WIDE    equ 0
 

@@ -23,7 +23,7 @@ ASM       ?= sjasmplus
 EMU       ?= fuse-sdl
 PYTHON    ?= python3
 GFX       := gfx/fish.asm gfx/diver.asm
-ATL_GFX   := gfx/diver.asm gfx/fish_raw.asm gfx/wheel_raw.asm gfx/wheel_spin.asm gfx/torpedo.asm gfx/missile.asm
+ATL_GFX   := gfx/diver_raw.asm gfx/fish_raw.asm gfx/wheel_raw.asm gfx/wheel_spin.asm gfx/torpedo.asm gfx/missile.asm
 SHARED    := src/constants.asm src/interrupts.asm src/screen.asm src/text.asm \
              src/input.asm src/sprite.asm src/fish.asm src/diver.asm \
              src/loader.asm
@@ -71,6 +71,8 @@ gfx/fish_raw.asm: gfx/fish.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ fish 1
 gfx/wheel_raw.asm: gfx/wheel.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ wheel 1
+gfx/diver_raw.asm: gfx/diver.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ diver 1
 
 # The loading screen, drawn from the same sprites. Committed, like the
 # .asm above, so the tape builds without Python.

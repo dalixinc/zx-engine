@@ -131,7 +131,7 @@ boot:
         ldir
         call im2_init
         call build_row_table
-        call preshift_all       ; the fish's and the bombs' shifted pictures
+        call preshift_all       ; the diver's, the fish's and the bombs' shifted pictures
 
         call rate_init
 
@@ -1033,7 +1033,7 @@ soak_end:
 data_start:
         INCLUDE "data.asm"
         INCLUDE "../../gfx/fish_raw.asm"   ; shifted at start-up (preshift.asm)
-        INCLUDE "../../gfx/diver.asm"
+        INCLUDE "../../gfx/diver_raw.asm"  ; shifted at start-up, likewise
         INCLUDE "../../gfx/wheel_raw.asm"  ; the pulsar, likewise
         INCLUDE "../../gfx/wheel_spin.asm"
         PRESHIFT_DATA           ; the three's pointer tables (preshift.asm)
@@ -1045,6 +1045,7 @@ data_end:
         ; The raw art that preshift reads once, at start-up, goes in the
         ; cold block: the data block keeps only what play reads.
         COLD
+        DIVER_ART
         FISH_ART
         WHEEL_ART
         WSPIN_ART
@@ -1080,7 +1081,7 @@ COLD_LENGTH     equ cold_end - COLD_START
         ASSERT WSPIN_BUF_END <= CODE_START, "the spinning wheel has run into the game"
         ASSERT cold_end <= WSPIN_BUF, "the cold block has run into the spinning wheel"
         ASSERT code_end <= DATA_START, "instructions have run into the pictures"
-        ASSERT data_end <= PRESHIFT_START, "pictures have run into the fish's and the pulsar's shifted copies"
+        ASSERT data_end <= PRESHIFT_START, "pictures have run into the diver's, the fish's and the pulsar's shifted copies"
         ASSERT COLD_START - 1 == 24575, "the BASIC's CLEAR 24575 (loader.asm) must sit just below the cold block"
         ASSERT SCROLL_BUF_END <= ROW_TABLE, "scroll buffers run into the row table"
         ASSERT BSS_START >= SCROLL_BUF_END && BSS_END <= BSS_LIMIT, "the run-time buffers run into the BASIC's scratch at BSS_LIMIT"

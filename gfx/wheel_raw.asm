@@ -9,6 +9,7 @@ WHEEL_WIDTH   equ 12
 WHEEL_HEIGHT  equ 12
 WHEEL_FRAMES  equ 8
 WHEEL_PICS    equ 2
+WHEEL_RAW     equ 2
 WHEEL_BYTES   equ 3
 WHEEL_WIDE    equ 5
 

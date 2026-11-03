@@ -9,6 +9,7 @@ WSPIN_WIDTH   equ 12
 WSPIN_HEIGHT  equ 12
 WSPIN_FRAMES  equ 8
 WSPIN_PICS    equ 8
+WSPIN_RAW     equ 2
 WSPIN_BYTES   equ 3
 WSPIN_WIDE    equ 5
 
