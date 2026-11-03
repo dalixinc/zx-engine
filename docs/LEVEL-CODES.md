@@ -8,7 +8,7 @@ a second bomb (item 3) is a separate push.
 When the score first reaches 200, the "LEVEL 2" banner and jingle play
 as before. When the banner comes down, a black panel covers rows 6 to 14:
 
-![Level 2 message](images/level2-teaser.png)
+![Level 2 message, the code painted out](images/level2-teaser.png)
 
 - It stays up until a key is pressed, so there's time for a screenshot.
   Then the panel goes back to water and play carries on.
@@ -39,8 +39,7 @@ table, showing one, and checking one that's been typed.
 | Level 3 onwards | a second line of block letters under the "LEVEL n" banner, which then stays up 4 s instead of 2 (`CFG_BANNER_CODE_TIME`) |
 | Game over | "LEVEL n CODE xxxxxx" under the score, for the level the game ended on (levels only go up, so that's the highest reached) |
 
-![Level 3 banner with its code](images/level3-code.png)
-![Game over with the code](images/game-over-code.png)
+![Game over, the code painted out](images/game-over-code.png)
 
 **Entering one.** The menu has a new option, "3 Enter code". The line
 turns into `3  Code ......` and fills in as letters are typed. `0`
@@ -83,20 +82,13 @@ A typed code is turned back into 24 bits and looked up in the table.
   `CFG_CODE_LEVELS` adds or drops codes but changes none, since each
   code depends only on its level number.
 
-The codes, for testing:
-
-| Level | Code | Level | Code | Level | Code |
-|---|---|---|---|---|---|
-| 2 | TLTTDL | 9 | KKHCKF | 16 | KHJDPU |
-| 3 | FDCGGR | 10 | ASEHEC | 17 | BPKDRD |
-| 4 | DHSSJU | 11 | UBELAA | 18 | UFPLAG |
-| 5 | LDLAGD | 12 | GPGFPP | 19 | GULSTL |
-| 6 | CRBRPJ | 13 | SUGJAR | 20 | SDPCET |
-| 7 | PFCUKP | 14 | EKKEUH | | |
-| 8 | CUELRL | 15 | CDPFFC | | |
+The list itself isn't published here: it's in `notes/LEVEL-CODES-LIST.md`
+in the repository, outside `docs/`, so it isn't served with the game.
+(Anyone can still work the codes out from the source or the tape. That's
+fine for a challenge among friends.)
 
 `CFG_LEVELS` has 9 rows, and the last row repeats. A code for level 10
-or above therefore starts the score at 4,500 plus 1,000 for each level
+or above therefore starts the score at 5,400 plus 1,000 for each level
 past 9, and plays level 9's settings until Trigon has rows of its own.
 
 **Banner font.** The banner's block letters were just L, E, V and the
@@ -140,8 +132,8 @@ The page's key table now lists `3`. `make web` refreshed
   last commit prints (512 interrupts for 512 steps).
 - **In Fuse:** reaching level 2 shows the banner, then the message;
   a key ends it and play resumes cleanly. Level 3's banner shows
-  FDCGGR. On the menu: typing, rub-out, a bad code, FDCGGR starting
-  level 3 at 500, and the game-over screen showing "LEVEL 3 CODE FDCGGR".
+  its code. On the menu: typing, rub-out, a bad code, level 3's code starting
+  level 3 at 500, and the game-over screen showing "LEVEL 3 CODE" and the code.
   (A scratch build scored 50 per torpedo to get there quickly.)
 
 ## Memory
@@ -154,3 +146,25 @@ The page's key table now lists `3`. `make web` refreshed
 The code's 682 bytes are mostly code entry and checking (codes.asm)
 and the teaser. The data's 371 bytes are the full banner alphabet (130),
 the code table (57), the key map (40), and the strings.
+
+## Fixes after review
+
+- **The codes aren't published.** The table of codes has moved out of
+  `docs/` (the GitHub Pages site) to `notes/LEVEL-CODES-LIST.md`. The
+  codes are painted out of the level 2 and game-over screenshots, and
+  the level 3 banner shot is gone. No other file in `docs/` has a code.
+  They're still in the git history and can be worked out from the
+  source or the tape.
+- **A stale level 2 message.** If the diver died in the same step that
+  level 2's banner came down, `teaser_hook` was left pointing at
+  `teaser`, and the next game opened in level 1 with the "WELL DONE"
+  panel. `score_reset` now puts the hook back to `spare_count`.
+  A scratch build that scored 50 a torpedo and went to `game_over` at
+  that exact moment showed the panel on the next game before the fix,
+  and a normal level 1 after it.
+- **Level 10's score** was wrong here: a code for level 10 starts at
+  5,400 (200 + 300 + ... + 1,000), not 4,500.
+- The fix costs 6 bytes of code, in a part only the tape build has: the
+  soak and MEASURE builds are byte-identical to before. `code_end` is
+  `$BEA4`, 348 bytes free; data is unchanged (`$EBA1`, 1,119 free).
+  Engine Demo 1 is byte-identical.

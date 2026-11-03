@@ -135,6 +135,13 @@ score_reset:
         djnz .clr
         ld (banner_code),a
         ld (teaser_due),a
+    IFDEF TEASER
+        ; A game can end in the step that level 2's banner came down,
+        ; with the message still due. Without this the next game would
+        ; show it in level 1.
+        ld hl,spare_count
+        ld (teaser_hook+1),hl
+    ENDIF
         inc a
         ld (level),a
         ld (level_n),a

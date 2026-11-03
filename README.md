@@ -175,7 +175,7 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
 Atlantis memory: after the loading screen, the tape has two code blocks. The instructions are at
-`$8000-$BE9D` (`code_end` is `$BE9E`, 16,030 bytes) and must stay below
+`$8000-$BEA3` (`code_end` is `$BEA4`, 16,036 bytes) and must stay below
 `$C000`. The pictures, menu words and tables are at `$C000-$EBA0`
 (11,169 bytes; the pre-shifted diver alone is 5,760 bytes, the fish 1,728).
 The spinning wheel's shifted pictures are built at start-up in
