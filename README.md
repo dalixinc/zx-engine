@@ -176,16 +176,19 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
-after the loading screen, the tape has three code blocks. The cold block
-at `$6000-$6905` (2,310 bytes) is the menu, the level codes, start-up and
-anything else that runs once; it is contended RAM, so nothing that runs
-every frame goes there. The instructions are at `$8000-$B1AE` (`code_end`
-is `$B1AF`, 12,719 bytes) and must stay below `$C400`. The pictures and
-tables are at `$C400-$E45A` (8,283 bytes; the pre-shifted diver alone is
-5,760 bytes). The fish's and the pulsar's shifted pictures are built at
-start-up at `$E5B0-$EFFF`, and the spinning wheel's at `$71C0-$7FFF`, from
-624 bytes of art on the tape. The buffers that start empty are at
-`$F300-$F517`, zeroed at start-up. The tape build has no stat line.
+the tape is packed with ZX0. After the BASIC come two blocks: a small
+unpacker with the packed loading screen, which it shows at once, then
+the packed game (12,697 bytes in all). The unpacker writes three
+blocks. The cold block at `$6000-$6FBA` (4,027 bytes) is the menu, the
+level codes, start-up, the diver's death and anything else that runs
+once in a while, with the raw art that start-up shifts. It is
+contended RAM, so nothing that runs every frame goes there. The
+instructions are at `$8000-$B1A7` (`code_end` is `$B1A8`) and must stay
+below `$C400`. The pictures and tables are at `$C400-$CB6A`. The four
+sprites' shifted copies are built at start-up: the diver's, the
+fish's and the pulsar's at `$CF30-$EFFF`, the spinning wheel's at
+`$71C0-$7FFF`. The buffers that start empty are at `$F300-$F517`,
+zeroed at start-up. The tape build has no stat line.
 The soak build puts its checks after the cold block and its photographs
 after the game's code.
 A build prints the ends (`atlantis code_end`, `data_end`, `cold_end`,
@@ -258,8 +261,9 @@ menu and choose Options > Save, which writes `~/.fuserc`. `--full-screen`
 works only with the SDL build (`fuse-sdl`).
 
 `make run` loads the tape in a moment, so the loading screen only flashes
-past. To watch it build up line by line at real tape speed, about 100
-seconds, turn off Fuse's tape traps and fast loading:
+past. To load it at real tape speed, turn off Fuse's tape traps and fast
+loading. The loading screen appears as soon as the first, short block is
+in, and stays up while the game loads behind it:
 
 ```
 # Linux
