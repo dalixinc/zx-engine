@@ -556,6 +556,11 @@ game_reset:
         call snd_reset
     ENDIF
 
+        ; Start just after an interrupt, so the first step is always at
+        ; the same point in the frame, however long the menu or the
+        ; start-up took. The test builds' results depend on it.
+        ei
+        halt
         di
         ld hl,0
         ld (frame_count),hl
