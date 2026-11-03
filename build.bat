@@ -1,6 +1,7 @@
 @echo off
 rem ATLANTIS - Windows build script
-rem   build.bat           assemble build\atlantis.tap
+rem   build.bat           assemble build\atlantis.tap (packed with ZX0 if
+rem                       zx0.exe is found, see below; otherwise unpacked)
 rem   build.bat run       assemble, then open the tape in Fuse
 rem   build.bat run 4x    the same, with Fuse at 4x size (2x, 3x, 4x)
 rem   build.bat soak      assemble build\atlantis-soak.sna (the self-test)
@@ -14,6 +15,9 @@ rem
 rem Tools: uses windows-tools\fuse\fuse.exe and
 rem windows-tools\sjasmplus\sjasmplus.exe if they are there, otherwise
 rem whatever is on PATH. Set SJASM or EMU first to override either.
+rem The tape is packed with windows-tools\zx0\zx0.exe (or zx0.exe on the
+rem PATH, or ZX0), compiled from tools\zx0\. Without it, build\atlantis.tap
+rem is the unpacked tape, which loads the same game, only more slowly.
 
 setlocal
 cd /d "%~dp0"
@@ -23,6 +27,8 @@ if "%SJASM%"=="" for /r "windows-tools" %%F in (sjasmplus.exe) do if exist "%%F"
 if "%SJASM%"=="" set "SJASM=sjasmplus.exe"
 if "%EMU%"==""   if exist "windows-tools\fuse\fuse.exe" set "EMU=%~dp0windows-tools\fuse\fuse.exe"
 if "%EMU%"==""   set "EMU=fuse.exe"
+if "%ZX0%"==""   if exist "windows-tools\zx0\zx0.exe" set "ZX0=%~dp0windows-tools\zx0\zx0.exe"
+if "%ZX0%"==""   for %%Z in (zx0.exe) do if not "%%~$PATH:Z"=="" set "ZX0=%%~$PATH:Z"
 
 if not exist build mkdir build
 
@@ -39,9 +45,24 @@ if /i "%1"=="timing"    goto timing
 if /i "%1"=="runtiming" goto timing
 
 rem ---- the game tape ----
-"%SJASM%" %ASMOPTS% --lst=build\atlantis.lst --sym=build\atlantis.sym src\atlantis\main.asm
+"%SJASM%" %ASMOPTS% --lst=build\atlantis.lst --sym=build\atlantis.sym --exp=build\atlantis.exp src\atlantis\main.asm
 if errorlevel 1 goto failed
-echo Built build\atlantis.tap
+if "%ZX0%"=="" goto plaintape
+"%ZX0%" -f gfx\loading.scr build\loading.zx0 >nul
+if errorlevel 1 goto failed
+for %%B in (cold code data) do (
+    "%ZX0%" -f build\atlantis-%%B.bin build\atlantis-%%B.zx0 >nul
+    if errorlevel 1 goto failed
+)
+"%SJASM%" %ASMOPTS% src\atlantis\tape.asm
+if errorlevel 1 goto failed
+echo Built build\atlantis.tap (packed)
+goto tapedone
+:plaintape
+copy /y build\atlantis-plain.tap build\atlantis.tap >nul
+if errorlevel 1 goto failed
+echo Built build\atlantis.tap (unpacked: no zx0.exe found)
+:tapedone
 if /i "%1"=="web" (
     copy /y build\atlantis.sna docs\play\atlantis.sna >nul
     if errorlevel 1 goto failed

@@ -1128,12 +1128,24 @@ COLD_LENGTH     equ cold_end - COLD_START
 loading_screen:
         INCBIN "../../gfx/loading.scr"
         ASSERT $ - loading_screen == 6912, "a Spectrum screen is 6912 bytes"
-        EMPTYTAP "build/atlantis.tap"
-        SAVETAP  "build/atlantis.tap", BASIC, "atlantis", basic_start, BASIC_LENGTH, 10
-        SAVETAP  "build/atlantis.tap", CODE, "atlantis", loading_screen, 6912
-        SAVETAP  "build/atlantis.tap", CODE, "atlantm", COLD_START, COLD_LENGTH
-        SAVETAP  "build/atlantis.tap", CODE, "atlantc", code_start, CODE_LENGTH
-        SAVETAP  "build/atlantis.tap", CODE, "atlantd", data_start, DATA_LENGTH
+        ; The plain tape: every block as it is in memory. The Makefile
+        ; packs the same blocks (SAVEBIN, below) into build/atlantis.tap
+        ; with ZX0 (src/atlantis/tape.asm). This one needs nothing but
+        ; sjasmplus, so a build without the packer still has a tape.
+        EMPTYTAP "build/atlantis-plain.tap"
+        SAVETAP  "build/atlantis-plain.tap", BASIC, "atlantis", basic_start, BASIC_LENGTH, 10
+        SAVETAP  "build/atlantis-plain.tap", CODE, "atlantis", loading_screen, 6912
+        SAVETAP  "build/atlantis-plain.tap", CODE, "atlantm", COLD_START, COLD_LENGTH
+        SAVETAP  "build/atlantis-plain.tap", CODE, "atlantc", code_start, CODE_LENGTH
+        SAVETAP  "build/atlantis-plain.tap", CODE, "atlantd", data_start, DATA_LENGTH
+        SAVEBIN  "build/atlantis-cold.bin", COLD_START, COLD_LENGTH
+        SAVEBIN  "build/atlantis-code.bin", code_start, CODE_LENGTH
+        SAVEBIN  "build/atlantis-data.bin", data_start, DATA_LENGTH
+        ; What tape.asm needs to know: --exp=build/atlantis.exp
+        EXPORT cold_end
+        EXPORT code_end
+        EXPORT data_end
+        EXPORT entry
         SAVESNA  "build/atlantis.sna", entry
     ENDIF
     ENDIF
