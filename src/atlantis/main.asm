@@ -1081,9 +1081,11 @@ COLD_LENGTH     equ cold_end - COLD_START
         ASSERT cold_end <= WSPIN_BUF, "the cold block has run into the spinning wheel"
         ASSERT code_end <= DATA_START, "instructions have run into the pictures"
         ASSERT data_end <= PRESHIFT_START, "pictures have run into the fish's and the pulsar's shifted copies"
-        ASSERT WHEEL_BUF + WHEEL_SHIFTED == SCROLL_BASE
+        ASSERT COLD_START - 1 == 24575, "the BASIC's CLEAR 24575 (loader.asm) must sit just below the cold block"
         ASSERT SCROLL_BUF_END <= ROW_TABLE, "scroll buffers run into the row table"
-        ASSERT BSS_START >= SCROLL_BUF_END && BSS_END <= ROW_TABLE, "the run-time buffers do not fit below the row table"
+        ASSERT BSS_START >= SCROLL_BUF_END && BSS_END <= BSS_LIMIT, "the run-time buffers run into the BASIC's scratch at BSS_LIMIT"
+        ASSERT BSS_LIMIT <= ROW_TABLE, "BSS_LIMIT is past the row table"
+        ASSERT ROW_TABLE_END <= STACK_TOP - STACK_NEED, "the row table leaves the stack less than STACK_NEED bytes"
         ASSERT (SCROLL_BASE & 255) == 0, "shift_one_row uses DEC L, so a row must not cross a page"
         ASSERT (BACK_BUF & 31) == 0, "each slow row must be 32-byte aligned"
         ASSERT (GROUND_BUF & 31) == 0, "each ground row must be 32-byte aligned"
@@ -1108,7 +1110,7 @@ COLD_LENGTH     equ cold_end - COLD_START
         ASSERT CFG_WHEEL_WOBBLE == 0, "the soak expects a smooth bob"
         ASSERT CFG_WHEEL_BOB == 6, "the soak expects a swing of 6"
         ASSERT CFG_WHEEL_BOB_SPEED == 1, "the soak expects one sine step per frame"
-        ASSERT SOAK_BUF_END <= ROW_TABLE, "soak photographs run into the row table"
+        ASSERT SOAK_BUF_END <= soak_photos_end, "the soak's photographs are bigger than the room kept for them"
     ENDIF
 
         INCLUDE "../loader.asm"
