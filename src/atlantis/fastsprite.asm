@@ -407,19 +407,29 @@ fast_draw_gap:
         push hl
         call fast_screen_de
         pop hl
-        ; The gap is the same on every row. Kept in the alternate
-        ; accumulator so the copy can use the ordinary one. The
-        ; interrupt handler does not touch the alternate pair.
-        ; The last row does not step: nothing follows it.
-        ld a,(spr_gap2)
-        ex af,af'
         ld a,(spr_height)
         ld b,a
+        ; The gap is the same on every row. It is patched into the ADD
+        ; of the width's own loop, once per draw: a row then steps with
+        ; LD A,L / ADD A,gap / LD L,A, 15 T-states. (It used to sit in
+        ; the alternate A, but the ADD overwrote it, so every row after
+        ; the first stepped by the wrong amount.)
+        ; The last row does not step: nothing follows it.
         ld a,(spr_bytes)
         cp 2
-        jr z,.two
+        jr z,.two0
         cp 3
-        jr z,.three
+        jr z,.three0
+        ld a,(spr_gap2)
+        ld (.g1+1),a
+        jr .one
+.two0:  ld a,(spr_gap2)
+        ld (.g2+1),a
+        jr .two
+.three0:
+        ld a,(spr_gap2)
+        ld (.g3+1),a
+        jr .three
 
 .one:   ld c,e
         ld a,(de)
@@ -432,12 +442,12 @@ fast_draw_gap:
         ld e,c
         djnz .more1
         ret
-.more1: ex af,af'
-        add a,l
+.more1: ld a,l
+.g1:    add a,0                 ; patched: spr_gap2
         ld l,a
         jr nc,.gap1
         inc h
-.gap1:  ex af,af'
+.gap1:
         NEXT_LINE
         jr .one
 
@@ -454,12 +464,12 @@ fast_draw_gap:
         ld e,c
         djnz .more2
         ret
-.more2: ex af,af'
-        add a,l
+.more2: ld a,l
+.g2:    add a,0                 ; patched: spr_gap2
         ld l,a
         jr nc,.gap2
         inc h
-.gap2:  ex af,af'
+.gap2:
         NEXT_LINE
         jr .two
 
@@ -476,12 +486,12 @@ fast_draw_gap:
         ld e,c
         djnz .more3
         ret
-.more3: ex af,af'
-        add a,l
+.more3: ld a,l
+.g3:    add a,0                 ; patched: spr_gap2
         ld l,a
         jr nc,.gap3
         inc h
-.gap3:  ex af,af'
+.gap3:
         NEXT_LINE
         jr .three
 
