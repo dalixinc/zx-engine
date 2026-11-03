@@ -32,6 +32,8 @@ It also writes the sizes the code uses: NAME_WIDTH, NAME_HEIGHT,
 NAME_FRAMES (animation steps), NAME_PICS (pictures stored), NAME_BYTES
 (the widest shifted row), NAME_WIDE (the first shift that needs a third
 byte) and, for a width that is not a multiple of 8, name_shift_bytes.
+The art itself is a macro, NAME_ART, so it can be assembled somewhere
+else than the sizes and name_seq: preshift reads it only at start-up.
 """
 import sys
 
@@ -100,14 +102,17 @@ def main():
                 "        db " + ", ".join(str(n) for n in widths),
                 "        ENDIF",
                 ""]
-    out.append(f"{name}_src:")
+    out += [f"; {up}_ART - the art itself. Only preshift reads it, once, at start-up,",
+            "; so main.asm puts it in the cold block, not with the data.",
+            f"        MACRO {up}_ART",
+            f"{name}_src:"]
     for i, frame in enumerate(pics):
         out.append(f"        ; {labels[i]}" + (f" (art frame {i * step})" if step > 1 else ""))
         for row in frame:
             mask, data = shifted_row(row, 0, 2)
             out.append(f"        db %{mask[0]:08b},%{mask[1]:08b}, "
                        f"%{data[0]:08b},%{data[1]:08b}  ; {row}")
-    out.append("")
+    out += ["        ENDM", ""]
     open(dst, "w").write("\n".join(out))
     print(f"{dst}: {len(pics)} pictures, {len(pics) * len(pics[0]) * 4} bytes unshifted")
 

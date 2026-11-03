@@ -12,6 +12,9 @@ FISH_PICS    equ 4
 FISH_BYTES   equ 3
 FISH_WIDE    equ 0
 
+; FISH_ART - the art itself. Only preshift reads it, once, at start-up,
+; so main.asm puts it in the cold block, not with the data.
+        MACRO FISH_ART
 fish_src:
         ; facing right, frame 0
         db %11111110,%00011111, %00000001,%11100000  ; .......####.....
@@ -53,3 +56,4 @@ fish_src:
         db %11000000,%00001111, %00111111,%11110000  ; ..##########....
         db %11110000,%00011111, %00001111,%11100000  ; ....#######.....
         db %11111000,%01111111, %00000111,%10000000  ; .....####.......
+        ENDM

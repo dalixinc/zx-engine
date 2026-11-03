@@ -20,6 +20,9 @@ wspin_shift_bytes:
         db 2, 2, 2, 2, 2, 3, 3, 3
         ENDIF
 
+; WSPIN_ART - the art itself. Only preshift reads it, once, at start-up,
+; so main.asm puts it in the cold block, not with the data.
+        MACRO WSPIN_ART
 wspin_src:
         ; picture 0 (art frame 0)
         db %11110000,%11111111, %00001111,%00000000  ; ....####....
@@ -125,3 +128,4 @@ wspin_src:
         db %10111111,%11011111, %01000000,%00100000  ; .#........#.
         db %11000110,%00111111, %00111001,%11000000  ; ..###..###..
         db %11110000,%11111111, %00001111,%00000000  ; ....####....
+        ENDM

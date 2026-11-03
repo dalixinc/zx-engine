@@ -1011,12 +1011,18 @@ code_end:
 CODE_LENGTH     equ code_end - code_start
 
     IFDEF SOAK
-        ; The soak's two photographs, 768 bytes each, in the free room
-        ; after the game's code. ($F300, where they were, is bss.asm's.)
+        ; The soak's two photographs, 768 bytes each, and its own code,
+        ; in the free room after the game's code. The soak is a
+        ; snapshot, never loaded from tape. ($F300, where the photographs
+        ; were, is bss.asm's, and the cold block has no room for the code.)
 soak_photos:
         ds 2 * 768
 soak_photos_end:
-        ASSERT soak_photos_end <= DATA_START, "the soak's photographs have run into the pictures"
+soak_start:
+        INCLUDE "soak.asm"
+soak_end:
+        DISPLAY "atlantis soak ", soak_photos, " to ", soak_end
+        ASSERT soak_end <= DATA_START, "the soak has run into the pictures"
     ENDIF
 
         DISPLAY "atlantis code_end ", code_end
@@ -1035,6 +1041,14 @@ data_start:
         INCLUDE "../../gfx/missile.asm"
         SILO_DATA               ; silo.asm
 data_end:
+
+        ; The raw art that preshift reads once, at start-up, goes in the
+        ; cold block: the data block keeps only what play reads.
+        COLD
+        FISH_ART
+        WHEEL_ART
+        WSPIN_ART
+        HOT
 DATA_LENGTH     equ data_end - data_start
         DISPLAY "atlantis data_end ", data_end
         DISPLAY "atlantis data bytes ", DATA_LENGTH
@@ -1048,18 +1062,6 @@ COLD_LENGTH     equ cold_end - COLD_START
         INCLUDE "bss.asm"       ; after the pictures: it needs their sizes
         DISPLAY "atlantis bss ", BSS_START, " to ", BSS_END
 
-    IFDEF SOAK
-        ; The soak's own code and variables follow the cold block. The
-        ; soak is a snapshot, never loaded from tape. This RAM is
-        ; contended, so the checks run a little slower; the soak checks
-        ; pictures and positions, not time.
-        ORG cold_end
-soak_start:
-        INCLUDE "soak.asm"
-soak_end:
-        DISPLAY "atlantis soak code ", soak_start, " to ", soak_end
-        ASSERT soak_end <= WSPIN_BUF, "the soak's code has run into the spinning wheel"
-    ENDIF
 
         ASSERT (ANIM_FRAMES & (ANIM_FRAMES - 1)) == 0, "ANIM_FRAMES must be a power of 2"
         ASSERT DIVER_ANIM_STEP == 4, "diver_image_index divides by 4 with two RRCAs"
