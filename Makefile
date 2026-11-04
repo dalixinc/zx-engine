@@ -94,16 +94,16 @@ gfx/%.asm: gfx/%.txt tools/gfx2asm.py
 # Demo 1 still uses gfx/fish.asm, gfx2asm.py's pre-shifted fish.
 gfx/wheel_spin.asm: gfx/wheel-full.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ wspin 2
-gfx/fish_raw.asm: gfx/fish.txt tools/gfx2raw.py tools/gfx2asm.py
+gfx/fish_raw.asm: gfx/fish-atlantis.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ fish 1
 gfx/wheel_raw.asm: gfx/wheel.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ wheel 1
-gfx/diver_raw.asm: gfx/diver.txt tools/gfx2raw.py tools/gfx2asm.py
+gfx/diver_raw.asm: gfx/diver-atlantis.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ diver 1
 
 # The loading screen, drawn from the same sprites. Committed, like the
 # .asm above, so the tape builds without Python.
-gfx/loading.scr: tools/mkloadscreen.py gfx/diver.txt gfx/fish.txt gfx/wheel.txt gfx/torpedo.txt
+gfx/loading.scr: tools/mkloadscreen.py gfx/diver-atlantis.txt gfx/fish-atlantis.txt gfx/wheel.txt gfx/torpedo.txt
 	$(PYTHON) tools/mkloadscreen.py $@
 
 run: $(TAP)

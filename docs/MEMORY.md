@@ -2,8 +2,8 @@
 
 How the 48K is laid out, what is built at start-up, and how the tape is
 packed. The map below is the current one, after the levels 3 and 4
-brief ([LEVELS-3-AND-4.md](LEVELS-3-AND-4.md): 163 bytes of hot code,
-45 of data, 216 of the cold block, and the jet's two still pictures,
+brief ([LEVELS-3-AND-4.md](LEVELS-3-AND-4.md): 173 bytes of hot code,
+272 of data, 264 of the cold block, and the jet's two still pictures,
 1,920 bytes built at start-up). Under it are the two briefs
 that made it: Quartus's **squeeze** brief (November 2026) and, before
 it, the **housekeeping** brief (PR #23).
@@ -14,14 +14,14 @@ it, the **housekeeping** brief (PR #23).
 |---|---|
 | `$4000-$5AFF` | screen |
 | `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
-| `$6000-$710D` | **cold block** (4,366 bytes): menu, level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
-| `$710E-$71BF` | free (178) |
+| `$6000-$713D` | **cold block** (4,414 bytes): menu, level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
+| `$713E-$71BF` | free (130) |
 | `$71C0-$7FFF` | the spinning wheel's shifted pictures (built at start-up) |
-| `$8000-$B346` | code (`code_end` `$B347`) |
-| `$B347-$BC7F` | free (2,361) |
+| `$8000-$B350` | code (`code_end` `$B351`) |
+| `$B351-$BC7F` | free (2,351) |
 | `$BC80-$C3FF` | the diver's two still pictures with the jet's other phase (`JET_BUF`, 1,920, built at start-up; the soak build has its code here instead) |
-| `$C400-$CCDF` | data: graphics, tables, `data.asm` (`data_end` `$CCE0`) |
-| `$CCE0-$CF2F` | free (592) |
+| `$C400-$CDC2` | data: graphics, tables, `data.asm` (`data_end` `$CDC3`) |
+| `$CDC3-$CF2F` | free (365) |
 | `$CF30-$E5AF` | the diver's shifted pictures (5,760, built at start-up) |
 | `$E5B0-$EC6F` | the fish's shifted pictures (built at start-up) |
 | `$EC70-$EFFF` | the pulsar's shifted pictures (built at start-up) |
@@ -45,8 +45,8 @@ build if any of them runs into the next thing up.
 
 While the tape loads, two more things sit in memory for a moment: the
 unpacker and the packed loading screen from the page after `cold_end`
-(`$7200-$78EC`), and the packed game from the page after `data_end`
-(`$CD00-$FA2A`). Start-up builds the shifted pictures over both.
+(`$7200-$78E0`), and the packed game from the page after `data_end`
+(`$CE00-$FB63`). Start-up builds the shifted pictures over both.
 
 ## The squeeze brief: free bytes, before and after
 

@@ -6,14 +6,29 @@
 ; its silo only when the ground has put it at one of those, and then
 ; keeps its column, so in flight it is one byte a row (missile.asm).
 ; mirror off: it points up either way.
+;
+; Its body is four rows (nose and three), then the fins with the nozzle
+; between them, then the flame out of the nozzle: the motor burning.
+; Two frames, the flame long and then short, so it flickers: missile.asm
+; picks one by frame_count every 2 1/50 seconds. The same 6 x 8 box, so
+; the hit test is unchanged; the second frame is 224 bytes of data.
 
 mirror off
-frame 0
+frame 0  the flame long
 ..##..
 .####.
 .####.
 .####.
+######
+#.##.#
+..##..
+..#...
+frame 1  the flame short
+..##..
+.####.
+.####.
 .####.
 ######
-##..##
-#....#
+#.##.#
+..##..
+......

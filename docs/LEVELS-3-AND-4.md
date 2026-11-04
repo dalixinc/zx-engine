@@ -87,19 +87,18 @@ and the legs kicking only while a direction is held.
 
 The legs already did that: the kick only runs while Q, A, O or P (or the
 joystick) is held, and he glides with his legs together when you let
-go. What was missing was the jet. Its tail (the propeller, at its back
-end, under his middle) is a row shorter than the art's: rows 11 to 13,
-where the jet's body keeps its 4. It now turns and throws bubbles in
-two phases:
+go. What was missing was the jet. Its tail is now a 3 by 3 housing (a row
+shorter than the art's: rows 11 to 13, where the jet's body keeps its
+4), a shaft two pixels long reaching back under him, and the propeller
+blade on the shaft's end. The new legs leave that room free. It turns
+and throws bubbles in two phases:
 
-- **A**: the blade face on, so the tail is a solid 3 by 3, with a bubble
-  behind it and one below it.
-- **B**: the blade edge on, so only the 2-wide hub is left, with three
-  bubbles thrown back beside it.
+- **A**: the blade face on, 3 pixels tall, with two bubbles behind it.
+- **B**: the blade edge on (one pixel), the housing down to its 2-wide
+  hub, and three bubbles thrown back.
 
-Seven pixels change between the two. Each bubble is a pixel with no ink
-beside it in any of the three frames (the shorter tail frees the row
-under it), so a bubble never joins a leg.
+Each bubble is a pixel with no ink beside it in any of the three
+frames, so a bubble never joins a leg.
 
 **At start-up, from the existing art.** `gfx/diver.txt` is Engine Demo
 1's art too, so it is not changed. `diver_jet_build` (preshift.asm)
@@ -117,13 +116,13 @@ there), so it keeps the still pose without them.
 
 | | Before | After | Used |
 |---|---|---|---|
-| hot code (`code_end`) | `$B2A4` | `$B347` | 163 (`wheel_home` 107, the spin hold and the hunt in `wheel_type` 38, the still jet in `diver_image_index` 13, four bytes of state, one longer jump; the kind table went and the dispatch's two tests took its four bytes) |
+| hot code (`code_end`) | `$B2A4` | `$B351` | 173 (the missile's flicker 10, `wheel_home` 107, the spin hold and the hunt in `wheel_type` 38, the still jet in `diver_image_index` 13, four bytes of state, one longer jump; the kind table went and the dispatch's two tests took its four bytes) |
 | the jet's still pictures (`JET_BUF`) | | `$BC80-$C3FF` | 1,920, built at start-up, not on the tape |
-| data (`data_end`) | `$CCB3` | `$CCE0` | 45 (the `hunt` column, 9; the jet pictures' pointer tables, 36) |
-| cold block (`cold_end`) | `$7036` | `$710E` | 216 (`diver_jet_build`, `jet_patch` and the two pixel lists) |
+| data (`data_end`) | `$CCB3` | `$CDC3` | 272 (the `hunt` column, 9; the jet pictures' pointer tables, 36; the missile's second picture, 227) |
+| cold block (`cold_end`) | `$7036` | `$713E` | 264 (`diver_jet_build`, `jet_patch` and the two pixel lists) |
 
-Free afterwards: code 2,361 (up to `JET_BUF`), data 592, cold block
-178. The tape is 13,472 bytes (322 more).
+Free afterwards: code 2,351 (up to `JET_BUF`), data 365, cold block
+130. The tape is 13,517 bytes (367 more).
 
 The two extra pictures are the "new pre-shifted copies" the brief
 allowed if the memory did: one still pose per facing, 960 bytes each.
@@ -198,3 +197,45 @@ alignment alone moves.
 - **In Fuse:** level 3's red border and rolling wheel, level 4's
   magenta hunter sinking to the diver's depth and hitting him, the jet
   turning while he is still.
+
+## Graphics polish
+
+Four more changes to the art. Every one keeps its sprite's size, so
+the draws read the same number of bytes. Only the missile's flicker
+adds a picture (below). With the missile's flicker and the longer jet tail in, the full timing
+set was run again: level 1 seabed 9, + fire 2, + missile 4, boom 0 with
+1 late step, open water 9; level 2 seabed 9, + fire 1, + missile 5, open
+water 10; level 3 seabed 1; level 4 seabed 7, + fire 0 with 1 late step,
++ missile 3; level 9 seabed 6, + fire 0; 47 to 49 at 25. The missile
+cases, where the flicker's 32 T-states land, did not move. The
+interrupts are 1 a step at 50 and 2 at 25 in every build. The soak is
+green at 50 and 25, and Engine Demo 1 is byte-identical.
+
+- **The diver's legs.** Atlantis has its own copy of the diver,
+  `gfx/diver-atlantis.txt`; Engine Demo 1 keeps `gfx/diver.txt`. The
+  body, tank, helmet, arms and jet are pixel for pixel the same. The
+  legs are new: a scissor kick from the hip, wide apart (one leg up and
+  back, one down and back, each with a flat flipper), half way, then
+  together and straight back with the flippers flared in a V. The last
+  is also the glide pose, which used to cross the shins under his belly
+  in an X just behind the jet's bubbles. That X is gone.
+- **The missile's flame.** `gfx/missile.txt`: the body is four rows,
+  then the fins with the nozzle between them, then the flame. Still 6
+  by 8, one byte a row in flight. The flame flickers: two pictures,
+  long and short, swapped every 2 1/50 seconds by `missile_draw`. That
+  one costs 227 bytes of data (the second picture at all 8 shifts) and
+  32 T-states on a frame with a missile up.
+- **The pulsar's pulse.** `gfx/wheel.txt`: its two pictures used to
+  differ by a few edge pixels. Now one is the burst (the wide shape with
+  four rays out at the corners and the caps joined) and the other is the
+  ring (drawn in from the box's edge, no caps). The order is burst,
+  burst, ring, ring, twice: two pulses a cycle where there was one.
+- **The fish.** Atlantis has its own copy, `gfx/fish-atlantis.txt`: a
+  piranha. Its two frames flip every 8 1/50 seconds, and on each flip
+  the jaws snap (wide open with teeth on both, the lower jaw dropped and
+  thrust forward; then shut with a tooth over the lip), the gill opens
+  and shuts, and the tail swings from spread to down. The box is still
+  16 by 9, so the hit tests and its colour are unchanged.
+
+The loading screen (`tools/mkloadscreen.py`) reads the Atlantis copies
+too, so its fish are piranhas and its bombs the new burst and ring.
