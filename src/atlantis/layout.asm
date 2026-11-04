@@ -80,3 +80,13 @@ BSS_LIMIT       equ $F900
 ; main.asm checks that the row table stops below it.
 STACK_NEED      equ 128
 ROW_TABLE_END   equ ROW_TABLE + 192 * 2
+
+; The seabed's sloped column tops (scroll.asm, slope_build): 16 columns
+; of 8 bytes for the ground, then the same for the sand, built at
+; start-up between the row table and the stack's room. slope_copy adds
+; an offset to the low byte only, so neither table may cross a page.
+SLOPE_GROUND    equ ROW_TABLE_END
+SLOPE_SAND      equ SLOPE_GROUND + 128
+SLOPE_END       equ SLOPE_SAND + 128
+        ASSERT (SLOPE_GROUND & $FF) + 128 <= 256 && (SLOPE_SAND & $FF) + 128 <= 256, "a slope table crosses a page"
+        ASSERT SLOPE_END <= STACK_TOP - STACK_NEED, "the slope tables run into the stack's room"

@@ -62,6 +62,7 @@ basic_start:
         ; second LOAD is not assembled into its BASIC.
         IFDEF ATLANTIS
         db T_LOAD, '""', T_CODE, ':'
+        db T_LOAD, '""', T_CODE, ':'   ; the UDG block, at $FF58 (udg.asm)
         ENDIF
         db T_RANDOMIZE, T_USR, T_VAL, '"', "32768", '"'
         db $0D

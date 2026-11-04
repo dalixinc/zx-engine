@@ -205,8 +205,8 @@ fish_wait_step:
         jp fish_unhold
 
 ;------------------------------------------------------------------------------
-; fish_kind_pick - which fish this one is: the piranha one time in four,
-; else the round one. Called when a fish appears (a new game, and each
+; fish_kind_pick - which fish this one is: from CFG_PIRANHA_LEVEL the
+; piranha one time in four, else (and always before it) the round one. Called when a fish appears (a new game, and each
 ; new fish after one has gone), never while one swims, so the frame does
 ; not pay for it: it patches the draw's picture table (fish_draw_fast.img),
 ; and the draw reads the same number of bytes for either. A piranha
@@ -223,10 +223,15 @@ fish_kind_pick:
         xor $B8
 .keep:  ld (fish_seed),a
         and 3                   ; 0: a piranha, one time in four
+        jr nz,.round
+        ld a,(level_n)
+        ld hl,pw_piranha_lvl    ; and only from CFG_PIRANHA_LEVEL
+        cp (hl)
+        jr c,.round
         ld hl,fish_images
         ld a,1
-        jr z,.got
-        ld hl,rfish_images
+        jr .got
+.round: ld hl,rfish_images
         xor a
 .got:   ld (fish_draw_fast.img + 1),hl
         ld (fish_piranha),a

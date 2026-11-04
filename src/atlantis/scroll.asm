@@ -86,6 +86,87 @@ level_index:    db 0
 WEED_SPILL_AT   equ 3           ; fine >= this: the plant enters the left cell
 WEED_LEAVE_AT   equ 7           ; fine >= this: no set pixel remains in its own cell
 
+;------------------------------------------------------------------------------
+; slope_build - the sloped tops of the ground and the sand, at start-up
+; Each of a profile's 16 columns gets 8 bytes, top row first. Its height
+; runs in a straight line from its own (h0) at its left pixel to the
+; next column's (h1) at its right, and a pixel is solid where the line
+; is at least that row, to the nearest half pixel. So a step of a few
+; pixels becomes a slope across the column, and a peak or a dip is
+; bevelled, not square. A flat column (h0 = h1) is exactly the old
+; block. The columns are built from these tables as they scroll in
+; (slope_copy), so the frame does no more than before.
+; v(x) = 16 h0 + (h1 - h0)(2x + 1) is the height at pixel x's middle,
+; in 16ths; row L is solid where v >= 16 L - 8.
+; Corrupts: AF, BC, DE, HL, IX
+;------------------------------------------------------------------------------
+slope_build:
+        ld hl,near_profile
+        ld de,SLOPE_GROUND
+        call .prof
+        ld hl,far_profile
+        ld de,SLOPE_SAND
+.prof:  ld c,0                  ; the column
+.col:   ld a,c
+        call .at
+        ld b,a                  ; h0
+        ld a,c
+        inc a
+        and 15
+        call .at                ; h1
+        sub b                   ; d
+        push hl
+        ld l,a
+        add a,a
+        ld h,a                  ; 2d: v's step a pixel
+        ld a,b
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        add a,l                 ; v(0) = 16 h0 + d
+        ld ix,preshift_row      ; 8 bytes of start-up scratch
+        ld l,8
+.v:     ld (ix+0),a
+        inc ix
+        add a,h
+        dec l
+        jr nz,.v
+        ld h,8 * 16 - 8         ; the top row's threshold
+.row:   ld ix,preshift_row
+        ld b,0
+        ld l,8
+.px:    ld a,(ix+0)
+        inc ix
+        cp h
+        ccf                     ; carry: solid
+        rl b
+        dec l
+        jr nz,.px
+        ld a,b
+        ld (de),a
+        inc de
+        ld a,h
+        sub 16
+        ld h,a
+        jr nc,.row              ; 120 down to 8: eight rows
+        pop hl
+        inc c
+        ld a,c
+        cp 16
+        jr c,.col
+        ret
+; A = the profile's byte A, HL = the profile. Preserves HL.
+.at:    push hl
+        add a,l
+        ld l,a
+        jr nc,.in
+        inc h
+.in:    ld a,(hl)
+        pop hl
+        ret
+        ; (Start-up only, but the cold block has no room left for it.)
+
         COLD
 ;------------------------------------------------------------------------------
 ; scroll_init - first 32 columns, the column waiting off the right, one copy
@@ -1068,6 +1149,7 @@ next_front_tile:
         ld hl,(front_column)
         ld a,l
         and 15
+        ld (front_prof_i),a     ; build_front_pat's slope (slope_build)
         ld e,a
         ld d,0
         ld hl,near_profile
@@ -1129,6 +1211,7 @@ next_back_tile:
         ld hl,(back_column)
         ld a,l
         and 15
+        ld (back_prof_i),a
         ld e,a
         ld d,0
         ld hl,far_profile
@@ -1147,8 +1230,9 @@ next_back_tile:
 .zw:    ld (de),a
         inc de
         djnz .zw
-        ld a,(column_h)
-        call fill_bottom        ; DE is the sand half. Advances past it.
+        ld a,(back_prof_i)      ; the sand, its top sloped towards the
+        ld hl,SLOPE_SAND        ; next column's (slope_build)
+        call slope_copy         ; DE is the sand half. Advances past it.
 
         ld a,(weed_wait)
         or a
@@ -1163,10 +1247,28 @@ next_back_tile:
 .try:           ld a,(column_h)
         cp 8                    ; a plant only on a dune that fills the sand row
         jr nz,.wait
+        ; One of the three plants (udg.asm), from weed_seed: 0 and 3 the
+        ; fir, 1 the kelp, 2 the fan coral.
+        ld a,(weed_seed)
+        srl a                   ; the same Galois step as wheel_rng
+        jr nc,.keep
+        xor $B8
+.keep:  ld (weed_seed),a
+        and 3
+        cp 3
+        jr c,.pick
+        xor a
+.pick:  add a,a
+        add a,a
+        add a,a
+        ld e,a
+        ld d,0
+        ld hl,weed_pics
+        add hl,de
         ld de,(pat_dest)        ; plant into the top 8, on top of the dune
-        ld hl,pat_weed
-        ld b,8
-        call copy_bytes
+        REPT 8
+        ldi
+        ENDR
         ld a,10                 ; next TRY is 11 columns on
         ld (weed_left),a
         xor a
@@ -1193,12 +1295,14 @@ build_front_pat:
         cp TILE_ROCK
         jr z,.rock
         ld de,(pat_dest)
-        ld a,(column_h)
-        call fill_bottom
+        ld a,(front_prof_i)
+        ld hl,SLOPE_GROUND
+        call slope_copy
         jr .id
 .rock:  ld de,(pat_dest)
-        ld a,(column_h)
-        call fill_bottom
+        ld a,(front_prof_i)
+        ld hl,SLOPE_GROUND
+        call slope_copy
         ld hl,pat_rock
         ld de,(pat_dest)
         ld b,GROUND_PX
@@ -1225,26 +1329,18 @@ build_front_pat:
 .id:    ld a,(build_tile)
         ret
 
-; Fill DE, 8 bytes: A solid rows at the bottom ($FF), zeros above.
-; A is 0..8. Corrupts: AF, BC, DE.
-fill_bottom:
-        ld c,a
-        ld a,8
-        sub c                   ; zero rows. SUB sets the flags; LD would not.
-        jr z,.solid
-        ld b,a
-        xor a
-.z:     ld (de),a
-        inc de
-        djnz .z
-.solid: ld a,c
-        or a
-        ret z
-        ld b,a
-        ld a,$FF
-.f:     ld (de),a
-        inc de
-        djnz .f
+; The column's 8 bytes from a slope table: HL = SLOPE_GROUND or
+; SLOPE_SAND, A = its profile index (0..15), DE = where. Advances DE
+; past them. Corrupts: AF, BC, HL
+slope_copy:
+        add a,a
+        add a,a
+        add a,a
+        add a,l
+        ld l,a                  ; neither table crosses a page (layout.asm)
+        REPT 8                  ; 128 T-states: no slower than the old fill
+        ldi
+        ENDR
         ret
 
 ; Stamp column_pat down one buffer column.
@@ -1298,24 +1394,7 @@ near_profile:
 ; Bit 7 is the leftmost pixel. Top byte is the top pixel row.
 ; The silo is gfx/silo.txt.
 
-pat_rock:
-        db %00000000            ; two clear rows, then a mound ROCK_H tall
-        db %00000000
-        db %00011000
-        db %00111100
-        db %01111110
-        db %11111111
-        db %11111111
-        db %11111111
-pat_weed:
-        db %00001000            ; sits in row 21. The bottom row has pixels,
-        db %00011100            ; so a full-height dune touches the plant.
-        db %00001000            ; Leftmost set pixel is bit 5 (2 from the
-        db %00111110            ; left). Rightmost is bit 1 (1 from the right).
-        db %00001000            ; paint_weed_attrs's 3 and 7 come from that.
-        db %00011100
-        db %00001000
-        db %00111110
+; pat_rock and the seaweed (weed_pics) are in the UDG area: udg.asm.
 
 ; --- state -------------------------------------------------------------------
 silo_gap:       db 0
@@ -1362,6 +1441,9 @@ front_h_pending: db 0           ; its solid height (the diver's clamp, right edg
 ; slow_feed: in bss.asm (zeroed at start-up, not on the tape)
 
 column_h:       db 0
+front_prof_i:   db 0            ; the new column's profile index (its slope)
+back_prof_i:    db 0
+weed_seed:      db $5A          ; which plant: its own shift register. Never 0.
 pat_dest:       dw column_pat
 ; column_pat: in bss.asm (zeroed at start-up, not on the tape)  ; top byte first. The ground uses the first 8.
 build_tile:     db 0

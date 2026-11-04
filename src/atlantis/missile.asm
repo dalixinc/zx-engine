@@ -116,6 +116,12 @@ msl_world:      dw 0            ; world column of its silo's left half
 msl_x:          db 0            ; left pixel of the picture
 msl_y:          db 0            ; top pixel row
 msl_seed:       db $C3          ; its own shift register. Never 0.
+; The first level of each (config.asm). The tester's switch (cheat_poll) makes all
+; three 1. In this order: missile_gone steps through them.
+power_levels:
+pw_heart_lvl:   db CFG_POWER_LEVEL
+pw_double_lvl:  db CFG_DOUBLE_LEVEL
+pw_piranha_lvl: db CFG_PIRANHA_LEVEL
 msl_gap_min:    db CFG_MISSILE_GAP_MIN  ; this level's wait (score.asm sets
 msl_gap_span:   db CFG_MISSILE_GAP_MAX - CFG_MISSILE_GAP_MIN + 1 ; them)
     IFDEF POWERUPS
@@ -400,6 +406,41 @@ power_take:
         or a
         ret
 
+; cheat_poll - the testers' switch, on the menu only (menu_loop calls it;
+; play never does). Held down together, its two keys (notes/, not the
+; docs) make hearts, the bubble and the piranha come from level 1 until
+; the machine is reset. It answers once, with a short beep and the
+; border flickering, so the tester knows it took. Not on any screen.
+; Corrupts: AF, BC, HL
+CHEAT_KEYS      equ %00000110   ; port $7FFE: Symbol Shift (bit 1) and M (bit 2)
+cheat_on:       db 0
+cheat_poll:
+        ld bc,(ROW_SPC_B << 8) | ULA_PORT
+        in a,(c)
+        and CHEAT_KEYS
+        ret nz                  ; not both down
+        ld hl,cheat_on
+        ld a,(hl)
+        or a
+        ret nz                  ; already on: no second beep
+        ld (hl),1
+        ld a,1
+        ld (pw_heart_lvl),a
+        ld (pw_double_lvl),a
+        ld (pw_piranha_lvl),a
+        ; The beep: 150 half-waves, the speaker and the border together.
+        ld b,150
+.wave:  ld a,b
+        and %00010000 | RED     ; speaker bit 4 and the border, in turn
+        out (ULA_PORT),a
+        ld c,40
+.wait:  dec c
+        jr nz,.wait
+        djnz .wave
+        ld a,BLUE               ; the menu's border back
+        out (ULA_PORT),a
+        ret
+
 ; The double shot's clock. While it lasts, main_loop's two calls to
 ; missile_update (.msl_uc1, .msl_uc2) come here first, so a game
 ; without one pays nothing. When it runs out: the bubble beside the
@@ -444,7 +485,7 @@ double_calls:
         ASSERT CFG_HEART_ODDS + CFG_DOUBLE_ODDS <= 256
         ASSERT CFG_DOUBLE_TIME >= 1 && CFG_DOUBLE_TIME <= 600, "CFG_DOUBLE_TIME is seconds, up to 10 minutes"
         ASSERT CFG_DOUBLE_COOLDOWN >= 1 && CFG_DOUBLE_COOLDOWN <= CFG_FIRE_COOLDOWN
-        ASSERT CFG_POWER_LEVEL >= 1 && CFG_POWER_LEVEL <= 99
+        ASSERT CFG_POWER_LEVEL >= 1 && CFG_POWER_LEVEL <= 99 && CFG_DOUBLE_LEVEL >= 1 && CFG_DOUBLE_LEVEL <= 99 && CFG_PIRANHA_LEVEL >= 1 && CFG_PIRANHA_LEVEL <= 99
     ENDIF
 
 ;------------------------------------------------------------------------------
@@ -460,23 +501,34 @@ missile_gone:
         ret
     ELSE
       IFDEF POWERUPS
-        ; What the next turn brings: from CFG_POWER_LEVEL, now and then a
-        ; power-up. A = 0 here.
+        ; What the next turn brings: now and then a power-up, each from
+        ; its own level (power_levels). A = 0 here.
         ld (msl_kind),a
-        ld a,(level_n)
-        cp CFG_POWER_LEVEL
-        jr c,.roll
         call msl_rng
-        ld b,MSL_KIND_HEART
-        cp CFG_HEART_ODDS
-        jr c,.next
-        inc b                   ; MSL_KIND_DOUBLE
-        cp CFG_HEART_ODDS + CFG_DOUBLE_ODDS
-        jr c,.next
+        ld c,a
         ld b,MSL_KIND_MISSILE
+        ld a,(level_n)
+        ld hl,pw_heart_lvl
+        cp (hl)
+        jr c,.no_heart          ; too early for hearts
+        ld a,c
+        cp CFG_HEART_ODDS
+        jr c,.heart
+.no_heart:
+        ld a,(level_n)
+        inc hl                  ; pw_double_lvl
+        cp (hl)
+        jr c,.next              ; too early for the bubble
+        ld a,c
+        sub CFG_HEART_ODDS
+        jr c,.next              ; the hearts' share: a missile
+        cp CFG_DOUBLE_ODDS
+        jr nc,.next
+        ld b,MSL_KIND_DOUBLE
+        jr .next
+.heart: ld b,MSL_KIND_HEART
 .next:  ld a,b
         ld (msl_next),a
-.roll:
       ENDIF
         ld a,(msl_gap_span)
         ld b,a
@@ -747,11 +799,6 @@ heart_pic:                      ; the hearts' own heart (data.asm, lives_heart)
         POWER_ROW %00111000
         POWER_ROW %00010000
         POWER_ROW %00000000
-; The bubble beside the hearts while the double shot lasts (lives_draw):
-; the same picture, ink only.
-double_glyph:
-        db %00111100, %01000010, %10111001, %10000001
-        db %10111001, %01000010, %00111100, %00000000
 bubble_pic:                     ; a bubble with two torpedoes in it: the double shot
         POWER_ROW %00111100
         POWER_ROW %01000010

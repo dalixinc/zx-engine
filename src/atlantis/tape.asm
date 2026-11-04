@@ -12,8 +12,9 @@
 ; The tape:
 ;   BASIC   10 CLEAR VAL "24575": LOAD ""CODE : RANDOMIZE USR VAL "<show>":
 ;              POKE VAL "23739",VAL "111": LOAD ""CODE : RANDOMIZE USR VAL "<go>"
-;   CODE    "atlantis"  the unpacker, dzx0 and the packed loading screen
-;   CODE    "atlantc"   the packed cold block, code and data
+;   CODE    "atlantis"  the unpacker, dzx0, the packed loading screen,
+;                         the packed data and the packed UDG block
+;   CODE    "atlantc"   the packed cold block and code
 ;
 ; WHERE. The unpacker must stay out of what it unpacks, and the packed
 ; game must not be overwritten before it has been read:
@@ -23,8 +24,11 @@
 ;   - the second goes from the page after data_end, above everything the
 ;     unpacker writes. The diver's copies and the scroll buffers are
 ;     built over it at start-up.
-; The cold block is unpacked first, then the code, then the data, each
-; into memory below the packed bytes still to be read.
+; The first block also carries the packed data and the packed UDG block
+; (udg.asm): the second must end below UDG_START and had no room. The
+; cold block is unpacked first (below the first block), then the code
+; (below the second block's packed bytes still to be read), then the data
+; and the UDG block, from the first block, above $8000.
 ;
 ; show returns to BASIC (it keeps IY and the alternate registers, as the
 ; ROM needs); go jumps to entry and never returns. POKE 23739,111 stops
@@ -90,6 +94,9 @@ go:
         ld hl,packed_data
         ld de,DATA_START
         call dzx0_standard
+        ld hl,packed_udg        ; last, from the first block
+        ld de,udg_start
+        call dzx0_standard
     IFDEF UNPACK_CHECK
         ld hl,(FRAMES)
         ld de,(t_game)
@@ -112,6 +119,15 @@ t_game          equ 0
 
 packed_screen:
         INCBIN "../../build/loading.zx0"
+; The data block and the UDG block (udg.asm) ride here, not in the
+; second block: that one must end below UDG_START, and it had no room
+; left. Nothing is unpacked over this block before go reads it: the cold
+; block ends below UNPACK_ORG, and the code, the data and the UDG block
+; go above $8000.
+packed_data:
+        INCBIN "../../build/atlantis-data.zx0"
+packed_udg:
+        INCBIN "../../build/atlantis-udg.zx0"
 unpack_end:
         ASSERT UNPACK_ORG >= cold_end, "the unpacker would sit on the cold block"
         ASSERT unpack_end <= CODE_START, "the unpacker and the packed screen run into the code"
@@ -125,11 +141,10 @@ packed_cold:
         INCBIN "../../build/atlantis-cold.zx0"
 packed_code:
         INCBIN "../../build/atlantis-code.zx0"
-packed_data:
-        INCBIN "../../build/atlantis-data.zx0"
 packed_end:
         ASSERT PACKED_ORG >= data_end, "the packed game would sit on the data"
         ASSERT packed_end <= UDG_START, "the packed game runs into the ROM's UDGs"
+        ASSERT udg_start == UDG_START, "the UDG block is not at the ROM's UDGs"
 
         DISPLAY "tape unpacker ", unpack_start, " to ", unpack_end
         DISPLAY "tape packed game ", packed_start, " to ", packed_end

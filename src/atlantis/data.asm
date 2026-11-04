@@ -16,7 +16,6 @@
 ; Drawn by menu.asm. The play screen has none of these words: row 0 is
 ; kept clear for the stat line, and the water is empty apart from that.
 
-str_title:      db "ATLANTIS",0
 str_ctrl_swim:  db "QAOP or 5678 to swim",0
     IFDEF STATS
 str_ctrl_stats: db "Symbol Shift + S  stats",0
@@ -126,19 +125,7 @@ STATS_TEMPLATE_LEN equ $ - stats_template
         ASSERT STATS_TEMPLATE_LEN == 32, "the stat line has to be one row"
     ENDIF
 
-; --- A life ------------------------------------------------------------------
-; One heart for each life left, on row 1 (hit.asm). The eight zero bytes
-; after it are an empty cell, for a life that has gone.
-lives_heart:
-        db %00000000
-        db %01101100
-        db %11111110
-        db %11111110
-        db %01111100
-        db %00111000
-        db %00010000
-        db %00000000
-        ds 8, 0
+; (A life's heart is in the UDG area: udg.asm.)
 
         COLD
 ; --- Menu options ------------------------------------------------------------

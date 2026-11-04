@@ -145,10 +145,15 @@ CFG_MISSILE_SPEED    equ 2
 ;   the bubble    the double shot: for CFG_DOUBLE_TIME seconds he can
 ;                 fire again while a torpedo is still running, so two
 ;                 can be out at once
-; Only from level CFG_POWER_LEVEL on (1 = from the start). Each time a
-; missile ends, the next turn is a heart CFG_HEART_ODDS times in 256 and
-; a bubble CFG_DOUBLE_ODDS times in 256; otherwise a missile.
-CFG_POWER_LEVEL      equ 1
+; Each one has a first level (1 = from the start). Each time a missile
+; ends, the next turn is a heart CFG_HEART_ODDS times in 256 (from
+; CFG_POWER_LEVEL) and a bubble CFG_DOUBLE_ODDS times in 256 (from
+; CFG_DOUBLE_LEVEL); otherwise a missile.
+CFG_POWER_LEVEL      equ 2       ; hearts from this level
+CFG_DOUBLE_LEVEL     equ 4       ; the double shot's bubble from this level
+; The fish: before this level every fish is the round one; from it, one
+; fish in four is the piranha (boom.asm, fish_kind_pick).
+CFG_PIRANHA_LEVEL    equ 4
 CFG_HEART_ODDS       equ 32      ; about one turn in 8
 CFG_DOUBLE_ODDS      equ 12      ; about one turn in 21
 CFG_POWER_SPEED      equ 160     ; it sinks this many 256ths of a pixel a 1/50

@@ -68,8 +68,8 @@ four), 2 for a bomb, 10 for a missile on the
 first levels (each level's row of `CFG_LEVELS` in `config.asm` says).
 Something that runs into him scores nothing.
 
-Now and then a power-up sinks from the top instead of a missile coming
-up, slower than the diver can dive: a heart is one more life (up to 5), and a bubble gives the double
+From level 2, now and then a power-up sinks from the top instead of a
+missile coming up, slower than the diver can dive: a heart is one more life (up to 5), and a bubble (from level 4) gives the double
 shot for 30 seconds: fire again while a torpedo is still running, and
 two are out at once; a bubble beside the hearts shows it, and a
 falling jingle says it has run out (`docs/POWER-UPS.md`; `CFG_POWER_*`,
@@ -191,13 +191,13 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: a small
 unpacker with the packed loading screen, which it shows at once, then
-the packed game (14,345 bytes in all). The unpacker writes three
-blocks. The cold block at `$6000-$7168` (4,457 bytes) is the menu, the
+the packed game (14,627 bytes in all). The unpacker writes four
+blocks. The cold block at `$6000-$7188` (4,489 bytes) is the menu, the
 level codes, start-up, the diver's death, each level's look and anything else that runs
 once in a while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The
-instructions are at `$8000-$B803` (`code_end` is `$B804`) and must stay
-below half the round fish's pictures at `$B920-$BC7F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CDC2`. The four
+instructions are at `$8000-$B8E1` (`code_end` is `$B8E2`) and must stay
+below half the round fish's pictures at `$B920-$BC7F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CDB2`, and the one-cell pictures and the title's letters in the ROM's UDG area, `$FF58-$FFEF`. The four
 sprites' shifted copies are built at start-up: the diver's, the
 fish's and the pulsar's at `$CF30-$EFFF`, the spinning wheel's at
 `$71C0-$7FFF`. The buffers that start empty are at `$F300-$F517`,
