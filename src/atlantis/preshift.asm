@@ -267,8 +267,8 @@ preshift_blank:
 ; frames (the shortened tail frees the row under it), so a bubble
 ; never joins a leg. Called by preshift_all,
 ; before the jobs. Patching twice gives the same art.
-; The tape's art (gfx/diver.txt) is Engine Demo 1's too, so the bubbles
-; are added here, not drawn there.
+; The art (gfx/diver-atlantis.txt) keeps the old jet: the still pose
+; needs both phases from one frame of art, so they are added here.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 diver_jet_build:

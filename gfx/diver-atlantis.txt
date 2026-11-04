@@ -1,0 +1,68 @@
+; diver-atlantis.txt - Atlantis's diver, 24 x 15, drawn FACING RIGHT.
+;   #  = ink   -  = paper (opaque, e.g. helmet glass)   .  = transparent
+;
+; The same diver as gfx/diver.txt (Engine Demo 1's, which stays as it
+; is), with new legs. The body, tank, helmet, arms and jet are pixel for
+; pixel the same. tools/gfx2raw.py turns this into gfx/diver_raw.asm;
+; src/atlantis/preshift.asm adds the jet's tail and bubbles at start-up
+; (diver_jet_build), so the jet here is the old one.
+;
+; The kick, 0 1 2 1 while a direction is held, is a scissor kick from
+; the hip, wide enough to read at 1:1:
+;   frame 0  legs wide apart: one on a diagonal up and back, one down
+;            and back, each ending in a flat flipper.
+;   frame 1  half way: both legs closer to the body's line.
+;   frame 2  legs together, straight back, the two flippers flared in
+;            a V at the end. This is also his glide pose when he is
+;            still. (The demo's frame 2 crossed the shins under his
+;            belly, an X just behind the jet's bubbles.)
+; Every leg pixel is clear of the jet's bubble pixels and of their
+; neighbours (preshift.asm, jet_a and jet_b).
+frame 0  legs wide apart
+..................####..
+##..........###########.
+###......#####..####---#
+.###....#######.###----#
+..###...#######.#-#----#
+...####.-------.####---#
+.....##################.
+.....#################..
+.....################...
+....###########...###...
+...###.............##...
+..###.........###-#####.
+####..........###-#####-
+###...........###-#####-
+..............###-#####.
+frame 1  legs half way
+..................####..
+............###########.
+.........#####..####---#
+##......#######.###----#
+####....#######.#-#----#
+..####..-------.####---#
+.....##################.
+.....#################..
+.....################...
+....###########...###...
+.######............##...
+####..........###-#####.
+..............###-#####-
+..............###-#####-
+..............###-#####.
+frame 2  legs together, gliding
+..................####..
+............###########.
+.........#####..####---#
+........#######.###----#
+........#######.#-#----#
+##......-------.####---#
+.##...#################.
+..####################..
+..###################...
+.##...#########...###...
+##.................##...
+..............###-#####.
+..............###-#####-
+..............###-#####-
+..............###-#####.

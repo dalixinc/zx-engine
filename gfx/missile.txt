@@ -6,6 +6,11 @@
 ; its silo only when the ground has put it at one of those, and then
 ; keeps its column, so in flight it is one byte a row (missile.asm).
 ; mirror off: it points up either way.
+;
+; Its body is four rows (nose and three), then the fins with the nozzle
+; between them, then two rows of flame trailing out of the nozzle: the
+; motor burning. The same 6 x 8 box, so the draw, the hit test and the
+; storage are unchanged.
 
 mirror off
 frame 0
@@ -13,7 +18,7 @@ frame 0
 .####.
 .####.
 .####.
-.####.
 ######
-##..##
-#....#
+#.##.#
+..##..
+..#...

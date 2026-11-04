@@ -198,3 +198,39 @@ alignment alone moves.
 - **In Fuse:** level 3's red border and rolling wheel, level 4's
   magenta hunter sinking to the diver's depth and hitting him, the jet
   turning while he is still.
+
+## Graphics polish
+
+Four more changes to the art. Every one keeps its sprite's size and
+its number of pictures, so no byte of memory and no T-state changes:
+the draws read the same number of bytes. The ends (`code_end`,
+`data_end`, `cold_end`) are the same, and the timing builds read the
+same as above (level 1 seabed 9, + fire 2, + missile 4, open water 9;
+level 2 seabed 9; level 4 + fire 0 with 1 late step). The soak is green
+at 50 and 25, and Engine Demo 1 is byte-identical.
+
+- **The diver's legs.** Atlantis has its own copy of the diver,
+  `gfx/diver-atlantis.txt`; Engine Demo 1 keeps `gfx/diver.txt`. The
+  body, tank, helmet, arms and jet are pixel for pixel the same. The
+  legs are new: a scissor kick from the hip, wide apart (one leg up and
+  back, one down and back, each with a flat flipper), half way, then
+  together and straight back with the flippers flared in a V. The last
+  is also the glide pose, which used to cross the shins under his belly
+  in an X just behind the jet's bubbles. That X is gone.
+- **The missile's flame.** `gfx/missile.txt`: the body is four rows,
+  then the fins with the nozzle between them, then two rows of flame.
+  Still 6 by 8, one byte a row in flight.
+- **The pulsar's pulse.** `gfx/wheel.txt`: its two pictures used to
+  differ by a few edge pixels. Now one is the burst (the wide shape with
+  four rays out at the corners and the caps joined) and the other is the
+  ring (drawn in from the box's edge, no caps). The order is burst,
+  burst, ring, ring, twice: two pulses a cycle where there was one.
+- **The fish.** Atlantis has its own copy, `gfx/fish-atlantis.txt`: a
+  piranha. Its two frames flip every 8 1/50 seconds, and on each flip
+  the jaws snap (wide open with teeth on both, the lower jaw dropped and
+  thrust forward; then shut with a tooth over the lip), the gill opens
+  and shuts, and the tail swings from spread to down. The box is still
+  16 by 9, so the hit tests and its colour are unchanged.
+
+The loading screen (`tools/mkloadscreen.py`) reads the Atlantis copies
+too, so its fish are piranhas and its bombs the new burst and ring.

@@ -271,9 +271,9 @@ def paint():
 
     ruins()
 
-    diver = load_frames("gfx/diver.txt")
+    diver = load_frames("gfx/diver-atlantis.txt")
     wheel = load_frames("gfx/wheel.txt")
-    fish = load_frames("gfx/fish.txt")
+    fish = load_frames("gfx/fish-atlantis.txt")
     torpedo = load_frames("gfx/torpedo.txt")
 
     # The diver, firing at a bomb.
