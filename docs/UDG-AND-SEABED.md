@@ -45,7 +45,7 @@ loading screen) had 1.7 KB to spare below `$8000`, so the packed data
 block and the packed UDG block now ride there: the cold block unpacks
 below the first block and everything else above `$8000`, so nothing is
 written over them before they are read. The packed game now ends at
-`$F9EF`, 1,386 bytes below `$FF58` (it was 185).
+`$F9EE`, 1,386 bytes below `$FF58` (it was 185).
 
 ## 2. The title
 
