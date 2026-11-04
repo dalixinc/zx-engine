@@ -202,11 +202,14 @@ alignment alone moves.
 
 Four more changes to the art. Every one keeps its sprite's size, so
 the draws read the same number of bytes. Only the missile's flicker
-adds a picture (below). The ends (`code_end`,
-`data_end`, `cold_end`) are the same, and the timing builds read the
-same as above (level 1 seabed 9, + fire 2, + missile 4, open water 9;
-level 2 seabed 9; level 4 + fire 0 with 1 late step). The soak is green
-at 50 and 25, and Engine Demo 1 is byte-identical.
+adds a picture (below). With the missile's flicker and the longer jet tail in, the full timing
+set was run again: level 1 seabed 9, + fire 2, + missile 4, boom 0 with
+1 late step, open water 9; level 2 seabed 9, + fire 1, + missile 5, open
+water 10; level 3 seabed 1; level 4 seabed 7, + fire 0 with 1 late step,
++ missile 3; level 9 seabed 6, + fire 0; 47 to 49 at 25. The missile
+cases, where the flicker's 32 T-states land, did not move. The
+interrupts are 1 a step at 50 and 2 at 25 in every build. The soak is
+green at 50 and 25, and Engine Demo 1 is byte-identical.
 
 - **The diver's legs.** Atlantis has its own copy of the diver,
   `gfx/diver-atlantis.txt`; Engine Demo 1 keeps `gfx/diver.txt`. The
