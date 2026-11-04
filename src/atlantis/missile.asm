@@ -432,8 +432,14 @@ missile_draw:
         add a,a
         ld e,a
         ld d,0
+        ; The flame flickers: the long frame, then the short one, every
+        ; 2 1/50 seconds (gfx/missile.txt). 32 T-states.
+        ld a,(frame_count)
+        and 2
         ld hl,missile_right_f0
-        add hl,de
+        jr z,.flame
+        ld hl,missile_right_f1
+.flame: add hl,de
         ld e,(hl)
         inc hl
         ld d,(hl)

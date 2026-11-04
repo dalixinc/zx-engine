@@ -251,12 +251,13 @@ preshift_blank:
 ; diver_jet_build - the jet's two phases, put into the diver's art
 ; The jet he holds has a propeller at its back end. It turns, and throws
 ; bubbles back, in two phases a few 1/50 seconds each:
-;   A  the blade face on: the tail a solid 3 by 3, and two bubbles,
-;      one behind it and one below it
-;   B  the blade edge on: only the 2-wide hub, and three bubbles
-;      thrown back beside it
-; In both the tail is a row shorter than the art's (rows 11-13, not
-; 11-14); the jet's body keeps its 4 rows.
+;   A  the blade face on, 3 pixels tall, at the end of a 2-pixel shaft
+;      behind the 3 by 3 housing; two bubbles behind it
+;   B  the blade edge on (one pixel), the housing down to its 2-wide
+;      hub; three bubbles thrown back
+; The housing is a row shorter than the art's (rows 11-13, not 11-14),
+; and the shaft and blade reach back into the room under him that the
+; legs (gfx/diver-atlantis.txt) leave free.
 ; His kick runs 0 1 2 1: frames 0 and 2 get A and frame 1 gets B, so
 ; while he swims the jet goes A B A B. The
 ; still pose is frame 2 (A). Its B is a copy of frame 2 with B, built in
@@ -366,22 +367,30 @@ jpx_l = (row?) * 6 + ((23 - (col?)) >> 3)
         ENDIF
         ENDM
 
-jet_a:  JET_PX JET_GONE, 14, 14 ; the tail one row shorter: rows 11-13
+jet_a:  JET_PX JET_GONE, 14, 14 ; the housing one row shorter: rows 11-13
         JET_PX JET_GONE, 14, 15
         JET_PX JET_GONE, 14, 16
-        JET_PX JET_INK, 11, 14  ; the blade face on: the tail a solid 3 by 3
+        JET_PX JET_INK, 12, 13  ; the shaft, two pixels back from it
+        JET_PX JET_INK, 12, 12
+        JET_PX JET_INK, 11, 14  ; the housing a solid 3 by 3
         JET_PX JET_INK, 13, 14
-        JET_PX JET_INK, 12, 12  ; two bubbles, behind it and below it
-        JET_PX JET_INK, 14, 13
+        JET_PX JET_INK, 11, 11  ; the blade face on, 3 tall, on the shaft's end
+        JET_PX JET_INK, 12, 11
+        JET_PX JET_INK, 13, 11
+        JET_PX JET_INK, 12, 9   ; two bubbles behind it
+        JET_PX JET_INK, 14, 8
         db $FF
-jet_b:  JET_PX JET_GONE, 14, 14 ; the tail one row shorter, as A
+jet_b:  JET_PX JET_GONE, 14, 14 ; the housing one row shorter, as A
         JET_PX JET_GONE, 14, 15
         JET_PX JET_GONE, 14, 16
-        JET_PX JET_GONE, 11, 14 ; the blade edge on: only the hub, 2 wide
+        JET_PX JET_INK, 12, 13  ; the shaft
+        JET_PX JET_INK, 12, 12
+        JET_PX JET_GONE, 11, 14 ; the housing down to its 2-wide hub
         JET_PX JET_GONE, 13, 14
-        JET_PX JET_INK, 11, 13  ; three bubbles thrown back
-        JET_PX JET_INK, 13, 13
-        JET_PX JET_INK, 14, 14
+        JET_PX JET_INK, 12, 11  ; the blade edge on: one pixel
+        JET_PX JET_INK, 11, 9   ; three bubbles thrown back
+        JET_PX JET_INK, 13, 8
+        JET_PX JET_INK, 14, 11
         db $FF
         ASSERT DIVER_WIDTH == 24 && DIVER_HEIGHT == 15 && DIVER_RAW == 3, "jet_a and jet_b are drawn for the 24 by 15 diver"
         ASSERT DIVER_GLIDE == 2, "the still pose is frame 2"

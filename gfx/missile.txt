@@ -8,12 +8,13 @@
 ; mirror off: it points up either way.
 ;
 ; Its body is four rows (nose and three), then the fins with the nozzle
-; between them, then two rows of flame trailing out of the nozzle: the
-; motor burning. The same 6 x 8 box, so the draw, the hit test and the
-; storage are unchanged.
+; between them, then the flame out of the nozzle: the motor burning.
+; Two frames, the flame long and then short, so it flickers: missile.asm
+; picks one by frame_count every 2 1/50 seconds. The same 6 x 8 box, so
+; the hit test is unchanged; the second frame is 224 bytes of data.
 
 mirror off
-frame 0
+frame 0  the flame long
 ..##..
 .####.
 .####.
@@ -22,3 +23,12 @@ frame 0
 #.##.#
 ..##..
 ..#...
+frame 1  the flame short
+..##..
+.####.
+.####.
+.####.
+######
+#.##.#
+..##..
+......
