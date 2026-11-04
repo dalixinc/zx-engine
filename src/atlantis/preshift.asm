@@ -251,17 +251,21 @@ preshift_blank:
 ; diver_jet_build - the jet's two phases, put into the diver's art
 ; The jet he holds has a propeller at its back end. It turns, and throws
 ; bubbles back, in two phases a few 1/50 seconds each:
-;   A  the propeller whole, and a bubble behind it (row 12)
-;   B  the propeller's top and bottom pixels gone, and two bubbles
-;      thrown back beside them (rows 11 and 14)
-; His kick, 0 1 2 1, already alternates the propeller: frames 0 and 2
-; get A and frame 1 gets B, so while he swims the jet goes A B A B. The
+;   A  the blade face on: the tail a solid 3 by 3, and two bubbles,
+;      one behind it and one below it
+;   B  the blade edge on: only the 2-wide hub, and three bubbles
+;      thrown back beside it
+; In both the tail is a row shorter than the art's (rows 11-13, not
+; 11-14); the jet's body keeps its 4 rows.
+; His kick runs 0 1 2 1: frames 0 and 2 get A and frame 1 gets B, so
+; while he swims the jet goes A B A B. The
 ; still pose is frame 2 (A). Its B is a copy of frame 2 with B, built in
 ; DIVER_BUF (the diver's own job overwrites it after) and shifted into
 ; JET_BUF by the first job; diver_image_index shows it every other 4
 ; 1/50 seconds while he is still. The legs do not move.
-; The pixels are the only spots free in all three frames with no ink
-; beside them, so a bubble never joins a leg. Called by preshift_all,
+; Each bubble is a pixel with no ink beside it in any of the three
+; frames (the shortened tail frees the row under it), so a bubble
+; never joins a leg. Called by preshift_all,
 ; before the jobs. Patching twice gives the same art.
 ; The tape's art (gfx/diver.txt) is Engine Demo 1's too, so the bubbles
 ; are added here, not drawn there.
@@ -362,14 +366,22 @@ jpx_l = (row?) * 6 + ((23 - (col?)) >> 3)
         ENDIF
         ENDM
 
-jet_a:  JET_PX JET_INK, 12, 12  ; a bubble behind the propeller
-        JET_PX JET_INK, 11, 14  ; the propeller whole (frames 0 and 2 have it)
-        JET_PX JET_INK, 14, 14
-        db $FF
-jet_b:  JET_PX JET_GONE, 11, 14 ; the propeller's ends turned away
-        JET_PX JET_GONE, 14, 14
-        JET_PX JET_INK, 11, 13  ; and two bubbles thrown back
+jet_a:  JET_PX JET_GONE, 14, 14 ; the tail one row shorter: rows 11-13
+        JET_PX JET_GONE, 14, 15
+        JET_PX JET_GONE, 14, 16
+        JET_PX JET_INK, 11, 14  ; the blade face on: the tail a solid 3 by 3
+        JET_PX JET_INK, 13, 14
+        JET_PX JET_INK, 12, 12  ; two bubbles, behind it and below it
         JET_PX JET_INK, 14, 13
+        db $FF
+jet_b:  JET_PX JET_GONE, 14, 14 ; the tail one row shorter, as A
+        JET_PX JET_GONE, 14, 15
+        JET_PX JET_GONE, 14, 16
+        JET_PX JET_GONE, 11, 14 ; the blade edge on: only the hub, 2 wide
+        JET_PX JET_GONE, 13, 14
+        JET_PX JET_INK, 11, 13  ; three bubbles thrown back
+        JET_PX JET_INK, 13, 13
+        JET_PX JET_INK, 14, 14
         db $FF
         ASSERT DIVER_WIDTH == 24 && DIVER_HEIGHT == 15 && DIVER_RAW == 3, "jet_a and jet_b are drawn for the 24 by 15 diver"
         ASSERT DIVER_GLIDE == 2, "the still pose is frame 2"

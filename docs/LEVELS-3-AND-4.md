@@ -87,16 +87,19 @@ and the legs kicking only while a direction is held.
 
 The legs already did that: the kick only runs while Q, A, O or P (or the
 joystick) is held, and he glides with his legs together when you let
-go. What was missing was the jet. Its propeller is at its back end, under
-his middle. It now turns and throws bubbles in two phases:
+go. What was missing was the jet. Its tail (the propeller, at its back
+end, under his middle) is a row shorter than the art's: rows 11 to 13,
+where the jet's body keeps its 4. It now turns and throws bubbles in
+two phases:
 
-- **A**: the propeller whole, and a bubble just behind it.
-- **B**: the propeller's top and bottom pixels turned away, and two
-  bubbles thrown back beside them.
+- **A**: the blade face on, so the tail is a solid 3 by 3, with a bubble
+  behind it and one below it.
+- **B**: the blade edge on, so only the 2-wide hub is left, with three
+  bubbles thrown back beside it.
 
-There is very little room: the only pixels free in all three frames with
-no ink beside them are just behind the propeller, so the bubbles can't
-join a leg. They are one pixel each.
+Seven pixels change between the two. Each bubble is a pixel with no ink
+beside it in any of the three frames (the shorter tail frees the row
+under it), so a bubble never joins a leg.
 
 **At start-up, from the existing art.** `gfx/diver.txt` is Engine Demo
 1's art too, so it is not changed. `diver_jet_build` (preshift.asm)
@@ -117,10 +120,10 @@ there), so it keeps the still pose without them.
 | hot code (`code_end`) | `$B2A4` | `$B347` | 163 (`wheel_home` 107, the spin hold and the hunt in `wheel_type` 38, the still jet in `diver_image_index` 13, four bytes of state, one longer jump; the kind table went and the dispatch's two tests took its four bytes) |
 | the jet's still pictures (`JET_BUF`) | | `$BC80-$C3FF` | 1,920, built at start-up, not on the tape |
 | data (`data_end`) | `$CCB3` | `$CCE0` | 45 (the `hunt` column, 9; the jet pictures' pointer tables, 36) |
-| cold block (`cold_end`) | `$7036` | `$70DE` | 168 (`diver_jet_build`, `jet_patch` and the two pixel lists) |
+| cold block (`cold_end`) | `$7036` | `$710E` | 216 (`diver_jet_build`, `jet_patch` and the two pixel lists) |
 
 Free afterwards: code 2,361 (up to `JET_BUF`), data 592, cold block
-226. The tape is 13,453 bytes (303 more).
+178. The tape is 13,472 bytes (322 more).
 
 The two extra pictures are the "new pre-shifted copies" the brief
 allowed if the memory did: one still pose per facing, 960 bytes each.
@@ -180,7 +183,7 @@ alignment alone moves.
 ## Checks
 
 - **Levels 1 and 2:** the timing above. On level 1 the only pixels
-  that differ from main in the screenshot builds are the jet's bubbles.
+  that differ from main in the screenshot builds are the jet's tail and bubbles.
 - **Soak:** green at 50 and 25.
 - **Level codes:** the code table is byte-identical to main's. No code
   or target changed.

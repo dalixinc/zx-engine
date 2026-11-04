@@ -3,7 +3,7 @@
 How the 48K is laid out, what is built at start-up, and how the tape is
 packed. The map below is the current one, after the levels 3 and 4
 brief ([LEVELS-3-AND-4.md](LEVELS-3-AND-4.md): 163 bytes of hot code,
-45 of data, 168 of the cold block, and the jet's two still pictures,
+45 of data, 216 of the cold block, and the jet's two still pictures,
 1,920 bytes built at start-up). Under it are the two briefs
 that made it: Quartus's **squeeze** brief (November 2026) and, before
 it, the **housekeeping** brief (PR #23).
@@ -14,8 +14,8 @@ it, the **housekeeping** brief (PR #23).
 |---|---|
 | `$4000-$5AFF` | screen |
 | `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
-| `$6000-$70DD` | **cold block** (4,318 bytes): menu, level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
-| `$70DE-$71BF` | free (226) |
+| `$6000-$710D` | **cold block** (4,366 bytes): menu, level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
+| `$710E-$71BF` | free (178) |
 | `$71C0-$7FFF` | the spinning wheel's shifted pictures (built at start-up) |
 | `$8000-$B346` | code (`code_end` `$B347`) |
 | `$B347-$BC7F` | free (2,361) |
@@ -45,8 +45,8 @@ build if any of them runs into the next thing up.
 
 While the tape loads, two more things sit in memory for a moment: the
 unpacker and the packed loading screen from the page after `cold_end`
-(`$7100-$77EC`), and the packed game from the page after `data_end`
-(`$CD00-$FA17`). Start-up builds the shifted pictures over both.
+(`$7200-$78EC`), and the packed game from the page after `data_end`
+(`$CD00-$FA2A`). Start-up builds the shifted pictures over both.
 
 ## The squeeze brief: free bytes, before and after
 

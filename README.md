@@ -183,8 +183,8 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: a small
 unpacker with the packed loading screen, which it shows at once, then
-the packed game (13,453 bytes in all). The unpacker writes three
-blocks. The cold block at `$6000-$70DD` (4,318 bytes) is the menu, the
+the packed game (13,472 bytes in all). The unpacker writes three
+blocks. The cold block at `$6000-$710D` (4,366 bytes) is the menu, the
 level codes, start-up, the diver's death, each level's look and anything else that runs
 once in a while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The
