@@ -32,6 +32,19 @@ MSL_ROWS        equ 8
 
 MSL_ARMED       equ 1
 MSL_FLY         equ 2
+MSL_SINK        equ 3           ; a power-up, going down
+
+; What the slot holds. A power-up uses the missile's slot, its draw and
+; its test against the diver: while one is up no missile is, so it adds
+; no frame the missile does not already cost.
+MSL_KIND_MISSILE equ 0
+MSL_KIND_HEART  equ 1           ; one more life
+MSL_KIND_TWIN   equ 2           ; twin torpedoes for CFG_TWIN_TIME
+; It sinks from below the hearts and is gone above the weed, so it is
+; always drawn before the seabed copy, and always one byte a row: its x
+; is a multiple of 8, and the water does not scroll.
+POWER_TOP       equ MSL_TOP
+POWER_LOW       equ BACK_ROW * 8 - MISSILE_HEIGHT
 MSL_LOW         equ $80         ; msl_vn: drawn after the seabed copy
 
 ; In the hatch: the nose stands six pixels out of the dome's top row.
@@ -105,6 +118,10 @@ msl_y:          db 0            ; top pixel row
 msl_seed:       db $C3          ; its own shift register. Never 0.
 msl_gap_min:    db CFG_MISSILE_GAP_MIN  ; this level's wait (score.asm sets
 msl_gap_span:   db CFG_MISSILE_GAP_MAX - CFG_MISSILE_GAP_MIN + 1 ; them)
+    IFDEF POWERUPS
+msl_kind:       db 0            ; what is up: MSL_KIND_*
+msl_next:       db 0            ; what the next turn brings
+    ENDIF
 
 ; What the last draw covered: bytes a row (1 or 2), plus MSL_LOW when it
 ; was drawn after the copy. 0 = nothing on screen. Restore clears it.
@@ -121,6 +138,10 @@ missile_reset:
         xor a
         ld (msl_phase),a
         ld (msl_vn),a
+    IFDEF POWERUPS
+        ld (msl_kind),a
+        ld (msl_next),a
+    ENDIF
     IFDEF MEAS_MISSILE
         ld (msl_wait),a
     ELSE
@@ -142,10 +163,18 @@ missile_update:
         jr z,missile_armed
         dec a
         jr z,.fly
+    IFDEF POWERUPS
+        dec a
+        jp z,power_sink
+    ENDIF
         ld hl,msl_wait
         ld a,(hl)
         or a
+    IFDEF POWERUPS
+        jp z,missile_or_power
+    ELSE
         jr z,missile_pick
+    ENDIF
         dec (hl)
         ret
 .fly:   ld a,(msl_y)
@@ -281,6 +310,95 @@ missile_pick:
         jp missile_armed        ; its x now, before it is drawn
 
 ;------------------------------------------------------------------------------
+; Power-ups. missile_gone rolls what the next turn brings (msl_next);
+; when the wait is over, a power-up appears at once, where a missile
+; would wait for a silo near the diver.
+;   missile_or_power  the wait is over: a missile, or msl_next's power-up
+;   power_sink        one 1/50 second of its fall
+;   power_take        the diver touched it (missile_hit)
+;------------------------------------------------------------------------------
+    IFDEF POWERUPS
+missile_or_power:
+        ld a,(msl_next)
+        or a
+        jp z,missile_pick
+        ld (msl_kind),a
+        xor a
+        ld (msl_next),a
+        ; A column near him: his middle, give or take 32 pixels, on a
+        ; byte, and the whole picture on the screen.
+        call msl_rng
+        and 63
+        ld l,a
+        ld h,0
+        ld a,(diver_x)
+        ld e,a
+        ld d,h
+        add hl,de
+        ld de,DIVER_WIDTH / 2 - 4 - 32
+        add hl,de
+        bit 7,h
+        jr z,.right
+        ld hl,0                 ; off the left: column 0
+.right: ld a,h
+        or a
+        ld a,l
+        jr z,.fits
+        ld a,248
+.fits:  cp 249
+        jr c,.col
+        ld a,248
+.col:   and $F8
+        ld (msl_x),a
+        ld a,POWER_TOP
+        ld (msl_y),a
+        ld a,MSL_SINK
+        ld (msl_phase),a
+        ret
+
+power_sink:
+        ld a,(msl_y)
+        add a,CFG_POWER_SPEED
+        cp POWER_LOW + 1
+        jp nc,missile_gone      ; at the weed: gone
+        ld (msl_y),a
+        ret
+
+; A = msl_kind (not 0). Out: carry clear: not a hit.
+power_take:
+        dec a
+        jr nz,.twin
+        ld hl,lives
+        ld a,(hl)
+        cp CFG_LIVES_MAX
+        jr nc,.done             ; full: it is used up all the same
+        inc (hl)
+        ld hl,hud_dirty
+        set HUD_HEARTS,(hl)     ; one more heart on row 1
+        jr .done
+.twin:  ld a,1
+        ld (twin_on),a
+        ld hl,(frame_count)
+        ld de,CFG_TWIN_TIME * 50
+        add hl,de
+        ld (twin_until),hl
+.done:  call missile_gone
+    IFNDEF NO_SOUND
+        ld hl,snd_tune_power
+        call snd_tune_start
+    ENDIF
+        or a
+        ret
+
+        ASSERT MSL_ROWS == 8, "the power-ups are 8 rows: missile_draw draws MSL_ROWS"
+        ASSERT CFG_LIVES_MAX >= CFG_LIVES && CFG_LIVES_MAX <= 9, "CFG_LIVES_MAX: CFG_LIVES to 9"
+        ASSERT CFG_HEART_ODDS + CFG_TWIN_ODDS <= 256
+        ASSERT CFG_POWER_SPEED >= 1 && CFG_POWER_SPEED <= 4
+        ASSERT CFG_TWIN_TIME >= 1 && CFG_TWIN_TIME <= 600, "CFG_TWIN_TIME is seconds, up to 10 minutes"
+        ASSERT CFG_POWER_LEVEL >= 1 && CFG_POWER_LEVEL <= 99
+    ENDIF
+
+;------------------------------------------------------------------------------
 ; missile_gone - shot, spent on the diver, or out of the top. The next
 ; restore takes it off the screen. The next one is a random gap away.
 ; Corrupts: AF, B
@@ -292,6 +410,25 @@ missile_gone:
         ld (msl_wait),a         ; measurement: the next one at once
         ret
     ELSE
+      IFDEF POWERUPS
+        ; What the next turn brings: from CFG_POWER_LEVEL, now and then a
+        ; power-up. A = 0 here.
+        ld (msl_kind),a
+        ld a,(level_n)
+        cp CFG_POWER_LEVEL
+        jr c,.roll
+        call msl_rng
+        ld b,MSL_KIND_HEART
+        cp CFG_HEART_ODDS
+        jr c,.next
+        inc b                   ; MSL_KIND_TWIN
+        cp CFG_HEART_ODDS + CFG_TWIN_ODDS
+        jr c,.next
+        ld b,MSL_KIND_MISSILE
+.next:  ld a,b
+        ld (msl_next),a
+.roll:
+      ENDIF
         ld a,(msl_gap_span)
         ld b,a
         call msl_rng
@@ -343,6 +480,11 @@ missile_hit:
         add a,-MHIT_Y_LO
         cp MHIT_Y_SPAN
         jr nc,.miss
+    IFDEF POWERUPS
+        ld a,(msl_kind)
+        or a
+        jp nz,power_take        ; a power-up: his
+    ENDIF
     IFDEF MEASURE
         ; A measurement holds the diver on the seabed, under the silos,
         ; where every missile would hit him and explode. It pays for the
@@ -367,12 +509,17 @@ missile_shot:
         ld a,(msl_phase)
         or a
         ret z
+    IFDEF POWERUPS
+        ld a,(msl_kind)
+        or a
+        ret nz                  ; a power-up: the torpedo passes through
+    ENDIF
         ld a,(msl_y)
         ld b,a
         ld a,(torp_y)
         sub b
-        add a,TORPEDO_HEIGHT - 1
-        cp TORPEDO_HEIGHT + MISSILE_HEIGHT - 1
+.tall:  add a,TORPEDO_HEIGHT - 1 ; patched for a twin (torpedo.asm)
+.span:  cp TORPEDO_HEIGHT + MISSILE_HEIGHT - 1
         ret nc
         ld hl,(torp_x)          ; 16 bits: it can hang off an edge
         ld a,(msl_x)
@@ -434,6 +581,17 @@ missile_draw:
         ld d,0
         ; The flame flickers: the long frame, then the short one, every
         ; 2 1/50 seconds (gfx/missile.txt). 32 T-states.
+    IFDEF POWERUPS
+        ld a,(msl_kind)
+        or a
+        jr z,.missile
+        ld hl,heart_tab         ; byte-aligned: DE is 0
+        dec a
+        jr z,.flame
+        ld hl,bubble_tab
+        jr .flame
+.missile:
+    ENDIF
         ld a,(frame_count)
         and 2
         ld hl,missile_right_f0
@@ -521,3 +679,32 @@ missile_restore:
         ld a,(hl)
         ld (de),a
         ret
+
+; The power-ups' pictures, for the data block (main.asm invokes it).
+; The two pictures, 8 by 8, mask then ink a row: the shift-0 entry of a
+; table of shifts, which is all a byte-aligned power-up needs.
+        MACRO POWER_ROW ink
+        db ~(ink) & $FF, ink
+        ENDM
+        MACRO POWER_DATA
+heart_tab:      dw heart_pic
+bubble_tab:     dw bubble_pic
+heart_pic:                      ; the hearts' own heart (data.asm, lives_heart)
+        POWER_ROW %00000000
+        POWER_ROW %01101100
+        POWER_ROW %11111110
+        POWER_ROW %11111110
+        POWER_ROW %01111100
+        POWER_ROW %00111000
+        POWER_ROW %00010000
+        POWER_ROW %00000000
+bubble_pic:                     ; a bubble with two torpedoes in it
+        POWER_ROW %00111100
+        POWER_ROW %01000010
+        POWER_ROW %10111001
+        POWER_ROW %10000001
+        POWER_ROW %10111001
+        POWER_ROW %01000010
+        POWER_ROW %00111100
+        POWER_ROW %00000000
+        ENDM

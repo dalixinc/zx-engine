@@ -66,7 +66,12 @@ until the machine is switched off.
 Shooting scores: 1 for a fish (2 for a piranha, which comes one fish in
 four), 2 for a bomb, 10 for a missile on the
 first levels (each level's row of `CFG_LEVELS` in `config.asm` says).
-Something that runs into him scores nothing. The score and the level
+Something that runs into him scores nothing.
+
+Now and then a power-up sinks from the top instead of a missile coming
+up: a heart is one more life (up to 5), and a bubble gives twin
+torpedoes for 15 seconds (`docs/POWER-UPS.md`; `CFG_POWER_*`,
+`CFG_HEART_ODDS`, `CFG_TWIN_*`, `CFG_LIVES_MAX` in `config.asm`). The score and the level
 are on row 1, beside the hearts. Each level has a target, and each is
 longer than the last. Reaching it puts up a big "LEVEL n" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
@@ -184,13 +189,13 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: a small
 unpacker with the packed loading screen, which it shows at once, then
-the packed game (14,121 bytes in all). The unpacker writes three
-blocks. The cold block at `$6000-$7148` (4,425 bytes) is the menu, the
+the packed game (14,104 bytes in all). The unpacker writes three
+blocks. The cold block at `$6000-$718B` (4,492 bytes) is the menu, the
 level codes, start-up, the diver's death, each level's look and anything else that runs
 once in a while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The
-instructions are at `$8000-$B37D` (`code_end` is `$B37E`) and must stay
-below the round fish's pictures at `$B5C0-$BC7F` and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CE9A`. The four
+instructions are at `$8000-$B57B` (`code_end` is `$B57C`) and must stay
+below the round fish's pictures at `$B5C0-$BC7F` and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CEF8`. The four
 sprites' shifted copies are built at start-up: the diver's, the
 fish's and the pulsar's at `$CF30-$EFFF`, the spinning wheel's at
 `$71C0-$7FFF`. The buffers that start empty are at `$F300-$F517`,

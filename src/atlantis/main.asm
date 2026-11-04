@@ -84,6 +84,22 @@
     ENDIF
     ENDIF
 
+        ; Power-ups (missile.asm): a heart for a life, a bubble for twin
+        ; torpedoes. Not in the soak, whose script counts its missiles,
+        ; nor in a measurement, which holds its own cases steady.
+        ; MEAS_TWIN measures twin torpedoes on every shot.
+    IFNDEF SOAK
+    IFNDEF MEASURE
+        DEFINE POWERUPS
+    ENDIF
+    ENDIF
+    IFDEF POWERUPS
+        DEFINE TWIN_SHOT
+    ENDIF
+    IFDEF MEAS_TWIN
+        DEFINE TWIN_SHOT
+    ENDIF
+
     IFDEF MEASURE
         IFNDEF MEAS_STATS
 MEAS_STATS      equ 0
@@ -198,6 +214,11 @@ boot:
     ENDIF
         ENDM
 
+    IFDEF SLACK_LINES
+        IFNDEF SLACK_WARMUP
+SLACK_WARMUP    equ 0
+        ENDIF
+    ENDIF
 main_loop:
         ; The spare-scanline count already waited for the interrupt at
         ; the end of the previous step. Clear the flag now, so this
@@ -224,9 +245,8 @@ main_loop:
         ; (below) can say how many spare scanlines the frame has.
         ; -DSLACK_WARMUP=n ignores the first n loops, which is how the
         ; "diver on the bottom" measurement skips the dive down.
-        IFNDEF SLACK_WARMUP
-SLACK_WARMUP    equ 0
-        ENDIF
+        ; (SLACK_WARMUP's default is set above main_loop: a label here
+        ; would start a new scope for main_loop's local labels.)
         ld hl,(slack_loops)
         inc hl
         ld (slack_loops),hl
@@ -364,6 +384,7 @@ SLACK_WARMUP    equ 0
         ; on screen.
         ld a,(torp_vn)          ; drawn after the copy: TORP_LOW is set
         rla
+.torp_rc1:                     ; patched for a twin (torpedo.asm, twin_words)
         call c,torpedo_restore
     IFNDEF NO_WHEEL
         ld a,(wheel_late)
@@ -389,6 +410,7 @@ fish_rest_call:
         ld a,(torp_vn)          ; 1 or 2: drawn before the copy
         dec a
         cp 2
+.torp_rc2:                     ; patched for a twin (torpedo.asm, twin_words)
         call c,torpedo_restore
         ld a,(diver_late)
         or a
@@ -399,6 +421,7 @@ fish_rest_call:
         ld a,(torp_vn)          ; 1 or 2: drawn before the copy
         dec a
         cp 2
+.torp_rc3:                     ; patched for a twin (torpedo.asm, twin_words)
         call c,torpedo_restore
         ld a,(diver_late)
         or a
@@ -470,6 +493,7 @@ boom_hook:
         ; even when the diver is late: the order is the same either way.
         ld a,(torp_on)
         dec a                   ; TORP_HIGH is 1
+.torp_dc1:                     ; patched for a twin (torpedo.asm, twin_words)
         call z,torpedo_draw
     IFNDEF NO_WHEEL
         ld a,(wheel_first)
@@ -939,6 +963,7 @@ draw_late:
         ld a,(torp_on)
         rla                     ; TORP_LOW is bit 7
         ret nc
+.torp_dc2:                     ; patched for a twin (torpedo.asm, twin_words)
         jp torpedo_draw
 
     IFNDEF NO_WHEEL
@@ -1070,6 +1095,12 @@ data_start:
         INCLUDE "../../gfx/torpedo.asm"
         INCLUDE "../../gfx/missile.asm"
         SILO_DATA               ; silo.asm
+    IFDEF POWERUPS
+        POWER_DATA              ; missile.asm: the heart and the bubble
+    ENDIF
+    IFDEF TWIN_SHOT
+        TWIN_DATA               ; torpedo.asm: what a twin patches
+    ENDIF
 data_end:
 
         ; The raw art that preshift reads once, at start-up, goes in the

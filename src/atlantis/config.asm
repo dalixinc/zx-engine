@@ -137,6 +137,24 @@ CFG_MISSILE_ARM      equ 25
 ; water is about 150 pixels: 2 takes a second and a half, 3 one second.
 CFG_MISSILE_SPEED    equ 2
 
+; --- Power-ups (missile.asm, torpedo.asm) --------------------------------------
+; Now and then the missile's turn brings a power-up instead: it sinks
+; from below the hearts, in a column near the diver, and he takes it by
+; touching it. Torpedoes pass through it. It is gone at the weed.
+;   the heart     one more life, up to CFG_LIVES_MAX
+;   the bubble    twin torpedoes: for CFG_TWIN_TIME seconds each shot is
+;                 two torpedoes, one above the other, and hits anything
+;                 in that taller band
+; Only from level CFG_POWER_LEVEL on (1 = from the start). Each time a
+; missile ends, the next turn is a heart CFG_HEART_ODDS times in 256 and
+; a bubble CFG_TWIN_ODDS times in 256; otherwise a missile.
+CFG_POWER_LEVEL      equ 1
+CFG_HEART_ODDS       equ 32      ; about one turn in 8
+CFG_TWIN_ODDS        equ 12      ; about one turn in 21
+CFG_POWER_SPEED      equ 1       ; pixels it sinks per 1/50 second
+CFG_LIVES_MAX        equ 5       ; hearts on row 1 at most (up to 9)
+CFG_TWIN_TIME        equ 15      ; seconds of twin torpedoes
+
 ; --- Score and levels (score.asm) ---------------------------------------------
 ; The levels, one row each, in order:
 ;   points   what this level needs, on top of the last level's target

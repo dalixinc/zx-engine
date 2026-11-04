@@ -415,8 +415,8 @@ torpedo_fish:
         ld a,(torp_y)
 torpedo_fish_y:
         sub FISH_SWIM_Y
-        add a,1
-        cp FISH_HEIGHT + 1      ; torpedo is 2 rows tall
+.tall:  add a,TORPEDO_HEIGHT - 1 ; patched for a twin (torpedo.asm)
+.span:  cp FISH_HEIGHT + TORPEDO_HEIGHT - 1 ; torpedo is 2 rows tall
         ret nc
         ld hl,(torp_x)
         ld a,(fish_x)

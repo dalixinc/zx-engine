@@ -55,7 +55,14 @@ hit_flash:      db 0            ; steps of red border left; 0 = the heartbeat
 ; row 1 only changes on a hit, so the sprites can photograph it like
 ; water. Lost lives go from the right.
 LIVES_ROW       equ 1
-LIVES_COL       equ 32 - CFG_LIVES
+; A heart power-up can bring him up to CFG_LIVES_MAX, so with power-ups
+; there are that many cells. The soak has none, and keeps CFG_LIVES.
+    IFDEF POWERUPS
+LIVES_CELLS     equ CFG_LIVES_MAX
+    ELSE
+LIVES_CELLS     equ CFG_LIVES
+    ENDIF
+LIVES_COL       equ 32 - LIVES_CELLS
 LIVES_SCREEN    equ SCREEN + LIVES_ROW * 32 + LIVES_COL
 
 ;------------------------------------------------------------------------------
@@ -148,7 +155,7 @@ lives_draw:
         ld a,(lives)
         ld c,a                  ; hearts still to draw
         ld hl,LIVES_SCREEN
-        ld b,CFG_LIVES
+        ld b,LIVES_CELLS
 .cell:  push bc
         push hl
         ld de,lives_heart
