@@ -14,14 +14,15 @@ it, the **housekeeping** brief (PR #23).
 |---|---|
 | `$4000-$5AFF` | screen |
 | `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
-| `$6000-$713D` | **cold block** (4,414 bytes): menu, level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
-| `$713E-$71BF` | free (130) |
+| `$6000-$7148` | **cold block** (4,425 bytes): menu, level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
+| `$7149-$71BF` | free (119) |
 | `$71C0-$7FFF` | the spinning wheel's shifted pictures (built at start-up) |
-| `$8000-$B350` | code (`code_end` `$B351`) |
-| `$B351-$BC7F` | free (2,351) |
+| `$8000-$B37D` | code (`code_end` `$B37E`) |
+| `$B37E-$B5BF` | free (578) |
+| `$B5C0-$BC7F` | the round fish's shifted pictures (`RFISH_BUF`, 1,728, built at start-up; the tape build only, `TWO_FISH`: builds with the stat line and the soak have their code here instead) |
 | `$BC80-$C3FF` | the diver's two still pictures with the jet's other phase (`JET_BUF`, 1,920, built at start-up; the soak build has its code here instead) |
-| `$C400-$CDC2` | data: graphics, tables, `data.asm` (`data_end` `$CDC3`) |
-| `$CDC3-$CF2F` | free (365) |
+| `$C400-$CE9A` | data: graphics, tables, `data.asm`, and the round fish's raw art (`data_end` `$CE9B`) |
+| `$CE9B-$CF2F` | free (149) |
 | `$CF30-$E5AF` | the diver's shifted pictures (5,760, built at start-up) |
 | `$E5B0-$EC6F` | the fish's shifted pictures (built at start-up) |
 | `$EC70-$EFFF` | the pulsar's shifted pictures (built at start-up) |
@@ -46,7 +47,7 @@ build if any of them runs into the next thing up.
 While the tape loads, two more things sit in memory for a moment: the
 unpacker and the packed loading screen from the page after `cold_end`
 (`$7200-$78E0`), and the packed game from the page after `data_end`
-(`$CE00-$FB63`). Start-up builds the shifted pictures over both.
+(`$CF00-$FD27`). Start-up builds the shifted pictures over both.
 
 ## The squeeze brief: free bytes, before and after
 

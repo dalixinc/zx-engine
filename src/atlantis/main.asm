@@ -72,6 +72,18 @@
     ENDIF
     ENDIF
 
+        ; Two fish, the piranha and the round one (boom.asm,
+        ; fish_kind_pick). The round one's shifted pictures take 1,728
+        ; bytes below the jet's, and only the tape's code is short enough
+        ; to leave that room: a build with the stat line (every test
+        ; build) or the soak keeps the piranha alone. Both fish are 16 by
+        ; 9, so the draw costs the same whichever is drawn.
+    IFNDEF SOAK
+    IFNDEF STATS
+        DEFINE TWO_FISH
+    ENDIF
+    ENDIF
+
     IFDEF MEASURE
         IFNDEF MEAS_STATS
 MEAS_STATS      equ 0
@@ -1045,6 +1057,12 @@ soak_end:
 data_start:
         INCLUDE "data.asm"
         INCLUDE "../../gfx/fish_raw.asm"   ; shifted at start-up (preshift.asm)
+        INCLUDE "../../gfx/rfish_raw.asm"  ; the round fish, likewise (TWO_FISH)
+    IFDEF TWO_FISH
+        ; Its art is read once at start-up, but the cold block has no
+        ; room left for it, so it is with the data.
+        RFISH_ART
+    ENDIF
         INCLUDE "../../gfx/diver_raw.asm"  ; shifted at start-up, likewise
         INCLUDE "../../gfx/wheel_raw.asm"  ; the pulsar, likewise
         INCLUDE "../../gfx/wheel_spin.asm"
@@ -1095,6 +1113,9 @@ COLD_LENGTH     equ cold_end - COLD_START
         ASSERT code_end <= DATA_START, "instructions have run into the pictures"
     IFDEF DIVER_JET
         ASSERT code_end <= JET_BUF, "instructions have run into the jet's still pictures"
+    ENDIF
+    IFDEF TWO_FISH
+        ASSERT code_end <= RFISH_BUF, "instructions have run into the round fish's pictures"
     ENDIF
         ASSERT data_end <= PRESHIFT_START, "pictures have run into the diver's, the fish's and the pulsar's shifted copies"
         ASSERT COLD_START - 1 == 24575, "the BASIC's CLEAR 24575 (loader.asm) must sit just below the cold block"

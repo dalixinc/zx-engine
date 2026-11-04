@@ -518,7 +518,7 @@ fish_draw_fast:
         call fast_save
 
         call fish_image_index
-        ld hl,fish_images
+.img:   ld hl,fish_images       ; or rfish_images: fish_kind_pick patches it
         call sprite_image
         call fast_pick
         jp fast_draw

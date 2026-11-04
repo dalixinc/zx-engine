@@ -66,6 +66,7 @@ boom_reset:
         ld (fish_rest_call+1),hl
         ld hl,stats_prepare
         ld (boom_hook+1),hl
+        call fish_kind_pick
         jp fish_unhold
 
         HOT
@@ -200,7 +201,42 @@ fish_wait_step:
         ld (fish_wave_p),a      ; a wave starts again at the middle
         ld hl,fish_draw_fast
         ld (fish_draw_call+1),hl
+        call fish_kind_pick
         jp fish_unhold
+
+;------------------------------------------------------------------------------
+; fish_kind_pick - which fish this one is: the piranha one time in four,
+; else the round one. Called when a fish appears (a new game, and each
+; new fish after one has gone), never while one swims, so the frame does
+; not pay for it: it patches the draw's picture table (fish_draw_fast.img),
+; and the draw reads the same number of bytes for either. A piranha
+; scores twice the level's fish points (torpedo_fish). Its own shift
+; register, not wheel_rng: the soak counts on that one's order.
+; Without TWO_FISH (the soak, and builds with the stat line) every fish
+; is the piranha. Corrupts: AF, HL
+;------------------------------------------------------------------------------
+fish_kind_pick:
+    IFDEF TWO_FISH
+        ld a,(fish_seed)
+        srl a                   ; the same Galois step as wheel_rng
+        jr nc,.keep
+        xor $B8
+.keep:  ld (fish_seed),a
+        and 3                   ; 0: a piranha, one time in four
+        ld hl,fish_images
+        ld a,1
+        jr z,.got
+        ld hl,rfish_images
+        xor a
+.got:   ld (fish_draw_fast.img + 1),hl
+        ld (fish_piranha),a
+    ENDIF
+        ret
+
+    IFDEF TWO_FISH
+fish_seed:      db 99           ; not 0: an LFSR at 0 stays there
+fish_piranha:   db 1            ; 1 = this fish is the piranha
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; boom_at_bomb - the bomb has just been removed. Burst where it was.
@@ -397,7 +433,17 @@ torpedo_fish_y:
         cp 22                   ; 15 + TORPEDO_WIDTH
         ret nc
         call torpedo_spent
+    IFDEF TWO_FISH
+        ld a,(fish_piranha)
+        or a
         ld a,(level_pts_fish)
+        jr z,.pts
+        add a,a                 ; a piranha scores twice (BCD; LEVEL_ROW keeps it under 50)
+        daa
+.pts:
+    ELSE
+        ld a,(level_pts_fish)
+    ENDIF
         call score_add          ; a shot fish scores; one that bumps him does not
         ld a,(wheel_phase)
         or a

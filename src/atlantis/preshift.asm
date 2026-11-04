@@ -63,6 +63,13 @@ DIVER_RAW_PIC   equ DIVER_HEIGHT * DIVER_RAW * 2       ; one picture of art
 JET_BUF         equ DATA_START - JET_SHIFTED
     ENDIF
 
+; The round fish (TWO_FISH, boom.asm): its 4 pictures just below the
+; jet's. Drawn every frame, so above $8000.
+    IFDEF TWO_FISH
+        PRESHIFT_SIZE RFISH_SHIFTED, RFISH_PICS, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
+RFISH_BUF       equ JET_BUF - RFISH_SHIFTED
+    ENDIF
+
 ; One job per sprite, for preshift_all.
         MACRO PRESHIFT_JOB src?, buf?, pics?, rows?, wide?, raw?
         dw src?, buf?
@@ -73,6 +80,9 @@ preshift_jobs:
     IFDEF DIVER_JET
         ; First: its art is a copy in DIVER_BUF, which the next job fills.
         PRESHIFT_JOB DIVER_BUF, JET_BUF, 2, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
+    ENDIF
+    IFDEF TWO_FISH
+        PRESHIFT_JOB rfish_src, RFISH_BUF, RFISH_PICS, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
     ENDIF
         PRESHIFT_JOB diver_src, DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
         PRESHIFT_JOB fish_src, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW
@@ -449,6 +459,10 @@ jet_shifts:
     ENDIF
         PRESHIFT_TABLES fish_images, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW
         ASSERT pst_a == FISH_BUF + FISH_SHIFTED, "the fish's tables and preshift disagree"
+    IFDEF TWO_FISH
+        PRESHIFT_TABLES rfish_images, RFISH_BUF, RFISH_PICS, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
+        ASSERT pst_a == JET_BUF, "the round fish's tables and preshift disagree"
+    ENDIF
         PRESHIFT_TABLES wheel_images, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW
         ASSERT pst_a == WHEEL_BUF + WHEEL_SHIFTED, "the pulsar's tables and preshift disagree"
         PRESHIFT_TABLES wspin_images, WSPIN_BUF, WSPIN_PICS, WSPIN_HEIGHT, WSPIN_WIDE, WSPIN_RAW
