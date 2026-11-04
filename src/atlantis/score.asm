@@ -64,6 +64,7 @@ level_rows = 0
         ASSERT fspeed >= 0 && fspeed <= 255
         ASSERT fmove == MOVE_WAVE || fspeed == 0, "a straight fish keeps the old speed: fspeed 0"
         ASSERT border == BORDER_BEAT || (border >= 0 && border <= 7)
+        ASSERT pfish <= 49, "a piranha scores twice the fish's points: keep them under 50"
         ASSERT pfish >= 0 && pfish <= 99 && pbomb >= 0 && pbomb <= 99 && pmsl >= 0 && pmsl <= 99, "points are one BCD byte: 0 to 99"
         IF level_rows == 0
         ; The soak plays level 1 and its frame numbers expect the old game.

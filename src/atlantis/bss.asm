@@ -64,7 +64,7 @@ bss_ptr = bss_ptr + (size?)
         BSS code_in, 3                  ; a typed code, as 24 bits
 
 ; --- what the torpedo, the missile, the fish, the diver and a burst cover
-        BSS torp_save, 4                ; row 0 bytes 0 and 1, then row 1 bytes 0 and 1
+        BSS torp_save, 8                ; row 0 bytes 0 and 1, then row 1 bytes 0 and 1; 4-7 a twin's second torpedo
         BSS msl_save, MSL_ROWS * 2
         BSS fish_bg, BG_DATA + FISH_BYTES * FISH_HEIGHT
         BSS diver_bg, BG_DATA + DIVER_BYTES * DIVER_HEIGHT

@@ -63,9 +63,17 @@ plays a death knell, then the game goes back to the menu, which says
 GAME OVER with your score. The menu always shows the high score, kept
 until the machine is switched off.
 
-Shooting scores: 1 for a fish, 2 for a bomb, 10 for a missile on the
+Shooting scores: 1 for a fish (2 for a piranha, which comes one fish in
+four), 2 for a bomb, 10 for a missile on the
 first levels (each level's row of `CFG_LEVELS` in `config.asm` says).
-Something that runs into him scores nothing. The score and the level
+Something that runs into him scores nothing.
+
+Now and then a power-up sinks from the top instead of a missile coming
+up, slower than the diver can dive: a heart is one more life (up to 5), and a bubble gives the double
+shot for 30 seconds: fire again while a torpedo is still running, and
+two are out at once; a bubble beside the hearts shows it, and a
+falling jingle says it has run out (`docs/POWER-UPS.md`; `CFG_POWER_*`,
+`CFG_HEART_ODDS`, `CFG_DOUBLE_*`, `CFG_LIVES_MAX` in `config.asm`). The score and the level
 are on row 1, beside the hearts. Each level has a target, and each is
 longer than the last. Reaching it puts up a big "LEVEL n" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
@@ -183,13 +191,13 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: a small
 unpacker with the packed loading screen, which it shows at once, then
-the packed game (13,517 bytes in all). The unpacker writes three
-blocks. The cold block at `$6000-$713D` (4,414 bytes) is the menu, the
+the packed game (14,345 bytes in all). The unpacker writes three
+blocks. The cold block at `$6000-$7168` (4,457 bytes) is the menu, the
 level codes, start-up, the diver's death, each level's look and anything else that runs
 once in a while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The
-instructions are at `$8000-$B350` (`code_end` is `$B351`) and must stay
-below the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CDC2`. The four
+instructions are at `$8000-$B803` (`code_end` is `$B804`) and must stay
+below half the round fish's pictures at `$B920-$BC7F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CDC2`. The four
 sprites' shifted copies are built at start-up: the diver's, the
 fish's and the pulsar's at `$CF30-$EFFF`, the spinning wheel's at
 `$71C0-$7FFF`. The buffers that start empty are at `$F300-$F517`,

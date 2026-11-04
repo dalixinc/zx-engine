@@ -239,3 +239,38 @@ green at 50 and 25, and Engine Demo 1 is byte-identical.
 
 The loading screen (`tools/mkloadscreen.py`) reads the Atlantis copies
 too, so its fish are piranhas and its bombs the new burst and ring.
+
+## Two fish
+
+The piranha and the old round fish take turns: when a fish appears (a
+new game, and each new fish after one has gone), `fish_kind_pick`
+(boom.asm) makes it the piranha one time in four, else the round fish.
+A piranha scores twice the level's fish points (2 on levels 1 to 9), the
+round fish the level's (1). `LEVEL_ROW` asserts the fish points are under
+50, so the doubled BCD byte fits.
+
+- **No frame time.** The pick runs only when a fish appears. It patches
+  the operand of `ld hl,fish_images` in `fish_draw_fast`, the same way
+  the bomb switches between the pulsar and the wheel, and both fish are
+  16 by 9, so the draw reads the same bytes either way. The score is
+  read only when a shot lands.
+- **Its own random sequence.** A second Galois LFSR (seed 99), not the
+  bomb's `wheel_rng`, whose order the soak's script counts on. 63 of its
+  255 values pick the piranha.
+- **Memory.** The round fish's art is `gfx/fish.txt`, Engine Demo 1's,
+  unchanged, turned into `gfx/rfish_raw.asm`. Its 4 shifted pictures
+  (1,728 bytes) are built at start-up at `$B5C0-$BC7F`, just below the
+  jet's, above `$8000` because they are drawn every frame. Its raw art
+  (144 bytes) and pointer tables (72) are in the data block: the cold
+  block had no room. Code 45 bytes. `code_end` `$B37E` (578 free below
+  the round fish), `data_end` `$CE9B` (149 free), `cold_end` `$7149`
+  (119 free). The tape is 14,121 bytes.
+- **The tape build only.** Every test build carries the stat line and
+  ends past `$B5C0`, so `TWO_FISH` is defined only without the stat line
+  and outside the soak. Those builds have the piranha alone, as before.
+  Their timing is the tape's: the draw does not depend on which fish it
+  is.
+- **Checked in Fuse** with the diver made unhittable (a scratch copy),
+  holding his depth on the fish's row and firing: both kinds appear,
+  the first piranha scored 2, and the score rose through odd totals, so
+  the round fish scores 1. Engine Demo 1 is byte-identical.

@@ -55,7 +55,14 @@ hit_flash:      db 0            ; steps of red border left; 0 = the heartbeat
 ; row 1 only changes on a hit, so the sprites can photograph it like
 ; water. Lost lives go from the right.
 LIVES_ROW       equ 1
-LIVES_COL       equ 32 - CFG_LIVES
+; A heart power-up can bring him up to CFG_LIVES_MAX, so with power-ups
+; there are that many cells. The soak has none, and keeps CFG_LIVES.
+    IFDEF POWERUPS
+LIVES_CELLS     equ CFG_LIVES_MAX
+    ELSE
+LIVES_CELLS     equ CFG_LIVES
+    ENDIF
+LIVES_COL       equ 32 - LIVES_CELLS
 LIVES_SCREEN    equ SCREEN + LIVES_ROW * 32 + LIVES_COL
 
 ;------------------------------------------------------------------------------
@@ -148,7 +155,7 @@ lives_draw:
         ld a,(lives)
         ld c,a                  ; hearts still to draw
         ld hl,LIVES_SCREEN
-        ld b,CFG_LIVES
+        ld b,LIVES_CELLS
 .cell:  push bc
         push hl
         ld de,lives_heart
@@ -170,4 +177,21 @@ lives_draw:
         jr z,.next
         dec c
 .next:  djnz .cell
+    IFDEF POWERUPS
+        ; The double shot's bubble, a cell of water away from the hearts,
+        ; while it lasts; water when not.
+        ld hl,LIVES_SCREEN - 2
+        ld de,double_glyph
+        ld a,(double_on)
+        or a
+        jr nz,.dbl
+        ld de,lives_heart + 8
+.dbl:   ld b,8
+.dline: ld a,(de)
+        ld (hl),a
+        inc de
+        inc h
+        djnz .dline
+        ASSERT LIVES_COL - 2 >= HUD_LEN, "the double shot's bubble would cover the score line"
+    ENDIF
         ret

@@ -72,6 +72,34 @@
     ENDIF
     ENDIF
 
+        ; Two fish, the piranha and the round one (boom.asm,
+        ; fish_kind_pick). The round one's shifted pictures take 1,728
+        ; bytes below the jet's, and only the tape's code is short enough
+        ; to leave that room: a build with the stat line (every test
+        ; build) or the soak keeps the piranha alone. Both fish are 16 by
+        ; 9, so the draw costs the same whichever is drawn.
+    IFNDEF SOAK
+    IFNDEF STATS
+        DEFINE TWO_FISH
+    ENDIF
+    ENDIF
+
+        ; Power-ups (missile.asm): a heart for a life, a bubble for the
+        ; double shot (two torpedoes out at once, torpedo.asm). Not in the soak, whose script counts its missiles,
+        ; nor in a measurement, which holds its own cases steady.
+        ; MEAS_DOUBLE measures the double shot: every shot may be a second.
+    IFNDEF SOAK
+    IFNDEF MEASURE
+        DEFINE POWERUPS
+    ENDIF
+    ENDIF
+    IFDEF POWERUPS
+        DEFINE DOUBLE_SHOT
+    ENDIF
+    IFDEF MEAS_DOUBLE
+        DEFINE DOUBLE_SHOT
+    ENDIF
+
     IFDEF MEASURE
         IFNDEF MEAS_STATS
 MEAS_STATS      equ 0
@@ -186,6 +214,11 @@ boot:
     ENDIF
         ENDM
 
+    IFDEF SLACK_LINES
+        IFNDEF SLACK_WARMUP
+SLACK_WARMUP    equ 0
+        ENDIF
+    ENDIF
 main_loop:
         ; The spare-scanline count already waited for the interrupt at
         ; the end of the previous step. Clear the flag now, so this
@@ -212,9 +245,8 @@ main_loop:
         ; (below) can say how many spare scanlines the frame has.
         ; -DSLACK_WARMUP=n ignores the first n loops, which is how the
         ; "diver on the bottom" measurement skips the dive down.
-        IFNDEF SLACK_WARMUP
-SLACK_WARMUP    equ 0
-        ENDIF
+        ; (SLACK_WARMUP's default is set above main_loop: a label here
+        ; would start a new scope for main_loop's local labels.)
         ld hl,(slack_loops)
         inc hl
         ld (slack_loops),hl
@@ -352,6 +384,7 @@ SLACK_WARMUP    equ 0
         ; on screen.
         ld a,(torp_vn)          ; drawn after the copy: TORP_LOW is set
         rla
+.torp_rc1:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         call c,torpedo_restore
     IFNDEF NO_WHEEL
         ld a,(wheel_late)
@@ -377,6 +410,7 @@ fish_rest_call:
         ld a,(torp_vn)          ; 1 or 2: drawn before the copy
         dec a
         cp 2
+.torp_rc2:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         call c,torpedo_restore
         ld a,(diver_late)
         or a
@@ -387,6 +421,7 @@ fish_rest_call:
         ld a,(torp_vn)          ; 1 or 2: drawn before the copy
         dec a
         cp 2
+.torp_rc3:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         call c,torpedo_restore
         ld a,(diver_late)
         or a
@@ -458,6 +493,7 @@ boom_hook:
         ; even when the diver is late: the order is the same either way.
         ld a,(torp_on)
         dec a                   ; TORP_HIGH is 1
+.torp_dc1:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         call z,torpedo_draw
     IFNDEF NO_WHEEL
         ld a,(wheel_first)
@@ -582,6 +618,7 @@ fish_mv:
         ld a,(input_state)
         and IN_FIRE
         call nz,torpedo_fire
+.msl_uc1:                      ; patched while the double shot lasts (missile.asm)
         call missile_update
     IFNDEF NO_WHEEL
         call update_wheel
@@ -589,6 +626,7 @@ fish_mv:
         ; Before hit_check: a bomb that was shot first is already gone.
         ld a,(torp_on)
         or a
+.torp_hc1:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         call nz,torpedo_hit
         call hit_check
         jp c,death_hit          ; the game stops while he dies (death.asm)
@@ -864,12 +902,14 @@ fish_mv2:
         ld a,(input_state)
         and IN_FIRE
         call nz,torpedo_fire
+.msl_uc2:                      ; patched while the double shot lasts (missile.asm)
         call missile_update
     IFNDEF NO_WHEEL
         call update_wheel
     IFNDEF SOAK
         ld a,(torp_on)
         or a
+.torp_hc2:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         call nz,torpedo_hit
         call hit_check
         ret c
@@ -927,6 +967,7 @@ draw_late:
         ld a,(torp_on)
         rla                     ; TORP_LOW is bit 7
         ret nc
+.torp_dc2:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         jp torpedo_draw
 
     IFNDEF NO_WHEEL
@@ -1017,6 +1058,16 @@ meas_max2:      db 0
 meas_zeros2:    dw 0
     ENDIF
 
+        ; The round fish's raw art and pointer tables (TWO_FISH). The art
+        ; is read once at start-up, but the cold block has no room left,
+        ; and in the data block it would push data_end, and so the packed
+        ; tape that loads in the page after it, past the ROM's UDGs.
+        INCLUDE "../../gfx/rfish_raw.asm"
+    IFDEF TWO_FISH
+        RFISH_ART
+        RFISH_TABLES            ; preshift.asm
+    ENDIF
+
 code_end:
 CODE_LENGTH     equ code_end - code_start
 
@@ -1095,6 +1146,10 @@ COLD_LENGTH     equ cold_end - COLD_START
         ASSERT code_end <= DATA_START, "instructions have run into the pictures"
     IFDEF DIVER_JET
         ASSERT code_end <= JET_BUF, "instructions have run into the jet's still pictures"
+    ENDIF
+    IFDEF TWO_FISH
+        ASSERT code_end <= RFISH_BUF, "instructions have run into the round fish's pictures"
+        ASSERT BSS_END <= RFISH_HI, "the run-time buffers have run into the round fish's pictures"
     ENDIF
         ASSERT data_end <= PRESHIFT_START, "pictures have run into the diver's, the fish's and the pulsar's shifted copies"
         ASSERT COLD_START - 1 == 24575, "the BASIC's CLEAR 24575 (loader.asm) must sit just below the cold block"

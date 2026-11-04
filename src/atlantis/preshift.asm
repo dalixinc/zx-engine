@@ -63,6 +63,22 @@ DIVER_RAW_PIC   equ DIVER_HEIGHT * DIVER_RAW * 2       ; one picture of art
 JET_BUF         equ DATA_START - JET_SHIFTED
     ENDIF
 
+; The round fish (TWO_FISH, boom.asm): its 4 pictures just below the
+; jet's. Drawn every frame, so above $8000.
+    IFDEF TWO_FISH
+        PRESHIFT_SIZE RFISH_SHIFTED, RFISH_PICS, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
+; In two halves, each its two pictures facing one way: the pointer
+; tables let them be anywhere. The left-facing pair just below the
+; jet's (RFISH_BUF); the right-facing pair at the top of the room above
+; the run-time buffers, up to BSS_LIMIT (RFISH_HI), which is uncontended
+; too and free in the tape build. That gives the code 864 bytes.
+RFISH_HALF      equ RFISH_SHIFTED / 2
+RFISH_RAW_PIC   equ RFISH_HEIGHT * RFISH_RAW * 2       ; one picture of art
+RFISH_BUF       equ JET_BUF - RFISH_HALF
+RFISH_HI        equ BSS_LIMIT - RFISH_HALF
+        ASSERT RFISH_PICS == 4 && RFISH_FRAMES == 2, "the round fish's halves are 2 pictures each
+    ENDIF
+
 ; One job per sprite, for preshift_all.
         MACRO PRESHIFT_JOB src?, buf?, pics?, rows?, wide?, raw?
         dw src?, buf?
@@ -73,6 +89,10 @@ preshift_jobs:
     IFDEF DIVER_JET
         ; First: its art is a copy in DIVER_BUF, which the next job fills.
         PRESHIFT_JOB DIVER_BUF, JET_BUF, 2, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
+    ENDIF
+    IFDEF TWO_FISH
+        PRESHIFT_JOB rfish_src, RFISH_HI, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
+        PRESHIFT_JOB rfish_src + 2 * RFISH_RAW_PIC, RFISH_BUF, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
     ENDIF
         PRESHIFT_JOB diver_src, DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
         PRESHIFT_JOB fish_src, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW
@@ -463,3 +483,14 @@ wspin_seq:
         ASSERT WSPIN_WIDTH == WHEEL_WIDTH && WSPIN_HEIGHT == WHEEL_HEIGHT, "both bombs share the draw, so they are one size"
         ASSERT WSPIN_WIDE == WHEEL_WIDE, "both bombs share wheel_shift_bytes"
         ASSERT WSPIN_FRAMES == WHEEL_FRAMES, "both bombs' animations are WHEEL_FRAMES steps"
+
+; The round fish's tables, in the code block (main.asm, before code_end).
+        MACRO RFISH_TABLES
+rfish_images:
+        PRESHIFT_INDEX rfish_shifts, RFISH_PICS
+rfish_shifts:
+        PRESHIFT_SHIFTS RFISH_HI, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
+        ASSERT pst_a == BSS_LIMIT, "the round fish's right-facing tables and preshift disagree"
+        PRESHIFT_SHIFTS RFISH_BUF, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
+        ASSERT pst_a == JET_BUF, "the round fish's left-facing tables and preshift disagree"
+        ENDM

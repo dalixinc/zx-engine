@@ -167,6 +167,13 @@ snd_op_tone:
 snd_tune_level:
         db 20, 5, 15, 5, 12, 5, 10, 10, 12, 4, 10, 20, 0
 
+; A power-up taken: C5, E5, G5, quick, and C6 held.
+snd_tune_power:
+        db 15, 3, 12, 3, 10, 3, 8, 10, 0
+; The double shot run out: the other way down, G5, E5, C5, and G4 held.
+snd_tune_down:
+        db 10, 3, 12, 3, 15, 3, 20, 10, 0
+
 ; The torpedo's laser (CFG_LASER). A tune counts down a note before it
 ; plays it, so a one-tick first note is never heard. The lead-in is
 ; that note: it is used up on the step that fires, which then plays the
