@@ -43,6 +43,7 @@ WATER_ATTR      equ BRIGHT | WHITE | (BLUE << 3)
 ; not the sand: it is the eight letters printed at column 12. The wheel
 ; puts this byte back when it moves off those cells.
 TITLE_ATTR      equ BRIGHT | YELLOW | (BLUE << 3)
+TITLE_LOW_ATTR  equ BRIGHT | BLACK | (BLUE << 3)   ; the title's bottom halves
 ; GAME OVER on the menu. White on red stands out from the yellow title.
 GAME_OVER_ATTR  equ BRIGHT | WHITE | (RED << 3)
 ; The "LEVEL n" banner's blocks (score.asm): yellow cells on the blue sea.

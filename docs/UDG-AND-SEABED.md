@@ -49,8 +49,9 @@ written over them before they are read. The packed game now ends at
 
 ## 2. The title
 
-ATLANTIS in tall letters, rows 2 and 3, centred (columns 12 to 19), in
-the title's yellow. Each letter is 7 pixels wide and 16 tall, square and
+ATLANTIS in tall letters, rows 2 and 3, centred (columns 12 to 19):
+the top halves in the title's yellow, the bottom halves in black, so
+the colour changes on the stencil cut. Each letter is 7 pixels wide and 16 tall, square and
 chunky with three-pixel strokes, and a one-pixel stencil cut runs
 across every letter at the same height, for an 80s computer look. The
 drawing code (`title_draw`, `menu.asm`) is in the cold block.

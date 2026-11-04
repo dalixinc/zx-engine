@@ -208,8 +208,9 @@ menu_print_score:
 
 ;------------------------------------------------------------------------------
 ; title_draw - ATLANTIS in the tall letters (udg.asm), rows 2 and 3,
-; columns 12 to 19, in the title's colour. Each letter is 16 rows: the
-; top 8 in row 2, the bottom 8 in row 3.
+; columns 12 to 19: the top halves in the title's yellow, the bottom
+; halves in black. Each letter is 16 rows: the top 8 in row 2, the
+; bottom 8 in row 3.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 TITLE_ROW       equ 2
@@ -238,12 +239,16 @@ title_draw:
         ld a,c
         cp TITLE_COL + 8
         jr c,.char
-        ; The colour, both rows.
+        ; The colours: the top halves yellow, the bottom halves black.
+        ; The stencil cut is the first line of row 3, so the change of
+        ; colour falls on it.
         ld hl,ATTRS + TITLE_ROW * 32 + TITLE_COL
+        ld c,TITLE_ATTR
         call .attrs
         ld hl,ATTRS + (TITLE_ROW + 1) * 32 + TITLE_COL
+        ld c,TITLE_LOW_ATTR
 .attrs: ld b,8
-.attr:  ld (hl),TITLE_ATTR
+.attr:  ld (hl),c
         inc l
         djnz .attr
         ret
