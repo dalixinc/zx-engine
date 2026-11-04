@@ -62,19 +62,33 @@ torp_dir:       db FACE_RIGHT   ; also the picture: facing * TORPEDO_FRAMES
 torp_tab:       dw 0            ; the 8 shifted pictures for this facing
 torp_r0:        dw 0            ; screen address of its top row, column 0
 torp_r1:        dw 0            ; and of its second row
-    IFDEF TWIN_SHOT
-torp_r2:        dw 0            ; a twin's second torpedo: its two rows
-torp_r3:        dw 0
-torp_twin:      db 0            ; 1 = the routines are patched for a twin
-twin_on:        db 0            ; 1 = a bubble was taken: twins until twin_until
-twin_until:     dw 0            ; frame_count when twin torpedoes run out
-    ENDIF
-
 ; What the last draw covered. torp_vn is the bytes per row on screen
 ; (1 or 2), with TORP_LOW added when it was drawn after the copy, or 0
 ; when nothing is on screen. Restore clears it.
 torp_vn:        db 0
 torp_vcol:      db 0            ; first column on screen
+TORP_STATE      equ $ - torp_on ; one torpedo, torp_on to here
+
+    IFDEF DOUBLE_SHOT
+; The double shot's second torpedo: the same block, the same layout,
+; T2_OFF bytes on. Its save is torp_save + 4.
+t2_on:          db 0
+t2_x:           dw 0
+t2_y:           db 0
+t2_dir:         db 0
+t2_tab:         dw 0
+t2_r0:          dw 0
+t2_r1:          dw 0
+t2_vn:          db 0
+t2_vcol:        db 0
+T2_OFF          equ t2_on - torp_on
+        ASSERT $ - t2_on == TORP_STATE && t2_x - t2_on == torp_x - torp_on && t2_y - t2_on == torp_y - torp_on && t2_dir - t2_on == torp_dir - torp_on && t2_tab - t2_on == torp_tab - torp_on && t2_r0 - t2_on == torp_r0 - torp_on && t2_r1 - t2_on == torp_r1 - torp_on && t2_vn - t2_on == torp_vn - torp_on && t2_vcol - t2_on == torp_vcol - torp_on, "the second torpedo's block is not laid out as the first's"
+        ASSERT torp_x == torp_on + 1 && torp_y == torp_on + 3 && torp_dir == torp_on + 4, "t2_swap swaps torp_on to torp_dir as three words"
+torp_two:       db 0            ; 1 = main_loop is patched for two
+double_on:      db 0            ; 1 = a bubble was taken: two at once until double_until
+double_until:   dw 0            ; frame_count when the double shot runs out
+t2_fresh:       db 0            ; 1 = just handed over: it has moved this step
+    ENDIF
 ; torp_save: in bss.asm (zeroed at start-up, not on the tape)  ; row 0 bytes 0 and 1, then row 1 bytes 0 and 1
 fire_ready:     dw 0            ; frame_count at which the next launch is allowed
 
@@ -91,12 +105,15 @@ torpedo_fire:
         sbc hl,de
         ret c                   ; not yet: this costs nothing on frames
                                 ; fire is up, because we are not called
-        ld a,(torp_on)
-        or a
-        ret nz
         ld a,(input_prev)
         and IN_FIRE
         ret nz                  ; held from before: not a new press
+        ld a,(torp_on)
+        or a
+    IFDEF DOUBLE_SHOT
+        call nz,double_hand     ; Z: the running one went to the second slot
+    ENDIF
+        ret nz
 
         ld a,(diver_facing)
         ld (torp_dir),a
@@ -133,22 +150,26 @@ torpedo_fire:
         inc hl
         ld d,(hl)
         ld (torp_r1),de
-    IFDEF TWIN_SHOT
-        call twin_launch        ; one torpedo or two: rows r2, r3, the patches
-    ENDIF
 
         ; Above the weed or in it. It keeps this row, so this is decided
         ; once. It appears at the mouth this step and moves on the next.
         ld a,(torp_y)
-.bottom:
-        add a,TORPEDO_HEIGHT - 1 ; patched: a twin's bottom is TWIN_DY lower
+        add a,TORPEDO_HEIGHT - 1
         cp BACK_ROW * 8
         ld a,TORP_HIGH
         jr c,.on
         ld a,TORP_LOW
 .on:    ld (torp_on),a
-        ld hl,(frame_count)
+    IFDEF DOUBLE_SHOT
+        call double_live        ; (it corrupts DE)
         ld de,CFG_FIRE_COOLDOWN
+        jr z,.cool
+        ld de,CFG_DOUBLE_COOLDOWN ; the double shot: the next can follow soon
+.cool:
+    ELSE
+        ld de,CFG_FIRE_COOLDOWN
+    ENDIF
+        ld hl,(frame_count)
         add hl,de
         ld (fire_ready),hl
     IFNDEF NO_SOUND
@@ -158,72 +179,163 @@ torpedo_fire:
     ENDIF
 
 ;------------------------------------------------------------------------------
-; Twin torpedoes (a power-up, missile.asm). A twin is the torpedo and a
-; second one TWIN_DY rows below it, moving as one: the same x, the same
-; picture, its own two row addresses (torp_r2, torp_r3) and save bytes.
-; A plain torpedo must not pay for it, so nothing tests for a twin on
-; the frame. The launch patches instead: main_loop's three calls to
-; torpedo_restore and two to torpedo_draw go to the twin's routines, and
-; the hit tests' heights (the bomb, a missile, the fish, and the weed
-; test above) grow by TWIN_DY. The patches change only when a launch
-; changes between one and two, and a launch only happens once the last
-; torpedo has been restored. A hit anywhere in the band, the gap
-; included, counts.
+; The double shot (a power-up, missile.asm): for CFG_DOUBLE_TIME seconds
+; he can fire again while a torpedo is still running, so two can be out.
+;
+; The running one is handed to a second slot (t2_*, the same block T2_OFF
+; on) and a fresh one leaves the gun as the first. The second is drawn
+; and put back by the same macros at that offset (t2_draw, t2_restore).
+; It moves and hits through the first one's own routines: t2_swap
+; exchanges the bytes those read (torp_on to torp_dir) for the call.
+;
+; A single torpedo must not pay for any of it, so nothing tests for a
+; second one on the frame. While one exists, torp_two_set patches
+; main_loop instead: its three restores, two draws and two hit calls
+; (labelled .torp_rc1-3, .torp_dc1-2, .torp_hc1-2 there) are made
+; unconditional and go to the "both" routines below, which test each
+; torpedo. When the second has gone and been put back, hit_both
+; patches them back.
 ;------------------------------------------------------------------------------
-TWIN_DY         equ 4
-
-    IFDEF TWIN_SHOT
-; Called by torpedo_fire with torp_y set. Corrupts: AF, BC, DE, HL
-twin_launch:
-    IFDEF MEAS_TWIN
-        ld a,1                  ; measurement: every shot a twin
-    ELSE
-        ld a,(twin_on)
-        or a
-        jr z,.set
-        ld hl,(frame_count)
-        ld de,(twin_until)
-        or a
-        sbc hl,de
-        ld a,1
-        bit 7,h
-        jr nz,.set              ; before twin_until: still twins
+    IFDEF DOUBLE_SHOT
+; From torpedo_fire, with a torpedo running (NZ). Out: Z if it went to
+; the second slot and a new one may leave; NZ if not.
+; Corrupts: AF, BC, DE, HL
+double_hand:
+        ld a,(t2_on)
+        ld hl,t2_vn
+        or (hl)
+        ret nz                  ; the second slot is busy, or not put back yet
+        call double_live
+        jr nz,.yes
+        or 1                    ; NZ: no double shot now
+        ret
+.yes:   ld hl,torp_on           ; the running one, as it is on the screen,
+        ld de,t2_on             ; becomes the second
+        ld bc,TORP_STATE
+        ldir
+        ld hl,torp_save
+        ld de,torp_save + 4
+        ld bc,4
+        ldir
         xor a
-        ld (twin_on),a          ; run out
-    ENDIF
-.set:   call torp_twin_set
-        ld a,(torp_twin)
-        or a
-        ret z
-        ld a,(torp_y)
-        add a,TWIN_DY
-        ld l,a
-        ld h,0
-        add hl,hl
-        ld de,ROW_TABLE
-        add hl,de
-        ld e,(hl)
-        inc hl
-        ld d,(hl)
-        inc hl
-        ld (torp_r2),de
-        ld e,(hl)
-        inc hl
-        ld d,(hl)
-        ld (torp_r3),de
+        ld (torp_vn),a          ; the first has nothing on the screen now
+        ld (torp_on),a
+        inc a
+        ld (t2_fresh),a         ; it moved this step already
+        call torp_two_set       ; A = 1
+        xor a                   ; Z
         ret
 
-        COLD
-; A = 0 one torpedo, 1 a twin. Patches only on a change, so it runs at
-; a launch that changes, not every frame: in the cold block.
-; Corrupts: AF, C, DE, HL
-torp_twin_set:
-        ld hl,torp_twin
+; Out: NZ while the double shot lasts. Clears double_on when it has run
+; out. Corrupts: AF, DE, HL
+double_live:
+    IFDEF MEAS_DOUBLE
+        or 1                    ; measurement: always
+        ret
+    ELSE
+        ld a,(double_on)
+        or a
+        ret z
+        ld hl,(frame_count)
+        ld de,(double_until)
+        or a
+        sbc hl,de
+        bit 7,h
+        ret nz                  ; before double_until
+        xor a
+        ld (double_on),a        ; run out: Z
+        ret
+    ENDIF
+
+; Exchange torp_on..torp_dir (and torp_tab's low byte, put back the same
+; way) with the second torpedo's. 216 T-states. Corrupts: DE, HL
+t2_swap:
+        ld hl,(torp_on)
+        ld de,(t2_on)
+        ld (torp_on),de
+        ld (t2_on),hl
+        ld hl,(torp_on + 2)
+        ld de,(t2_on + 2)
+        ld (torp_on + 2),de
+        ld (t2_on + 2),hl
+        ld hl,(torp_on + 4)
+        ld de,(t2_on + 4)
+        ld (torp_on + 4),de
+        ld (t2_on + 4),hl
+        ret
+
+; main_loop's hit calls, patched. The first's hit as before, then the
+; second's move and hit (it moves here, after the bomb, not with the
+; first: the same step either way). Corrupts: AF, BC, DE, HL
+hit_both:
+        ld a,(torp_on)
+        or a
+        call nz,torpedo_hit
+        ld a,(t2_on)
+        or a
+        jr z,.gone
+        call t2_swap
+        ld hl,t2_fresh          ; (t2_fresh is outside the swap)
+        ld a,(hl)
+        ld (hl),0
+        or a
+        call z,torpedo_move
+        ld a,(torp_on)
+        or a
+        call nz,torpedo_hit
+        jp t2_swap
+.gone:  ld a,(t2_vn)
+        or a
+        ret nz                  ; still on the screen: put back next frame
+        jp torp_two_set         ; A = 0: one torpedo again
+
+; main_loop's restores, patched: the second first, the reverse of the draws.
+restore_low_both:
+        ld a,(t2_vn)
+        rla
+        call c,t2_restore
+        ld a,(torp_vn)
+        rla
+        ret nc
+        jp torpedo_restore
+restore_high_both:
+        ld a,(t2_vn)
+        dec a
+        cp 2
+        call c,t2_restore
+        ld a,(torp_vn)
+        dec a
+        cp 2
+        ret nc
+        jp torpedo_restore
+; main_loop's draws, patched.
+draw_high_both:
+        ld a,(torp_on)
+        dec a
+        call z,torpedo_draw
+        ld a,(t2_on)
+        dec a
+        ret nz
+        jp t2_draw
+draw_low_both:
+        ld a,(torp_on)
+        rla
+        call c,torpedo_draw
+        ld a,(t2_on)
+        rla
+        ret nc
+        jp t2_draw
+
+; A = 0 one torpedo, 1 two. Patches only on a change: at a hand-over
+; and when the second has gone, not every frame. (The cold block has no
+; room left for it.) Corrupts: AF, C, DE, HL
+torp_two_set:
+        ld hl,torp_two
         cp (hl)
         ret z
         ld (hl),a
         ld c,a
-        ld hl,twin_bytes
+        ld hl,double_bytes
 .byte:  ld e,(hl)
         inc hl
         ld d,(hl)
@@ -235,7 +347,7 @@ torp_twin_set:
         inc hl
         bit 0,c
         jr z,.b1
-        ld a,(hl)               ; a twin's
+        ld a,(hl)               ; two's
 .b1:    inc hl
         ld (de),a
         jr .byte
@@ -263,12 +375,21 @@ torp_twin_set:
         inc hl
         inc hl
         jr .words
-        HOT
 
-        ; Each patched operand holds the one-torpedo value as built.
-        ASSERT {main_loop.torp_rc1 + 1} == torpedo_restore && {fish_rest_call.torp_rc2 + 1} == torpedo_restore && {fish_rest_call.torp_rc3 + 1} == torpedo_restore, "a torp_rc label is not on a call to torpedo_restore"
-        ASSERT {boom_hook.torp_dc1 + 1} == torpedo_draw && {draw_late.torp_dc2 + 1} == torpedo_draw, "a torp_dc label is not on a call to torpedo_draw"
-        ASSERT TORP_RIGHT_X >= 0 && TWIN_DY >= TORPEDO_HEIGHT + 1, "a twin's torpedoes would touch"
+        ; What each patched site holds as built (DOUBLE_DATA below).
+OP_CALL         equ $CD
+OP_CALL_C       equ $DC
+OP_CALL_Z       equ $CC
+OP_CALL_NZ      equ $C4
+OP_RET_NC       equ $D0
+OP_NOP          equ $00
+        ASSERT ({main_loop.torp_rc1} & $FF) == OP_CALL_C && {main_loop.torp_rc1 + 1} == torpedo_restore, ".torp_rc1 is not CALL C,torpedo_restore"
+        ASSERT ({fish_rest_call.torp_rc2} & $FF) == OP_CALL_C && {fish_rest_call.torp_rc2 + 1} == torpedo_restore, ".torp_rc2 is not CALL C,torpedo_restore"
+        ASSERT ({fish_rest_call.torp_rc3} & $FF) == OP_CALL_C && {fish_rest_call.torp_rc3 + 1} == torpedo_restore, ".torp_rc3 is not CALL C,torpedo_restore"
+        ASSERT ({boom_hook.torp_dc1} & $FF) == OP_CALL_Z && {boom_hook.torp_dc1 + 1} == torpedo_draw, ".torp_dc1 is not CALL Z,torpedo_draw"
+        ASSERT ({draw_late.torp_dc2 - 1} & $FF) == OP_RET_NC && {draw_late.torp_dc2 + 1} == torpedo_draw, ".torp_dc2 is not RET NC : JP torpedo_draw"
+        ASSERT ({fish_mv.torp_hc1} & $FF) == OP_CALL_NZ && {fish_mv.torp_hc1 + 1} == torpedo_hit, ".torp_hc1 is not CALL NZ,torpedo_hit"
+        ASSERT ({fish_mv2.torp_hc2} & $FF) == OP_CALL_NZ && {fish_mv2.torp_hc2 + 1} == torpedo_hit, ".torp_hc2 is not CALL NZ,torpedo_hit"
     ENDIF
 
 ;------------------------------------------------------------------------------
@@ -350,7 +471,7 @@ torpedo_hit:
         ld a,(wheel_y)
         sub b
         add a,-TORP_Y_LO
-.yspan: cp TORP_Y_SPAN          ; patched: TWIN_DY more for a twin
+.yspan: cp TORP_Y_SPAN
         jp nc,torpedo_fish
 
         call wheel_remove
@@ -362,25 +483,23 @@ torpedo_hit:
 ;------------------------------------------------------------------------------
 ; torpedo_restore - put back the bytes the last draw covered
 ; main_loop calls this only when torp_vn says something is on screen.
-; torp_restore_lo is the same for a twin's second torpedo (rows r2, r3,
-; save bytes 4 to 7), and leaves torp_vn for torpedo_restore to clear.
+; t2_restore is the same for the double shot's second torpedo (its
+; block T2_OFF on, save bytes 4 to 7).
 ; Corrupts: AF, B, C, DE, HL
 ;------------------------------------------------------------------------------
-        MACRO TORP_RESTORE r0?, r1?, base?, clear?
-        ld a,(torp_vn)
+        MACRO TORP_RESTORE o?, base?
+        ld a,(torp_vn + o?)
         and $7F
         ld b,a                  ; 1 or 2 bytes a row
-      IF clear?
         xor a
-        ld (torp_vn),a
-      ENDIF
-        ld a,(torp_vcol)
+        ld (torp_vn + o?),a
+        ld a,(torp_vcol + o?)
         ld c,a
-        ld hl,(r0?)             ; a row address has the low five bits clear,
+        ld hl,(torp_r0 + o?)             ; a row address has the low five bits clear,
         ld a,l                  ; so OR puts the column in
         or c
         ld l,a
-        ld de,(r1?)
+        ld de,(torp_r1 + o?)
         ld a,e
         or c
         ld e,a
@@ -400,13 +519,10 @@ torpedo_hit:
         ENDM
 
 torpedo_restore:
-        TORP_RESTORE torp_r0, torp_r1, 0, 1
-    IFDEF TWIN_SHOT
-torp_restore_lo:
-        TORP_RESTORE torp_r2, torp_r3, 4, 0
-torpedo_restore_twin:
-        call torp_restore_lo
-        jp torpedo_restore
+        TORP_RESTORE 0, 0
+    IFDEF DOUBLE_SHOT
+t2_restore:
+        TORP_RESTORE T2_OFF, 4
     ENDIF
 
 ;------------------------------------------------------------------------------
@@ -427,12 +543,12 @@ torpedo_restore_twin:
         ld (de),a
         ENDM
 
-; The draw is a macro so a twin's second torpedo (rows r2 and r3, save
-; bytes 4 to 7) is the same code: torp_draw_lo. tsb is the save base
-; TORP_BYTE uses, set before each copy.
-        MACRO TORP_DRAW r0?, r1?
+; The draw is a macro so the double shot's second torpedo (its block
+; T2_OFF on, save bytes 4 to 7) is the same code: t2_draw. tsb is the
+; save base TORP_BYTE uses, set before each copy.
+        MACRO TORP_DRAW o?
         ; The picture for this shift.
-        ld hl,(torp_x)
+        ld hl,(torp_x + o?)
         ld a,l
         and 7
         ld c,a                  ; C = shift
@@ -440,7 +556,7 @@ torpedo_restore_twin:
         ld e,a
         ld d,0
         ld b,h                  ; B = high byte of x: 0, or $FF off the left
-        ld hl,(torp_tab)
+        ld hl,(torp_tab + o?)
         add hl,de
         ld e,(hl)
         inc hl
@@ -450,7 +566,7 @@ torpedo_restore_twin:
         ld a,b
         or a
         jr nz,.off_left         ; x is -7..-1: column -1
-        ld a,(torp_x)
+        ld a,(torp_x + o?)
         rrca
         rrca
         rrca
@@ -466,14 +582,14 @@ torpedo_restore_twin:
         ; Two bytes a row, both on screen.
         ld a,2
         call .record
-        ld de,(r0?)
+        ld de,(torp_r0 + o?)
         ld a,e
         or b
         ld e,a
         TORP_BYTE 0
         inc e
         TORP_BYTE 1
-        ld de,(r1?)
+        ld de,(torp_r1 + o?)
         ld a,e
         or b
         ld e,a
@@ -504,7 +620,7 @@ torpedo_restore_twin:
 .one:   ; One byte a row. B = column, C = image bytes to skip after it.
         ld a,1
         call .record
-        ld de,(r0?)
+        ld de,(torp_r0 + o?)
         ld a,e
         or b
         ld e,a
@@ -514,7 +630,7 @@ torpedo_restore_twin:
         ld l,a
         jr nc,.row1
         inc h
-.row1:  ld de,(r1?)
+.row1:  ld de,(torp_r1 + o?)
         ld a,e
         or b
         ld e,a
@@ -525,25 +641,22 @@ torpedo_restore_twin:
         ; with TORP_LOW added when this is the draw after the copy.
 .record:
         ld e,a
-        ld a,(torp_on)
+        ld a,(torp_on + o?)
         and TORP_LOW
         or e
-        ld (torp_vn),a
+        ld (torp_vn + o?),a
         ld a,b
-        ld (torp_vcol),a
+        ld (torp_vcol + o?),a
         ret
         ENDM
 
 tsb = 0
 torpedo_draw:
-        TORP_DRAW torp_r0, torp_r1
-    IFDEF TWIN_SHOT
+        TORP_DRAW 0
+    IFDEF DOUBLE_SHOT
 tsb = 4
-torp_draw_lo:
-        TORP_DRAW torp_r2, torp_r3
-torpedo_draw_twin:
-        call torpedo_draw
-        jp torp_draw_lo
+t2_draw:
+        TORP_DRAW T2_OFF
     ENDIF
 
         COLD
@@ -556,37 +669,47 @@ torpedo_reset:
         ld (torp_vn),a
         ld (fire_ready),a
         ld (fire_ready+1),a
-    IFDEF TWIN_SHOT
-        ld (twin_on),a
-        jp torp_twin_set        ; A = 0: the plain routines back
+    IFDEF DOUBLE_SHOT
+        ld (t2_on),a
+        ld (t2_vn),a
+        ld (double_on),a
+        jp torp_two_set         ; A = 0: the plain routines back
     ELSE
         ret
     ENDIF
         HOT
 
-; The twin's patch tables, for the data block (main.asm invokes it).
-        MACRO TWIN_DATA
-; Byte operands: where, one torpedo, a twin. Then 0.
-twin_bytes:
-        dw torpedo_fire.bottom + 1
-        db TORPEDO_HEIGHT - 1, TORPEDO_HEIGHT - 1 + TWIN_DY
-        dw torpedo_hit.yspan + 1
-        db TORP_Y_SPAN, TORP_Y_SPAN + TWIN_DY
-        dw missile_shot.tall + 1
-        db TORPEDO_HEIGHT - 1, TORPEDO_HEIGHT - 1 + TWIN_DY
-        dw missile_shot.span + 1
-        db TORPEDO_HEIGHT + MISSILE_HEIGHT - 1, TORPEDO_HEIGHT + MISSILE_HEIGHT - 1 + TWIN_DY
-        dw torpedo_fish_y.tall + 1
-        db TORPEDO_HEIGHT - 1, TORPEDO_HEIGHT - 1 + TWIN_DY
-        dw torpedo_fish_y.span + 1
-        db FISH_HEIGHT + TORPEDO_HEIGHT - 1, FISH_HEIGHT + TORPEDO_HEIGHT - 1 + TWIN_DY
+; The double shot's patch tables. In the code block: the data block's
+; end decides where the packed tape loads, and that has no room left.
+        MACRO DOUBLE_DATA
+; Opcode bytes: where, one torpedo, two. Then 0.
+double_bytes:
+        dw main_loop.torp_rc1
+        db OP_CALL_C, OP_CALL
+        dw fish_rest_call.torp_rc2
+        db OP_CALL_C, OP_CALL
+        dw fish_rest_call.torp_rc3
+        db OP_CALL_C, OP_CALL
+        dw boom_hook.torp_dc1
+        db OP_CALL_Z, OP_CALL
+        dw draw_late.torp_dc2 - 1
+        db OP_RET_NC, OP_NOP
+        dw fish_mv.torp_hc1
+        db OP_CALL_NZ, OP_CALL
+        dw fish_mv2.torp_hc2
+        db OP_CALL_NZ, OP_CALL
         dw 0
-; Call operands in main_loop (labelled there): where, one, a twin. Then 0.
-twin_words:
-        dw main_loop.torp_rc1 + 1, torpedo_restore, torpedo_restore_twin
-        dw fish_rest_call.torp_rc2 + 1, torpedo_restore, torpedo_restore_twin
-        dw fish_rest_call.torp_rc3 + 1, torpedo_restore, torpedo_restore_twin
-        dw boom_hook.torp_dc1 + 1, torpedo_draw, torpedo_draw_twin
-        dw draw_late.torp_dc2 + 1, torpedo_draw, torpedo_draw_twin
+; Call operands: where, one torpedo, two. Then 0.
+double_words:
+        dw main_loop.torp_rc1 + 1, torpedo_restore, restore_low_both
+        dw fish_rest_call.torp_rc2 + 1, torpedo_restore, restore_high_both
+        dw fish_rest_call.torp_rc3 + 1, torpedo_restore, restore_high_both
+        dw boom_hook.torp_dc1 + 1, torpedo_draw, draw_high_both
+        dw draw_late.torp_dc2 + 1, torpedo_draw, draw_low_both
+        dw fish_mv.torp_hc1 + 1, torpedo_hit, hit_both
+        dw fish_mv2.torp_hc2 + 1, torpedo_hit, hit_both
         dw 0
         ENDM
+    IFDEF DOUBLE_SHOT
+        DOUBLE_DATA
+    ENDIF

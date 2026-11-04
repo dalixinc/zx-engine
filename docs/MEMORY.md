@@ -14,21 +14,22 @@ it, the **housekeeping** brief (PR #23).
 |---|---|
 | `$4000-$5AFF` | screen |
 | `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
-| `$6000-$718B` | **cold block** (4,492 bytes): menu, level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
-| `$718C-$71BF` | free (52) |
+| `$6000-$7161` | **cold block** (4,450 bytes): menu, level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
+| `$7162-$71BF` | free (94) |
 | `$71C0-$7FFF` | the spinning wheel's shifted pictures (built at start-up) |
-| `$8000-$B57B` | code (`code_end` `$B57C`) |
-| `$B57C-$B5BF` | free (68) |
-| `$B5C0-$BC7F` | the round fish's shifted pictures (`RFISH_BUF`, 1,728, built at start-up; the tape build only, `TWO_FISH`: builds with the stat line and the soak have their code here instead) |
+| `$8000-$B6D0` | code (`code_end` `$B6D1`), with the power-ups' pictures and the double shot's patch tables |
+| `$B6D1-$B91F` | free (591) |
+| `$B920-$BC7F` | the round fish's left-facing shifted pictures (`RFISH_BUF`, 864, built at start-up; the tape build only, `TWO_FISH`: builds with the stat line and the soak have their code here instead) |
 | `$BC80-$C3FF` | the diver's two still pictures with the jet's other phase (`JET_BUF`, 1,920, built at start-up; the soak build has its code here instead) |
-| `$C400-$CEF8` | data: graphics, tables, `data.asm`, the round fish's raw art, the power-ups' pictures and the twin's patch tables (`data_end` `$CEF9`) |
-| `$CEF9-$CF2F` | free (55) |
+| `$C400-$CE9A` | data: graphics, tables, `data.asm`, the round fish's raw art (`data_end` `$CE9B`) |
+| `$CE9B-$CF2F` | free (149; but past `$CEFF` the packed tape moves up a page and no longer fits) |
 | `$CF30-$E5AF` | the diver's shifted pictures (5,760, built at start-up) |
 | `$E5B0-$EC6F` | the fish's shifted pictures (built at start-up) |
 | `$EC70-$EFFF` | the pulsar's shifted pictures (built at start-up) |
 | `$F000-$F2FF` | scroll buffers |
 | `$F300-$F517` | the buffers that start empty (`bss.asm`, zeroed at start-up) |
-| `$F518-$F8FF` | free (1,000), up to `BSS_LIMIT` `$F900`, which the loader shares. The soak build keeps its title photograph at `$F600-$F8FF` (`SOAK_TITLE`) |
+| `$F559-$F59F` | free (71) |
+| `$F5A0-$F8FF` | the round fish's right-facing shifted pictures (`RFISH_HI`, 864, built at start-up, tape build only), up to `BSS_LIMIT` `$F900`, which the loader shares. The soak build keeps its title photograph at `$F600-$F8FF` (`SOAK_TITLE`) instead |
 | `$FA00-$FB7F` | row table |
 | `$FDFC` down | stack (`STACK_NEED`, 128 bytes, is kept clear above the row table) |
 | `$FDFD`, `$FE00` | `JP isr`, IM2 table |
@@ -47,7 +48,7 @@ build if any of them runs into the next thing up.
 While the tape loads, two more things sit in memory for a moment: the
 unpacker and the packed loading screen from the page after `cold_end`
 (`$7200-$78E0`), and the packed game from the page after `data_end`
-(`$CF00-$FEAE`, 170 bytes below the ROM's UDGs at `$FF58`: the packed tape's limit). Start-up builds the shifted pictures over both.
+(`$CF00-$FF48`, 16 bytes below the ROM's UDGs at `$FF58`: the packed tape's limit). Start-up builds the shifted pictures over both.
 
 ## The squeeze brief: free bytes, before and after
 

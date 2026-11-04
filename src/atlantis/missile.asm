@@ -39,7 +39,7 @@ MSL_SINK        equ 3           ; a power-up, going down
 ; no frame the missile does not already cost.
 MSL_KIND_MISSILE equ 0
 MSL_KIND_HEART  equ 1           ; one more life
-MSL_KIND_TWIN   equ 2           ; twin torpedoes for CFG_TWIN_TIME
+MSL_KIND_DOUBLE equ 2           ; the double shot for CFG_DOUBLE_TIME
 ; It sinks from below the hearts and is gone above the weed, so it is
 ; always drawn before the seabed copy, and always one byte a row: its x
 ; is a multiple of 8, and the water does not scroll.
@@ -367,7 +367,7 @@ power_sink:
 ; A = msl_kind (not 0). Out: carry clear: not a hit.
 power_take:
         dec a
-        jr nz,.twin
+        jr nz,.double
         ld hl,lives
         ld a,(hl)
         cp CFG_LIVES_MAX
@@ -376,12 +376,13 @@ power_take:
         ld hl,hud_dirty
         set HUD_HEARTS,(hl)     ; one more heart on row 1
         jr .done
-.twin:  ld a,1
-        ld (twin_on),a
+.double:
+        ld a,1
+        ld (double_on),a
         ld hl,(frame_count)
-        ld de,CFG_TWIN_TIME * 50
+        ld de,CFG_DOUBLE_TIME * 50
         add hl,de
-        ld (twin_until),hl
+        ld (double_until),hl
 .done:  call missile_gone
     IFNDEF NO_SOUND
         ld hl,snd_tune_power
@@ -392,9 +393,10 @@ power_take:
 
         ASSERT MSL_ROWS == 8, "the power-ups are 8 rows: missile_draw draws MSL_ROWS"
         ASSERT CFG_LIVES_MAX >= CFG_LIVES && CFG_LIVES_MAX <= 9, "CFG_LIVES_MAX: CFG_LIVES to 9"
-        ASSERT CFG_HEART_ODDS + CFG_TWIN_ODDS <= 256
+        ASSERT CFG_HEART_ODDS + CFG_DOUBLE_ODDS <= 256
         ASSERT CFG_POWER_SPEED >= 1 && CFG_POWER_SPEED <= 4
-        ASSERT CFG_TWIN_TIME >= 1 && CFG_TWIN_TIME <= 600, "CFG_TWIN_TIME is seconds, up to 10 minutes"
+        ASSERT CFG_DOUBLE_TIME >= 1 && CFG_DOUBLE_TIME <= 600, "CFG_DOUBLE_TIME is seconds, up to 10 minutes"
+        ASSERT CFG_DOUBLE_COOLDOWN >= 1 && CFG_DOUBLE_COOLDOWN <= CFG_FIRE_COOLDOWN
         ASSERT CFG_POWER_LEVEL >= 1 && CFG_POWER_LEVEL <= 99
     ENDIF
 
@@ -421,8 +423,8 @@ missile_gone:
         ld b,MSL_KIND_HEART
         cp CFG_HEART_ODDS
         jr c,.next
-        inc b                   ; MSL_KIND_TWIN
-        cp CFG_HEART_ODDS + CFG_TWIN_ODDS
+        inc b                   ; MSL_KIND_DOUBLE
+        cp CFG_HEART_ODDS + CFG_DOUBLE_ODDS
         jr c,.next
         ld b,MSL_KIND_MISSILE
 .next:  ld a,b
@@ -518,8 +520,8 @@ missile_shot:
         ld b,a
         ld a,(torp_y)
         sub b
-.tall:  add a,TORPEDO_HEIGHT - 1 ; patched for a twin (torpedo.asm)
-.span:  cp TORPEDO_HEIGHT + MISSILE_HEIGHT - 1
+        add a,TORPEDO_HEIGHT - 1
+        cp TORPEDO_HEIGHT + MISSILE_HEIGHT - 1
         ret nc
         ld hl,(torp_x)          ; 16 bits: it can hang off an edge
         ld a,(msl_x)
@@ -680,7 +682,7 @@ missile_restore:
         ld (de),a
         ret
 
-; The power-ups' pictures, for the data block (main.asm invokes it).
+; The power-ups' pictures. In the code block, as the double shot's tables.
 ; The two pictures, 8 by 8, mask then ink a row: the shift-0 entry of a
 ; table of shifts, which is all a byte-aligned power-up needs.
         MACRO POWER_ROW ink
@@ -698,7 +700,7 @@ heart_pic:                      ; the hearts' own heart (data.asm, lives_heart)
         POWER_ROW %00111000
         POWER_ROW %00010000
         POWER_ROW %00000000
-bubble_pic:                     ; a bubble with two torpedoes in it
+bubble_pic:                     ; a bubble with two torpedoes in it: the double shot
         POWER_ROW %00111100
         POWER_ROW %01000010
         POWER_ROW %10111001
@@ -708,3 +710,6 @@ bubble_pic:                     ; a bubble with two torpedoes in it
         POWER_ROW %00111100
         POWER_ROW %00000000
         ENDM
+    IFDEF POWERUPS
+        POWER_DATA
+    ENDIF

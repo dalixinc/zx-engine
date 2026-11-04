@@ -142,18 +142,23 @@ CFG_MISSILE_SPEED    equ 2
 ; from below the hearts, in a column near the diver, and he takes it by
 ; touching it. Torpedoes pass through it. It is gone at the weed.
 ;   the heart     one more life, up to CFG_LIVES_MAX
-;   the bubble    twin torpedoes: for CFG_TWIN_TIME seconds each shot is
-;                 two torpedoes, one above the other, and hits anything
-;                 in that taller band
+;   the bubble    the double shot: for CFG_DOUBLE_TIME seconds he can
+;                 fire again while a torpedo is still running, so two
+;                 can be out at once
 ; Only from level CFG_POWER_LEVEL on (1 = from the start). Each time a
 ; missile ends, the next turn is a heart CFG_HEART_ODDS times in 256 and
-; a bubble CFG_TWIN_ODDS times in 256; otherwise a missile.
+; a bubble CFG_DOUBLE_ODDS times in 256; otherwise a missile.
 CFG_POWER_LEVEL      equ 1
 CFG_HEART_ODDS       equ 32      ; about one turn in 8
-CFG_TWIN_ODDS        equ 12      ; about one turn in 21
+CFG_DOUBLE_ODDS      equ 12      ; about one turn in 21
 CFG_POWER_SPEED      equ 1       ; pixels it sinks per 1/50 second
 CFG_LIVES_MAX        equ 5       ; hearts on row 1 at most (up to 9)
-CFG_TWIN_TIME        equ 15      ; seconds of twin torpedoes
+CFG_DOUBLE_TIME      equ 30      ; seconds of the double shot
+; The wait between launches while the double shot lasts, in 1/50
+; seconds (CFG_FIRE_COOLDOWN's, which is longer than most torpedoes
+; take to cross, would never let two be out). 10 puts them about 40
+; pixels apart.
+CFG_DOUBLE_COOLDOWN  equ 10
 
 ; --- Score and levels (score.asm) ---------------------------------------------
 ; The levels, one row each, in order:

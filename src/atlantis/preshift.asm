@@ -67,7 +67,16 @@ JET_BUF         equ DATA_START - JET_SHIFTED
 ; jet's. Drawn every frame, so above $8000.
     IFDEF TWO_FISH
         PRESHIFT_SIZE RFISH_SHIFTED, RFISH_PICS, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
-RFISH_BUF       equ JET_BUF - RFISH_SHIFTED
+; In two halves, each its two pictures facing one way: the pointer
+; tables let them be anywhere. The left-facing pair just below the
+; jet's (RFISH_BUF); the right-facing pair at the top of the room above
+; the run-time buffers, up to BSS_LIMIT (RFISH_HI), which is uncontended
+; too and free in the tape build. That gives the code 864 bytes.
+RFISH_HALF      equ RFISH_SHIFTED / 2
+RFISH_RAW_PIC   equ RFISH_HEIGHT * RFISH_RAW * 2       ; one picture of art
+RFISH_BUF       equ JET_BUF - RFISH_HALF
+RFISH_HI        equ BSS_LIMIT - RFISH_HALF
+        ASSERT RFISH_PICS == 4 && RFISH_FRAMES == 2, "the round fish's halves are 2 pictures each
     ENDIF
 
 ; One job per sprite, for preshift_all.
@@ -82,7 +91,8 @@ preshift_jobs:
         PRESHIFT_JOB DIVER_BUF, JET_BUF, 2, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
     ENDIF
     IFDEF TWO_FISH
-        PRESHIFT_JOB rfish_src, RFISH_BUF, RFISH_PICS, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
+        PRESHIFT_JOB rfish_src, RFISH_HI, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
+        PRESHIFT_JOB rfish_src + 2 * RFISH_RAW_PIC, RFISH_BUF, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
     ENDIF
         PRESHIFT_JOB diver_src, DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
         PRESHIFT_JOB fish_src, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW
@@ -460,8 +470,13 @@ jet_shifts:
         PRESHIFT_TABLES fish_images, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW
         ASSERT pst_a == FISH_BUF + FISH_SHIFTED, "the fish's tables and preshift disagree"
     IFDEF TWO_FISH
-        PRESHIFT_TABLES rfish_images, RFISH_BUF, RFISH_PICS, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
-        ASSERT pst_a == JET_BUF, "the round fish's tables and preshift disagree"
+rfish_images:
+        PRESHIFT_INDEX rfish_shifts, RFISH_PICS
+rfish_shifts:
+        PRESHIFT_SHIFTS RFISH_HI, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
+        ASSERT pst_a == BSS_LIMIT, "the round fish's right-facing tables and preshift disagree"
+        PRESHIFT_SHIFTS RFISH_BUF, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
+        ASSERT pst_a == JET_BUF, "the round fish's left-facing tables and preshift disagree"
     ENDIF
         PRESHIFT_TABLES wheel_images, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW
         ASSERT pst_a == WHEEL_BUF + WHEEL_SHIFTED, "the pulsar's tables and preshift disagree"

@@ -84,20 +84,20 @@
     ENDIF
     ENDIF
 
-        ; Power-ups (missile.asm): a heart for a life, a bubble for twin
-        ; torpedoes. Not in the soak, whose script counts its missiles,
+        ; Power-ups (missile.asm): a heart for a life, a bubble for the
+        ; double shot (two torpedoes out at once, torpedo.asm). Not in the soak, whose script counts its missiles,
         ; nor in a measurement, which holds its own cases steady.
-        ; MEAS_TWIN measures twin torpedoes on every shot.
+        ; MEAS_DOUBLE measures the double shot: every shot may be a second.
     IFNDEF SOAK
     IFNDEF MEASURE
         DEFINE POWERUPS
     ENDIF
     ENDIF
     IFDEF POWERUPS
-        DEFINE TWIN_SHOT
+        DEFINE DOUBLE_SHOT
     ENDIF
-    IFDEF MEAS_TWIN
-        DEFINE TWIN_SHOT
+    IFDEF MEAS_DOUBLE
+        DEFINE DOUBLE_SHOT
     ENDIF
 
     IFDEF MEASURE
@@ -384,7 +384,7 @@ main_loop:
         ; on screen.
         ld a,(torp_vn)          ; drawn after the copy: TORP_LOW is set
         rla
-.torp_rc1:                     ; patched for a twin (torpedo.asm, twin_words)
+.torp_rc1:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         call c,torpedo_restore
     IFNDEF NO_WHEEL
         ld a,(wheel_late)
@@ -410,7 +410,7 @@ fish_rest_call:
         ld a,(torp_vn)          ; 1 or 2: drawn before the copy
         dec a
         cp 2
-.torp_rc2:                     ; patched for a twin (torpedo.asm, twin_words)
+.torp_rc2:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         call c,torpedo_restore
         ld a,(diver_late)
         or a
@@ -421,7 +421,7 @@ fish_rest_call:
         ld a,(torp_vn)          ; 1 or 2: drawn before the copy
         dec a
         cp 2
-.torp_rc3:                     ; patched for a twin (torpedo.asm, twin_words)
+.torp_rc3:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         call c,torpedo_restore
         ld a,(diver_late)
         or a
@@ -493,7 +493,7 @@ boom_hook:
         ; even when the diver is late: the order is the same either way.
         ld a,(torp_on)
         dec a                   ; TORP_HIGH is 1
-.torp_dc1:                     ; patched for a twin (torpedo.asm, twin_words)
+.torp_dc1:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         call z,torpedo_draw
     IFNDEF NO_WHEEL
         ld a,(wheel_first)
@@ -625,6 +625,7 @@ fish_mv:
         ; Before hit_check: a bomb that was shot first is already gone.
         ld a,(torp_on)
         or a
+.torp_hc1:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         call nz,torpedo_hit
         call hit_check
         jp c,death_hit          ; the game stops while he dies (death.asm)
@@ -906,6 +907,7 @@ fish_mv2:
     IFNDEF SOAK
         ld a,(torp_on)
         or a
+.torp_hc2:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         call nz,torpedo_hit
         call hit_check
         ret c
@@ -963,7 +965,7 @@ draw_late:
         ld a,(torp_on)
         rla                     ; TORP_LOW is bit 7
         ret nc
-.torp_dc2:                     ; patched for a twin (torpedo.asm, twin_words)
+.torp_dc2:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         jp torpedo_draw
 
     IFNDEF NO_WHEEL
@@ -1095,12 +1097,6 @@ data_start:
         INCLUDE "../../gfx/torpedo.asm"
         INCLUDE "../../gfx/missile.asm"
         SILO_DATA               ; silo.asm
-    IFDEF POWERUPS
-        POWER_DATA              ; missile.asm: the heart and the bubble
-    ENDIF
-    IFDEF TWIN_SHOT
-        TWIN_DATA               ; torpedo.asm: what a twin patches
-    ENDIF
 data_end:
 
         ; The raw art that preshift reads once, at start-up, goes in the
@@ -1147,6 +1143,7 @@ COLD_LENGTH     equ cold_end - COLD_START
     ENDIF
     IFDEF TWO_FISH
         ASSERT code_end <= RFISH_BUF, "instructions have run into the round fish's pictures"
+        ASSERT BSS_END <= RFISH_HI, "the run-time buffers have run into the round fish's pictures"
     ENDIF
         ASSERT data_end <= PRESHIFT_START, "pictures have run into the diver's, the fish's and the pulsar's shifted copies"
         ASSERT COLD_START - 1 == 24575, "the BASIC's CLEAR 24575 (loader.asm) must sit just below the cold block"
