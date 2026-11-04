@@ -101,12 +101,14 @@ soak_f:         db 0            ; 0 up, 1 down. Not $FF: the soak never
 soak_p:         db 0            ; reads the real keyboard for these
 soak_keys:      db 0            ; the 1-2-3-4-5 row, as a mask
 
-; The two photographs are 768 bytes each. They sit in the free room
-; after the game's code (soak_photos, main.asm), which the shipping game
-; leaves empty. $F300, where they used to be, is the run-time buffers'
-; (bss.asm).
+; The two photographs are 768 bytes each. The seabed's sits in the free
+; room after the game's code (soak_photos, main.asm), which the shipping
+; game leaves empty. The title rows' sits just below BSS_LIMIT, above the
+; run-time buffers (bss.asm): the room after the code no longer holds
+; both. Nothing else uses it in a snapshot (the tape's BASIC is
+; assembled there only as scratch).
 SOAK_SNAP       equ soak_photos             ; rows 21-23 after the last blit (main.asm)
-SOAK_TITLE      equ SOAK_SNAP + 24 * 32 ; rows 2, 4 and 5, taken on frame 1
+SOAK_TITLE      equ BSS_LIMIT - 3 * 8 * 32  ; rows 2, 4 and 5, taken on frame 1
 SOAK_BUF_END    equ SOAK_TITLE + 3 * 8 * 32
 soak_ox:        db 0
 soak_oy:        db 0

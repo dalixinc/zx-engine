@@ -2,7 +2,7 @@
 ; level.asm - how each level looks: the bomb's colour and movement, the
 ;             fish's movement and speed, the border
 ;
-; The five numbers are columns of CFG_LEVELS (config.asm), and the
+; The six numbers are columns of CFG_LEVELS (config.asm), and the
 ; three after them are what a shot scores on this level.
 ; level_enter (score.asm) hands them to level_style when a level
 ; starts, by score or by code. Level 1 has the old values, so level 1
@@ -13,8 +13,13 @@
 ;     the drift, but its height follows a wave, not the small bob.
 ;   - fish_wave, the fish: up and down about its usual depth, and a
 ;     little faster across (the level's fspeed).
-; Both run every step, so they are here in the hot code. level_style
-; runs once a level and is in the cold block.
+; Level 4 brings a third, MOVE_HOME:
+;   - wheel_home, the hunter: the drift and its small bob, but while the
+;     bomb is still to the right of the diver its middle drifts towards
+;     his depth, a pixel each time the level's hunt carries out of a
+;     fraction. Once it has passed him it carries straight on.
+; All three run every step, so they are here in the hot code.
+; level_style runs once a level and is in the cold block.
 ;
 ; A wave is a table of 128 heights (data.asm, made from CFG_*_WAVE_AMP
 ; when the game is assembled) and a phase byte, which goes up by
@@ -26,6 +31,7 @@
 level_look:
 level_ink:      db CFG_WHEEL_INK ; the bomb's cell colour (wheel_type)
 level_bmove:    db MOVE_BOB     ; the bomb's movement (wheel_kind)
+level_hunt:     db 0            ; how hard MOVE_HOME hunts (wheel_hunt)
 level_fmove:    db MOVE_STRAIGHT ; the fish's movement
 level_fhaste:   db 0            ; the fish's haste (fish_wave only)
 level_border:   db BORDER_BEAT
@@ -118,6 +124,79 @@ wheel_wave_new:
         ld a,WAVE_LOW_BASE
 .low:   ld (wheel_base),a
         ret
+
+;------------------------------------------------------------------------------
+; wheel_home - update_wheel's kind 2: the drift, hunting the diver's depth
+; While the bomb is right of the diver, the level's hunt (wheel_hunt) is
+; added to a fraction each 1/50 second, and a carry moves the bomb's
+; middle a pixel towards the height that centres it on him. The hunt is
+; 128 at most, so a step (one 1/50 second, or two at 25) carries at
+; most once: with the bob's own pixel the bomb moves at most two pixels
+; up or down. A twelve-pixel picture cannot cross a cell edge at its
+; top and at its bottom within two pixels (they are 3 and 5 apart), so
+; wheel_colours_fast's one-cell row step still follows it. The middle
+; stays between WHEEL_TOP_BASE and WHEEL_LOW_BASE, the spawn table's
+; own limits, so the bob never reaches the score row or the weed.
+; Once the bomb's middle is left of his, wheel_hunting is cleared and
+; the drift carries it on at that height.
+; Cost at 50, before the drift's own: about 240 T-states while hunting
+; (a scanline), 300 on a step that moves it, 55 once it has passed.
+; Level 4's seabed measurement did not move (docs/LEVELS-3-AND-4.md). Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+HOME_AIM        equ (DIVER_HEIGHT - WHEEL_HEIGHT) / 2   ; middles level
+HOME_PASS       equ (DIVER_WIDTH - WHEEL_WIDTH) / 2     ; centres level
+        ASSERT HOME_AIM >= 0 && HOME_PASS >= 0
+
+wheel_home:
+        ld a,(wheel_phase)
+        or a
+        jp z,wheel_drift.waiting
+        ld a,(wheel_hunting)
+        or a
+        jp z,wheel_drift        ; passed him: straight on
+        ld a,(wheel_x + 1)
+        or a
+        jr nz,.hunt             ; 256: a new bomb, off the right edge
+        ld a,(diver_x)
+        add a,HOME_PASS
+        ld b,a
+        ld a,(wheel_x)
+        cp b
+        jr nc,.hunt
+        xor a                   ; passed: hunt no more
+        ld (wheel_hunting),a
+        jp wheel_drift
+.hunt:  ld a,(step_ticks)
+        ld b,a
+        ld a,(wheel_hunt)
+        ld c,a
+        ld a,(wheel_hfrac)
+.add:   add a,c
+        jr c,.carry
+        djnz .add
+        ld (wheel_hfrac),a
+        jp wheel_drift
+.carry: dec b
+        jr z,.frac
+        add a,c                 ; a 25 step's second half: it cannot carry again
+.frac:  ld (wheel_hfrac),a
+        ld a,(diver_y)
+        add a,HOME_AIM
+        ld b,a
+        ld a,(wheel_base)
+        cp b
+        jp z,wheel_drift        ; level with him already
+        jr c,.down
+        cp WHEEL_TOP_BASE + 1
+        jp c,wheel_drift        ; as high as it may go
+        dec a
+        ld (wheel_base),a
+        jp wheel_drift
+.down:  cp WHEEL_LOW_BASE
+        jp nc,wheel_drift       ; as low as it may go
+        inc a
+        ld (wheel_base),a
+        jp wheel_drift
 
 ;------------------------------------------------------------------------------
 ; fish_wave - one 1/50 second of the level 2 fish, in update_fish's place

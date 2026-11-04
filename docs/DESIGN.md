@@ -84,8 +84,8 @@ Not built yet:
 - Explosions.
 - More collisions. Touching the black ground does not kill him; he is
   only held off it.
-- Homing bombs, and smart bombs. The wheel has a kind byte ready for
-  a homing routine. The routine is not written.
+- Smart bombs. (The hunter, a bomb that drifts towards the diver's
+  depth, is in from level 4: `docs/LEVELS-3-AND-4.md`.)
 - Missiles from the silos. The silo picture is still the placeholder.
 - Sharks and jellyfish.
 - Maybe Trigon divers. Whether they are in is still open.

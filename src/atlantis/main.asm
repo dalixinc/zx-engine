@@ -40,6 +40,12 @@
         ; fish.asm reads this. See the FISH_SWIM_Y note in that file.
         DEFINE ATLANTIS
 
+        ; The jet's second still picture (preshift.asm, diver_jet_build).
+        ; The soak's code fills the room it would take.
+    IFNDEF SOAK
+        DEFINE DIVER_JET
+    ENDIF
+
         INCLUDE "../constants.asm"
         INCLUDE "layout.asm"
         INCLUDE "config.asm"
@@ -1015,12 +1021,14 @@ code_end:
 CODE_LENGTH     equ code_end - code_start
 
     IFDEF SOAK
-        ; The soak's two photographs, 768 bytes each, and its own code,
-        ; in the free room after the game's code. The soak is a
-        ; snapshot, never loaded from tape. ($F300, where the photographs
-        ; were, is bss.asm's, and the cold block has no room for the code.)
+        ; The soak's seabed photograph (768 bytes) and its own code, in
+        ; the free room after the game's code. The soak is a snapshot,
+        ; never loaded from tape. Its other photograph, the title rows,
+        ; is above the run-time buffers (SOAK_TITLE, soak.asm): there is
+        ; no longer room for both here. ($F300 is bss.asm's, and the cold
+        ; block has no room for the code.)
 soak_photos:
-        ds 2 * 768
+        ds 768
 soak_photos_end:
 soak_start:
         INCLUDE "soak.asm"
@@ -1085,6 +1093,9 @@ COLD_LENGTH     equ cold_end - COLD_START
         ASSERT WSPIN_BUF_END <= CODE_START, "the spinning wheel has run into the game"
         ASSERT cold_end <= WSPIN_BUF, "the cold block has run into the spinning wheel"
         ASSERT code_end <= DATA_START, "instructions have run into the pictures"
+    IFDEF DIVER_JET
+        ASSERT code_end <= JET_BUF, "instructions have run into the jet's still pictures"
+    ENDIF
         ASSERT data_end <= PRESHIFT_START, "pictures have run into the diver's, the fish's and the pulsar's shifted copies"
         ASSERT COLD_START - 1 == 24575, "the BASIC's CLEAR 24575 (loader.asm) must sit just below the cold block"
         ASSERT SCROLL_BUF_END <= ROW_TABLE, "scroll buffers run into the row table"
@@ -1115,7 +1126,8 @@ COLD_LENGTH     equ cold_end - COLD_START
         ASSERT CFG_WHEEL_WOBBLE == 0, "the soak expects a smooth bob"
         ASSERT CFG_WHEEL_BOB == 6, "the soak expects a swing of 6"
         ASSERT CFG_WHEEL_BOB_SPEED == 1, "the soak expects one sine step per frame"
-        ASSERT SOAK_BUF_END <= soak_photos_end, "the soak's photographs are bigger than the room kept for them"
+        ASSERT SOAK_SNAP + 24 * 32 <= soak_photos_end, "the soak's seabed photograph is bigger than the room kept for it"
+        ASSERT SOAK_TITLE >= BSS_END && SOAK_BUF_END <= BSS_LIMIT, "the soak's title photograph does not fit above the run-time buffers"
     ENDIF
 
         INCLUDE "../loader.asm"
