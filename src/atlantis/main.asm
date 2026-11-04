@@ -1080,7 +1080,7 @@ COLD_LENGTH     equ cold_end - COLD_START
         ASSERT WHEEL_SPEED == 1, "the soak's frame numbers assume 1px per 1/50 second"
         ASSERT WHEEL_GAP == 48, "the soak's frame numbers assume this pause"
         ASSERT WHEEL_BOB == 6, "the sine table is drawn for a swing of 6"
-        ASSERT WHEEL_TOP_BASE == CFG_WHEEL_BOB, "the surface spawn is one swing below the top"
+        ASSERT WHEEL_TOP_BASE == WHEEL_TOP_Y + CFG_WHEEL_BOB, "the surface spawn is one swing below the score row"
         ASSERT WHEEL_LOW_BASE + CFG_WHEEL_BOB + WHEEL_HEIGHT <= BACK_ROW * 8, "the lowest spawn enters the seaweed"
         ASSERT WSPIN_BUF_END <= CODE_START, "the spinning wheel has run into the game"
         ASSERT cold_end <= WSPIN_BUF, "the cold block has run into the spinning wheel"

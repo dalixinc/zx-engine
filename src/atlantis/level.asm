@@ -2,7 +2,8 @@
 ; level.asm - how each level looks: the bomb's colour and movement, the
 ;             fish's movement and speed, the border
 ;
-; The five numbers are the last columns of CFG_LEVELS (config.asm).
+; The five numbers are columns of CFG_LEVELS (config.asm), and the
+; three after them are what a shot scores on this level.
 ; level_enter (score.asm) hands them to level_style when a level
 ; starts, by score or by code. Level 1 has the old values, so level 1
 ; plays exactly as it did: the old bomb, update_fish, the heartbeat.
@@ -20,13 +21,17 @@
 ; CFG_*_WAVE_SPEED each 1/50 second; its top 7 bits pick the height.
 ;==============================================================================
 
-; How this level looks, in CFG_LEVELS' order. level_style fills it.
+; How this level looks and what it scores, in CFG_LEVELS' order.
+; level_style fills it. The points are BCD, for score_add.
 level_look:
 level_ink:      db CFG_WHEEL_INK ; the bomb's cell colour (wheel_type)
 level_bmove:    db MOVE_BOB     ; the bomb's movement (wheel_kind)
 level_fmove:    db MOVE_STRAIGHT ; the fish's movement
 level_fhaste:   db 0            ; the fish's haste (fish_wave only)
 level_border:   db BORDER_BEAT
+level_pts_fish: db $01          ; a shot fish (torpedo_fish)
+level_pts_bomb: db $02          ; a shot bomb (torpedo_hit)
+level_pts_msl:  db $10          ; a shot missile (missile_shot)
 LEVEL_LOOK      equ $ - level_look
 
 fish_mover:     dw update_fish  ; what fish_unhold puts back in the moves
@@ -34,13 +39,18 @@ fish_wave_p:    db 0            ; the fish's place on its wave
 fish_frac:      db 0            ; its haste's fraction of a pixel
 wheel_wave_p:   db 0            ; the bomb's place on its wave
 
-; The bomb's middle stays this far from the top and the seaweed, so the
-; whole wave is in open water.
-WAVE_TOP_BASE   equ CFG_BOMB_WAVE_AMP
+; The bomb's middle stays this far from the score row and the seaweed,
+; so the whole wave is in open water.
+WAVE_TOP_BASE   equ WHEEL_TOP_Y + CFG_BOMB_WAVE_AMP
 WAVE_LOW_BASE   equ BACK_ROW * 8 - WHEEL_HEIGHT - CFG_BOMB_WAVE_AMP
 
         ASSERT CFG_BOMB_WAVE_AMP >= 1 && WAVE_LOW_BASE >= WAVE_TOP_BASE, "the bomb's wave does not fit in the water"
         ASSERT CFG_BOMB_WAVE_SPEED >= 1 && CFG_BOMB_WAVE_SPEED <= 255
+        ; The steepest step of the table is 6/127 of AMP, taken SPEED/2
+        ; times a 1/50 second: 40 keeps it under a pixel, so the colour's
+        ; one-pixel path holds. More would repaint the whole rectangle.
+        ASSERT CFG_BOMB_WAVE_AMP * CFG_BOMB_WAVE_SPEED <= 40, "the bomb's wave is too steep: keep AMP * SPEED at 40 or less"
+        ASSERT LEVEL_LOOK == LEVEL_ROW_BYTES - 6, "level_look is not the tail of a CFG_LEVELS row"
         ASSERT CFG_FISH_WAVE_SPEED >= 1 && CFG_FISH_WAVE_SPEED <= 255
         ASSERT FISH_SWIM_Y - CFG_FISH_WAVE_AMP >= 16, "the fish's wave reaches the hearts' row"
         ASSERT FISH_SWIM_Y + CFG_FISH_WAVE_AMP + FISH_HEIGHT <= BACK_ROW * 8, "the fish's wave reaches the seabed; it is drawn before the blit"
@@ -166,7 +176,7 @@ fish_wave:
 
         COLD
 ;------------------------------------------------------------------------------
-; level_style - HL = the five look bytes of a CFG_LEVELS row
+; level_style - HL = the look and points bytes of a CFG_LEVELS row
 ; Called by level_enter, at a new game and at each new level. The bomb
 ; on the screen keeps its colour and movement: wheel_type gives the next
 ; one the level's. The fish changes at once, and so does the border.

@@ -31,11 +31,15 @@ Row 1 is cleaner because of how the two rows are drawn:
 
 ## 1. Score
 
-| Shot | Points | Setting in `config.asm` |
-|---|---|---|
-| fish | 1 | `CFG_PTS_FISH` |
-| bomb | 2 | `CFG_PTS_BOMB` |
-| missile | 10 | `CFG_PTS_MISSILE` |
+| Shot | Points on levels 1 to 3 |
+|---|---|
+| fish | 1 |
+| bomb | 2 |
+| missile | 10 |
+
+Since the level 2 follow-up these are the last three columns of each
+`CFG_LEVELS` row, so a later level can score differently. They were
+`CFG_PTS_FISH`, `CFG_PTS_BOMB` and `CFG_PTS_MISSILE`.
 
 Points are only scored from the torpedo, in `torpedo_hit`, `torpedo_fish`
 and `missile_shot`. A fish or bomb that runs into the diver goes through
@@ -70,18 +74,19 @@ The score is three bytes of BCD (six digits, low byte first), added with
 `CFG_LEVELS` in `config.asm` has one row per level:
 
 ```
-;          points  gap min  gap max  haste
-LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0
-LEVEL_ROW  300,    70,      185,     24
-LEVEL_ROW  400,    65,      170,     48
+;          points  gap min  gap max  haste  ...
+LEVEL_ROW  n1,     CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, ...
+LEVEL_ROW  n2,     70,      185,     24,    ...
+LEVEL_ROW  n3,     65,      170,     48,    ...
 ...
-LEVEL_ROW  1000,   35,      80,      192
 ```
 
-- **Points** are what that level needs, added to the last target. So
-  level 1 ends at 200, level 2 at 500, and level 3 at 900. The brief's
-  "200, then 300, 400" could also have meant the score reached, but
-  that would make each level shorter than the last.
+(Later briefs added columns: the bomb's kind, how the level looks, and
+what a shot scores. `docs/LEVEL-2.md` has the whole row.)
+
+- **Points** are what that level needs, added to the last target, so
+  each level is longer than the one before. The numbers are in
+  `config.asm` and not repeated here.
 - **Gap min, gap max** are that level's missile wait.
 - **Haste** makes the bombs slightly faster. It is added to a fraction
   every 1/50 second, and each carry is one more pixel. 64 is a quarter
@@ -196,7 +201,7 @@ also scores and redraws digits.
 | File | Change |
 |---|---|
 | `src/atlantis/score.asm` | new: BCD score, levels, row-1 line, banner, high score |
-| `src/atlantis/config.asm` | `CFG_PTS_*`, `CFG_LEVELS`, `CFG_BANNER_TIME` |
+| `src/atlantis/config.asm` | `CFG_PTS_*` (now columns of `CFG_LEVELS`), `CFG_LEVELS`, `CFG_BANNER_TIME` |
 | `src/atlantis/data.asm` | the line's words, the banner font, `level_tab` |
 | `src/atlantis/sound.asm` | tone mode (`snd_op_tone`), `snd_tune_start`, the level jingle |
 | `src/atlantis/wheel.asm` | `wheel_haste`, `wheel_frac` |

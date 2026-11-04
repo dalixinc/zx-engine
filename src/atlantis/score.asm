@@ -2,7 +2,8 @@
 ; score.asm - the score, the levels, and the line that shows them
 ;
 ; Points come only from shots: a fish, a bomb or a missile the torpedo
-; hits (CFG_PTS_*). Something that runs into the diver scores nothing.
+; hits, worth what this level's row of CFG_LEVELS says. Something that
+; runs into the diver scores nothing.
 ;
 ; The score is binary-coded decimal, three bytes, six digits, lowest
 ; byte first. Adding is ADD and DAA a byte at a time, and each digit is
@@ -23,7 +24,8 @@
 ; there is no clash.
 ;
 ; LEVELS. CFG_LEVELS in config.asm is a table: the points each level
-; needs, its missile gap, and how much faster its bombs go. Reaching the
+; needs, its missile gap, how much faster its bombs go, how it looks,
+; and what each shot is worth. Reaching the
 ; target puts up a "LEVEL n" banner for CFG_BANNER_TIME, plays a jingle,
 ; and the next row takes over. After the last row, the last row repeats.
 ; Level 1 is the game as it was, which the soak relies on.
@@ -42,11 +44,12 @@
 ; 1 pixel per 1/50 second; 64 is a quarter faster. Then the bomb's kind
 ; (BOMB_P or BOMB_W). Then the five bytes of how the level looks, in
 ; the order of level_look (level.asm): the bomb's ink and movement, the
-; fish's movement and haste, the border.
-LEVEL_ROW_BYTES equ 11
+; fish's movement and haste, the border. Then the points for a fish, a
+; bomb and a missile, one BCD byte each.
+LEVEL_ROW_BYTES equ 14
 
 level_rows = 0
-        MACRO LEVEL_ROW need, gmin, gmax, haste, bomb, ink, bmove, fmove, fspeed, border
+        MACRO LEVEL_ROW need, gmin, gmax, haste, bomb, ink, bmove, fmove, fspeed, border, pfish, pbomb, pmsl
         ASSERT need >= 1 && need <= 9999, "a level needs 1 to 9999 points"
         ASSERT gmin <= gmax && gmax <= 255 && gmax - gmin + 1 <= 255
         ASSERT haste >= 0 && haste <= 255
@@ -57,6 +60,7 @@ level_rows = 0
         ASSERT fspeed >= 0 && fspeed <= 255
         ASSERT fmove == MOVE_WAVE || fspeed == 0, "a straight fish keeps the old speed: fspeed 0"
         ASSERT border == BORDER_BEAT || (border >= 0 && border <= 7)
+        ASSERT pfish >= 0 && pfish <= 99 && pbomb >= 0 && pbomb <= 99 && pmsl >= 0 && pmsl <= 99, "points are one BCD byte: 0 to 99"
         IF level_rows == 0
         ; The soak plays level 1 and its frame numbers expect the old game.
         ASSERT haste == 0, "level 1's bombs must keep the old speed"
@@ -64,18 +68,16 @@ level_rows = 0
         ASSERT gmin == CFG_MISSILE_GAP_MIN && gmax == CFG_MISSILE_GAP_MAX, "level 1's missile wait is CFG_MISSILE_GAP_*"
         ASSERT ink == CFG_WHEEL_INK && bmove == MOVE_BOB, "level 1's bomb is the old one"
         ASSERT fmove == MOVE_STRAIGHT && border == BORDER_BEAT, "level 1's fish and border are the old ones"
+        ASSERT pfish == 1 && pbomb == 2 && pmsl == 10, "level 1 scores as the old game: 1, 2, 10"
         ENDIF
         db (((need % 100) / 10) << 4) | (need % 10)
         db (((need / 1000) % 10) << 4) | ((need / 100) % 10)
         db gmin, gmax - gmin + 1, haste, bomb
         db ink, bmove, fmove, fspeed, border
+        db ((pfish / 10) << 4) | (pfish % 10)
+        db ((pbomb / 10) << 4) | (pbomb % 10)
+        db ((pmsl / 10) << 4) | (pmsl % 10)
 level_rows = level_rows + 1
-        ENDM
-
-; Points as one BCD byte.
-        MACRO PTS_BCD pts
-        ASSERT pts >= 0 && pts <= 99, "points are one BCD byte"
-        ld a,((pts / 10) << 4) | (pts % 10)
         ENDM
 
 ; Level 2's message stops the game until a key is pressed. Builds

@@ -138,12 +138,6 @@ CFG_MISSILE_ARM      equ 25
 CFG_MISSILE_SPEED    equ 2
 
 ; --- Score and levels (score.asm) ---------------------------------------------
-; Points for each thing the torpedo hits. Something that runs into the
-; diver scores nothing. 0 to 99 each.
-CFG_PTS_FISH        equ 1
-CFG_PTS_BOMB        equ 2
-CFG_PTS_MISSILE     equ 10
-
 ; The levels, one row each, in order:
 ;   points   what this level needs, on top of the last level's target
 ;   gap min, gap max   the missile wait for this level (see above), in
@@ -165,8 +159,12 @@ CFG_PTS_MISSILE     equ 10
 ;            MOVE_STRAIGHT is the old fish and must have 0.
 ;   border   a border colour (BLACK to WHITE), or BORDER_BEAT for the
 ;            heartbeat, the slow round of colours level 1 has.
+; Then what a torpedo scores on this level, 0 to 99 each:
+;   fish, bomb, missile. Something that runs into the diver scores
+;            nothing.
 ; Level 1 is the game as it was: the soak expects that. After the last
-; row, the last row repeats.
+; row, the last row repeats. The level codes depend only on the level's
+; number, so changing a row (its points to finish, too) changes no code.
 BOMB_P              equ 0       ; the pulsar
 BOMB_W              equ 1       ; the spinning wheel
 MOVE_BOB            equ 0       ; bomb: the small bob
@@ -176,16 +174,16 @@ BORDER_BEAT         equ $FF     ; the heartbeat's round of colours
 CFG_L2_INK          equ BRIGHT | YELLOW | (BLUE << 3)
 
         MACRO CFG_LEVELS
-        ;          points  gap min  gap max  haste  bomb    ink            bmove      fmove          fspeed border
-        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P, CFG_WHEEL_INK, MOVE_BOB, MOVE_STRAIGHT, 0, BORDER_BEAT
-        LEVEL_ROW  300,    70,      185,     24,    BOMB_P, CFG_L2_INK,    MOVE_WAVE, MOVE_WAVE,     48,    CYAN
-        LEVEL_ROW  400,    65,      170,     48,    BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
-        LEVEL_ROW  500,    60,      155,     72,    BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
-        LEVEL_ROW  600,    55,      140,     96,    BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
-        LEVEL_ROW  700,    50,      125,     120,   BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
-        LEVEL_ROW  800,    45,      110,     144,   BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
-        LEVEL_ROW  900,    40,      95,      168,   BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
-        LEVEL_ROW  1000,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT
+        ;          points  gap min  gap max  haste  bomb    ink            bmove      fmove          fspeed border        fish bomb missile
+        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P, CFG_WHEEL_INK, MOVE_BOB, MOVE_STRAIGHT, 0, BORDER_BEAT, 1, 2, 10
+        LEVEL_ROW  300,    70,      185,     24,    BOMB_P, CFG_L2_INK,    MOVE_WAVE, MOVE_WAVE,     48,    CYAN,         1,   2,   10
+        LEVEL_ROW  400,    65,      170,     48,    BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  500,    60,      155,     72,    BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  600,    55,      140,     96,    BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  700,    50,      125,     120,   BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  800,    45,      110,     144,   BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  900,    40,      95,      168,   BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  1000,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
         ENDM
 
 ; The waves (MOVE_WAVE). A wave is a sine, AMP pixels above the middle
@@ -193,15 +191,16 @@ CFG_L2_INK          equ BRIGHT | YELLOW | (BLUE << 3)
 ; whole wave takes 256 / SPEED 1/50 seconds, so 2 is about 2.6 seconds
 ; and 3 about 1.7. Keep the slope gentle: AMP * 6.3 * SPEED / 256 is the
 ; most it climbs in a 1/50 second, and above 1 pixel the bomb's colour
-; has to be repainted whole on that step, which costs time.
+; has to be repainted whole on that step, which costs time. So the
+; bomb's AMP * SPEED must be 40 or less: level.asm asserts it.
 ; The bomb: 16 and 2 climb at most 0.8 of a pixel. Its middle is kept
-; AMP clear of the top and of the seaweed. The bomb still crosses at the
-; level's haste, and is still worth CFG_PTS_BOMB.
+; AMP clear of the score row and of the seaweed. The bomb still crosses
+; at the level's haste.
 CFG_BOMB_WAVE_AMP    equ 16
 CFG_BOMB_WAVE_SPEED  equ 2
 ; The fish swims about its usual depth (pixel row 76), AMP up and down.
 ; 12 and 3 climb at most 0.9 of a pixel. Level 2's fspeed of 48 makes it
-; about a fifth faster across. It is still worth CFG_PTS_FISH.
+; about a fifth faster across.
 CFG_FISH_WAVE_AMP    equ 12
 CFG_FISH_WAVE_SPEED  equ 3
 

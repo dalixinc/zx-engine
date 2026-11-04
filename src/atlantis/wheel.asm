@@ -38,9 +38,10 @@
 ; homes in on the diver is another entry in the table and another
 ; routine. That routine is not written here.
 ;
-; The top of a swing can be pixel row 0 (the stat digits may sit on it).
-; With wobble left at 0 the bottom of the lowest swing is the last pixel
-; of row 20, one above the seaweed.
+; The top of a swing is never above pixel row 16 (WHEEL_TOP_Y), so the
+; bomb never covers the score line on row 1. With wobble left at 0 the
+; bottom of the lowest swing is the last pixel of row 20, one above the
+; seaweed.
 ;==============================================================================
 
 ; Kind values. wheel_kind picks a row of wheel_kind_tab. The level
@@ -74,13 +75,22 @@ WHEEL_SPIN      equ 8
 WHEEL_GAP       equ 48
 
 ; Legal middles, for the height in config.asm. The bob is added to the
-; middle, so the middle itself stays this far from the top and from the
-; seaweed:
-;   top:    middle - height >= 0
+; middle, so the middle itself stays this far from the score row and
+; from the seaweed:
+;   top:    middle - height >= WHEEL_TOP_Y
 ;   bottom: middle + height + the picture <= row 21
 ; Wobble is allowed to drift past the weed after the spawn. These two
 ; are only the table entries, so a fresh bomb still starts in the water.
-WHEEL_TOP_BASE  equ CFG_WHEEL_BOB
+; The highest the top of the bomb goes: the first pixel row below the
+; score line. The soak keeps the old 0: its script parks the surface bomb
+; on row 0 to test it against the stat digits, and its frame numbers
+; expect that bomb where it always was.
+    IFDEF SOAK
+WHEEL_TOP_Y     equ 0
+    ELSE
+WHEEL_TOP_Y     equ 16
+    ENDIF
+WHEEL_TOP_BASE  equ WHEEL_TOP_Y + CFG_WHEEL_BOB
 WHEEL_LOW_BASE  equ BACK_ROW * 8 - WHEEL_HEIGHT - CFG_WHEEL_BOB
 
 ; Phase of the one bomb. Not the same thing as the kind: drifting covers
@@ -169,6 +179,19 @@ wheel_drift:
         dec hl                      ; WHEEL_SPEED is 1
         jr nc,.one
         dec hl
+        ; Two pixels. wheel_colours_fast finds a column from the shift
+        ; it lands on: 7 paints the new left column, 4 gives the old
+        ; right one back. Landing on 6 or 3 stepped over one of them,
+        ; and the column was missed: a cell left in the bomb's ink. Those
+        ; two landings repaint the whole rectangle instead.
+        ld a,l
+        and 7
+        cp 6
+        jr z,.over
+        cp 3
+        jr nz,.one
+.over:  ld a,1
+        ld (wheel_odd),a
 .one:   ld (wheel_x),hl
         ld de,WHEEL_WIDTH
         add hl,de
@@ -432,10 +455,12 @@ wheel_apply_wobble:
         ld (wheel_base),a
         ; fall through
 
-; Pull the middle back inside the picture. A middle that already fits
+; Pull the middle back inside the water: the top of the swing below the
+; score row, the bottom inside the picture. A middle that already fits
 ; is not changed: every height the soak uses already fits.
 wheel_clamp_base:
         ld a,(wheel_swing)
+        add a,WHEEL_TOP_Y
         ld b,a
         ld a,(wheel_base)
         cp b
