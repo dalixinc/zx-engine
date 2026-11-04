@@ -1,7 +1,9 @@
 # Atlantis memory
 
 How the 48K is laid out, what is built at start-up, and how the tape is
-packed. The map below is the current one. Under it are the two briefs
+packed. The map below is the current one, after the level 2 brief
+([LEVEL-2.md](LEVEL-2.md): 228 bytes of hot code, 301 of data, 123 of
+the cold block). Under it are the two briefs
 that made it: Quartus's **squeeze** brief (November 2026) and, before
 it, the **housekeeping** brief (PR #23).
 
@@ -11,13 +13,13 @@ it, the **housekeeping** brief (PR #23).
 |---|---|
 | `$4000-$5AFF` | screen |
 | `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
-| `$6000-$6FBA` | **cold block** (4,027 bytes): menu, level codes, start-up, resets, level 2 message, the death (`death.asm`), menu words, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver) |
-| `$6FBB-$71BF` | free (517) |
+| `$6000-$7035` | **cold block** (4,150 bytes): menu, level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver) |
+| `$7036-$71BF` | free (394) |
 | `$71C0-$7FFF` | the spinning wheel's shifted pictures (built at start-up) |
-| `$8000-$B1A7` | code (`code_end` `$B1A8`) |
-| `$B1A8-$C3FF` | free (4,696) |
-| `$C400-$CB6A` | data: graphics, tables, `data.asm` (`data_end` `$CB6B`) |
-| `$CB6B-$CF2F` | free (965) |
+| `$8000-$B28B` | code (`code_end` `$B28C`) |
+| `$B28C-$C3FF` | free (4,468) |
+| `$C400-$CC97` | data: graphics, tables, `data.asm` (`data_end` `$CC98`) |
+| `$CC98-$CF2F` | free (664) |
 | `$CF30-$E5AF` | the diver's shifted pictures (5,760, built at start-up) |
 | `$E5B0-$EC6F` | the fish's shifted pictures (built at start-up) |
 | `$EC70-$EFFF` | the pulsar's shifted pictures (built at start-up) |
@@ -41,8 +43,8 @@ build if any of them runs into the next thing up.
 
 While the tape loads, two more things sit in memory for a moment: the
 unpacker and the packed loading screen from the page after `cold_end`
-(`$7000-$76EC`), and the packed game from the page after `data_end`
-(`$CC00-$F623`). Start-up builds the shifted pictures over both.
+(`$7100-$77EC`), and the packed game from the page after `data_end`
+(`$CD00-$F8C6`). Start-up builds the shifted pictures over both.
 
 ## The squeeze brief: free bytes, before and after
 

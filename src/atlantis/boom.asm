@@ -89,7 +89,7 @@ fish_hold:
         ret
 
 fish_unhold:
-        ld hl,update_fish
+        ld hl,(fish_mover)      ; the level's: update_fish or fish_wave
         ld (fish_mv+1),hl
         ld (fish_mv2+1),hl
         ret
@@ -110,7 +110,11 @@ fish_flash_begin:
         rrca
         and 31
         ld (fish_acol),a
-        ld a,FISH_SWIM_Y / 8
+        ld a,(fish_y)           ; a 9-row fish always covers two rows
+        rrca
+        rrca
+        rrca
+        and 31
         ld (fish_arow),a
         xor a
         ld (fish_tint),a
@@ -193,6 +197,7 @@ fish_wait_step:
         ld (fish_y),a
         xor a
         ld (fish_busy),a
+        ld (fish_wave_p),a      ; a wave starts again at the middle
         ld hl,fish_draw_fast
         ld (fish_draw_call+1),hl
         jp fish_unhold
@@ -329,8 +334,12 @@ fish_hit:
         jp diver_hurt
 
 ; Out: carry set if the diver overlaps the fish. Corrupts AF, B.
+; The three FISH_SWIM_Y operands below are the fish's height for the
+; hit tests. fish_wave (level.asm) writes its height into them as it
+; moves; level_style puts FISH_SWIM_Y back for a straight fish.
 fish_touch:
         ld a,(diver_y)
+fish_touch_y:
         sub FISH_SWIM_Y
         add a,14                ; -14..8 overlaps the two heights
         cp 23
@@ -351,6 +360,7 @@ fish_cheap:
 ; Out: carry set if a fish was flashing. Carry clear if not touching.
 fish_aside:
         ld a,(diver_y)
+fish_aside_y:
         cp FISH_SWIM_Y + FISH_HEIGHT
         ret nc                  ; he is below the fish; the usual heavy frame
         ld a,(fish_busy)
@@ -367,6 +377,7 @@ torpedo_fish:
         or a
         ret nz
         ld a,(torp_y)
+torpedo_fish_y:
         sub FISH_SWIM_Y
         add a,1
         cp FISH_HEIGHT + 1      ; torpedo is 2 rows tall

@@ -36,9 +36,15 @@ str_code_dots:  db "......",0
 str_code_word:  db "CODE ",0
 str_level_sp:   db "LEVEL ",0
 
-; Level 2's message (score.asm, teaser).
-str_tease_1:    db "WELL DONE, YOU REACHED LEVEL 2.",0
+; The message for levels 2 and 3 (score.asm, teaser). The level's digit
+; is written into the first line. The second line is level 2's or level
+; 3's, centred.
+str_tease_1:    db "WELL DONE, YOU REACHED LEVEL "
+str_tease_n:    db "2.",0
+str_tease_go:   db "LEVEL 2 STARTS NOW",0
+TEASE_GO_COL    equ (32 - ($ - 1 - str_tease_go)) / 2
 str_tease_2:    db "STAY TUNED, MORE IS COMING",0
+TEASE_2_COL     equ (32 - ($ - 1 - str_tease_2)) / 2
 str_tease_key:  db "PRESS A KEY",0
         HOT
 
@@ -180,6 +186,48 @@ wheel_bob:
         db 6, 5, 5, 4, 3, 2, 1, 0
         db 0,-1,-2,-3,-4,-5,-5,-6
         db -6,-5,-5,-4,-3,-2,-1, 0
+
+; The waves (level.asm): 128 heights each, a whole sine, AMP pixels up
+; and down, rounded to the nearest pixel. Made here from one table of
+; sines scaled to 127, so CFG_*_WAVE_AMP can be any size.
+        MACRO WAVE_B amp, u
+        IF u >= 0
+        db (u * amp + 63) / 127
+        ELSE
+        db -((-(u) * amp + 63) / 127)
+        ENDIF
+        ENDM
+        MACRO WAVE_8 amp, u0, u1, u2, u3, u4, u5, u6, u7
+        WAVE_B amp, u0
+        WAVE_B amp, u1
+        WAVE_B amp, u2
+        WAVE_B amp, u3
+        WAVE_B amp, u4
+        WAVE_B amp, u5
+        WAVE_B amp, u6
+        WAVE_B amp, u7
+        ENDM
+        MACRO WAVE_TABLE amp
+        ASSERT amp >= 0 && amp <= 127
+        WAVE_8 amp, 0, 6, 12, 19, 25, 31, 37, 43
+        WAVE_8 amp, 49, 54, 60, 65, 71, 76, 81, 85
+        WAVE_8 amp, 90, 94, 98, 102, 106, 109, 112, 115
+        WAVE_8 amp, 117, 120, 122, 123, 125, 126, 126, 127
+        WAVE_8 amp, 127, 127, 126, 126, 125, 123, 122, 120
+        WAVE_8 amp, 117, 115, 112, 109, 106, 102, 98, 94
+        WAVE_8 amp, 90, 85, 81, 76, 71, 65, 60, 54
+        WAVE_8 amp, 49, 43, 37, 31, 25, 19, 12, 6
+        WAVE_8 amp, 0, -6, -12, -19, -25, -31, -37, -43
+        WAVE_8 amp, -49, -54, -60, -65, -71, -76, -81, -85
+        WAVE_8 amp, -90, -94, -98, -102, -106, -109, -112, -115
+        WAVE_8 amp, -117, -120, -122, -123, -125, -126, -126, -127
+        WAVE_8 amp, -127, -127, -126, -126, -125, -123, -122, -120
+        WAVE_8 amp, -117, -115, -112, -109, -106, -102, -98, -94
+        WAVE_8 amp, -90, -85, -81, -76, -71, -65, -60, -54
+        WAVE_8 amp, -49, -43, -37, -31, -25, -19, -12, -6
+        ENDM
+bomb_wave_tab:  WAVE_TABLE CFG_BOMB_WAVE_AMP
+fish_wave_tab:  WAVE_TABLE CFG_FISH_WAVE_AMP
 
 ; Eight heights for the middle of the bob. Entry 0 is the first bomb,
 ; before any random number: deep enough to meet the diver on the way

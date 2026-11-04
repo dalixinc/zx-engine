@@ -35,8 +35,8 @@ table, showing one, and checking one that's been typed.
 
 | Where | What |
 |---|---|
-| Level 2 | in the message above |
-| Level 3 onwards | a second line of block letters under the "LEVEL n" banner, which then stays up 4 s instead of 2 (`CFG_BANNER_CODE_TIME`) |
+| Levels 2 and 3 | in the message after the banner (level 2's says it starts now, level 3's that more is coming) |
+| Level 4 onwards | a second line of block letters under the "LEVEL n" banner, which then stays up 4 s instead of 2 (`CFG_BANNER_CODE_TIME`) |
 | Game over | "LEVEL n CODE xxxxxx" under the score, for the level the game ended on (levels only go up, so that's the highest reached) |
 
 ![Game over, the code painted out](images/game-over-code.png)
