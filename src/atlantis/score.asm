@@ -42,20 +42,24 @@
 ; (max - min + 1), and the bomb's haste: what is added to a fraction
 ; each 1/50 second, an extra pixel each time it carries. 0 is the old
 ; 1 pixel per 1/50 second; 64 is a quarter faster. Then the bomb's kind
-; (BOMB_P or BOMB_W). Then the five bytes of how the level looks, in
-; the order of level_look (level.asm): the bomb's ink and movement, the
-; fish's movement and haste, the border. Then the points for a fish, a
+; (BOMB_P or BOMB_W). Then the six bytes of how the level looks, in
+; the order of level_look (level.asm): the bomb's ink, movement and
+; hunt, the fish's movement and haste, the border. Then the points for a fish, a
 ; bomb and a missile, one BCD byte each.
-LEVEL_ROW_BYTES equ 14
+LEVEL_ROW_BYTES equ 15
 
 level_rows = 0
-        MACRO LEVEL_ROW need, gmin, gmax, haste, bomb, ink, bmove, fmove, fspeed, border, pfish, pbomb, pmsl
+        MACRO LEVEL_ROW need, gmin, gmax, haste, bomb, ink, bmove, hunt, fmove, fspeed, border, pfish, pbomb, pmsl
         ASSERT need >= 1 && need <= 9999, "a level needs 1 to 9999 points"
         ASSERT gmin <= gmax && gmax <= 255 && gmax - gmin + 1 <= 255
         ASSERT haste >= 0 && haste <= 255
         ASSERT bomb == BOMB_P || bomb == BOMB_W
         ASSERT ink >= 0 && ink <= 255
-        ASSERT bmove == MOVE_BOB || bmove == MOVE_WAVE
+        ASSERT bmove == MOVE_BOB || bmove == MOVE_WAVE || bmove == MOVE_HOME
+        ; At most a pixel a 1/50 second, half the diver's speed: he can
+        ; always swim clear, and the bomb's colour keeps its cheap path.
+        ASSERT bmove != MOVE_HOME || (hunt >= 1 && hunt <= 128), "a hunter's hunt is 1 to 128"
+        ASSERT bmove == MOVE_HOME || hunt == 0, "only MOVE_HOME hunts: hunt 0"
         ASSERT fmove == MOVE_STRAIGHT || fmove == MOVE_WAVE
         ASSERT fspeed >= 0 && fspeed <= 255
         ASSERT fmove == MOVE_WAVE || fspeed == 0, "a straight fish keeps the old speed: fspeed 0"
@@ -73,7 +77,7 @@ level_rows = 0
         db (((need % 100) / 10) << 4) | (need % 10)
         db (((need / 1000) % 10) << 4) | ((need / 100) % 10)
         db gmin, gmax - gmin + 1, haste, bomb
-        db ink, bmove, fmove, fspeed, border
+        db ink, bmove, hunt, fmove, fspeed, border
         db ((pfish / 10) << 4) | (pfish % 10)
         db ((pbomb / 10) << 4) | (pbomb % 10)
         db ((pmsl / 10) << 4) | (pmsl % 10)

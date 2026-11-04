@@ -34,9 +34,8 @@
 ; The ordinary bob stays above the weed. Wobble, or a taller bob in
 ; config.asm, can carry one down onto those rows.
 ;
-; Movement is a type byte and a table of routines, so a later bomb that
-; homes in on the diver is another entry in the table and another
-; routine. That routine is not written here.
+; Movement is a kind byte, from the level: the drift here, the wave and
+; the hunter (wheel_wave, wheel_home) in level.asm.
 ;
 ; The top of a swing is never above pixel row 16 (WHEEL_TOP_Y), so the
 ; bomb never covers the score line on row 1. With wobble left at 0 the
@@ -48,7 +47,9 @@
 ; (CFG_LEVELS, bmove) sets it for each new bomb.
 WHEEL_KIND_DRIFT equ 0          ; straight left, with the small bob
 WHEEL_KIND_WAVE  equ 1          ; straight left, on a wave (level.asm)
+WHEEL_KIND_HOME  equ 2          ; the drift, hunting the diver's depth (level.asm)
         ASSERT WHEEL_KIND_DRIFT == MOVE_BOB && WHEEL_KIND_WAVE == MOVE_WAVE
+        ASSERT WHEEL_KIND_HOME == MOVE_HOME
 
 ; --- Tuning. Names are the knobs. -------------------------------------------
 ; One pixel a frame, the same speed as the diver, so this first bomb is
@@ -63,12 +64,20 @@ WHEEL_SPEED     equ 1
 ; change one bomb without changing the next.
 WHEEL_BOB       equ 6
 
-; How many video frames each rotation frame is held. Four frames make one
-; turn, so a turn takes 4*8 = 32 frames. In that time the bomb travels 32
-; pixels. The rim sits about 5 pixels from the centre, and a wheel of that
-; radius rolls one turn in about 31 pixels, so the spin is about right.
-; Lower it to slow the spin; it does not have to match the roll.
+; How many 1/50 seconds each picture of the pulsar is held. Level 1's
+; bomb, so it stays 8.
 WHEEL_SPIN      equ 8
+
+; The spinning wheel rolls: its 8 pictures are one turn, counter-
+; clockwise, the way a wheel turns going left. The rim is 5 to 6 pixels
+; from the middle, so a turn rolls about 34 pixels, about 4.3 a picture.
+; At 1 + haste/256 pixels a 1/50 second that is 4.3 / speed 1/50 seconds
+; a picture: 3.6 at level 3's haste (48), 2.5 at level 9's (192). A
+; hold of 4 below SPIN_FAST_HASTE and 3 from it keeps every level within
+; about a fifth of a true roll. wheel_type picks it when a bomb appears.
+SPIN_HOLD_SLOW  equ 4
+SPIN_HOLD_FAST  equ 3
+SPIN_FAST_HASTE equ 64
 
 ; Frames to wait after one bomb has gone, before the next appears.
 ; 48 frames is just under a second.
@@ -111,19 +120,11 @@ update_wheel:
         jp z,wheel_drift        ; level 1's bomb: the test costs it nothing more
         dec a
         jp z,wheel_wave
-        ; Kind 2 is reserved for a bomb that homes in on the diver.
-        ; That routine is not written. Falling out here means a 2 in the
-        ; settings cannot land in the middle of other code. The slot is
-        ; the commented line under wheel_kind_tab.
+        dec a
+        jp z,wheel_home
+        ; No other kind: LEVEL_ROW asserts the column, so this is never
+        ; reached, and a stray value cannot land in other code.
         ret
-
-; Kind 0 is the straight-left bomb and kind 1 the wave. The next line is
-; the homing bomb, when that routine exists. update_wheel tests the
-; kinds in turn rather than jumping through this table.
-wheel_kind_tab:
-        dw wheel_drift
-        dw wheel_wave
-        ; dw wheel_home
 
 ;------------------------------------------------------------------------------
 ; wheel_drift - the straight-left bomb
@@ -164,7 +165,7 @@ wheel_drift:
 .spin1: ld hl,wheel_spin_n      ; the wave joins here at 50 (level.asm)
         inc (hl)
         ld a,(hl)
-        cp WHEEL_SPIN
+.hold1: cp WHEEL_SPIN           ; patched: the bomb's hold (wheel_type)
         jr c,.moved
         ld (hl),0
         call wheel_next_frame
@@ -227,9 +228,9 @@ wheel_drift:
         ld b,a
         ld a,(wheel_spin_n)
         add a,b
-.spin:  cp WHEEL_SPIN
+.spin:  cp WHEEL_SPIN           ; patched, as .hold1
         jr c,.spun
-        sub WHEEL_SPIN
+.hold2: sub WHEEL_SPIN           ; and this
         push af
         call wheel_next_frame
         pop af
@@ -495,11 +496,21 @@ wheel_type:
     ENDIF
         ld hl,enemy_wheel
         ld de,wheel_pics
+        ld c,WHEEL_SPIN
         cp BOMB_W
         jr nz,.got
         ld hl,enemy_spin
         ld de,spin_pics
-.got:   push de
+        ld c,SPIN_HOLD_SLOW     ; the roll: see SPIN_HOLD_SLOW
+        ld a,(wheel_haste)
+        cp SPIN_FAST_HASTE
+        jr c,.got
+        ld c,SPIN_HOLD_FAST
+.got:   ld a,c
+        ld (wheel_drift.hold1 + 1),a
+        ld (wheel_drift.spin + 1),a
+        ld (wheel_drift.hold2 + 1),a
+        push de
         ld de,wheel_swing
         ld bc,ENEMY_ROW
         ldir
@@ -511,6 +522,12 @@ wheel_type:
     ENDIF
         ld a,(level_bmove)
         ld (wheel_kind),a
+        ld a,(level_hunt)       ; MOVE_HOME's strength (0 for the others)
+        ld (wheel_hunt),a
+        ld a,1
+        ld (wheel_hunting),a    ; a new bomb starts right of the diver
+        xor a
+        ld (wheel_hfrac),a
         pop hl
         ld e,(hl)
         inc hl
@@ -542,7 +559,7 @@ wheel_spawn_type:
         ld (wheel_swing_max),a
         ld a,(wheel_wobble)
         or a
-        jr z,wheel_clamp_base
+        jp z,wheel_clamp_base
         call wheel_rng
         and 31
         ld (wheel_bob_i),a
@@ -1462,6 +1479,9 @@ wheel_seed:     db 42
 wheel_odd:      db 0            ; 1 = the last nudge may have jumped the rectangle
 wheel_haste:    db 0            ; this level's extra speed, /256 of a pixel
 wheel_frac:     db 0            ; the fraction it adds up in
+wheel_hunt:     db 0            ; MOVE_HOME: the level's hunt, /256 of a pixel
+wheel_hfrac:    db 0            ; the fraction the hunt adds up in
+wheel_hunting:  db 0            ; 1 until the hunter has passed the diver
 
 ; The heights and the sine live with the other tables, above $C000.
 ; See data.asm.

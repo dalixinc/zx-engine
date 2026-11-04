@@ -70,8 +70,11 @@ are on row 1, beside the hearts. Each level has a target, and each is
 longer than the last. Reaching it puts up a big "LEVEL n" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
 fly a little faster. Level 2 has a yellow bomb on a wave, a faster fish
-on a wave and a cyan border (`docs/LEVEL-2.md`). From level 3 the bomb
-is a red spinning wheel instead of the pulsar.
+on a wave and a cyan border (`docs/LEVEL-2.md`). Level 3's bomb is a red
+spinning wheel that rolls as it goes, with a red border. From level 4
+it's a magenta hunter: it drifts towards the diver's depth until it has
+passed him, and hunts a little harder each level
+(`docs/LEVELS-3-AND-4.md`).
 
 Level 2 and level 3 each open with a message and the level's code, up
 until a key is pressed; from level 4 the code is under the banner. The
@@ -180,13 +183,13 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: a small
 unpacker with the packed loading screen, which it shows at once, then
-the packed game (13,150 bytes in all). The unpacker writes three
-blocks. The cold block at `$6000-$7035` (4,150 bytes) is the menu, the
+the packed game (13,472 bytes in all). The unpacker writes three
+blocks. The cold block at `$6000-$710D` (4,366 bytes) is the menu, the
 level codes, start-up, the diver's death, each level's look and anything else that runs
 once in a while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The
-instructions are at `$8000-$B2A3` (`code_end` is `$B2A4`) and must stay
-below `$C400`. The pictures and tables are at `$C400-$CCB2`. The four
+instructions are at `$8000-$B346` (`code_end` is `$B347`) and must stay
+below the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CCDF`. The four
 sprites' shifted copies are built at start-up: the diver's, the
 fish's and the pulsar's at `$CF30-$EFFF`, the spinning wheel's at
 `$71C0-$7FFF`. The buffers that start empty are at `$F300-$F517`,
@@ -316,7 +319,8 @@ and the picture updates at 25 Hz, with the scroll and the sprites
 stepping twice per picture. The speeds were not changed to hide that.
 `docs/SCROLLING.md` has the measurement and the options. The diver holds his
 jet unit out in front, kicks while you hold
-a direction, and glides with his legs together when you let go. He can
+a direction, and glides with his legs together when you let go. The
+jet's propeller turns and throws bubbles all the time, still or not. He can
 swim up to the top row, and down over the weed and the sand, until his
 feet are one pixel above the black under him. A silo or a rising hill
 lifts him. Over a coloured cell he takes on its colours. The strips keep

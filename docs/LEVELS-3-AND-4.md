@@ -1,0 +1,200 @@
+# Levels 3 to 9, and the diver's jet
+
+Branch `claudelet/dev`. Quartus's brief: level 3 gets its own look,
+level 4 brings the first bomb that hunts the diver, levels 5 to 9 hunt
+harder, and the diver's jet is always alive.
+
+![Level 3](images/level-3.png)
+
+![Level 4](images/level-4.png)
+
+## What changes
+
+| | Level 3 | Level 4 | Levels 5 to 9 |
+|---|---|---|---|
+| bomb | the red spinning wheel, small bob, **now rolling** | the spinning wheel, **bright magenta**, **hunting** | the same hunter, hunting harder each level |
+| fish | straight across | straight across | straight across |
+| border | **red** | the heartbeat | the heartbeat |
+| points | bomb 2, fish 1, missile 10 | the same | the same |
+
+The targets and the level codes are not published here: the codes are
+in `notes/LEVEL-CODES-LIST.md` in the repository, and the targets are
+the first column of `CFG_LEVELS`. No target and no code changed.
+
+## The roll (level 3 on)
+
+The spinning wheel's 8 pictures are one whole turn, counter-clockwise,
+the way a wheel turns going left. Each was held 8 1/50 seconds, the
+pulsar's hold, so a turn took 64 and the wheel turned at about half the
+speed it travels: it looked as if it skidded. The rim is 5 to 6 pixels
+from the middle, so a rolling turn is about 34 pixels, about 4.3 pixels
+a picture. The bomb travels 1 + haste/256 pixels a 1/50 second, so the
+hold that rolls is 4.3 / that speed: 3.6 at level 3, 2.5 at level 9.
+
+`wheel_type`, which runs when a bomb appears, now patches the hold into
+the spin's three operands: **4** below haste 64 (level 3) and **3**
+from it (levels 4 to 9). Every level is then within about a fifth of a
+true roll. The pulsar keeps its 8, so levels 1 and 2 are unchanged. It
+costs nothing a frame: the hold was already a compare.
+
+## The hunter (level 4 on)
+
+`MOVE_HOME`, kind 2, the slot that was kept for it (`wheel_home`,
+`level.asm`). It is the drift with its small bob, as on level 3, and:
+
+- **While the bomb is to the right of the diver**, the level's `hunt`
+  is added to a fraction each 1/50 second. Each time it carries, the
+  bomb's middle moves a pixel towards the height that puts it level
+  with him (his top + 1: the diver is 15 tall, the bomb 12).
+- **Once its middle has passed his** (its x below his x + 6), it stops
+  hunting for good and carries straight on at the height it reached.
+  It never turns back on him, and a dive under or over it is still the
+  way to dodge.
+- **Its middle stays between the spawn table's own limits**
+  (`WHEEL_TOP_BASE`, `WHEEL_LOW_BASE`), so the bob never reaches the
+  score row or the weed. A diver on the seabed is hunted down to the
+  lowest the bomb may go, one swing above the weed.
+
+### The hunt values
+
+One new column of `CFG_LEVELS`, `hunt`, after `bmove`:
+
+| Level | haste | hunt | pixels a second | in a crossing (about) |
+|---|---|---|---|---|
+| 4 | 72 | 48 | 9.4 | 39 |
+| 5 | 96 | 64 | 12.5 | 49 |
+| 6 | 120 | 80 | 15.6 | 57 |
+| 7 | 144 | 96 | 18.8 | 64 |
+| 8 | 168 | 112 | 21.9 | 71 |
+| 9 | 192 | 128 | 25.0 | 77 |
+
+"In a crossing" is how far it can climb or sink while it crosses the
+screen (268 pixels at its speed). The diver swims 50 pixels a second, so
+even level 9's hunter goes at half his speed.
+
+Asserts in `LEVEL_ROW` (score.asm): `MOVE_HOME` needs a hunt of 1 to
+128, and every other movement 0. 128 is the cap for two reasons: it is
+half the diver's speed, so he can always swim clear; and a step then
+carries at most once, so with the bob's own pixel the bomb moves at most
+two pixels up or down. A 12-pixel picture can't cross a cell edge at its
+top and at its bottom within two pixels (the edges are 3 and 5 apart),
+so the colour's cheap one-cell row step still follows it.
+
+## The diver's jet
+
+The brief: the jet always animated, bubbling even when he is still,
+and the legs kicking only while a direction is held.
+
+The legs already did that: the kick only runs while Q, A, O or P (or the
+joystick) is held, and he glides with his legs together when you let
+go. What was missing was the jet. Its tail (the propeller, at its back
+end, under his middle) is a row shorter than the art's: rows 11 to 13,
+where the jet's body keeps its 4. It now turns and throws bubbles in
+two phases:
+
+- **A**: the blade face on, so the tail is a solid 3 by 3, with a bubble
+  behind it and one below it.
+- **B**: the blade edge on, so only the 2-wide hub is left, with three
+  bubbles thrown back beside it.
+
+Seven pixels change between the two. Each bubble is a pixel with no ink
+beside it in any of the three frames (the shorter tail frees the row
+under it), so a bubble never joins a leg.
+
+**At start-up, from the existing art.** `gfx/diver.txt` is Engine Demo
+1's art too, so it is not changed. `diver_jet_build` (preshift.asm)
+patches the raw art before it is shifted: frames 0 and 2 get A, frame 1
+gets B. The kick runs 0 1 2 1, so while he swims the jet goes A B A B.
+The still pose (frame 2) needs a B as well, so it also copies frame 2
+with B, both facings, and shifts it into two more pictures. While he is
+still, `diver_image_index` shows the B picture every other 4 1/50
+seconds, so the jet turns at the same rate swimming or still.
+
+The soak build has no room for the two extra pictures (its code is
+there), so it keeps the still pose without them.
+
+## Bytes
+
+| | Before | After | Used |
+|---|---|---|---|
+| hot code (`code_end`) | `$B2A4` | `$B347` | 163 (`wheel_home` 107, the spin hold and the hunt in `wheel_type` 38, the still jet in `diver_image_index` 13, four bytes of state, one longer jump; the kind table went and the dispatch's two tests took its four bytes) |
+| the jet's still pictures (`JET_BUF`) | | `$BC80-$C3FF` | 1,920, built at start-up, not on the tape |
+| data (`data_end`) | `$CCB3` | `$CCE0` | 45 (the `hunt` column, 9; the jet pictures' pointer tables, 36) |
+| cold block (`cold_end`) | `$7036` | `$710E` | 216 (`diver_jet_build`, `jet_patch` and the two pixel lists) |
+
+Free afterwards: code 2,361 (up to `JET_BUF`), data 592, cold block
+178. The tape is 13,472 bytes (322 more).
+
+The two extra pictures are the "new pre-shifted copies" the brief
+allowed if the memory did: one still pose per facing, 960 bytes each.
+Without them the still diver's jet could not change: every other
+combination is a picture already there.
+
+The soak build's code sits where `JET_BUF` is, and it no longer had
+room after the new hot code, so its title photograph (768 bytes) moved
+to `$F600-$F8FF`, above the run-time buffers. The soak is a snapshot,
+never loaded from tape, and nothing else uses that room in it.
+
+## Timing
+
+Spare scanlines (the lowest of 512 steps) and late steps, `MEASURE`,
+before (main) and after. The interrupts are 1 a step at 50 and 2 at 25
+in every row, before and after.
+
+| Build | Before | After |
+|---|---|---|
+| level 1, seabed (`MEAS_DOWN`) | 9 | 9 |
+| level 1, + `MEAS_FIRE` | 2 | 2 |
+| level 1, + `MEAS_MISSILE` | 4 | 4 |
+| level 1, `MEAS_BOOM` | 0, 1 late | 0, 1 late |
+| level 1, open water, still | 9 | 9 |
+| level 1, `MEAS_SPIN` | 9 | 8 |
+| level 1 at 25 (down, fire, spin) | 47 | 47 |
+| level 2, seabed | 9 | 9 |
+| level 2, + `MEAS_FIRE` | 1 | 1 |
+| level 2, + `MEAS_MISSILE` | 5 | 5 |
+| level 2, `MEAS_BOOM` | 0, 2 late | 0, 2 late |
+| level 2, open water, still | 10 | 9 |
+| level 2 at 25 (down, fire) | 47 | 47 |
+| level 3, seabed | 2 | 1 |
+| level 3, + `MEAS_FIRE` | 0, 1 late | 0, 1 late |
+| level 4, seabed, the hunter on him | 7 | 7 |
+| level 4, + `MEAS_FIRE` | 0, 1 late | 0, 1 late |
+| level 4, + `MEAS_MISSILE` | 3 | 3 |
+| level 4, `MEAS_BOOM` | 0, 1 late | 0, 1 late |
+| level 4, open water, still | 7 | 7 |
+| level 4 at 25 (down / fire) | 49 / 48 | 49 / 48 |
+| level 9, seabed | 8 | 7 |
+| level 9, + `MEAS_FIRE` | 1 | 0, no late step |
+
+"Before" at level 4 is main's level 4, the red wheel on the bob, so the
+hunter costs nothing that shows. In `MEAS_DOWN` the diver sits on the
+seabed, and the hunter comes down to the lowest the bomb may go, one
+swing above the weed: as close as it can be to him.
+
+Levels 1 and 2 are unchanged in every heavy case. The two that moved by
+a line are the spinning wheel's (level 3, and level 1 with
+`MEAS_SPIN`): its picture now changes every 4 1/50 seconds, not every
+8, and `wheel_next_frame` sometimes lands on the heaviest step. Level
+2's open water lost a line with the jet's still picture; level 1's
+open water did not. That is within the line or two that schedule
+alignment alone moves.
+
+## Checks
+
+- **Levels 1 and 2:** the timing above. On level 1 the only pixels
+  that differ from main in the screenshot builds are the jet's tail and bubbles.
+- **Soak:** green at 50 and 25.
+- **Level codes:** the code table is byte-identical to main's. No code
+  or target changed.
+- **Engine Demo 1:** byte-identical.
+- **Asserts:** `MOVE_HOME` with hunt 0, hunt 129, and `MOVE_BOB` with a
+  hunt each stop the build.
+- **No leftover colour:** the scratch cell check from the level 2
+  follow-up (every cell of rows 2 to 20 must be water or the banner,
+  apart from the bomb's own rectangle), with the diver sweeping up and
+  down, ran 5 minutes each at levels 3 and 4, at 50 and at 25. It found
+  no cell left in the bomb's ink.
+- **In Fuse:** level 3's red border and rolling wheel, level 4's
+  magenta hunter sinking to the diver's depth and hitting him, the jet
+  turning while he is still.

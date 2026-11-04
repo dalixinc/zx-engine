@@ -129,6 +129,18 @@ diver_image_index:
         ld a,(diver_moving)
         or a
         jr nz,.moving
+    IFDEF DIVER_JET
+        ; Atlantis: still, his jet still turns. Every other 4 frames the
+        ; glide pose with the jet's other phase: picture 6 + facing
+        ; (src/atlantis/preshift.asm, diver_jet_build).
+        ld a,(frame_count)
+        and 4
+        jr z,.glide
+        ld a,(diver_facing)
+        add a,DIVER_PICS
+        ret
+.glide:
+    ENDIF
         ld a,DIVER_GLIDE        ; not moving: glide pose
         jr .got_frame
 

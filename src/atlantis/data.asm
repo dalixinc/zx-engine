@@ -253,16 +253,12 @@ wheel_heights:
 ;   bob speed      sine steps per 1/50 second
 ;   wobble         0 = smooth sine. See CFG_WHEEL_WOBBLE.
 ;   kind           which movement. 0 drifts left and bobs. The level
-;                  can put 1, the wave, over it (wheel_type). 2 is
-;                  reserved for a bomb that homes in on the diver. That
-;                  routine is not written. Do not put 2 here:
-;                  update_wheel will ignore the bomb rather than jump
-;                  to a routine that does not exist. The commented line
-;                  under wheel_kind_tab is the slot it will occupy.
+;                  puts its own over it (wheel_type, CFG_LEVELS bmove):
+;                  1 the wave, 2 the hunter (level.asm).
 ;   colour         ink and paper, from CFG_WHEEL_INK
 ;
-; A new type is another five bytes here, and a line in wheel_kind_tab
-; if it moves in a way the drift routine does not. Each bomb copies the
+; A new type is another five bytes here, and a routine and a test in
+; update_wheel if it moves in a way the others do not. Each bomb copies the
 ; five bytes when it appears, then (if wobble is not 0) rolls its own
 ; variation on top.
 
@@ -281,5 +277,3 @@ enemy_spin:                     ; the spinning wheel (wspin.asm): its ink
         db CFG_WHEEL_WOBBLE
         db 0
         db CFG_SPIN_INK
-        ; A homing type, when that routine exists, would be another row:
-        ; db 6, 1, 0, 1, BRIGHT | RED | (BLUE << 3)

@@ -52,6 +52,17 @@ PRESHIFT_START  equ DIVER_BUF
 WSPIN_BUF_END   equ CODE_START
 WSPIN_BUF       equ WSPIN_BUF_END - WSPIN_SHIFTED
 
+; The diver's still pose with the jet's other phase (diver_jet_build):
+; two more pictures, one per facing, at the top of the free room after
+; the code, just below the data block. Drawn every frame, so above $8000.
+; The soak has no room for them (its code is there), so it keeps the
+; still pose without them.
+DIVER_RAW_PIC   equ DIVER_HEIGHT * DIVER_RAW * 2       ; one picture of art
+    IFDEF DIVER_JET
+        PRESHIFT_SIZE JET_SHIFTED, 2, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
+JET_BUF         equ DATA_START - JET_SHIFTED
+    ENDIF
+
 ; One job per sprite, for preshift_all.
         MACRO PRESHIFT_JOB src?, buf?, pics?, rows?, wide?, raw?
         dw src?, buf?
@@ -59,6 +70,10 @@ WSPIN_BUF       equ WSPIN_BUF_END - WSPIN_SHIFTED
         ENDM
 
 preshift_jobs:
+    IFDEF DIVER_JET
+        ; First: its art is a copy in DIVER_BUF, which the next job fills.
+        PRESHIFT_JOB DIVER_BUF, JET_BUF, 2, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
+    ENDIF
         PRESHIFT_JOB diver_src, DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
         PRESHIFT_JOB fish_src, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW
         PRESHIFT_JOB wheel_src, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW
@@ -71,6 +86,7 @@ preshift_jobs:
 ; Corrupts: AF, BC, DE, HL, IX
 ;------------------------------------------------------------------------------
 preshift_all:
+        call diver_jet_build
         ld hl,preshift_jobs
 .job:   ld e,(hl)
         inc hl
@@ -232,6 +248,145 @@ preshift_blank:
         db $FF, 0, $FF, 0, $FF, 0, $FF, 0
 
 ;------------------------------------------------------------------------------
+; diver_jet_build - the jet's two phases, put into the diver's art
+; The jet he holds has a propeller at its back end. It turns, and throws
+; bubbles back, in two phases a few 1/50 seconds each:
+;   A  the blade face on: the tail a solid 3 by 3, and two bubbles,
+;      one behind it and one below it
+;   B  the blade edge on: only the 2-wide hub, and three bubbles
+;      thrown back beside it
+; In both the tail is a row shorter than the art's (rows 11-13, not
+; 11-14); the jet's body keeps its 4 rows.
+; His kick runs 0 1 2 1: frames 0 and 2 get A and frame 1 gets B, so
+; while he swims the jet goes A B A B. The
+; still pose is frame 2 (A). Its B is a copy of frame 2 with B, built in
+; DIVER_BUF (the diver's own job overwrites it after) and shifted into
+; JET_BUF by the first job; diver_image_index shows it every other 4
+; 1/50 seconds while he is still. The legs do not move.
+; Each bubble is a pixel with no ink beside it in any of the three
+; frames (the shortened tail frees the row under it), so a bubble
+; never joins a leg. Called by preshift_all,
+; before the jobs. Patching twice gives the same art.
+; The tape's art (gfx/diver.txt) is Engine Demo 1's too, so the bubbles
+; are added here, not drawn there.
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+diver_jet_build:
+    IFDEF DIVER_JET
+        ld hl,diver_src + DIVER_GLIDE * DIVER_RAW_PIC
+        ld de,DIVER_BUF
+        ld bc,DIVER_RAW_PIC
+        ldir
+        ld hl,diver_src + (DIVER_FRAMES + DIVER_GLIDE) * DIVER_RAW_PIC
+        ld bc,DIVER_RAW_PIC
+        ldir                    ; the left-facing one straight after
+        ld hl,jet_b
+        ld bc,DIVER_BUF
+        ld de,DIVER_BUF + DIVER_RAW_PIC
+        call jet_patch
+    ENDIF
+        ld hl,jet_a
+        ld bc,diver_src
+        ld de,diver_src + DIVER_FRAMES * DIVER_RAW_PIC
+        call jet_patch
+        ld hl,jet_a
+        ld bc,diver_src + 2 * DIVER_RAW_PIC
+        ld de,diver_src + (DIVER_FRAMES + 2) * DIVER_RAW_PIC
+        call jet_patch
+        ld hl,jet_b
+        ld bc,diver_src + DIVER_RAW_PIC
+        ld de,diver_src + (DIVER_FRAMES + 1) * DIVER_RAW_PIC
+        ; fall through
+
+; jet_patch - HL = a list of JET_PX pixels (ends with $FF), BC = a
+; right-facing picture of art, DE = the same frame facing left.
+; Corrupts: AF, HL
+jet_patch:
+        ld a,(hl)
+        inc a
+        ret z
+        push de
+        call .pix               ; facing right
+        pop de
+        push bc
+        push de
+        ld b,d
+        ld c,e
+        call .pix               ; facing left: the pixel mirrored
+        pop de
+        pop bc
+        jr jet_patch
+; HL -> the byte to clear the bit in, the byte to set it in, the bit,
+; as offsets from BC. Out: HL past them. Corrupts: AF, DE
+.pix:   ld a,(hl)
+        inc hl
+        push hl
+        ld l,a
+        ld h,0
+        add hl,bc
+        ex de,hl                ; DE = the byte to clear it in
+        pop hl
+        ld a,(hl)
+        inc hl
+        push hl
+        ld l,a
+        ld h,0
+        add hl,bc               ; HL = the byte to set it in
+        ex (sp),hl
+        ld a,(hl)               ; the bit
+        inc hl
+        ex (sp),hl
+        push af
+        or (hl)
+        ld (hl),a
+        pop af
+        cpl
+        ex de,hl
+        and (hl)
+        ld (hl),a
+        pop hl
+        ret
+
+; One pixel of art: ink (mask bit 0, ink bit 1) or gone (mask 1, ink 0),
+; at row, column facing right, and its mirror facing left. A row of art
+; is 3 mask bytes, then 3 ink bytes (DIVER_RAW; the diver is 24 wide,
+; asserted below: the numbers are written out because the art's sizes
+; come later in the build).
+JET_INK         equ 0
+JET_GONE        equ 1
+        MACRO JET_PX op?, row?, col?
+jpx_r = (row?) * 6 + ((col?) >> 3)
+jpx_l = (row?) * 6 + ((23 - (col?)) >> 3)
+        IF op? == JET_INK
+        db jpx_r, jpx_r + 3, $80 >> ((col?) & 7)
+        db jpx_l, jpx_l + 3, $80 >> ((23 - (col?)) & 7)
+        ELSE
+        db jpx_r + 3, jpx_r, $80 >> ((col?) & 7)
+        db jpx_l + 3, jpx_l, $80 >> ((23 - (col?)) & 7)
+        ENDIF
+        ENDM
+
+jet_a:  JET_PX JET_GONE, 14, 14 ; the tail one row shorter: rows 11-13
+        JET_PX JET_GONE, 14, 15
+        JET_PX JET_GONE, 14, 16
+        JET_PX JET_INK, 11, 14  ; the blade face on: the tail a solid 3 by 3
+        JET_PX JET_INK, 13, 14
+        JET_PX JET_INK, 12, 12  ; two bubbles, behind it and below it
+        JET_PX JET_INK, 14, 13
+        db $FF
+jet_b:  JET_PX JET_GONE, 14, 14 ; the tail one row shorter, as A
+        JET_PX JET_GONE, 14, 15
+        JET_PX JET_GONE, 14, 16
+        JET_PX JET_GONE, 11, 14 ; the blade edge on: only the hub, 2 wide
+        JET_PX JET_GONE, 13, 14
+        JET_PX JET_INK, 11, 13  ; three bubbles thrown back
+        JET_PX JET_INK, 13, 13
+        JET_PX JET_INK, 14, 14
+        db $FF
+        ASSERT DIVER_WIDTH == 24 && DIVER_HEIGHT == 15 && DIVER_RAW == 3, "jet_a and jet_b are drawn for the 24 by 15 diver"
+        ASSERT DIVER_GLIDE == 2, "the still pose is frame 2"
+
+;------------------------------------------------------------------------------
 ; PRESHIFT_TABLES images, buffer, pictures, rows, wide, raw
 ; gfx2asm.py's tables for copies made by preshift: images is one word per
 ; picture, pointing at that picture's 8 words, one per shift, which point
@@ -239,11 +394,21 @@ preshift_blank:
 ;------------------------------------------------------------------------------
         MACRO PRESHIFT_TABLES images?, buf?, pics?, rows?, wide?, raw?
 images?:
+        PRESHIFT_INDEX images? + 2 * (pics?), pics?
+        PRESHIFT_SHIFTS buf?, pics?, rows?, wide?, raw?
+        ENDM
+
+; The two halves: one word per picture, pointing at its 8 shift words;
+; and those words, into the buffer.
+        MACRO PRESHIFT_INDEX shifts?, pics?
 pst_i = 0
         DUP pics?
-        dw images? + 2 * (pics?) + 16 * pst_i
+        dw shifts? + 16 * pst_i
 pst_i = pst_i + 1
         EDUP
+        ENDM
+
+        MACRO PRESHIFT_SHIFTS buf?, pics?, rows?, wide?, raw?
 pst_a = buf?
         DUP pics?
 pst_s = 0
@@ -258,8 +423,21 @@ pst_s = pst_s + 1
 ; All four, and the spinning wheel's animation: every picture in turn,
 ; the cross turning. (The pulsar's, wheel_seq, is in gfx/wheel_raw.asm.)
         MACRO PRESHIFT_DATA
-        PRESHIFT_TABLES diver_images, DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
+        ; The diver's: his 6 pictures, then the jet's 2 (picture 6 faces
+        ; right, 7 left), which diver_image_index picks while he is still.
+diver_images:
+        PRESHIFT_INDEX diver_shifts, DIVER_PICS
+    IFDEF DIVER_JET
+        PRESHIFT_INDEX jet_shifts, 2
+    ENDIF
+diver_shifts:
+        PRESHIFT_SHIFTS DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
         ASSERT pst_a == DIVER_BUF + DIVER_SHIFTED, "the diver's tables and preshift disagree"
+    IFDEF DIVER_JET
+jet_shifts:
+        PRESHIFT_SHIFTS JET_BUF, 2, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
+        ASSERT pst_a == DATA_START, "the jet's tables and preshift disagree"
+    ENDIF
         PRESHIFT_TABLES fish_images, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW
         ASSERT pst_a == FISH_BUF + FISH_SHIFTED, "the fish's tables and preshift disagree"
         PRESHIFT_TABLES wheel_images, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW

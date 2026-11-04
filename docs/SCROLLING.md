@@ -869,14 +869,12 @@ first roll picks the fish's depth (70). The second picks the surface
 it. Every base stays between 6 and 146, so the bob never goes above
 the screen and never into the seaweed (row 21, pixel 168).
 
-Movement is `wheel_kind` and `wheel_kind_tab` in `src/atlantis/wheel.asm`.
-The only entry is the straight drift. A homing bomb is another routine
-and another word in that table. It is not written.
+Movement is `wheel_kind`, tested in turn by `update_wheel` in
+`src/atlantis/wheel.asm`: 0 the straight drift, 1 level 2's wave and 2
+the hunter from level 4 (both in `src/atlantis/level.asm`).
 
 ## Not in Atlantis yet
 
-* A wheel bomb that homes in on the diver. The kind byte is there; the
-  routine is not.
 * More than one bomb at a time, missiles, collision, death, sound.
 * A real silo picture. The placeholder is the demo's.
 * Scrolling that follows the diver. The world still scrolls on its own
