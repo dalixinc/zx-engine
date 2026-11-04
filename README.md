@@ -191,12 +191,12 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: a small
 unpacker with the packed loading screen, which it shows at once, then
-the packed game (14,627 bytes in all). The unpacker writes four
+the packed game (14,629 bytes in all). The unpacker writes four
 blocks. The cold block at `$6000-$7188` (4,489 bytes) is the menu, the
 level codes, start-up, the diver's death, each level's look and anything else that runs
 once in a while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The
-instructions are at `$8000-$B8E1` (`code_end` is `$B8E2`) and must stay
+instructions are at `$8000-$B8F8` (`code_end` is `$B8F9`) and must stay
 below half the round fish's pictures at `$B920-$BC7F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CDB2`, and the one-cell pictures and the title's letters in the ROM's UDG area, `$FF58-$FFEF`. The four
 sprites' shifted copies are built at start-up: the diver's, the
 fish's and the pulsar's at `$CF30-$EFFF`, the spinning wheel's at

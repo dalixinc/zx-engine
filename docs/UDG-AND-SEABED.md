@@ -45,7 +45,7 @@ loading screen) had 1.7 KB to spare below `$8000`, so the packed data
 block and the packed UDG block now ride there: the cold block unpacks
 below the first block and everything else above `$8000`, so nothing is
 written over them before they are read. The packed game now ends at
-`$F9EF`, 1,385 bytes below `$FF58` (it was 185).
+`$F9EF`, 1,386 bytes below `$FF58` (it was 185).
 
 ## 2. The title
 
@@ -99,14 +99,14 @@ ground, never in it.
 
 | | Before (main) | After |
 |---|---|---|
-| hot code | `code_end` `$B804` | `$B8E2` (+222), 62 free below the round fish |
+| hot code | `code_end` `$B804` | `$B8F9` (+245), 39 free below the round fish |
 | data | `data_end` `$CDC3` | `$CDB3` (-16) |
 | cold block | `cold_end` `$7169` | `$7189` (+32), 55 free |
 | UDG area | unused | `$FF58-$FFEF`, 152 used, 16 free; `$FF01-$FF57` (87) still free |
 | run-time | | the slope tables, `$FB80-$FC7F` (256, built at start-up) |
-| packed game (tape block 2) | `$CE00-$FE9F` | `$CE00-$F9EF` |
-| tape block 1 | to `$78E0` | `$7200-$7EAA` (+ the packed data and UDG block) |
-| tape | 14,345 bytes | 14,627 bytes |
+| packed game (tape block 2) | `$CE00-$FE9F` | `$CE00-$F9EE` |
+| tape block 1 | to `$78E0` | `$7200-$7EAD` (+ the packed data and UDG block) |
+| tape | 14,345 bytes | 14,629 bytes |
 
 The hot code grew most for start-up work that the cold block had no
 room for: `slope_build` (90 bytes) and `torpedo_reset`.
