@@ -397,7 +397,7 @@ torpedo_fish_y:
         cp 22                   ; 15 + TORPEDO_WIDTH
         ret nc
         call torpedo_spent
-        PTS_BCD CFG_PTS_FISH
+        ld a,(level_pts_fish)
         call score_add          ; a shot fish scores; one that bumps him does not
         ld a,(wheel_phase)
         or a

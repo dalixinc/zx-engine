@@ -16,10 +16,10 @@ it, the **housekeeping** brief (PR #23).
 | `$6000-$7035` | **cold block** (4,150 bytes): menu, level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver) |
 | `$7036-$71BF` | free (394) |
 | `$71C0-$7FFF` | the spinning wheel's shifted pictures (built at start-up) |
-| `$8000-$B28B` | code (`code_end` `$B28C`) |
-| `$B28C-$C3FF` | free (4,468) |
-| `$C400-$CC97` | data: graphics, tables, `data.asm` (`data_end` `$CC98`) |
-| `$CC98-$CF2F` | free (664) |
+| `$8000-$B2A3` | code (`code_end` `$B2A4`) |
+| `$B2A4-$C3FF` | free (4,444) |
+| `$C400-$CCB2` | data: graphics, tables, `data.asm` (`data_end` `$CCB3`) |
+| `$CCB3-$CF2F` | free (637) |
 | `$CF30-$E5AF` | the diver's shifted pictures (5,760, built at start-up) |
 | `$E5B0-$EC6F` | the fish's shifted pictures (built at start-up) |
 | `$EC70-$EFFF` | the pulsar's shifted pictures (built at start-up) |

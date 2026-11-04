@@ -391,7 +391,7 @@ missile_shot:
         call boom_at_missile
         call missile_gone
         call torpedo_spent
-        PTS_BCD CFG_PTS_MISSILE
+        ld a,(level_pts_msl)
         call score_add
         scf
         ret

@@ -63,20 +63,22 @@ plays a death knell, then the game goes back to the menu, which says
 GAME OVER with your score. The menu always shows the high score, kept
 until the machine is switched off.
 
-Shooting scores: 1 for a fish, 2 for a bomb, 10 for a missile
-(`CFG_PTS_*`). Something that runs into him scores nothing. The score
-and the level are on row 1, beside the hearts. Each level has a target
-(`CFG_LEVELS` in `config.asm`: 200 points for level 1, then 300 more,
-400 more, and so on). Reaching it puts up a big "LEVEL 2" banner, plays
+Shooting scores: 1 for a fish, 2 for a bomb, 10 for a missile on the
+first levels (each level's row of `CFG_LEVELS` in `config.asm` says).
+Something that runs into him scores nothing. The score and the level
+are on row 1, beside the hearts. Each level has a target, and each is
+longer than the last. Reaching it puts up a big "LEVEL n" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
-fly a little faster. From level 3 the bomb is a red spinning wheel
-instead of the black pulsar (the last column of `CFG_LEVELS`).
+fly a little faster. Level 2 has a yellow bomb on a wave, a faster fish
+on a wave and a cyan border (`docs/LEVEL-2.md`). From level 3 the bomb
+is a red spinning wheel instead of the pulsar.
 
-From level 3 the banner also shows the level's code, and the game-over
-screen shows the code of the highest level reached. Typing a code on the
-menu starts a game at that level, with the score it starts at (200 for
-level 2, 500 for level 3, ...). Level 2 is the end of the game for now:
-after its banner, a message and its code stay up until a key is pressed.
+Level 2 and level 3 each open with a message and the level's code, up
+until a key is pressed; from level 4 the code is under the banner. The
+game-over screen shows the code of the highest level reached. Typing a
+code on the menu starts a game at that level, with the score that level
+starts at. The codes aren't published: they're in
+`notes/LEVEL-CODES-LIST.md` in the repository, outside the web site.
 See `docs/LEVEL-CODES.md`.
 
 Now and then a silo near the diver arms a missile: it sits in the hatch
@@ -178,13 +180,13 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: a small
 unpacker with the packed loading screen, which it shows at once, then
-the packed game (13,116 bytes in all). The unpacker writes three
+the packed game (13,150 bytes in all). The unpacker writes three
 blocks. The cold block at `$6000-$7035` (4,150 bytes) is the menu, the
 level codes, start-up, the diver's death, each level's look and anything else that runs
 once in a while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The
-instructions are at `$8000-$B28B` (`code_end` is `$B28C`) and must stay
-below `$C400`. The pictures and tables are at `$C400-$CC97`. The four
+instructions are at `$8000-$B2A3` (`code_end` is `$B2A4`) and must stay
+below `$C400`. The pictures and tables are at `$C400-$CCB2`. The four
 sprites' shifted copies are built at start-up: the diver's, the
 fish's and the pulsar's at `$CF30-$EFFF`, the spinning wheel's at
 `$71C0-$7FFF`. The buffers that start empty are at `$F300-$F517`,

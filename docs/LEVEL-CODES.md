@@ -5,7 +5,7 @@ a second bomb (item 3) is a separate push.
 
 ## 1. Level 2 teaser
 
-When the score first reaches 200, the "LEVEL 2" banner and jingle play
+When the score first reaches level 1's target, the "LEVEL 2" banner and jingle play
 as before. When the banner comes down, a black panel covers rows 6 to 14:
 
 ![Level 2 message, the code painted out](images/level2-teaser.png)
@@ -47,7 +47,8 @@ turns into `3  Code ......` and fills in as letters are typed. `0`
 code:
 
 - **A good code** starts a game at that level. The score is the level's
-  starting total from `CFG_LEVELS` (200, 500, 900, ...), lives are full,
+  starting total from `CFG_LEVELS` (the targets of the levels before
+  it, added up), lives are full,
   and the high score works as normal. The levels in between are stepped
   through quietly (`level_advance`), so the missile gap and bomb haste
   are that level's own.
@@ -88,8 +89,13 @@ in the repository, outside `docs/`, so it isn't served with the game.
 fine for a challenge among friends.)
 
 `CFG_LEVELS` has 9 rows, and the last row repeats. A code for level 10
-or above therefore starts the score at 5,400 plus 1,000 for each level
-past 9, and plays level 9's settings until Trigon has rows of its own.
+or above therefore starts the score at the sum of the 9 rows' points
+plus the last row's for each level past 9, and plays level 9's settings
+until Trigon has rows of its own.
+
+**Changing the targets doesn't change the codes.** A code depends only
+on its level's number, not on `CFG_LEVELS`; only the score a code starts
+at follows the table.
 
 **Banner font.** The banner's block letters were just L, E, V and the
 digits. They're now the whole alphabet (130 bytes), so the codes can be
@@ -133,7 +139,7 @@ The page's key table now lists `3`. `make web` refreshed
 - **In Fuse:** reaching level 2 shows the banner, then the message;
   a key ends it and play resumes cleanly. Level 3's banner shows
   its code. On the menu: typing, rub-out, a bad code, level 3's code starting
-  level 3 at 500, and the game-over screen showing "LEVEL 3 CODE" and the code.
+  level 3 at its starting score, and the game-over screen showing "LEVEL 3 CODE" and the code.
   (A scratch build scored 50 per torpedo to get there quickly.)
 
 ## Memory
@@ -153,6 +159,9 @@ the code table (57), the key map (40), and the strings.
   `docs/` (the GitHub Pages site) to `notes/LEVEL-CODES-LIST.md`. The
   codes are painted out of the level 2 and game-over screenshots, and
   the level 3 banner shot is gone. No other file in `docs/` has a code.
+  Since the level 2 follow-up, the docs don't give the point targets
+  either, and the scores are painted out of the screenshots that would
+  show one.
   They're still in the git history and can be worked out from the
   source or the tape.
 - **A stale level 2 message.** If the diver died in the same step that
@@ -162,8 +171,8 @@ the code table (57), the key map (40), and the strings.
   A scratch build that scored 50 a torpedo and went to `game_over` at
   that exact moment showed the panel on the next game before the fix,
   and a normal level 1 after it.
-- **Level 10's score** was wrong here: a code for level 10 starts at
-  5,400 (200 + 300 + ... + 1,000), not 4,500.
+- **Level 10's score** was wrong here: a code for level 10 starts at the
+  sum of all nine rows' points, not of eight.
 - The fix costs 6 bytes of code, in a part only the tape build has: the
   soak and MEASURE builds are byte-identical to before. `code_end` is
   `$BEA4`, 348 bytes free; data is unchanged (`$EBA1`, 1,119 free).

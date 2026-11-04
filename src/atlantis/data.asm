@@ -239,7 +239,7 @@ fish_wave_tab:  WAVE_TABLE CFG_FISH_WAVE_AMP
 wheel_heights:
         db 36                   ; 0  diver's depth on the way down
         db 100                  ; 1
-        db WHEEL_TOP_BASE       ; 2  surface: one swing below the top
+        db WHEEL_TOP_BASE       ; 2  surface: one swing below the score row
         db 120                  ; 3
         db 50                   ; 4
         db 70                   ; 5  fish
@@ -252,9 +252,10 @@ wheel_heights:
 ;   bob height     pixels above the middle, and the same below
 ;   bob speed      sine steps per 1/50 second
 ;   wobble         0 = smooth sine. See CFG_WHEEL_WOBBLE.
-;   kind           which movement. 0 drifts left and bobs.
-;                  1 is reserved for a bomb that homes in on the diver.
-;                  That routine is not written. Do not put 1 here:
+;   kind           which movement. 0 drifts left and bobs. The level
+;                  can put 1, the wave, over it (wheel_type). 2 is
+;                  reserved for a bomb that homes in on the diver. That
+;                  routine is not written. Do not put 2 here:
 ;                  update_wheel will ignore the bomb rather than jump
 ;                  to a routine that does not exist. The commented line
 ;                  under wheel_kind_tab is the slot it will occupy.
