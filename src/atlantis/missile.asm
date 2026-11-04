@@ -121,6 +121,7 @@ msl_gap_span:   db CFG_MISSILE_GAP_MAX - CFG_MISSILE_GAP_MIN + 1 ; them)
     IFDEF POWERUPS
 msl_kind:       db 0            ; what is up: MSL_KIND_*
 msl_next:       db 0            ; what the next turn brings
+msl_pfrac:      db 0            ; a sinking power-up's fraction of a pixel
     ENDIF
 
 ; What the last draw covered: bytes a row (1 or 2), plus MSL_LOW when it
@@ -357,8 +358,12 @@ missile_or_power:
         ret
 
 power_sink:
-        ld a,(msl_y)
+        ld a,(msl_pfrac)
         add a,CFG_POWER_SPEED
+        ld (msl_pfrac),a
+        ret nc                  ; not a whole pixel yet
+        ld a,(msl_y)
+        inc a
         cp POWER_LOW + 1
         jp nc,missile_gone      ; at the weed: gone
         ld (msl_y),a
@@ -383,6 +388,10 @@ power_take:
         ld de,CFG_DOUBLE_TIME * 50
         add hl,de
         ld (double_until),hl
+        ld hl,double_tick       ; the clock: main_loop's missile_update calls
+        call double_calls       ; go through double_tick until it runs out
+        ld hl,hud_dirty
+        set HUD_HEARTS,(hl)     ; the bubble on row 1, beside the hearts
 .done:  call missile_gone
     IFNDEF NO_SOUND
         ld hl,snd_tune_power
@@ -391,10 +400,48 @@ power_take:
         or a
         ret
 
+; The double shot's clock. While it lasts, main_loop's two calls to
+; missile_update (.msl_uc1, .msl_uc2) come here first, so a game
+; without one pays nothing. When it runs out: the bubble beside the
+; hearts goes, a falling jingle plays, and the calls go back.
+; Corrupts: AF, BC, DE, HL (as missile_update)
+double_tick:
+        ld hl,(frame_count)
+        ld de,(double_until)
+        or a
+        sbc hl,de
+        bit 7,h
+        jp nz,missile_update    ; before double_until
+        call double_end
+        jp missile_update
+
+; The double shot is over: by its clock, or a new game. Corrupts: AF, HL
+double_end:
+        xor a
+        ld (double_on),a
+        ld hl,hud_dirty
+        set HUD_HEARTS,(hl)     ; the bubble on row 1 goes
+        ld hl,missile_update
+        call double_calls
+    IFNDEF NO_SOUND
+        ld hl,snd_tune_down
+        jp snd_tune_start
+    ELSE
+        ret
+    ENDIF
+
+; HL into main_loop's two missile_update calls. Corrupts: nothing else
+double_calls:
+        ld (fish_mv.msl_uc1 + 1),hl
+        ld (fish_mv2.msl_uc2 + 1),hl
+        ret
+        ASSERT ({fish_mv.msl_uc1} & $FF) == $CD && {fish_mv.msl_uc1 + 1} == missile_update, ".msl_uc1 is not CALL missile_update"
+        ASSERT ({fish_mv2.msl_uc2} & $FF) == $CD && {fish_mv2.msl_uc2 + 1} == missile_update, ".msl_uc2 is not CALL missile_update"
+        ASSERT CFG_POWER_SPEED >= 1 && CFG_POWER_SPEED <= 255, "CFG_POWER_SPEED is 256ths of a pixel a 1/50 second: 1 to 255"
+
         ASSERT MSL_ROWS == 8, "the power-ups are 8 rows: missile_draw draws MSL_ROWS"
         ASSERT CFG_LIVES_MAX >= CFG_LIVES && CFG_LIVES_MAX <= 9, "CFG_LIVES_MAX: CFG_LIVES to 9"
         ASSERT CFG_HEART_ODDS + CFG_DOUBLE_ODDS <= 256
-        ASSERT CFG_POWER_SPEED >= 1 && CFG_POWER_SPEED <= 4
         ASSERT CFG_DOUBLE_TIME >= 1 && CFG_DOUBLE_TIME <= 600, "CFG_DOUBLE_TIME is seconds, up to 10 minutes"
         ASSERT CFG_DOUBLE_COOLDOWN >= 1 && CFG_DOUBLE_COOLDOWN <= CFG_FIRE_COOLDOWN
         ASSERT CFG_POWER_LEVEL >= 1 && CFG_POWER_LEVEL <= 99
@@ -700,6 +747,11 @@ heart_pic:                      ; the hearts' own heart (data.asm, lives_heart)
         POWER_ROW %00111000
         POWER_ROW %00010000
         POWER_ROW %00000000
+; The bubble beside the hearts while the double shot lasts (lives_draw):
+; the same picture, ink only.
+double_glyph:
+        db %00111100, %01000010, %10111001, %10000001
+        db %10111001, %01000010, %00111100, %00000000
 bubble_pic:                     ; a bubble with two torpedoes in it: the double shot
         POWER_ROW %00111100
         POWER_ROW %01000010

@@ -13,15 +13,20 @@ at once.
   be seen from the start).
 - **How they move.** A power-up appears below the hearts, in a column
   near the diver (his middle, give or take 32 pixels), and sinks
-  `CFG_POWER_SPEED` pixels a 1/50 second. It is gone just above the
-  weed, about three seconds later.
+  `CFG_POWER_SPEED` 256ths of a pixel a 1/50 second: 160, about 31
+  pixels a second, slower than the diver dives (50), so he can catch
+  one up. It is gone just above the weed, about four and a half seconds
+  later.
 - **Taking one.** Touch it. Torpedoes pass through it.
   - **The heart** is one more life, up to `CFG_LIVES_MAX` (5). Row 1
     has room for 5 hearts. At 5 it is still used up.
   - **The bubble** gives the double shot for `CFG_DOUBLE_TIME` seconds
     (30): he can fire again while a torpedo is still running, so two
     can be out at once, each moving, hitting and scoring on its own.
-    Each launch is still a fresh press, with the usual cooldown.
+    Each launch is still a fresh press; the cooldown is shorter
+    meanwhile (see Timing). While it lasts, a bubble shows on row 1, a
+    cell of water left of the hearts. When it runs out the bubble goes
+    and a falling jingle plays (G5, E5, C5, G4).
   - Either plays a short rising jingle.
 
 ## How it costs so little
@@ -60,6 +65,14 @@ more save bytes.
 A label inside `main_loop` (even an `equ`) starts a new scope for its
 local labels, which is why the call sites are local labels and why
 `SLACK_WARMUP`'s default moved above `main_loop`.
+
+**The double shot's clock.** It must end on time even when nobody
+fires, and a game without one must not pay for a clock. So taking a
+bubble patches main_loop's two calls to `missile_update` (`.msl_uc1`,
+`.msl_uc2`) to `double_tick`, which checks `double_until` and then goes
+on to `missile_update`. When it runs out, `double_end` takes the bubble
+off row 1 (through `lives_draw`, at the HUD's safe time), plays the
+jingle and patches the calls back.
 
 ## Which builds have them
 
@@ -104,18 +117,20 @@ pick its picture, and the missile cases had 3 to 5 lines to spare.
 
 | | Now | Free |
 |---|---|---|
-| hot code (with the pictures and the patch tables) | `code_end` `$B6D1` | 591, below the round fish |
-| data | `data_end` `$CE9B` | 101 before the packed tape moves up a page |
-| cold block | `cold_end` `$7162` | 94 |
-| packed tape | `$CF00-$FF48` | 16 below the ROM's UDGs |
+| hot code (with the pictures, the patch tables, and the round fish's raw art and tables) | `code_end` `$B804` | 284, below the round fish |
+| data | `data_end` `$CDC3` | 61 before the packed tape moves up a page |
+| cold block | `cold_end` `$7169` | 87 |
+| packed tape | `$CE00-$FE9F` | 185 below the ROM's UDGs |
 
-To make room, the round fish's pictures are split: the left-facing pair
-below the jet's (`RFISH_BUF`, `$B920`), the right-facing pair at the top
-of the room above the run-time buffers (`RFISH_HI`, `$F5A0`). The tape
-is 14,258 bytes. The packed tape is now the limit: it loads from the
-page after `data_end` and must end below `$FF58`, so the next big thing
-needs room made first (the spinning wheel down to 4 pictures, or the
-loader rearranged).
+The packed tape loads from the page after `data_end` and must end below
+`$FF58`. Moving the round fish's raw art and tables (216 bytes) from the
+data block to the code block brought `data_end` under `$CE00`, which
+started the packed tape a page lower and gave it 256 bytes. The round
+fish's pictures are split: the left-facing pair below the jet's
+(`RFISH_BUF`, `$B920`), the right-facing pair at the top of the room
+above the run-time buffers (`RFISH_HI`, `$F5A0`). The tape is 14,345
+bytes. The next big thing will still need room made first (the
+spinning wheel down to 4 pictures, or the loader rearranged).
 
 ## Checks
 
@@ -129,4 +144,6 @@ loader rearranged).
     heart took him from 3 hearts to 4;
   - with every power-up a bubble dropped onto him, he took it, fired
     twice a third of a second apart, and two torpedoes were out at
-    once, with nothing left behind on the screen.
+    once, with nothing left behind on the screen;
+  - with the double shot cut to 5 seconds, the bubble appeared on row 1
+    when he took one and was gone when it ran out.

@@ -618,6 +618,7 @@ fish_mv:
         ld a,(input_state)
         and IN_FIRE
         call nz,torpedo_fire
+.msl_uc1:                      ; patched while the double shot lasts (missile.asm)
         call missile_update
     IFNDEF NO_WHEEL
         call update_wheel
@@ -901,6 +902,7 @@ fish_mv2:
         ld a,(input_state)
         and IN_FIRE
         call nz,torpedo_fire
+.msl_uc2:                      ; patched while the double shot lasts (missile.asm)
         call missile_update
     IFNDEF NO_WHEEL
         call update_wheel
@@ -1056,6 +1058,16 @@ meas_max2:      db 0
 meas_zeros2:    dw 0
     ENDIF
 
+        ; The round fish's raw art and pointer tables (TWO_FISH). The art
+        ; is read once at start-up, but the cold block has no room left,
+        ; and in the data block it would push data_end, and so the packed
+        ; tape that loads in the page after it, past the ROM's UDGs.
+        INCLUDE "../../gfx/rfish_raw.asm"
+    IFDEF TWO_FISH
+        RFISH_ART
+        RFISH_TABLES            ; preshift.asm
+    ENDIF
+
 code_end:
 CODE_LENGTH     equ code_end - code_start
 
@@ -1084,12 +1096,6 @@ soak_end:
 data_start:
         INCLUDE "data.asm"
         INCLUDE "../../gfx/fish_raw.asm"   ; shifted at start-up (preshift.asm)
-        INCLUDE "../../gfx/rfish_raw.asm"  ; the round fish, likewise (TWO_FISH)
-    IFDEF TWO_FISH
-        ; Its art is read once at start-up, but the cold block has no
-        ; room left for it, so it is with the data.
-        RFISH_ART
-    ENDIF
         INCLUDE "../../gfx/diver_raw.asm"  ; shifted at start-up, likewise
         INCLUDE "../../gfx/wheel_raw.asm"  ; the pulsar, likewise
         INCLUDE "../../gfx/wheel_spin.asm"

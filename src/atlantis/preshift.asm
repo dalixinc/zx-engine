@@ -469,15 +469,6 @@ jet_shifts:
     ENDIF
         PRESHIFT_TABLES fish_images, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW
         ASSERT pst_a == FISH_BUF + FISH_SHIFTED, "the fish's tables and preshift disagree"
-    IFDEF TWO_FISH
-rfish_images:
-        PRESHIFT_INDEX rfish_shifts, RFISH_PICS
-rfish_shifts:
-        PRESHIFT_SHIFTS RFISH_HI, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
-        ASSERT pst_a == BSS_LIMIT, "the round fish's right-facing tables and preshift disagree"
-        PRESHIFT_SHIFTS RFISH_BUF, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
-        ASSERT pst_a == JET_BUF, "the round fish's left-facing tables and preshift disagree"
-    ENDIF
         PRESHIFT_TABLES wheel_images, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW
         ASSERT pst_a == WHEEL_BUF + WHEEL_SHIFTED, "the pulsar's tables and preshift disagree"
         PRESHIFT_TABLES wspin_images, WSPIN_BUF, WSPIN_PICS, WSPIN_HEIGHT, WSPIN_WIDE, WSPIN_RAW
@@ -492,3 +483,14 @@ wspin_seq:
         ASSERT WSPIN_WIDTH == WHEEL_WIDTH && WSPIN_HEIGHT == WHEEL_HEIGHT, "both bombs share the draw, so they are one size"
         ASSERT WSPIN_WIDE == WHEEL_WIDE, "both bombs share wheel_shift_bytes"
         ASSERT WSPIN_FRAMES == WHEEL_FRAMES, "both bombs' animations are WHEEL_FRAMES steps"
+
+; The round fish's tables, in the code block (main.asm, before code_end).
+        MACRO RFISH_TABLES
+rfish_images:
+        PRESHIFT_INDEX rfish_shifts, RFISH_PICS
+rfish_shifts:
+        PRESHIFT_SHIFTS RFISH_HI, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
+        ASSERT pst_a == BSS_LIMIT, "the round fish's right-facing tables and preshift disagree"
+        PRESHIFT_SHIFTS RFISH_BUF, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
+        ASSERT pst_a == JET_BUF, "the round fish's left-facing tables and preshift disagree"
+        ENDM

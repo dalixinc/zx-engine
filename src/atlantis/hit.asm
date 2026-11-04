@@ -177,4 +177,21 @@ lives_draw:
         jr z,.next
         dec c
 .next:  djnz .cell
+    IFDEF POWERUPS
+        ; The double shot's bubble, a cell of water away from the hearts,
+        ; while it lasts; water when not.
+        ld hl,LIVES_SCREEN - 2
+        ld de,double_glyph
+        ld a,(double_on)
+        or a
+        jr nz,.dbl
+        ld de,lives_heart + 8
+.dbl:   ld b,8
+.dline: ld a,(de)
+        ld (hl),a
+        inc de
+        inc h
+        djnz .dline
+        ASSERT LIVES_COL - 2 >= HUD_LEN, "the double shot's bubble would cover the score line"
+    ENDIF
         ret

@@ -161,7 +161,7 @@ torpedo_fire:
         ld a,TORP_LOW
 .on:    ld (torp_on),a
     IFDEF DOUBLE_SHOT
-        call double_live        ; (it corrupts DE)
+        call double_live
         ld de,CFG_FIRE_COOLDOWN
         jr z,.cool
         ld de,CFG_DOUBLE_COOLDOWN ; the double shot: the next can follow soon
@@ -226,24 +226,14 @@ double_hand:
         xor a                   ; Z
         ret
 
-; Out: NZ while the double shot lasts. Clears double_on when it has run
-; out. Corrupts: AF, DE, HL
+; Out: NZ while the double shot lasts. Corrupts: AF
 double_live:
     IFDEF MEAS_DOUBLE
         or 1                    ; measurement: always
         ret
     ELSE
-        ld a,(double_on)
+        ld a,(double_on)        ; double_tick (missile.asm) ends it on time
         or a
-        ret z
-        ld hl,(frame_count)
-        ld de,(double_until)
-        or a
-        sbc hl,de
-        bit 7,h
-        ret nz                  ; before double_until
-        xor a
-        ld (double_on),a        ; run out: Z
         ret
     ENDIF
 
@@ -673,6 +663,11 @@ torpedo_reset:
         ld (t2_on),a
         ld (t2_vn),a
         ld (double_on),a
+      IFDEF POWERUPS
+        ld hl,missile_update    ; the double shot's clock off
+        call double_calls
+        xor a
+      ENDIF
         jp torp_two_set         ; A = 0: the plain routines back
     ELSE
         ret
