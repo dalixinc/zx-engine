@@ -20,7 +20,7 @@ sets every first level in `power_tab` to 1. Builds without power-ups
 ## The nuke (testing only)
 
 A third special bomb, kept out of `docs/` and the README. Touch its
-starburst to carry it and press Symbol Shift + B, as for the others:
+starburst to carry it and press B, as for the others:
 the bomb and the fish go up as if shot, with no points, and a silo's
 missile is taken away. `CFG_NUKE_LEVEL` is 99, so only the testers'
 switch brings it in play; set it to 0 to leave its code and its picture

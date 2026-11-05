@@ -53,7 +53,7 @@ hard refresh (Ctrl+Shift+R) fetches the new snapshot.
 | Left   | O               | 5           | left     |
 | Right  | P               | 8           | right    |
 | Fire   | SPACE                  | 0           | fire     |
-| Special bomb | Symbol Shift + B |           |          |
+| Special bomb | B               |             |          |
 | Stats  | Symbol Shift + S (test builds only) | |          |
 | Speed  | Symbol Shift + F       |             |          |
 | Menu   | Symbol Shift + P       |             |          |
@@ -92,7 +92,7 @@ falling jingle says it has run out (`docs/POWER-UPS.md`; `CFG_POWER_*`,
 `CFG_HEART_ODDS`, `CFG_DOUBLE_*`, `CFG_LIVES_MAX` in `config.asm`).
 Rarer still, from level 5, a special bomb: he carries one at a time
 (its picture shows on row 1, left of the bubble's cell; a new one
-replaces it) and sets it off with Symbol Shift + B. The suction bomb
+replaces it) and sets it off with B. The suction bomb
 (from level 5) pulls the enemy bomb and the fish down towards the
 seabed; the shove bomb (from level 7) throws them to the right. Either
 takes away a silo missile, and nothing it moves scores
@@ -165,7 +165,7 @@ src/atlantis/scenery.asm water, sand and ground colours
 src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
 src/atlantis/silo.asm    the silo picture, and the code built from it that draws it
 src/atlantis/missile.asm the silos' missiles: arm, fly, hit, their own draw; the power-ups
-src/atlantis/special.asm the special bombs: carried, set off with Symbol Shift + B
+src/atlantis/special.asm the special bombs: carried, set off with B
 src/atlantis/udg.asm     the one-cell pictures and the title's letters, in the UDG area
 src/atlantis/score.asm   the score, the levels, the line on row 1, the banner
 src/atlantis/codes.asm   the level codes: table, showing one, checking one typed

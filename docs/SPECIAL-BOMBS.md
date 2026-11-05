@@ -10,7 +10,7 @@ bytes moved to where they belong.
   bubble, in the missile's turn, but touching it does not set it off:
   the diver carries it, and its picture shows on row 1, left of the
   bubble's cell. Touching another replaces it.
-- **Symbol Shift + B** sets it off (B for bomb; the menu lists it). The
+- **B** sets it off (B for bomb; the menu lists it). The
   key is read only while he carries one.
 - **Suction** (from level 5) pulls the bomb and the fish down towards
   the seabed for half a second, 6 pixels a 1/50 second, to the lowest
@@ -45,7 +45,7 @@ The knobs are in `config.asm`: `CFG_SUCTION_LEVEL` (5),
 
 - **Nothing held, nothing moving: nothing.** While he carries one,
   main_loop's `call chords_poll` is patched to `sp_poll`, which runs the
-  chords and then reads Symbol Shift + B: about 60 T-states a step. When
+  chords and then reads B: about 60 T-states a step. When
   he sets it off, the call goes back.
 - **While it moves things**, main_loop's two `missile_update` calls go
   through `sp_tick`, the way the double shot's clock goes through
@@ -138,7 +138,7 @@ No interrupt is missed; in play the effect lasts half a second.
 - **Both tapes** load in Fuse to the menu, which shows the title from
   the UDG block and the new key line.
 - **In Fuse,** on scratch copies with the diver made unhittable: a
-  special bomb sank onto him and showed on row 1; Symbol Shift + B set
-  it off and cleared row 1's cell; suction pulled the bomb down and
+  special bomb sank onto him and showed on row 1; B set it
+  off and cleared row 1's cell; suction pulled the bomb down and
   shove threw the bomb and the fish to the right edge, with no cells
   left in the bomb's colour.

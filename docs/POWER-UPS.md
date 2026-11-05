@@ -1,6 +1,6 @@
 # Power-ups
 
-(The special bombs, carried and set off with Symbol Shift + B, are in
+(The special bombs, carried and set off with B, are in
 [SPECIAL-BOMBS.md](SPECIAL-BOMBS.md). The pictures below are now built
 at start-up from row 1's cells: see there.)
 
