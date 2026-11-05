@@ -137,6 +137,13 @@ CFG_MISSILE_ARM      equ 25
 ; water is about 150 pixels: 2 takes a second and a half, 3 one second.
 CFG_MISSILE_SPEED    equ 2
 
+; Homing missiles, from CFG_MSL_HOME_LEVEL: as it climbs, a missile
+; drifts towards the diver's middle, a pixel each time CFG_MSL_HOME
+; (256ths of a pixel a 1/50 second, 1-255) carries. 128 is 25 pixels a
+; second, so on its way up from the hatch it can close about 35.
+CFG_MSL_HOME_LEVEL   equ 9
+CFG_MSL_HOME         equ 128
+
 ; --- Power-ups (missile.asm, torpedo.asm) --------------------------------------
 ; Now and then the missile's turn brings a power-up instead: it sinks
 ; from below the hearts, in a column near the diver, and he takes it by
@@ -210,19 +217,25 @@ MOVE_WAVE           equ 1       ; either: the wave
 MOVE_HOME           equ 2       ; bomb: the bob, drifting to the diver's depth
 BORDER_BEAT         equ $FF     ; the heartbeat's round of colours
 CFG_L2_INK          equ BRIGHT | YELLOW | (BLUE << 3)
-CFG_HUNT_INK        equ BRIGHT | MAGENTA | (BLUE << 3)  ; the hunter, from level 4
+; A new colour each level, so the bomb says the level has changed:
+; red, magenta, green, cyan, yellow, black, then red again for 9.
+CFG_HUNT_INK        equ BRIGHT | MAGENTA | (BLUE << 3)  ; level 4
+CFG_L5_INK          equ BRIGHT | GREEN | (BLUE << 3)
+CFG_L6_INK          equ BRIGHT | CYAN | (BLUE << 3)
+CFG_L7_INK          equ BRIGHT | YELLOW | (BLUE << 3)
+CFG_L8_INK          equ BRIGHT | BLACK | (BLUE << 3)
 
         MACRO CFG_LEVELS
         ;          points  gap min  gap max  haste  bomb    ink            bmove      hunt fmove          fspeed border        fish bomb missile
         LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P, CFG_WHEEL_INK, MOVE_BOB, 0, MOVE_STRAIGHT, 0, BORDER_BEAT, 1, 2, 10
         LEVEL_ROW  300,    70,      185,     24,    BOMB_P, CFG_L2_INK,    MOVE_WAVE, 0,   MOVE_WAVE,     48,    CYAN,         1,   2,   10
-        LEVEL_ROW  400,    65,      170,     48,    BOMB_W, CFG_SPIN_INK,  MOVE_BOB,  0,   MOVE_STRAIGHT, 0,     RED,          1,   2,   10
+        LEVEL_ROW  400,    65,      170,     48,    BOMB_W, CFG_SPIN_INK,  MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     RED,          1,   2,   10
         LEVEL_ROW  500,    60,      155,     72,    BOMB_W, CFG_HUNT_INK,  MOVE_HOME, 48,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
-        LEVEL_ROW  600,    55,      140,     96,    BOMB_W, CFG_HUNT_INK,  MOVE_HOME, 64,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
-        LEVEL_ROW  700,    50,      125,     120,   BOMB_W, CFG_HUNT_INK,  MOVE_HOME, 80,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
-        LEVEL_ROW  800,    45,      110,     144,   BOMB_W, CFG_HUNT_INK,  MOVE_HOME, 96,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
-        LEVEL_ROW  900,    40,      95,      168,   BOMB_W, CFG_HUNT_INK,  MOVE_HOME, 112, MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
-        LEVEL_ROW  1000,   35,      80,      192,   BOMB_W, CFG_HUNT_INK,  MOVE_HOME, 128, MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  600,    55,      140,     96,    BOMB_W, CFG_L5_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  700,    50,      125,     120,   BOMB_W, CFG_L6_INK,    MOVE_HOME, 88,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  800,    45,      110,     144,   BOMB_W, CFG_L7_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  900,    40,      95,      168,   BOMB_W, CFG_L8_INK,    MOVE_HOME, 128, MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  1000,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_HOME, 128, MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
         ENDM
 
 ; The waves (MOVE_WAVE). A wave is a sine, AMP pixels above the middle

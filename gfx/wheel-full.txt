@@ -4,7 +4,7 @@
 ; round. His ring wobbled from frame to frame; it is the steady
 ; wide ring from his first frame now. The turning cross is his.
 ; The game's second bomb, from level 3: tools/gfx2raw.py keeps every
-; other frame (8) in gfx/wheel_spin.asm, and src/atlantis/wspin.asm
+; fourth frame (4, the quarter turns) in gfx/wheel_spin.asm, and src/atlantis/wspin.asm
 ; shifts them at start-up.
 ; mirror off
 

@@ -78,10 +78,11 @@ are on row 1, beside the hearts. Each level has a target, and each is
 longer than the last. Reaching it puts up a big "LEVEL n" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
 fly a little faster. Level 2 has a yellow bomb on a wave, a faster fish
-on a wave and a cyan border (`docs/LEVEL-2.md`). Level 3's bomb is a red
-spinning wheel that rolls as it goes, with a red border. From level 4
-it's a magenta hunter: it drifts towards the diver's depth until it has
-passed him, and hunts a little harder each level
+on a wave and a cyan border (`docs/LEVEL-2.md`). From level 3 the bomb is a
+spinning wheel that rolls as it goes, in a new colour each level. Levels
+3, 5 and 7 swing it on a wide wave; levels 4, 6 and 8 make it a hunter
+that drifts towards the diver's depth until it has passed him, harder
+each time. On level 9 the silos' missiles home in on him too
 (`docs/LEVELS-3-AND-4.md`).
 
 Level 2 and level 3 each open with a message and the level's code, up
@@ -191,16 +192,16 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: a small
 unpacker with the packed loading screen, which it shows at once, then
-the packed game (14,629 bytes in all). The unpacker writes four
-blocks. The cold block at `$6000-$7188` (4,489 bytes) is the menu, the
+the packed game (14,579 bytes in all). The unpacker writes four
+blocks. The cold block at `$6000-$7152` (4,435 bytes) is the menu, the
 level codes, start-up, the diver's death, each level's look and anything else that runs
 once in a while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The
-instructions are at `$8000-$B8F8` (`code_end` is `$B8F9`) and must stay
-below half the round fish's pictures at `$B920-$BC7F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CDB2`, and the one-cell pictures and the title's letters in the ROM's UDG area, `$FF58-$FFEF`. The four
+instructions are at `$8000-$B8AA` (`code_end` is `$B8AB`) and must stay
+below half the round fish's pictures at `$B920-$BC7F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CD6A`, and the one-cell pictures and the title's letters in the ROM's UDG area, `$FF58-$FFEF`. The four
 sprites' shifted copies are built at start-up: the diver's, the
 fish's and the pulsar's at `$CF30-$EFFF`, the spinning wheel's at
-`$71C0-$7FFF`. The buffers that start empty are at `$F300-$F517`,
+`$78E0-$7FFF`. The buffers that start empty are at `$F300-$F517`,
 zeroed at start-up. The tape build has no stat line.
 The soak build puts its checks after the cold block and its photographs
 after the game's code.

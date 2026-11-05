@@ -93,7 +93,7 @@ gfx/%.asm: gfx/%.txt tools/gfx2asm.py
 # the art unshifted. The spinning wheel keeps every other frame. Engine
 # Demo 1 still uses gfx/fish.asm, gfx2asm.py's pre-shifted fish.
 gfx/wheel_spin.asm: gfx/wheel-full.txt tools/gfx2raw.py tools/gfx2asm.py
-	$(PYTHON) tools/gfx2raw.py $< $@ wspin 2
+	$(PYTHON) tools/gfx2raw.py $< $@ wspin 4
 gfx/fish_raw.asm: gfx/fish-atlantis.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ fish 1
 # Atlantis's second fish, the round one, from Engine Demo 1's art.

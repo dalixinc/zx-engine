@@ -14,15 +14,15 @@ it, the **housekeeping** brief (PR #23).
 |---|---|
 | `$4000-$5AFF` | screen |
 | `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
-| `$6000-$7188` | **cold block** (4,489 bytes): menu, the title (`title_draw`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
-| `$7189-$71BF` | free (55) |
-| `$71C0-$7FFF` | the spinning wheel's shifted pictures (built at start-up) |
-| `$8000-$B8F8` | code (`code_end` `$B8F9`), with the power-ups' pictures, the double shot's patch tables, the round fish's raw art and tables, and start-up work the cold block has no room for (`slope_build`, `torpedo_reset`) |
-| `$B8F9-$B91F` | free (39) |
+| `$6000-$7152` | **cold block** (4,435 bytes): menu, the title (`title_draw`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, the seabed's slope tables' builder (`slope_build`), `torpedo_reset`, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
+| `$7153-$78DF` | free (1,933; but the tape's first block loads from the page after `cold_end` and must end below `$8000`: it now ends `$7E77`, so the cold block can grow about 390 bytes before that block needs rearranging) |
+| `$78E0-$7FFF` | the spinning wheel's shifted pictures (4 quarter turns, 1,824, built at start-up) |
+| `$8000-$B8AA` | code (`code_end` `$B8AB`), with the power-ups' pictures, the double shot's patch tables, and the round fish's raw art and tables |
+| `$B8AB-$B91F` | free (117) |
 | `$B920-$BC7F` | the round fish's left-facing shifted pictures (`RFISH_BUF`, 864, built at start-up; the tape build only, `TWO_FISH`: builds with the stat line and the soak have their code here instead) |
 | `$BC80-$C3FF` | the diver's two still pictures with the jet's other phase (`JET_BUF`, 1,920, built at start-up; the soak build has its code here instead) |
-| `$C400-$CDB2` | data: graphics, tables, `data.asm` (`data_end` `$CDB3`) |
-| `$CDB3-$CF2F` | free (381) |
+| `$C400-$CD6A` | data: graphics, tables, `data.asm` (`data_end` `$CD6B`) |
+| `$CD6B-$CF2F` | free (453) |
 | `$CF30-$E5AF` | the diver's shifted pictures (5,760, built at start-up) |
 | `$E5B0-$EC6F` | the fish's shifted pictures (built at start-up) |
 | `$EC70-$EFFF` | the pulsar's shifted pictures (built at start-up) |
@@ -50,10 +50,10 @@ The ends come from the build's `DISPLAY` lines (`atlantis code_end`,
 build if any of them runs into the next thing up.
 
 While the tape loads, two more things sit in memory for a moment: the
-first block, from the page after `cold_end` (`$7200-$7EAD`: the
+first block, from the page after `cold_end` (`$7200-$7E77`: the
 unpacker, the packed loading screen, the packed data block and the
 packed UDG block), and the second, the packed cold block and code, from
-the page after `data_end` (`$CE00-$F9EE`, 1,386 bytes below the ROM's
+the page after `data_end` (`$CE00-$F9F2`, 1,382 bytes below the ROM's
 UDGs at `$FF58`, its limit). Start-up builds the shifted pictures over
 both. See [UDG-AND-SEABED.md](UDG-AND-SEABED.md).
 

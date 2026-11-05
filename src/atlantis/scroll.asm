@@ -86,6 +86,7 @@ level_index:    db 0
 WEED_SPILL_AT   equ 3           ; fine >= this: the plant enters the left cell
 WEED_LEAVE_AT   equ 7           ; fine >= this: no set pixel remains in its own cell
 
+        COLD
 ;------------------------------------------------------------------------------
 ; slope_build - the sloped tops of the ground and the sand, at start-up
 ; Each of a profile's 16 columns gets 8 bytes, top row first. Its height
@@ -165,9 +166,7 @@ slope_build:
 .in:    ld a,(hl)
         pop hl
         ret
-        ; (Start-up only, but the cold block has no room left for it.)
 
-        COLD
 ;------------------------------------------------------------------------------
 ; scroll_init - first 32 columns, the column waiting off the right, one copy
 ; Corrupts: AF, BC, DE, HL, IX
