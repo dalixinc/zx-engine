@@ -116,6 +116,8 @@ msl_world:      dw 0            ; world column of its silo's left half
 msl_x:          db 0            ; left pixel of the picture
 msl_y:          db 0            ; top pixel row
 msl_seed:       db $C3          ; its own shift register. Never 0.
+msl_home:       db 0            ; 1 = this one homes (CFG_MSL_HOME_LEVEL)
+msl_hfrac:      db 0            ; its fraction of a pixel sideways
 ; The first level of each (config.asm). The tester's switch (cheat_poll) makes all
 ; three 1. In this order: missile_gone steps through them.
 power_levels:
@@ -180,7 +182,7 @@ missile_update:
     IFDEF POWERUPS
         jp z,missile_or_power
     ELSE
-        jr z,missile_pick
+        jp z,missile_pick
     ENDIF
         dec (hl)
         ret
@@ -189,6 +191,31 @@ missile_update:
         cp MSL_TOP
         jp c,missile_gone       ; it was at least MSL_TOP, so no borrow
         ld (msl_y),a
+        ld a,(msl_home)
+        or a
+        ret z
+        ; A homing missile (CFG_MSL_HOME_LEVEL on): a pixel towards his
+        ; middle each time the fraction carries. Off a byte it is two
+        ; bytes a row (missile_draw does both); up to x 247 the second
+        ; byte is still on the screen.
+        ld a,(msl_hfrac)
+        add a,CFG_MSL_HOME
+        ld (msl_hfrac),a
+        ret nc
+        ld a,(diver_x)
+        add a,MSL_AIM
+        ld b,a
+        ld a,(msl_x)
+        cp b
+        ret z
+        jr c,.right
+        dec a                   ; never below his middle, so never below 0
+        ld (msl_x),a
+        ret
+.right: cp MSL_HOME_MAX
+        ret nc
+        inc a
+        ld (msl_x),a
         ret
 
 ; In the hatch. Its x follows the silo, worked out from the silo's world
@@ -218,6 +245,12 @@ missile_armed:
         ret nc                  ; not 3, 4 or 5: one more 1/50 second
         ld a,MSL_FLY
         ld (msl_phase),a
+        ; Homing from CFG_MSL_HOME_LEVEL (and on a measured level 9).
+        ld a,(level_n)
+        cp CFG_MSL_HOME_LEVEL
+        sbc a,a                 ; $FF below that level, 0 from it
+        inc a                   ; 0 below, 1 from it
+        ld (msl_home),a
     IFNDEF NO_SOUND
         jp snd_launch_start     ; whoosh
     ELSE
@@ -254,6 +287,9 @@ missile_armed:
 ; Out: Z if it is near. Preserves A, BC, HL. Corrupts: F, DE
 MSL_LEAD        equ MSL_DX - CFG_MISSILE_ARM - 4
 MSL_AIM         equ (DIVER_WIDTH - MISSILE_WIDTH) / 2
+MSL_HOME_MAX    equ 247             ; two bytes a row still end in column 31
+        ASSERT (MSL_HOME_MAX + MISSILE_WIDTH - 1) / 8 <= 31
+        ASSERT CFG_MSL_HOME >= 1 && CFG_MSL_HOME <= 255 && CFG_MSL_HOME_LEVEL >= 1
 
 msl_near:
         ld d,a

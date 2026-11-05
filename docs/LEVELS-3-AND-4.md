@@ -274,3 +274,50 @@ round fish the level's (1). `LEVEL_ROW` asserts the fish points are under
   holding his depth on the fish's row and firing: both kinds appear,
   the first piranha scored 2, and the score rose through odd totals, so
   the round fish scores 1. Engine Demo 1 is byte-identical.
+
+## Revised: a colour a level, wave and hunt in turn, homing missiles
+
+Later changes to levels 3 to 9, and the spinning wheel condensed to make
+room.
+
+| Level | Bomb colour | Bomb movement | Also |
+|---|---|---|---|
+| 3 | red | the wave (16 pixels up and down) | red border |
+| 4 | magenta | hunting, 48 | |
+| 5 | green | the wave | |
+| 6 | cyan | hunting, 88 | |
+| 7 | yellow | the wave | |
+| 8 | black | hunting, 128 (the most) | |
+| 9 | red | hunting, 128 | the silos' missiles home in |
+
+- **A colour a level**, so the bomb itself says the level has changed.
+  They are `CFG_L5_INK` to `CFG_L8_INK` (and `CFG_SPIN_INK`,
+  `CFG_HUNT_INK`) in `config.asm`.
+- **A wider swing on the odd levels.** The wave is level 2's: a sine
+  table of 16 pixels each way, against the small bob's 6, and cheaper
+  than widening the bob (whose wide path does arithmetic the heavy frame
+  has no room for). The even levels hunt, harder each time.
+- **Homing missiles** from `CFG_MSL_HOME_LEVEL` (9). As a missile climbs,
+  it moves a pixel towards the diver's middle each time `CFG_MSL_HOME`
+  (128, half a pixel a 1/50 second) carries: about 35 pixels on its way
+  up. Off a byte boundary it is two bytes a row, which `missile_draw`
+  already does in the hatch, and it stops at x 247 so the second byte
+  stays on the screen.
+- **The spinning wheel in 4 pictures**, the quarter turns (every fourth
+  frame of `gfx/wheel-full.txt`), not 8. That frees 1,824 bytes of
+  contended RAM (its pictures now start at `$78E0`) and 192 bytes of raw
+  art in the cold block. The spin hold is retuned for the roll: 7, 6 or
+  5 1/50 seconds a quarter turn by the level's haste (below 96, below
+  144, from 144). The room let `slope_build` and `torpedo_reset` go back
+  to the cold block, and the hot code has 117 bytes free again.
+
+**Timing** (spare lines, late steps in brackets): level 3 seabed 1,
++ fire 0 (1); level 5 seabed 0 (1); level 7 seabed 1, + fire 0 (3), 47
+at 25; level 9 seabed 3, + fire 0 (4), + a homing missile always up 3,
+the same in open water 4. Interrupts 1 a step everywhere: 50 holds.
+Levels 1 and 2 are within the usual one-line drift of main.
+
+**Checks:** the soak green at 50 and 25; the colour check (no cell left
+in a bomb's ink) for 3 minutes each on levels 3, 5, 7 and 9; a homing
+missile seen drifting towards the diver in Fuse; the level codes and
+Engine Demo 1 unchanged.

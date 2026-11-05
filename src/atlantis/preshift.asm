@@ -9,7 +9,7 @@
 ;   the diver        6 pictures (3 frames, 2 facings)   540 -> 5,760 bytes
 ;   the fish         4 pictures (2 frames, 2 facings)   144 -> 1,728 bytes
 ;   the pulsar       2 pictures                          96 ->   912 bytes
-;   the spinning     8 pictures                         384 -> 3,648 bytes
+;   the spinning     4 pictures                         192 -> 1,824 bytes
 ;   wheel
 ;
 ; The copies are byte for byte what gfx2asm.py writes, in its order, and
@@ -473,16 +473,16 @@ jet_shifts:
         ASSERT pst_a == WHEEL_BUF + WHEEL_SHIFTED, "the pulsar's tables and preshift disagree"
         PRESHIFT_TABLES wspin_images, WSPIN_BUF, WSPIN_PICS, WSPIN_HEIGHT, WSPIN_WIDE, WSPIN_RAW
         ASSERT pst_a == WSPIN_BUF_END, "the spinning wheel's tables and preshift disagree"
-wspin_seq:
-        db 0, 1, 2, 3, 4, 5, 6, 7
+wspin_seq:                      ; the 4 quarter turns, twice: WHEEL_FRAMES steps
+        db 0, 1, 2, 3, 0, 1, 2, 3
         ENDM
 
-        ASSERT WSPIN_FRAMES == 8 && WSPIN_PICS == 8, "wspin_seq lists 8 pictures"
+        ASSERT WSPIN_FRAMES == 4 && WSPIN_PICS == 4, "wspin_seq lists 4 pictures"
         ASSERT FISH_PICS == 2 * FISH_FRAMES, "the fish has two facings"
         ASSERT DIVER_PICS == 2 * DIVER_FRAMES, "the diver has two facings"
         ASSERT WSPIN_WIDTH == WHEEL_WIDTH && WSPIN_HEIGHT == WHEEL_HEIGHT, "both bombs share the draw, so they are one size"
         ASSERT WSPIN_WIDE == WHEEL_WIDE, "both bombs share wheel_shift_bytes"
-        ASSERT WSPIN_FRAMES == WHEEL_FRAMES, "both bombs' animations are WHEEL_FRAMES steps"
+        ASSERT WHEEL_FRAMES == 8, "wspin_seq is WHEEL_FRAMES (8) steps, as the pulsar's"
 
 ; The round fish's tables, in the code block (main.asm, before code_end).
         MACRO RFISH_TABLES

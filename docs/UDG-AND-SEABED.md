@@ -71,7 +71,7 @@ the weed cells green is unchanged.
 |---|---|---|
 | `CFG_POWER_LEVEL` | 2 | hearts from this level |
 | `CFG_DOUBLE_LEVEL` | 4 | the double shot's bubble from this level |
-| `CFG_PIRANHA_LEVEL` | 4 | before this level every fish is the round one; from it, one in four is the piranha |
+| `CFG_PIRANHA_LEVEL` | 6 | before this level every fish is the round one; from it, one in four is the piranha |
 
 Each is on its own line. When a missile ends, the next turn is still
 rolled once: a heart in the hearts' share (32 in 256) once hearts are

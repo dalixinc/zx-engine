@@ -68,16 +68,19 @@ WHEEL_BOB       equ 6
 ; bomb, so it stays 8.
 WHEEL_SPIN      equ 8
 
-; The spinning wheel rolls: its 8 pictures are one turn, counter-
-; clockwise, the way a wheel turns going left. The rim is 5 to 6 pixels
-; from the middle, so a turn rolls about 34 pixels, about 4.3 a picture.
-; At 1 + haste/256 pixels a 1/50 second that is 4.3 / speed 1/50 seconds
-; a picture: 3.6 at level 3's haste (48), 2.5 at level 9's (192). A
-; hold of 4 below SPIN_FAST_HASTE and 3 from it keeps every level within
-; about a fifth of a true roll. wheel_type picks it when a bomb appears.
-SPIN_HOLD_SLOW  equ 4
-SPIN_HOLD_FAST  equ 3
-SPIN_FAST_HASTE equ 64
+; The spinning wheel rolls: its 4 pictures are one turn in quarter
+; turns, counter-clockwise, the way a wheel turns going left. The rim is
+; 5 to 6 pixels from the middle, so a turn rolls about 34 pixels, about
+; 8.6 a picture. At 1 + haste/256 pixels a 1/50 second that is 8.6 /
+; speed 1/50 seconds a picture: 7.2 at level 3's haste (48), 4.9 at
+; level 9's (192). A hold of 7 below SPIN_MID_HASTE, 6 below
+; SPIN_FAST_HASTE and 5 from it keeps every level within about a tenth
+; of a true roll. wheel_type picks it when a bomb appears.
+SPIN_HOLD_SLOW  equ 7
+SPIN_HOLD_MID   equ 6
+SPIN_HOLD_FAST  equ 5
+SPIN_MID_HASTE  equ 96
+SPIN_FAST_HASTE equ 144
 
 ; Frames to wait after one bomb has gone, before the next appears.
 ; 48 frames is just under a second.
@@ -503,6 +506,9 @@ wheel_type:
         ld de,spin_pics
         ld c,SPIN_HOLD_SLOW     ; the roll: see SPIN_HOLD_SLOW
         ld a,(wheel_haste)
+        cp SPIN_MID_HASTE
+        jr c,.got
+        ld c,SPIN_HOLD_MID
         cp SPIN_FAST_HASTE
         jr c,.got
         ld c,SPIN_HOLD_FAST

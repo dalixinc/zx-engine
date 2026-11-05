@@ -649,9 +649,9 @@ t2_draw:
         TORP_DRAW T2_OFF
     ENDIF
 
+        COLD
 ;------------------------------------------------------------------------------
 ; torpedo_reset - none running, nothing to put back. Corrupts: AF
-; (A new game and the menu only, but the cold block has no room left.)
 ;------------------------------------------------------------------------------
 torpedo_reset:
         xor a
@@ -672,6 +672,7 @@ torpedo_reset:
     ELSE
         ret
     ENDIF
+        HOT
 
 ; The double shot's patch tables. In the code block: the data block's
 ; end decides where the packed tape loads, and that has no room left.
