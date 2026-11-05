@@ -22,6 +22,9 @@ str_ctrl_stats: db "Symbol Shift + S  stats",0
     ENDIF
 str_ctrl_speed: db "Symbol Shift + F  speed",0
 str_ctrl_menu:  db "Symbol Shift + P  menu",0
+    IFDEF POWERUPS
+str_ctrl_bomb:  db "Symbol Shift + B  bomb",0
+    ENDIF
 str_opt_start:  db "1  Start game",0
 str_game_over:  db "GAME OVER",0
 str_score:      db "SCORE ",0

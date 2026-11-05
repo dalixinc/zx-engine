@@ -244,8 +244,12 @@ fish_wave:
         ld l,a
         jr nc,.in
         inc h
-.in:    ld a,FISH_SWIM_Y
+.in:    ld a,FISH_SWIM_Y        ; the middle: suction moves it (special.asm)
         add a,(hl)
+        ; fall through
+; fish_set_y - A = the fish's height: into fish_y and the three hit
+; tests. Corrupts: AF
+fish_set_y:
         ld (fish_y),a
         ld (fish_touch_y + 1),a
         ld (torpedo_fish_y + 1),a
@@ -267,17 +271,15 @@ level_style:
         ldir
         xor a
         ld (fish_wave_p),a
+        ld a,FISH_SWIM_Y
+        ld (fish_wave.in + 1),a ; the wave's middle back, if suction moved it
         ld hl,fish_wave
         ld a,(level_fmove)
         or a
         jr nz,.mover
         ; Straight across at its own depth, with the hit tests there.
         ld a,FISH_SWIM_Y
-        ld (fish_y),a
-        ld (fish_touch_y + 1),a
-        ld (torpedo_fish_y + 1),a
-        ld a,FISH_SWIM_Y + FISH_HEIGHT
-        ld (fish_aside_y + 1),a
+        call fish_set_y
         ld hl,update_fish
 .mover: ld (fish_mover),hl
         ld a,(fish_busy)

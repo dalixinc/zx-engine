@@ -45,7 +45,7 @@
         INCLUDE "../../build/atlantis.exp"
 
 COLD_START      equ $6000
-UDG_START       equ $FF58       ; the ROM's user-defined graphics
+UDG_START       equ $FF48       ; the ROM's user-defined graphics, and 16 bytes below
 FRAMES          equ 23672       ; the ROM counts interrupts here
 
 UNPACK_ORG      equ (cold_end + $FF) & $FF00

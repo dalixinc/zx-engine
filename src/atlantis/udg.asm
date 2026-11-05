@@ -1,8 +1,9 @@
 ;==============================================================================
-; udg.asm - the one-cell pictures, in the ROM's UDG area ($FF58-$FFFF)
+; udg.asm - the one-cell pictures, in the ROM's UDG area ($FF48-$FFFF)
 ;
 ; The game calls no ROM routine and prints no UDG, so the 168 bytes the
-; ROM keeps for user-defined graphics are free. What goes here is read,
+; ROM keeps for user-defined graphics ($FF58 up) are free, and so are the
+; 87 below them, above the IM2 table: the block starts 16 bytes lower. What goes here is read,
 ; never drawn shifted: pictures copied a cell at a time on a character
 ; boundary, and the title's letters. They are uncontended, like
 ; everything above $8000.
@@ -12,12 +13,12 @@
 ; game itself must end below UDG_START, so the unpacker never writes
 ; over packed bytes it has still to read.
 ;
-; Below it: the IM2 table ends at $FF00, and $FF01-$FF57 is free too.
+; Below it: the IM2 table ends at $FF00, and $FF01-$FF47 is still free.
 ; The stack grows down from STACK_TOP ($FDFC), away from all of it.
 ; main.asm asserts both.
 ;==============================================================================
 
-UDG_START       equ $FF58
+UDG_START       equ $FF48
 
 udg_start:
 ; The title, 8 by 16 (title_draw, menu.asm): A T L N I S, top row first.
@@ -127,8 +128,8 @@ title_font:
         db %11111110  ; #######.
         db %11111100  ; ######..
 
-; The seaweed (next_back_tile, scroll.asm): a fir, a kelp and a fan
-; coral, picked at random for each plant. Every plant's pixels are in
+; The seaweed (next_back_tile, scroll.asm): a fir, a kelp, a fan coral
+; and a sea grass, picked at random for each plant. Every plant's pixels are in
 ; columns 2-6 (bit 5 to bit 1), with at least one in column 2 and one
 ; in column 6: WEED_SPILL_AT and WEED_LEAVE_AT count on both edges (the
 ; soak checks it). The bottom row has pixels, so a full dune touches it.
@@ -160,6 +161,15 @@ weed_pics:
         db %00001000  ; ....#...
         db %00001000  ; ....#...
         db %00011100  ; ...###..
+        ; sea grass
+        db %00100010  ; ..#...#.
+        db %00010100  ; ...#.#..
+        db %00101010  ; ..#.#.#.
+        db %00010100  ; ...#.#..
+        db %00010100  ; ...#.#..
+        db %00001000  ; ....#...
+        db %00001000  ; ....#...
+        db %00011100  ; ...###..
 
 ; A rock on the ground (build_front_pat, scroll.asm): two clear rows,
 ; then a mound ROCK_H tall.
@@ -173,9 +183,13 @@ pat_rock:
         db %11111111
         db %11111111
 
-; A life (lives_draw, hit.asm): one heart for each life left, on row 1.
-; The eight zero bytes after it are an empty cell.
-lives_heart:
+; Row 1's cells and the power-ups (lives_draw, hit.asm; power_build,
+; special.asm), in the order of the kinds (MSL_KIND_*): the cell for kind
+; n is udg_water + 8 n. Each is ink only. The sinking power-ups are made
+; from the same bytes at start-up, with their masks.
+udg_water:                      ; an empty cell (kind 0: nothing)
+        ds 8, 0
+lives_heart:                    ; a life, and the heart power-up
         db %00000000
         db %01101100
         db %11111110
@@ -184,12 +198,38 @@ lives_heart:
         db %00111000
         db %00010000
         db %00000000
-        ds 8, 0
-
-; The double shot's bubble beside the hearts while it lasts (lives_draw):
-; the power-up's picture (missile.asm), ink only.
-double_glyph:
+double_glyph:                   ; the bubble: two torpedoes in it, the double shot
         db %00111100, %01000010, %10111001, %10000001
         db %10111001, %01000010, %00111100, %00000000
+suction_glyph:                  ; the suction bomb: two chevrons, down
+        db %11000110  ; ##...##.
+        db %01101100  ; .##.##..
+        db %00111000  ; ..###...
+        db %11010110  ; ##.#.##.
+        db %01101100  ; .##.##..
+        db %00111000  ; ..###...
+        db %00010000  ; ...#....
+        db %00000000
+shove_glyph:                    ; the shove bomb: two chevrons, right
+        db %10010000  ; #..#....
+        db %11011000  ; ##.##...
+        db %01101100  ; .##.##..
+        db %00110110  ; ..##.##.
+        db %01101100  ; .##.##..
+        db %11011000  ; ##.##...
+        db %10010000  ; #..#....
+        db %00000000
+    IF CFG_NUKE_LEVEL
+nuke_glyph:                     ; the nuke: a starburst
+        db %00010000  ; ...#....
+        db %01010100  ; .#.#.#..
+        db %00111000  ; ..###...
+        db %11111110  ; #######.
+        db %00111000  ; ..###...
+        db %01010100  ; .#.#.#..
+        db %00010000  ; ...#....
+        db %00000000
+    ENDIF
 udg_end:
         ASSERT title_font + 6 * 16 == weed_pics, "the title font is 6 letters of 16 rows"
+        ASSERT (udg_water & $FF) + 8 * 6 <= 256, "row 1's cells cross a page: lives_draw adds to the low byte"

@@ -14,11 +14,11 @@ it, the **housekeeping** brief (PR #23).
 |---|---|
 | `$4000-$5AFF` | screen |
 | `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
-| `$6000-$7152` | **cold block** (4,435 bytes): menu, the title (`title_draw`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, the seabed's slope tables' builder (`slope_build`), `torpedo_reset`, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
-| `$7153-$78DF` | free (1,933; but the tape's first block loads from the page after `cold_end` and must end below `$8000`: it now ends `$7E77`, so the cold block can grow about 390 bytes before that block needs rearranging) |
+| `$6000-$7269` | **cold block** (4,714 bytes): menu, the title (`title_draw`), the testers' switch (`cheat_poll`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, the seabed's slope tables' builder (`slope_build`), the power-ups' picture builder (`power_build`), taking and setting off a special bomb (`special.asm`), `torpedo_reset`, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
+| `$726A-$78DF` | free (1,654; but the tape's first block loads from the page after `cold_end` and must end below `$8000`: it now loads at `$7300` and ends `$7F91`, so the cold block can grow about 150 bytes before that block moves up another page, where it would not fit) |
 | `$78E0-$7FFF` | the spinning wheel's shifted pictures (4 quarter turns, 1,824, built at start-up) |
-| `$8000-$B8AA` | code (`code_end` `$B8AB`), with the power-ups' pictures, the double shot's patch tables, and the round fish's raw art and tables |
-| `$B8AB-$B91F` | free (117) |
+| `$8000-$B8EA` | code (`code_end` `$B8EB`), with the double shot's patch tables, and the round fish's raw art and tables |
+| `$B8EB-$B91F` | free (53) |
 | `$B920-$BC7F` | the round fish's left-facing shifted pictures (`RFISH_BUF`, 864, built at start-up; the tape build only, `TWO_FISH`: builds with the stat line and the soak have their code here instead) |
 | `$BC80-$C3FF` | the diver's two still pictures with the jet's other phase (`JET_BUF`, 1,920, built at start-up; the soak build has its code here instead) |
 | `$C400-$CD6A` | data: graphics, tables, `data.asm` (`data_end` `$CD6B`) |
@@ -32,11 +32,11 @@ it, the **housekeeping** brief (PR #23).
 | `$F5A0-$F8FF` | the round fish's right-facing shifted pictures (`RFISH_HI`, 864, built at start-up, tape build only), up to `BSS_LIMIT` `$F900`, which the loader shares. The soak build keeps its title photograph at `$F600-$F8FF` (`SOAK_TITLE`) instead |
 | `$FA00-$FB7F` | row table |
 | `$FB80-$FC7F` | the seabed's sloped column tops (`SLOPE_GROUND`, `SLOPE_SAND`, built at start-up by `slope_build`) |
+| `$FC80-$FCCF` | the sinking power-ups' masked pictures (`POWER_PICS`, 16 a kind, built at start-up by `power_build` from row 1's cells) |
 | `$FDFC` down | stack (`STACK_NEED`, 128 bytes, is kept clear above the slope tables) |
 | `$FDFD`, `$FE00-$FF00` | `JP isr`, IM2 table |
-| `$FF01-$FF57` | free (87) |
-| `$FF58-$FFEF` | the ROM's UDG area: the title's letters, the seaweed, the rock, the hearts and the double shot's bubble (`udg.asm`, 152 bytes, its own tape block) |
-| `$FFF0-$FFFF` | free (16) |
+| `$FF01-$FF47` | free (71) |
+| `$FF48-$FFFF` | the ROM's UDG area and 16 bytes below it: the title's letters, the four seaweeds, the rock, and row 1's cells in the power-ups' order (water, the heart, the bubble, the special bombs) (`udg.asm`, 184 bytes, its own tape block) |
 
 Everything from `$6000` to `$7FFF` is contended: the ULA slows each
 access while it draws the picture. Only the spinning wheel's pictures
@@ -50,11 +50,11 @@ The ends come from the build's `DISPLAY` lines (`atlantis code_end`,
 build if any of them runs into the next thing up.
 
 While the tape loads, two more things sit in memory for a moment: the
-first block, from the page after `cold_end` (`$7200-$7E77`: the
+first block, from the page after `cold_end` (`$7300-$7F91`: the
 unpacker, the packed loading screen, the packed data block and the
 packed UDG block), and the second, the packed cold block and code, from
-the page after `data_end` (`$CE00-$F9F2`, 1,382 bytes below the ROM's
-UDGs at `$FF58`, its limit). Start-up builds the shifted pictures over
+the page after `data_end` (`$CE00-$FB0A`, 1,086 bytes below the UDG
+block at `$FF48`, its limit). Start-up builds the shifted pictures over
 both. See [UDG-AND-SEABED.md](UDG-AND-SEABED.md).
 
 ## The squeeze brief: free bytes, before and after

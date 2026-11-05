@@ -91,3 +91,10 @@ SLOPE_SAND      equ SLOPE_GROUND + 128
 SLOPE_END       equ SLOPE_SAND + 128
         ASSERT (SLOPE_GROUND & $FF) + 128 <= 256 && (SLOPE_SAND & $FF) + 128 <= 256, "a slope table crosses a page"
         ASSERT SLOPE_END <= STACK_TOP - STACK_NEED, "the slope tables run into the stack's room"
+
+; The sinking power-ups' masked pictures (power_build, special.asm), 16
+; bytes a kind, built at start-up after the slope tables. The run-time
+; buffers (bss.asm) have no room left.
+POWER_PICS      equ SLOPE_END
+POWER_PICS_END  equ POWER_PICS + 16 * 5
+        ASSERT POWER_PICS_END <= STACK_TOP - STACK_NEED, "the power-ups' pictures run into the stack's room"

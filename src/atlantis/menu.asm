@@ -270,7 +270,8 @@ title_draw:
 title_word:     db 0, 1, 2, 0, 3, 1, 4, 5
 
 ;------------------------------------------------------------------------------
-; menu_draw - title, four control lines, then every row of menu_tab
+; menu_draw - title, the control lines (the bomb key's with power-ups), then
+;             every row of menu_tab
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 menu_draw:
@@ -295,6 +296,11 @@ CTRL_ROW        equ 6           ; the tape has no stat line to switch on
         ld hl,str_ctrl_menu
         ld bc,((CTRL_ROW + 1) << 8) | 4
         call print_string
+    IFDEF POWERUPS
+        ld hl,str_ctrl_bomb     ; sets off a carried special bomb (special.asm)
+        ld bc,((CTRL_ROW + 2) << 8) | 4
+        call print_string
+    ENDIF
 
         ld hl,menu_tab
 .item:  ld a,(hl)

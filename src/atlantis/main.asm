@@ -167,6 +167,9 @@ boot:
         call build_row_table
         call slope_build        ; the seabed's sloped tops (scroll.asm)
         call preshift_all       ; the diver's, the fish's and the bombs' shifted pictures
+    IFDEF POWERUPS
+        call power_build        ; the sinking power-ups' masks (special.asm)
+    ENDIF
 
         call rate_init
 
@@ -311,6 +314,7 @@ main_loop:
     ENDIF
         ; Before anything moves, so the whole step is one speed and a
         ; return to the menu does not swim a frame on the way out.
+.chord_call:                   ; sp_poll while a special bomb is held (special.asm)
         call chords_poll        ; Symbol Shift with P, F or S. One read of Shift.
         call read_input
     IFDEF SOAK
@@ -1013,6 +1017,7 @@ wheel_first:    db 0
         HOT
         INCLUDE "torpedo.asm"
         INCLUDE "missile.asm"
+        INCLUDE "special.asm"    ; the special bombs: suction, shove, the nuke
         INCLUDE "../fish.asm"
         INCLUDE "../diver.asm"
         ; After the fish and the diver, so the wrappers can call their
@@ -1129,11 +1134,11 @@ COLD_LENGTH     equ cold_end - COLD_START
 
         ; The one-cell pictures and the title's letters, in the ROM's UDG
         ; area (udg.asm). Its own tape block, unpacked last.
-        ORG $FF58
+        ORG UDG_START
         INCLUDE "udg.asm"
 UDG_LENGTH      equ udg_end - udg_start
         DISPLAY "atlantis udg ", udg_start, " to ", udg_end
-        ASSERT udg_start == UDG_START && udg_end <= $10000, "the UDG block does not fit $FF58-$FFFF"
+        ASSERT udg_start == UDG_START && udg_end <= $10000, "the UDG block does not fit UDG_START-$FFFF"
         ASSERT UDG_START > IM2_TABLE + 256, "the UDG block overlaps the IM2 table"
         ASSERT STACK_TOP < IM2_TABLE && STACK_TOP + 2 <= UDG_START, "the stack comes near the UDG block"
 

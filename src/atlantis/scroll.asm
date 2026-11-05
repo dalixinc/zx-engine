@@ -90,17 +90,22 @@ WEED_LEAVE_AT   equ 7           ; fine >= this: no set pixel remains in its own 
 ;------------------------------------------------------------------------------
 ; slope_build - the sloped tops of the ground and the sand, at start-up
 ; Each of a profile's 16 columns gets 8 bytes, top row first. Its height
-; runs in a straight line from its own (h0) at its left pixel to the
-; next column's (h1) at its right, and a pixel is solid where the line
-; is at least that row, to the nearest half pixel. So a step of a few
-; pixels becomes a slope across the column, and a peak or a dip is
-; bevelled, not square. A flat column (h0 = h1) is exactly the old
-; block. The columns are built from these tables as they scroll in
-; (slope_copy), so the frame does no more than before.
-; v(x) = 16 h0 + (h1 - h0)(2x + 1) is the height at pixel x's middle,
-; in 16ths; row L is solid where v >= 16 L - 8.
+; runs from its own (h0) at its left pixel to the next column's (h1) at
+; its right on an S-curve (slope_curve), and a pixel is solid where the
+; curve is at least that row, to the nearest half pixel. The curve is
+; flat at both ends, so where a rise meets a fall the top is rounded,
+; not a point, and a step becomes a smooth bank. A flat column (h0 = h1)
+; is exactly the old block. The columns are built from these tables as
+; they scroll in (slope_copy), so the frame does no more than before.
+; v(x) = 16 h0 + (h1 - h0) w(x) is the height at pixel x's middle, in
+; 16ths; row L is solid where v >= 16 L - 8.
 ; Corrupts: AF, BC, DE, HL, IX
 ;------------------------------------------------------------------------------
+; w(x) out of 16 at each pixel's middle: smoothstep, 3t^2 - 2t^3, at
+; t = (2x + 1) / 16, rounded, then the end mark. A straight line would
+; be 1, 3, 5 ... 15.
+slope_curve:    db 0, 1, 4, 7, 9, 12, 15, 16, $FF
+
 slope_build:
         ld hl,near_profile
         ld de,SLOPE_GROUND
@@ -117,22 +122,29 @@ slope_build:
         call .at                ; h1
         sub b                   ; d
         push hl
+        push de
         ld l,a
-        add a,a
-        ld h,a                  ; 2d: v's step a pixel
         ld a,b
         add a,a
         add a,a
         add a,a
         add a,a
-        add a,l                 ; v(0) = 16 h0 + d
+        ld h,a                  ; 16 h0
+        ld de,slope_curve
         ld ix,preshift_row      ; 8 bytes of start-up scratch
-        ld l,8
-.v:     ld (ix+0),a
+.v:     ld a,(de)
+        inc de
+        ld b,a
+        inc b
+        jr z,.vdone             ; the end mark
+        ld a,h
+        jr .wn
+.w:     add a,l                 ; d, w times
+.wn:    djnz .w
+        ld (ix+0),a
         inc ix
-        add a,h
-        dec l
-        jr nz,.v
+        jr .v
+.vdone: pop de
         ld h,8 * 16 - 8         ; the top row's threshold
 .row:   ld ix,preshift_row
         ld b,0
@@ -1246,18 +1258,15 @@ next_back_tile:
 .try:           ld a,(column_h)
         cp 8                    ; a plant only on a dune that fills the sand row
         jr nz,.wait
-        ; One of the three plants (udg.asm), from weed_seed: 0 and 3 the
-        ; fir, 1 the kelp, 2 the fan coral.
+        ; One of the four plants (udg.asm), from weed_seed: 0 the fir,
+        ; 1 the kelp, 2 the fan coral, 3 the sea grass.
         ld a,(weed_seed)
         srl a                   ; the same Galois step as wheel_rng
         jr nc,.keep
         xor $B8
 .keep:  ld (weed_seed),a
         and 3
-        cp 3
-        jr c,.pick
-        xor a
-.pick:  add a,a
+        add a,a
         add a,a
         add a,a
         ld e,a
