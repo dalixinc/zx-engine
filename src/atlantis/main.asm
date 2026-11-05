@@ -165,6 +165,7 @@ boot:
         ldir
         call im2_init
         call build_row_table
+        call slope_build        ; the seabed's sloped tops (scroll.asm)
         call preshift_all       ; the diver's, the fish's and the bombs' shifted pictures
 
         call rate_init
@@ -1126,6 +1127,16 @@ COLD_LENGTH     equ cold_end - COLD_START
         INCLUDE "bss.asm"       ; after the pictures: it needs their sizes
         DISPLAY "atlantis bss ", BSS_START, " to ", BSS_END
 
+        ; The one-cell pictures and the title's letters, in the ROM's UDG
+        ; area (udg.asm). Its own tape block, unpacked last.
+        ORG $FF58
+        INCLUDE "udg.asm"
+UDG_LENGTH      equ udg_end - udg_start
+        DISPLAY "atlantis udg ", udg_start, " to ", udg_end
+        ASSERT udg_start == UDG_START && udg_end <= $10000, "the UDG block does not fit $FF58-$FFFF"
+        ASSERT UDG_START > IM2_TABLE + 256, "the UDG block overlaps the IM2 table"
+        ASSERT STACK_TOP < IM2_TABLE && STACK_TOP + 2 <= UDG_START, "the stack comes near the UDG block"
+
 
         ASSERT (ANIM_FRAMES & (ANIM_FRAMES - 1)) == 0, "ANIM_FRAMES must be a power of 2"
         ASSERT DIVER_ANIM_STEP == 4, "diver_image_index divides by 4 with two RRCAs"
@@ -1209,13 +1220,16 @@ loading_screen:
         SAVETAP  "build/atlantis-plain.tap", CODE, "atlantm", COLD_START, COLD_LENGTH
         SAVETAP  "build/atlantis-plain.tap", CODE, "atlantc", code_start, CODE_LENGTH
         SAVETAP  "build/atlantis-plain.tap", CODE, "atlantd", data_start, DATA_LENGTH
+        SAVETAP  "build/atlantis-plain.tap", CODE, "atlantu", udg_start, UDG_LENGTH
         SAVEBIN  "build/atlantis-cold.bin", COLD_START, COLD_LENGTH
         SAVEBIN  "build/atlantis-code.bin", code_start, CODE_LENGTH
         SAVEBIN  "build/atlantis-data.bin", data_start, DATA_LENGTH
+        SAVEBIN  "build/atlantis-udg.bin", udg_start, UDG_LENGTH
         ; What tape.asm needs to know: --exp=build/atlantis.exp
         EXPORT cold_end
         EXPORT code_end
         EXPORT data_end
+        EXPORT udg_start
         EXPORT entry
         SAVESNA  "build/atlantis.sna", entry
     ENDIF

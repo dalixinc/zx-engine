@@ -107,6 +107,9 @@ menu_loop:
         call soak_on_menu
     ENDIF
         call wait_frame
+    IFDEF POWERUPS
+        call cheat_poll         ; missile.asm
+    ENDIF
         call menu_poll
         jr nc,menu_loop
         jp game_reset
@@ -204,15 +207,74 @@ menu_print_score:
         ret
 
 ;------------------------------------------------------------------------------
+; title_draw - ATLANTIS in the tall letters (udg.asm), rows 2 and 3,
+; columns 12 to 19: the top halves in the title's yellow, the bottom
+; halves in black. Each letter is 16 rows: the top 8 in row 2, the
+; bottom 8 in row 3.
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+TITLE_ROW       equ 2
+TITLE_COL       equ 12
+title_draw:
+        ld hl,title_word
+        ld c,TITLE_COL
+.char:  ld a,(hl)
+        inc hl
+        push hl
+        add a,a                 ; 16 bytes a letter
+        add a,a
+        add a,a
+        add a,a
+        ld e,a
+        ld d,0
+        ld hl,title_font
+        add hl,de
+        ex de,hl                ; DE = the letter
+        ld b,TITLE_ROW
+        call .cell
+        ld b,TITLE_ROW + 1
+        call .cell
+        pop hl
+        inc c
+        ld a,c
+        cp TITLE_COL + 8
+        jr c,.char
+        ; The colours: the top halves yellow, the bottom halves black.
+        ; The stencil cut is the first line of row 3, so the change of
+        ; colour falls on it.
+        ld hl,ATTRS + TITLE_ROW * 32 + TITLE_COL
+        ld c,TITLE_ATTR
+        call .attrs
+        ld hl,ATTRS + (TITLE_ROW + 1) * 32 + TITLE_COL
+        ld c,TITLE_LOW_ATTR
+.attrs: ld b,8
+.attr:  ld (hl),c
+        inc l
+        djnz .attr
+        ret
+; 8 rows of DE into the cell at row B, column C. Corrupts: AF, B, DE, HL
+.cell:  push bc
+        call char_addr
+        pop bc
+        push bc
+        ld b,8
+.line:  ld a,(de)
+        ld (hl),a
+        inc de
+        inc h
+        djnz .line
+        pop bc
+        ret
+
+; ATLANTIS as letters of title_font: A 0, T 1, L 2, N 3, I 4, S 5.
+title_word:     db 0, 1, 2, 0, 3, 1, 4, 5
+
+;------------------------------------------------------------------------------
 ; menu_draw - title, four control lines, then every row of menu_tab
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 menu_draw:
-        ld a,TITLE_ATTR
-        ld (text_attr),a
-        ld hl,str_title
-        ld bc,(2 << 8) | 12
-        call print_string
+        call title_draw
 
         ld a,WATER_ATTR
         ld (text_attr),a

@@ -38,7 +38,7 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/menu.asm src/atlantis/wheel.asm src/atlantis/hit.asm src/atlantis/torpedo.asm \
              src/atlantis/fastsprite.asm src/atlantis/boom.asm src/atlantis/sound.asm \
              src/atlantis/silo.asm src/atlantis/missile.asm src/atlantis/score.asm src/atlantis/codes.asm src/atlantis/preshift.asm src/atlantis/bss.asm \
-             src/atlantis/soak.asm $(SHARED)
+             src/atlantis/soak.asm src/atlantis/udg.asm $(SHARED)
 ZX0       := build/zx0
 CC        ?= cc
 
@@ -53,7 +53,7 @@ all: $(TAP) $(SNA)
 
 # main.asm writes the snapshot, the plain tape and the three blocks as
 # they are in memory, with their ends in build/atlantis.exp.
-ATL_BLOCKS := build/atlantis-cold.bin build/atlantis-code.bin build/atlantis-data.bin
+ATL_BLOCKS := build/atlantis-cold.bin build/atlantis-code.bin build/atlantis-data.bin build/atlantis-udg.bin
 $(SNA) $(ATL_BLOCKS) build/atlantis.exp build/atlantis-plain.tap &: $(ATL_SRC) $(ATL_GFX) gfx/loading.scr | build
 	$(ASM) --nologo --fullpath=off --lst=build/atlantis.lst --sym=build/atlantis.sym --exp=build/atlantis.exp src/atlantis/main.asm
 
