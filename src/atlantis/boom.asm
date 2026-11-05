@@ -195,7 +195,12 @@ fish_wait_step:
         ld a,FACE_LEFT
         ld (fish_facing),a
         ld a,FISH_SWIM_Y
+    IFDEF POWERUPS
+        ld (fish_wave.in + 1),a ; at its own depth, if suction moved the last
+        call fish_set_y
+    ELSE
         ld (fish_y),a
+    ENDIF
         xor a
         ld (fish_busy),a
         ld (fish_wave_p),a      ; a wave starts again at the middle

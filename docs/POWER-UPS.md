@@ -1,5 +1,9 @@
 # Power-ups
 
+(The special bombs, carried and set off with Symbol Shift + B, are in
+[SPECIAL-BOMBS.md](SPECIAL-BOMBS.md). The pictures below are now built
+at start-up from row 1's cells: see there.)
+
 Branch `claudelet/dev`. Two power-ups: a heart for an extra life, and a
 rarer bubble that gives the double shot for a while: two torpedoes out
 at once.

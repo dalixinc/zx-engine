@@ -174,6 +174,27 @@ CFG_DOUBLE_TIME      equ 30      ; seconds of the double shot
 ; pixels apart.
 CFG_DOUBLE_COOLDOWN  equ 10
 
+; --- Special bombs (special.asm) ----------------------------------------------
+; Rarer power-ups, by the same roll, each with its own share of the 256
+; and its own first level. The diver carries one at a time (a new one
+; replaces it), shown on row 1, and sets it off with the key in
+; special.asm. They move the bomb and the fish and take away a silo
+; missile; nothing they move or clear scores.
+;   suction   pulls the bomb and the fish down towards the seabed
+;   shove     throws them to the right
+;   nuke      clears them (a testing knob: 0 leaves it out of the build)
+CFG_SUCTION_LEVEL    equ 5
+CFG_SHOVE_LEVEL      equ 7
+CFG_NUKE_LEVEL       equ 99      ; only the testers' switch brings it
+CFG_SUCTION_ODDS     equ 8       ; about one turn in 32
+CFG_SHOVE_ODDS       equ 8
+CFG_NUKE_ODDS        equ 8
+; How long the pull or the throw lasts, in 1/50 seconds, and how far
+; they move each 1/50 second, in pixels.
+CFG_SPECIAL_TIME     equ 24
+CFG_SUCTION_SPEED    equ 6       ; down
+CFG_SHOVE_SPEED      equ 8       ; right
+
 ; --- Score and levels (score.asm) ---------------------------------------------
 ; The levels, one row each, in order:
 ;   points   what this level needs, on top of the last level's target

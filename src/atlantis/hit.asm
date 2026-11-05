@@ -162,7 +162,7 @@ lives_draw:
         ld a,c
         or a
         jr nz,.glyph
-        ld de,lives_heart + 8   ; eight zero bytes: water
+        ld de,udg_water         ; eight zero bytes: water
 .glyph: ld b,8
 .line:  ld a,(de)
         ld (hl),a
@@ -179,19 +179,30 @@ lives_draw:
 .next:  djnz .cell
     IFDEF POWERUPS
         ; The double shot's bubble, a cell of water away from the hearts,
-        ; while it lasts; water when not.
+        ; while it lasts, and the special bomb he carries two cells left
+        ; of that; water when not. A cell is udg_water + 8 * its kind.
+        ld a,(double_on)        ; 1: kind 2, the bubble
+        add a,a
         ld hl,LIVES_SCREEN - 2
-        ld de,double_glyph
-        ld a,(double_on)
-        or a
-        jr nz,.dbl
-        ld de,lives_heart + 8
-.dbl:   ld b,8
-.dline: ld a,(de)
+        call hud_cell
+        ld a,(sp_held)          ; 0, or a special bomb's kind
+        ld hl,LIVES_SCREEN - 4
+        ; fall through
+; A = a power-up's kind (0 = water), HL = its cell on row 1.
+; Corrupts: AF, B, DE, H
+hud_cell:
+        add a,a
+        add a,a
+        add a,a
+        add a,udg_water & $FF
+        ld e,a
+        ld d,udg_water >> 8
+        ld b,8
+.line:  ld a,(de)
         ld (hl),a
         inc de
         inc h
-        djnz .dline
+        djnz .line
         ASSERT LIVES_COL - 2 >= HUD_LEN, "the double shot's bubble would cover the score line"
     ENDIF
         ret

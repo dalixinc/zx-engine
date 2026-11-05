@@ -40,6 +40,15 @@ MSL_SINK        equ 3           ; a power-up, going down
 MSL_KIND_MISSILE equ 0
 MSL_KIND_HEART  equ 1           ; one more life
 MSL_KIND_DOUBLE equ 2           ; the double shot for CFG_DOUBLE_TIME
+MSL_KIND_SUCTION equ 3          ; the special bombs (special.asm): carried,
+MSL_KIND_SHOVE  equ 4           ; then set off
+MSL_KIND_NUKE   equ 5
+; How many kinds the roll has: the nuke is left out when its level is 0.
+    IF CFG_NUKE_LEVEL
+POWER_KINDS     equ 5
+    ELSE
+POWER_KINDS     equ 4
+    ENDIF
 ; It sinks from below the hearts and is gone above the weed, so it is
 ; always drawn before the seabed copy, and always one byte a row: its x
 ; is a multiple of 8, and the water does not scroll.
@@ -118,12 +127,19 @@ msl_y:          db 0            ; top pixel row
 msl_seed:       db $C3          ; its own shift register. Never 0.
 msl_home:       db 0            ; 1 = this one homes (CFG_MSL_HOME_LEVEL)
 msl_hfrac:      db 0            ; its fraction of a pixel sideways
-; The first level of each (config.asm). The tester's switch (cheat_poll) makes all
-; three 1. In this order: missile_gone steps through them.
-power_levels:
-pw_heart_lvl:   db CFG_POWER_LEVEL
-pw_double_lvl:  db CFG_DOUBLE_LEVEL
+; Each power-up's first level and its share of the roll, by kind, then
+; the piranha's first level (config.asm). The testers' switch
+; (cheat_poll) makes every level 1. missile_gone walks the pairs.
+power_tab:
+pw_heart_lvl:   db CFG_POWER_LEVEL, CFG_HEART_ODDS
+pw_double_lvl:  db CFG_DOUBLE_LEVEL, CFG_DOUBLE_ODDS
+                db CFG_SUCTION_LEVEL, CFG_SUCTION_ODDS
+                db CFG_SHOVE_LEVEL, CFG_SHOVE_ODDS
+    IF CFG_NUKE_LEVEL
+                db CFG_NUKE_LEVEL, CFG_NUKE_ODDS
+    ENDIF
 pw_piranha_lvl: db CFG_PIRANHA_LEVEL
+        ASSERT pw_piranha_lvl - power_tab == 2 * POWER_KINDS
 msl_gap_min:    db CFG_MISSILE_GAP_MIN  ; this level's wait (score.asm sets
 msl_gap_span:   db CFG_MISSILE_GAP_MAX - CFG_MISSILE_GAP_MIN + 1 ; them)
     IFDEF POWERUPS
@@ -424,17 +440,21 @@ power_take:
         set HUD_HEARTS,(hl)     ; one more heart on row 1
         jr .done
 .double:
-        ld a,1
+        dec a
+        jp nz,special_take      ; a special bomb: he carries it (special.asm)
+        inc a
         ld (double_on),a
         ld hl,(frame_count)
         ld de,CFG_DOUBLE_TIME * 50
         add hl,de
         ld (double_until),hl
-        ld hl,double_tick       ; the clock: main_loop's missile_update calls
-        call double_calls       ; go through double_tick until it runs out
+        call msl_calls_set      ; the clock: main_loop's missile_update calls
+                                ; go through double_tick until it runs out
         ld hl,hud_dirty
         set HUD_HEARTS,(hl)     ; the bubble on row 1, beside the hearts
-.done:  call missile_gone
+.done:
+power_done:
+        call missile_gone
     IFNDEF NO_SOUND
         ld hl,snd_tune_power
         call snd_tune_start
@@ -442,10 +462,11 @@ power_take:
         or a
         ret
 
+        COLD
 ; cheat_poll - the testers' switch, on the menu only (menu_loop calls it;
-; play never does). Held down together, its two keys (notes/, not the
-; docs) make hearts, the bubble and the piranha come from level 1 until
-; the machine is reset. It answers once, with a short beep and the
+; play never does), so in the cold block. Held down together, its two
+; keys (notes/, not the docs) make every power-up and the piranha come
+; from level 1 until the machine is reset. It answers once, with a short beep and the
 ; border flickering, so the tester knows it took. Not on any screen.
 ; Corrupts: AF, BC, HL
 CHEAT_KEYS      equ %00000110   ; port $7FFE: Symbol Shift (bit 1) and M (bit 2)
@@ -460,10 +481,13 @@ cheat_poll:
         or a
         ret nz                  ; already on: no second beep
         ld (hl),1
-        ld a,1
-        ld (pw_heart_lvl),a
-        ld (pw_double_lvl),a
-        ld (pw_piranha_lvl),a
+        ld hl,power_tab
+        ld b,POWER_KINDS
+.lvl:   ld (hl),1
+        inc hl
+        inc hl
+        djnz .lvl
+        ld (hl),1               ; pw_piranha_lvl
         ; The beep: 150 half-waves, the speaker and the border together.
         ld b,150
 .wave:  ld a,b
@@ -476,6 +500,8 @@ cheat_poll:
         ld a,BLUE               ; the menu's border back
         out (ULA_PORT),a
         ret
+        HOT
+
 
 ; The double shot's clock. While it lasts, main_loop's two calls to
 ; missile_update (.msl_uc1, .msl_uc2) come here first, so a game
@@ -498,8 +524,7 @@ double_end:
         ld (double_on),a
         ld hl,hud_dirty
         set HUD_HEARTS,(hl)     ; the bubble on row 1 goes
-        ld hl,missile_update
-        call double_calls
+        call msl_calls_set      ; special.asm: missile_update, or a bomb's tick
     IFNDEF NO_SOUND
         ld hl,snd_tune_down
         jp snd_tune_start
@@ -507,18 +532,11 @@ double_end:
         ret
     ENDIF
 
-; HL into main_loop's two missile_update calls. Corrupts: nothing else
-double_calls:
-        ld (fish_mv.msl_uc1 + 1),hl
-        ld (fish_mv2.msl_uc2 + 1),hl
-        ret
-        ASSERT ({fish_mv.msl_uc1} & $FF) == $CD && {fish_mv.msl_uc1 + 1} == missile_update, ".msl_uc1 is not CALL missile_update"
-        ASSERT ({fish_mv2.msl_uc2} & $FF) == $CD && {fish_mv2.msl_uc2 + 1} == missile_update, ".msl_uc2 is not CALL missile_update"
         ASSERT CFG_POWER_SPEED >= 1 && CFG_POWER_SPEED <= 255, "CFG_POWER_SPEED is 256ths of a pixel a 1/50 second: 1 to 255"
 
         ASSERT MSL_ROWS == 8, "the power-ups are 8 rows: missile_draw draws MSL_ROWS"
         ASSERT CFG_LIVES_MAX >= CFG_LIVES && CFG_LIVES_MAX <= 9, "CFG_LIVES_MAX: CFG_LIVES to 9"
-        ASSERT CFG_HEART_ODDS + CFG_DOUBLE_ODDS <= 256
+        ASSERT CFG_HEART_ODDS + CFG_DOUBLE_ODDS + CFG_SUCTION_ODDS + CFG_SHOVE_ODDS + CFG_NUKE_ODDS <= 256
         ASSERT CFG_DOUBLE_TIME >= 1 && CFG_DOUBLE_TIME <= 600, "CFG_DOUBLE_TIME is seconds, up to 10 minutes"
         ASSERT CFG_DOUBLE_COOLDOWN >= 1 && CFG_DOUBLE_COOLDOWN <= CFG_FIRE_COOLDOWN
         ASSERT CFG_POWER_LEVEL >= 1 && CFG_POWER_LEVEL <= 99 && CFG_DOUBLE_LEVEL >= 1 && CFG_DOUBLE_LEVEL <= 99 && CFG_PIRANHA_LEVEL >= 1 && CFG_PIRANHA_LEVEL <= 99
@@ -527,7 +545,7 @@ double_calls:
 ;------------------------------------------------------------------------------
 ; missile_gone - shot, spent on the diver, or out of the top. The next
 ; restore takes it off the screen. The next one is a random gap away.
-; Corrupts: AF, B
+; Corrupts: AF, BC, D, HL
 ;------------------------------------------------------------------------------
 missile_gone:
         xor a
@@ -537,32 +555,32 @@ missile_gone:
         ret
     ELSE
       IFDEF POWERUPS
-        ; What the next turn brings: now and then a power-up, each from
-        ; its own level (power_levels). A = 0 here.
+        ; What the next turn brings: now and then a power-up. The roll
+        ; lands in one kind's share (power_tab, in turn) or past them
+        ; all; a share whose first level has not come is a missile.
+        ; A = 0 here.
         ld (msl_kind),a
         call msl_rng
         ld c,a
-        ld b,MSL_KIND_MISSILE
-        ld a,(level_n)
-        ld hl,pw_heart_lvl
-        cp (hl)
-        jr c,.no_heart          ; too early for hearts
+        ld hl,power_tab
+        ld b,MSL_KIND_HEART
+.roll:  ld d,(hl)               ; its first level
+        inc hl
         ld a,c
-        cp CFG_HEART_ODDS
-        jr c,.heart
-.no_heart:
-        ld a,(level_n)
-        inc hl                  ; pw_double_lvl
-        cp (hl)
-        jr c,.next              ; too early for the bubble
-        ld a,c
-        sub CFG_HEART_ODDS
-        jr c,.next              ; the hearts' share: a missile
-        cp CFG_DOUBLE_ODDS
-        jr nc,.next
-        ld b,MSL_KIND_DOUBLE
+        sub (hl)                ; its share
+        inc hl
+        jr c,.share
+        ld c,a
+        inc b
+        ld a,b
+        cp POWER_KINDS + 1
+        jr c,.roll
+        ld b,MSL_KIND_MISSILE   ; past every share
         jr .next
-.heart: ld b,MSL_KIND_HEART
+.share: ld a,(level_n)
+        cp d
+        jr nc,.next             ; from its level: this kind
+        ld b,MSL_KIND_MISSILE
 .next:  ld a,b
         ld (msl_next),a
       ENDIF
@@ -719,14 +737,20 @@ missile_draw:
         ; The flame flickers: the long frame, then the short one, every
         ; 2 1/50 seconds (gfx/missile.txt). 32 T-states.
     IFDEF POWERUPS
+        ; A power-up: its masked picture (POWER_PICS, built at start-up),
+        ; 16 bytes a kind. Byte-aligned, so no shifts.
         ld a,(msl_kind)
         or a
         jr z,.missile
-        ld hl,heart_tab         ; byte-aligned: DE is 0
-        dec a
-        jr z,.flame
-        ld hl,bubble_tab
-        jr .flame
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        add a,POWER_PICS_BASE & $FF
+        ld l,a
+        ld h,POWER_PICS_BASE >> 8
+        push hl
+        jr .pic
 .missile:
     ENDIF
         ld a,(frame_count)
@@ -739,6 +763,7 @@ missile_draw:
         inc hl
         ld d,(hl)
         push de                 ; the picture at this shift
+.pic:
         ld a,(msl_y)
         call row_table_entry
         ld a,(msl_x)
@@ -817,34 +842,10 @@ missile_restore:
         ld (de),a
         ret
 
-; The power-ups' pictures. In the code block, as the double shot's tables.
-; The two pictures, 8 by 8, mask then ink a row: the shift-0 entry of a
-; table of shifts, which is all a byte-aligned power-up needs.
-        MACRO POWER_ROW ink
-        db ~(ink) & $FF, ink
-        ENDM
-        MACRO POWER_DATA
-heart_tab:      dw heart_pic
-bubble_tab:     dw bubble_pic
-heart_pic:                      ; the hearts' own heart (data.asm, lives_heart)
-        POWER_ROW %00000000
-        POWER_ROW %01101100
-        POWER_ROW %11111110
-        POWER_ROW %11111110
-        POWER_ROW %01111100
-        POWER_ROW %00111000
-        POWER_ROW %00010000
-        POWER_ROW %00000000
-bubble_pic:                     ; a bubble with two torpedoes in it: the double shot
-        POWER_ROW %00111100
-        POWER_ROW %01000010
-        POWER_ROW %10111001
-        POWER_ROW %10000001
-        POWER_ROW %10111001
-        POWER_ROW %01000010
-        POWER_ROW %00111100
-        POWER_ROW %00000000
-        ENDM
+; The power-ups' pictures: POWER_PICS (bss.asm), built at start-up by
+; power_build (special.asm) from row 1's cells in the UDG area, mask then
+; ink a row. Kind n's is 16 (n - 1) bytes in.
+POWER_PICS_BASE equ POWER_PICS - 16
     IFDEF POWERUPS
-        POWER_DATA
+        ASSERT (POWER_PICS & $FF) >= 16 && (POWER_PICS & $FF) + 16 * POWER_KINDS <= 256, "POWER_PICS_BASE to its end crosses a page: missile_draw adds to the low byte"
     ENDIF

@@ -53,6 +53,7 @@ hard refresh (Ctrl+Shift+R) fetches the new snapshot.
 | Left   | O               | 5           | left     |
 | Right  | P               | 8           | right    |
 | Fire   | SPACE                  | 0           | fire     |
+| Special bomb | Symbol Shift + B |           |          |
 | Stats  | Symbol Shift + S (test builds only) | |          |
 | Speed  | Symbol Shift + F       |             |          |
 | Menu   | Symbol Shift + P       |             |          |
@@ -88,7 +89,15 @@ missile coming up, slower than the diver can dive: a heart is one more life (up 
 shot for 30 seconds: fire again while a torpedo is still running, and
 two are out at once; a bubble beside the hearts shows it, and a
 falling jingle says it has run out (`docs/POWER-UPS.md`; `CFG_POWER_*`,
-`CFG_HEART_ODDS`, `CFG_DOUBLE_*`, `CFG_LIVES_MAX` in `config.asm`). The score and the level
+`CFG_HEART_ODDS`, `CFG_DOUBLE_*`, `CFG_LIVES_MAX` in `config.asm`).
+Rarer still, from level 5, a special bomb: he carries one at a time
+(its picture shows on row 1, left of the bubble's cell; a new one
+replaces it) and sets it off with Symbol Shift + B. The suction bomb
+(from level 5) pulls the enemy bomb and the fish down towards the
+seabed; the shove bomb (from level 7) throws them to the right. Either
+takes away a silo missile, and nothing it moves scores
+(`docs/SPECIAL-BOMBS.md`; `CFG_SUCTION_*`, `CFG_SHOVE_*`,
+`CFG_SPECIAL_TIME` in `config.asm`). The score and the level
 are on row 1, beside the hearts. Each level has a target, and each is
 longer than the last. Reaching it puts up a big "LEVEL n" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
@@ -120,7 +129,7 @@ facing. It runs along that row until it leaves the screen, and a bomb or
 a missile it touches blows up. One at a time: a new press fires again once the last one
 has gone. It does not follow him up or down.
 
-The three Symbol Shift chords fire once, the moment both keys go down.
+The Symbol Shift chords fire once, the moment both keys go down.
 Holding them does not repeat, and the letter on its own does nothing.
 
 Symbol Shift + S toggles the stat line on row 0. It is off at the start.
@@ -155,7 +164,9 @@ src/atlantis/rate.asm    50 or 25 frames a second, the chords, the spare-scanlin
 src/atlantis/scenery.asm water, sand and ground colours
 src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
 src/atlantis/silo.asm    the silo picture, and the code built from it that draws it
-src/atlantis/missile.asm the silos' missiles: arm, fly, hit, their own draw
+src/atlantis/missile.asm the silos' missiles: arm, fly, hit, their own draw; the power-ups
+src/atlantis/special.asm the special bombs: carried, set off with Symbol Shift + B
+src/atlantis/udg.asm     the one-cell pictures and the title's letters, in the UDG area
 src/atlantis/score.asm   the score, the levels, the line on row 1, the banner
 src/atlantis/codes.asm   the level codes: table, showing one, checking one typed
 src/atlantis/preshift.asm the fish's and both bombs' pictures, shifted at start-up
@@ -207,13 +218,13 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: a small
 unpacker with the packed loading screen, which it shows at once, then
-the packed game (14,579 bytes in all). The unpacker writes four
-blocks. The cold block at `$6000-$7152` (4,435 bytes) is the menu, the
+the packed game (14,885 bytes in all). The unpacker writes four
+blocks. The cold block at `$6000-$7269` (4,714 bytes) is the menu, the
 level codes, start-up, the diver's death, each level's look and anything else that runs
 once in a while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The
-instructions are at `$8000-$B8AA` (`code_end` is `$B8AB`) and must stay
-below half the round fish's pictures at `$B920-$BC7F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CD6A`, and the one-cell pictures and the title's letters in the ROM's UDG area, `$FF58-$FFEF`. The four
+instructions are at `$8000-$B8EA` (`code_end` is `$B8EB`) and must stay
+below half the round fish's pictures at `$B920-$BC7F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CD6A`, and the one-cell pictures and the title's letters in the ROM's UDG area and 16 bytes below it, `$FF48-$FFFF`. The four
 sprites' shifted copies are built at start-up: the diver's, the
 fish's and the pulsar's at `$CF30-$EFFF`, the spinning wheel's at
 `$78E0-$7FFF`. The buffers that start empty are at `$F300-$F517`,
