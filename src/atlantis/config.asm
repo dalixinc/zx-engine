@@ -160,7 +160,7 @@ CFG_POWER_LEVEL      equ 2       ; hearts from this level
 CFG_DOUBLE_LEVEL     equ 4       ; the double shot's bubble from this level
 ; The fish: before this level every fish is the round one; from it, one
 ; fish in four is the piranha (boom.asm, fish_kind_pick).
-CFG_PIRANHA_LEVEL    equ 4
+CFG_PIRANHA_LEVEL    equ 6
 CFG_HEART_ODDS       equ 32      ; about one turn in 8
 CFG_DOUBLE_ODDS      equ 12      ; about one turn in 21
 CFG_POWER_SPEED      equ 160     ; it sinks this many 256ths of a pixel a 1/50
