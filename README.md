@@ -22,12 +22,27 @@ New to the scrolling ground? Read [docs/SCROLLING.md](docs/SCROLLING.md)**
 
 ## Play in the browser
 
-Once GitHub Pages is switched on for this repository (Settings, then
-Pages, deploying from `main`, folder `/docs`), Atlantis plays at
-**https://dalixinc.github.io/zx-engine/play/** in JSSpeccy 3. Click to
-play, then `1`. Ctrl is Symbol Shift there. `make web` (or
-`build.bat web`) copies a fresh build into `docs/play/`; commit and push
-it to update the site. See [docs/WEB.md](docs/WEB.md).
+GitHub Pages serves this repository's `main` branch, folder `/docs`, so
+Atlantis plays at **https://dalixinc.github.io/zx-engine/play/** in
+JSSpeccy 3. Click to play, then `1`. Ctrl is Symbol Shift there. See
+[docs/WEB.md](docs/WEB.md).
+
+### Deploying the latest build
+
+```
+make -B && make web
+git add docs/play && git commit -m "Refresh docs/play with make web."
+git push
+```
+
+`make web` (or `build.bat web`) builds the game and copies
+`build/atlantis.sna` and `.tap` into `docs/play/`. Those two copies are
+committed on purpose; `build/` is not. The site follows `main` only:
+GitHub Pages redeploys a minute or two after each change to `main`, so a
+commit on a branch goes live when its pull request is merged.
+`gh run list --limit 1` shows when the deploy has finished ("pages build
+and deployment", success). If the browser still shows the old game, a
+hard refresh (Ctrl+Shift+R) fetches the new snapshot.
 
 ## Controls
 
