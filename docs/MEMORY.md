@@ -14,11 +14,11 @@ it, the **housekeeping** brief (PR #23).
 |---|---|
 | `$4000-$5AFF` | screen |
 | `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
-| `$6000-$72AA` | **cold block** (4,779 bytes): menu, the title (`title_draw`), the testers' switch (`cheat_poll`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, the seabed's slope tables' builder (`slope_build`), the power-ups' picture builder (`power_build`), taking and setting off a special bomb and blowing up what it moves (`special.asm`), `torpedo_reset`, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
-| `$72AB-$78DF` | free (1,589; but the tape's first block loads from the page after `cold_end` and must end below `$8000`: it now loads at `$7300` and ends `$7F97`, so the cold block can grow only 85 bytes, to `$7300`, before that block moves up another page, where it would not fit) |
+| `$6000-$72B0` | **cold block** (4,785 bytes): menu, the title (`title_draw`), the testers' switch (`cheat_poll`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, the seabed's slope tables' builder (`slope_build`), the power-ups' picture builder (`power_build`), taking and setting off a special bomb and blowing up what a throw moves (`special.asm`), `torpedo_reset`, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
+| `$72B1-$78DF` | free (1,583; but the tape's first block loads from the page after `cold_end` and must end below `$8000`: it now loads at `$7300` and ends `$7F97`, so the cold block can grow only 79 bytes, to `$7300`, before that block moves up another page, where it would not fit) |
 | `$78E0-$7FFF` | the spinning wheel's shifted pictures (4 quarter turns, 1,824, built at start-up) |
-| `$8000-$B916` | code (`code_end` `$B917`), with the double shot's patch tables, and the round fish's raw art and tables |
-| `$B917-$B91F` | free (9) |
+| `$8000-$B906` | code (`code_end` `$B907`), with the double shot's patch tables, and the round fish's raw art and tables |
+| `$B907-$B91F` | free (25) |
 | `$B920-$BC7F` | the round fish's left-facing shifted pictures (`RFISH_BUF`, 864, built at start-up; the tape build only, `TWO_FISH`: builds with the stat line and the soak have their code here instead) |
 | `$BC80-$C3FF` | the diver's two still pictures with the jet's other phase (`JET_BUF`, 1,920, built at start-up; the soak build has its code here instead) |
 | `$C400-$CD6A` | data: graphics, tables, `data.asm` (`data_end` `$CD6B`) |
@@ -53,7 +53,7 @@ While the tape loads, two more things sit in memory for a moment: the
 first block, from the page after `cold_end` (`$7300-$7F97`: the
 unpacker, the packed loading screen, the packed data block and the
 packed UDG block), and the second, the packed cold block and code, from
-the page after `data_end` (`$CE00-$FB5C`, 1,004 bytes below the UDG
+the page after `data_end` (`$CE00-$FB59`, 1,007 bytes below the UDG
 block at `$FF48`, its limit). Start-up builds the shifted pictures over
 both. See [UDG-AND-SEABED.md](UDG-AND-SEABED.md).
 

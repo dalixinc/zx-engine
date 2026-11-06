@@ -178,16 +178,17 @@ CFG_DOUBLE_COOLDOWN  equ 10
 ; Rarer power-ups, by the same roll, each with its own share of the 256
 ; and its own first level. The diver carries one at a time (a new one
 ; replaces it), shown on row 1, and sets it off with the key in
-; special.asm. They move the bomb and the fish and take away a silo
-; missile; nothing they move or clear scores.
-;   suction   pulls the bomb and the fish down towards the seabed
-;   shove     throws them to the right
+; special.asm. Suction and shove blow up a silo missile at once.
+;   suction   pulls the bomb and the fish down towards the seabed, where
+;             they stay, alive: the escape
+;   shove     throws them to the right edge, where they blow up and
+;             score as if shot
 ;   nuke      clears them (a testing knob: 0 leaves it out of the build)
 CFG_SUCTION_LEVEL    equ 5
 CFG_SHOVE_LEVEL      equ 7
 CFG_NUKE_LEVEL       equ 99      ; only the testers' switch brings it
-CFG_SUCTION_ODDS     equ 8       ; about one turn in 32
-CFG_SHOVE_ODDS       equ 8
+CFG_SUCTION_ODDS     equ 11      ; about one turn in 23: the escape, twice as
+CFG_SHOVE_ODDS       equ 5       ; common as the throw (one in 51), which kills
 CFG_NUKE_ODDS        equ 8
 ; How long the pull or the throw lasts, in 1/50 seconds, and how far
 ; they move each 1/50 second, in pixels.
