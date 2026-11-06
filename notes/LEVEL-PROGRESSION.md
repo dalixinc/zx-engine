@@ -24,14 +24,17 @@ gives the targets. If the table in `config.asm` changes, update this.
   missile 10.
 - **Power-ups** sink at about 31 px/s, slower than the diver. A heart
   turns up about one missile turn in 8, a bubble about one in 21 (the
-  double shot lasts 30 seconds), a suction or a shove bomb about one in
-  32 each. Lives top out at 5.
+  double shot lasts 30 seconds), a suction bomb about one in 23 and a
+  shove bomb about one in 51. Lives top out at 5.
 - **Special bombs** are carried, one at a time (a new one replaces the
   old), shown on row 1 left of the bubble's cell, and set off with
-  B. Suction pulls the bomb and the fish down towards the
-  seabed; shove throws them right, to the edge at most. Both take about
-  half a second, take away a silo missile, stop a hunting bomb hunting,
-  and score nothing. The nuke (testing only, `CFG_NUKE_LEVEL` 99) is in
+  B. Suction, the escape, pulls the bomb and the fish down towards the
+  seabed and leaves them there alive, scoring nothing. Shove throws them
+  right; each blows up at the edge, or when the half second is up, and
+  scores what a torpedo would. Shove blows up a silo missile at once (a
+  torpedo's points); suction takes it away silently. Both stop a hunting
+  bomb hunting. The nuke scores
+  nothing. The nuke (testing only, `CFG_NUKE_LEVEL` 99) is in
   [CHEATS.md](CHEATS.md).
 - **After level 9** its row repeats.
 - **The testers' switch** (see [CHEATS.md](CHEATS.md)) brings every
