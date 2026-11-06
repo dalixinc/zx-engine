@@ -178,11 +178,11 @@ CFG_DOUBLE_COOLDOWN  equ 10
 ; Rarer power-ups, by the same roll, each with its own share of the 256
 ; and its own first level. The diver carries one at a time (a new one
 ; replaces it), shown on row 1, and sets it off with the key in
-; special.asm. Suction and shove blow up a silo missile at once.
+; special.asm. Both take away a silo missile at once.
 ;   suction   pulls the bomb and the fish down towards the seabed, where
-;             they stay, alive: the escape
+;             they stay, alive: the escape. The missile goes silently.
 ;   shove     throws them to the right edge, where they blow up and
-;             score as if shot
+;             score as if shot, and so does the missile
 ;   nuke      clears them (a testing knob: 0 leaves it out of the build)
 CFG_SUCTION_LEVEL    equ 5
 CFG_SHOVE_LEVEL      equ 7

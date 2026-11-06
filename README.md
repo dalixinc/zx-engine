@@ -96,8 +96,9 @@ replaces it) and sets it off with B. The suction bomb
 (from level 5), the escape, pulls the enemy bomb and the fish down
 towards the seabed and leaves them there; the shove bomb (from level
 7), rarer, throws them to the right edge, where they blow up (or where
-they are after half a second) and score what a torpedo would. Either
-blows up a silo missile at once, for a torpedo's points
+they are after half a second) and score what a torpedo would. Shove
+blows up a silo missile at once, for a torpedo's points; suction takes
+it away
 (`docs/SPECIAL-BOMBS.md`; `CFG_SUCTION_*`, `CFG_SHOVE_*`,
 `CFG_SPECIAL_TIME` in `config.asm`). The score and the level
 are on row 1, beside the hearts. Each level has a target, and each is
@@ -222,7 +223,7 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: a small
 unpacker with the packed loading screen, which it shows at once, then
-the packed game (14,970 bytes in all). The unpacker writes four
+the packed game (14,972 bytes in all). The unpacker writes four
 blocks. The cold block at `$6000-$72B0` (4,785 bytes) is the menu, the
 level codes, start-up, the diver's death, each level's look and anything else that runs
 once in a while, with the raw art that start-up shifts. It is

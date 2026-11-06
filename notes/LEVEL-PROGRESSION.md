@@ -31,8 +31,9 @@ gives the targets. If the table in `config.asm` changes, update this.
   B. Suction, the escape, pulls the bomb and the fish down towards the
   seabed and leaves them there alive, scoring nothing. Shove throws them
   right; each blows up at the edge, or when the half second is up, and
-  scores what a torpedo would. Both blow up a silo missile at once (a
-  torpedo's points) and stop a hunting bomb hunting. The nuke scores
+  scores what a torpedo would. Shove blows up a silo missile at once (a
+  torpedo's points); suction takes it away silently. Both stop a hunting
+  bomb hunting. The nuke scores
   nothing. The nuke (testing only, `CFG_NUKE_LEVEL` 99) is in
   [CHEATS.md](CHEATS.md).
 - **After level 9** its row repeats.

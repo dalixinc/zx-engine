@@ -14,9 +14,9 @@
 ;            for the same time, and blow up at the right edge, or where
 ;            they are when the time runs out
 ;   nuke     they go up as if shot (CFG_NUKE_LEVEL; 0 leaves it out)
-; Suction and shove blow up a silo's missile, armed or in flight, as B
-; is pressed; the nuke takes it away. What blows up scores what a
-; torpedo would, by the level's points; the nuke scores nothing. A
+; Shove blows up a silo's missile, armed or in flight, as B is pressed;
+; suction and the nuke take it away, with no burst. What blows up scores
+; what a torpedo would, by the level's points; nothing else scores. A
 ; throw kills as a torpedo would, with one burst on the screen at a
 ; time (boom.asm): the bomb waits at the edge until a missile's burst
 ; is over, and the fish flashes while a burst is up or the bomb is
@@ -268,21 +268,20 @@ special_fire:
         ld hl,chords_poll
         call sp_chords
     IFNDEF NO_SOUND
-        call snd_launch_start   ; the whoosh (a missile's bang replaces it)
+        call snd_launch_start   ; the whoosh (a thrown missile's bang replaces it)
     ENDIF
-        ; A silo's missile, armed or flying, blows up and scores, as if
-        ; shot; the nuke only takes it away. A power-up is left alone.
+        ; A silo's missile, armed or flying: a throw blows it up and it
+        ; scores, as if shot; suction (the escape) and the nuke only take
+        ; it away. A power-up is left alone.
         ld a,(msl_phase)
         or a
         jr z,.nomsl
         ld a,(msl_kind)
         or a
         jr nz,.nomsl
-    IF CFG_NUKE_LEVEL
         ld a,(sp_kind)
-        cp MSL_KIND_NUKE
-        jr z,.gone
-    ENDIF
+        cp MSL_KIND_SHOVE
+        jr nz,.gone
         call boom_at_missile
         ld a,(level_pts_msl)
         call score_add

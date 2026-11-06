@@ -53,7 +53,7 @@ While the tape loads, two more things sit in memory for a moment: the
 first block, from the page after `cold_end` (`$7300-$7F97`: the
 unpacker, the packed loading screen, the packed data block and the
 packed UDG block), and the second, the packed cold block and code, from
-the page after `data_end` (`$CE00-$FB59`, 1,007 bytes below the UDG
+the page after `data_end` (`$CE00-$FB5B`, 1,005 bytes below the UDG
 block at `$FF48`, its limit). Start-up builds the shifted pictures over
 both. See [UDG-AND-SEABED.md](UDG-AND-SEABED.md).
 
