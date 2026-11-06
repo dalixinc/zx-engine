@@ -8,12 +8,21 @@
 ; picture is on row 1, left of the bubble's cell. B sets it off.
 ;   suction  the bomb and the fish are pulled down towards the seabed,
 ;            CFG_SUCTION_SPEED pixels a 1/50 second for CFG_SPECIAL_TIME,
-;            to the lowest middle their swing still fits above the weed
+;            and blow up when they reach the lowest middle their swing
+;            still fits above the weed
 ;   shove    they are thrown right, CFG_SHOVE_SPEED pixels a 1/50 second
-;            for the same time, to the right edge at most
+;            for the same time, and blow up at the right edge
 ;   nuke     they go up as if shot (CFG_NUKE_LEVEL; 0 leaves it out)
-; Each also takes away a silo's missile, armed or in flight. Nothing
-; moved or cleared scores. A bomb that is pulled or thrown stops hunting.
+; Whatever has not got there when the time runs out blows up then.
+; Suction and shove blow up a silo's missile, armed or in flight, as B
+; is pressed; the nuke takes it away. Suction and shove score what a
+; torpedo would, by the level's points; the nuke scores nothing. They
+; die as a torpedo would kill them, with one burst on the screen at a
+; time (boom.asm): the bomb waits at the seabed or the edge until a
+; missile's burst is over, and the fish flashes while a burst is up or
+; the bomb is still there. A bomb that is pulled or thrown stops hunting.
+; No new bomb or fish can appear while it lasts: the bomb's pause
+; (WHEEL_GAP) and a dead fish's flash and pause are longer.
 ;
 ; What it costs the frame:
 ;   - nothing held, nothing moving: nothing. The key is read only while
@@ -41,6 +50,10 @@ SP_KEYS         equ %00010000
 ; as its own wave still keeps it above the weed.
 SUCK_BOMB_LOW   equ WAVE_LOW_BASE
 SUCK_FISH_LOW   equ BACK_ROW * 8 - FISH_HEIGHT - CFG_FISH_WAVE_AMP
+; How far right the throw takes the bomb: its right edge on the screen's.
+SHOVE_BOMB_MAX  equ 256 - WHEEL_WIDTH
+        ASSERT SUCK_BOMB_LOW + CFG_SUCTION_SPEED < 256 && SUCK_FISH_LOW + CFG_SUCTION_SPEED < 256
+        ASSERT WHEEL_GAP > CFG_SPECIAL_TIME, "a new bomb could come and be blown up by the same special bomb"
         ASSERT SUCK_BOMB_LOW <= WHEEL_LOW_BASE && SUCK_FISH_LOW >= FISH_SWIM_Y
         ASSERT SUCK_FISH_LOW + CFG_FISH_WAVE_AMP + FISH_HEIGHT <= BACK_ROW * 8, "a pulled fish would reach the seabed: it is drawn before the copy"
         ASSERT CFG_SPECIAL_TIME >= 1 && CFG_SPECIAL_TIME <= 255
@@ -72,55 +85,75 @@ sp_poll:
 sp_tick:
         ld hl,sp_left
         dec (hl)
-        call z,msl_calls_set    ; the last one: the calls go back
+        call z,sp_end           ; the last one: what is left blows up
         ld a,1
         ld (wheel_odd),a        ; more than a pixel: the whole bomb repainted
         ld a,(sp_kind)
         cp MSL_KIND_SHOVE
         jr z,.shove
         ; Suction: the bomb's middle, then the fish's, down, never up.
+        ; At the bottom each blows up (sp_bomb_down waits for a burst).
+        ld a,(wheel_phase)
+        or a
+        jr z,.fish              ; gone, or no bomb
         ld a,(wheel_base)
-        cp SUCK_BOMB_LOW
-        jr nc,.fish
         add a,CFG_SUCTION_SPEED
-        cp SUCK_BOMB_LOW + 1
+        cp SUCK_BOMB_LOW
         jr c,.base
         ld a,SUCK_BOMB_LOW
+        ld (wheel_base),a
+        call sp_bomb_down
+        jr .fish
 .base:  ld (wheel_base),a
 .fish:  ld a,(fish_busy)
         or a
         jr nz,.on               ; flashing or away: left alone
         ld a,(fish_wave.in + 1) ; the fish's middle (fish_wave's operand)
-        cp SUCK_FISH_LOW
-        jr nc,.on
         add a,CFG_SUCTION_SPEED
-        cp SUCK_FISH_LOW + 1
+        cp SUCK_FISH_LOW
         jr c,.mid
         ld a,SUCK_FISH_LOW
-.mid:   ld (fish_wave.in + 1),a
+        call .set
+        jp sp_fish_kill_on      ; at the bottom: it dies there
+.mid:   call .set
+        jr .on
+.set:   ld (fish_wave.in + 1),a
         ld b,a
         ld a,(level_fmove)
         or a                    ; MOVE_STRAIGHT: its height is its middle
         ld a,b
-        call z,fish_set_y
-        jr .on
-.shove: ld hl,(wheel_x)         ; 16 bits: off the left it is negative
+        ret nz
+        jp fish_set_y
+.shove: ld a,(wheel_phase)
+        or a
+        jr z,.sfish
+        ld hl,(wheel_x)         ; 16 bits: off the left it is negative
         ld de,CFG_SHOVE_SPEED
         add hl,de
         ld a,h
+        inc a
+        jr z,.bx                ; still off the left
         dec a
-        jr nz,.bx               ; below 256
-        ld hl,256               ; just off the right, as a new bomb starts
+        jr nz,.bmax             ; 256 or more
+        ld a,l
+        cp SHOVE_BOMB_MAX
+        jr c,.bx
+.bmax:  ld hl,SHOVE_BOMB_MAX    ; at the edge, all of it on the screen
+        ld (wheel_x),hl
+        call sp_bomb_down
+        jr .sfish
 .bx:    ld (wheel_x),hl
-        ld a,(fish_busy)
+.sfish: ld a,(fish_busy)
         or a
         jr nz,.on
         ld a,(fish_x)
         add a,CFG_SHOVE_SPEED
         jr c,.fmax
-        cp FISH_MAX_X + 1
+        cp FISH_MAX_X
         jr c,.fx
 .fmax:  ld a,FISH_MAX_X
+        ld (fish_x),a
+        jp sp_fish_kill_on
 .fx:    ld (fish_x),a
 .on:    ld a,(double_on)
         or a
@@ -149,6 +182,58 @@ msl_calls_set:
         ASSERT ({fish_mv.msl_uc1} & $FF) == $CD && {fish_mv.msl_uc1 + 1} == missile_update, ".msl_uc1 is not CALL missile_update"
         ASSERT ({fish_mv2.msl_uc2} & $FF) == $CD && {fish_mv2.msl_uc2 + 1} == missile_update, ".msl_uc2 is not CALL missile_update"
         ASSERT ({main_loop.chord_call} & $FF) == $CD && {main_loop.chord_call + 1} == chords_poll, ".chord_call is not CALL chords_poll"
+
+; sp_end - the last 1/50 second of the pull or the throw: the calls go
+; back, and the bomb and the fish blow up wherever they are.
+; sp_bomb_down - the bomb is at the seabed or the edge: it blows up,
+; unless a burst is still up (a missile's). sp_tick asks again next time.
+; sp_fish_kill_on - the fish is there: it dies, then on to the clock.
+; Corrupts: AF, BC, DE, HL
+sp_end:
+        call msl_calls_set
+        call sp_bomb_kill
+        jr sp_fish_kill
+
+sp_bomb_down:
+        ld a,(boom_t)
+        or a
+        ret nz
+sp_bomb_kill:
+        ld a,(wheel_phase)
+        or a
+        ret z
+        call wheel_remove
+        call boom_at_bomb
+        ld a,(level_pts_bomb)
+        jp score_add
+
+sp_fish_kill_on:
+        call sp_fish_kill
+        jp sp_tick.on
+
+; The fish as a torpedo kills it (torpedo_fish): a piranha scores twice.
+; It flashes while the bomb is there or a burst is up.
+sp_fish_kill:
+        ld a,(fish_busy)
+        or a
+        ret nz
+    IFDEF TWO_FISH
+        ld a,(fish_piranha)
+        or a
+        ld a,(level_pts_fish)
+        jr z,.pts
+        add a,a
+        daa
+.pts:
+    ELSE
+        ld a,(level_pts_fish)
+    ENDIF
+        call score_add
+        ld a,(boom_t)
+        ld hl,wheel_phase
+        or (hl)
+        jp z,boom_at_fish
+        jp fish_flash_begin
 
 ; HL = chords_poll or sp_poll: main_loop's call. Corrupts: nothing else
 sp_chords:
@@ -186,17 +271,27 @@ special_fire:
         set HUD_HEARTS,(hl)     ; row 1's cell back to water
         ld hl,chords_poll
         call sp_chords
-        ; A silo's missile, armed or flying, is taken away: no burst.
+    IFNDEF NO_SOUND
+        call snd_launch_start   ; the whoosh (a missile's bang replaces it)
+    ENDIF
+        ; A silo's missile, armed or flying, blows up and scores, as if
+        ; shot; the nuke only takes it away. A power-up is left alone.
         ld a,(msl_phase)
         or a
         jr z,.nomsl
         ld a,(msl_kind)
         or a
-        call z,missile_gone
-.nomsl:
-    IFNDEF NO_SOUND
-        call snd_launch_start   ; the whoosh
+        jr nz,.nomsl
+    IF CFG_NUKE_LEVEL
+        ld a,(sp_kind)
+        cp MSL_KIND_NUKE
+        jr z,.gone
     ENDIF
+        call boom_at_missile
+        ld a,(level_pts_msl)
+        call score_add
+.gone:  call missile_gone
+.nomsl:
         ld a,CFG_CHORD_FLASH
         ld (chord_flash),a      ; the border flashes, as for a chord
     IF CFG_NUKE_LEVEL

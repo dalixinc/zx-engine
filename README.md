@@ -94,8 +94,10 @@ Rarer still, from level 5, a special bomb: he carries one at a time
 (its picture shows on row 1, left of the bubble's cell; a new one
 replaces it) and sets it off with B. The suction bomb
 (from level 5) pulls the enemy bomb and the fish down towards the
-seabed; the shove bomb (from level 7) throws them to the right. Either
-takes away a silo missile, and nothing it moves scores
+seabed, where they blow up; the shove bomb (from level 7) throws them
+to the right edge, where they blow up. Whatever has not got there in
+half a second blows up then. Either blows up a silo missile at once,
+and each enemy scores what a torpedo would
 (`docs/SPECIAL-BOMBS.md`; `CFG_SUCTION_*`, `CFG_SHOVE_*`,
 `CFG_SPECIAL_TIME` in `config.asm`). The score and the level
 are on row 1, beside the hearts. Each level has a target, and each is
@@ -220,12 +222,12 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: a small
 unpacker with the packed loading screen, which it shows at once, then
-the packed game (14,885 bytes in all). The unpacker writes four
-blocks. The cold block at `$6000-$7269` (4,714 bytes) is the menu, the
+the packed game (14,973 bytes in all). The unpacker writes four
+blocks. The cold block at `$6000-$72AA` (4,779 bytes) is the menu, the
 level codes, start-up, the diver's death, each level's look and anything else that runs
 once in a while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The
-instructions are at `$8000-$B8EA` (`code_end` is `$B8EB`) and must stay
+instructions are at `$8000-$B916` (`code_end` is `$B917`) and must stay
 below half the round fish's pictures at `$B920-$BC7F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CD6A`, and the one-cell pictures and the title's letters in the ROM's UDG area and 16 bytes below it, `$FF48-$FFFF`. The four
 sprites' shifted copies are built at start-up: the diver's, the
 fish's and the pulsar's at `$CF30-$EFFF`, the spinning wheel's at

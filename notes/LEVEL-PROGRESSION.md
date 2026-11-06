@@ -28,10 +28,11 @@ gives the targets. If the table in `config.asm` changes, update this.
   32 each. Lives top out at 5.
 - **Special bombs** are carried, one at a time (a new one replaces the
   old), shown on row 1 left of the bubble's cell, and set off with
-  B. Suction pulls the bomb and the fish down towards the
-  seabed; shove throws them right, to the edge at most. Both take about
-  half a second, take away a silo missile, stop a hunting bomb hunting,
-  and score nothing. The nuke (testing only, `CFG_NUKE_LEVEL` 99) is in
+  B. Suction pulls the bomb and the fish down to the
+  seabed; shove throws them right, to the edge. Each blows up when it
+  gets there, or when the half second is up. Both blow up a silo missile
+  at once, stop a hunting bomb hunting, and score what a torpedo would.
+  The nuke scores nothing. The nuke (testing only, `CFG_NUKE_LEVEL` 99) is in
   [CHEATS.md](CHEATS.md).
 - **After level 9** its row repeats.
 - **The testers' switch** (see [CHEATS.md](CHEATS.md)) brings every
