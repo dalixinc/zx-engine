@@ -218,7 +218,9 @@ CFG_SHOVE_SPEED      equ 8       ; right
 ;            second. 1 to 128 with MOVE_HOME (128 is half the diver's own
 ;            speed, so he can always swim clear), and 0 with the others.
 ;   fmove    how the fish moves: MOVE_STRAIGHT, at a fixed depth, or
-;            MOVE_WAVE, up and down (CFG_FISH_WAVE_*).
+;            MOVE_WAVE, up and down (CFG_FISH_WAVE_*). The fish swimming
+;            when the level changes keeps its way; the next one swims
+;            the new level's (as the bomb, and as the fish's kind).
 ;   fspeed   the fish's haste, the same way as the bomb's: 0 is a pixel
 ;            per 1/50 second, 64 a quarter faster. Only with MOVE_WAVE;
 ;            MOVE_STRAIGHT is the old fish and must have 0.
@@ -251,12 +253,12 @@ CFG_L8_INK          equ BRIGHT | BLACK | (BLUE << 3)
         LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P, CFG_WHEEL_INK, MOVE_BOB, 0, MOVE_STRAIGHT, 0, BORDER_BEAT, 1, 2, 10
         LEVEL_ROW  300,    70,      185,     24,    BOMB_P, CFG_L2_INK,    MOVE_WAVE, 0,   MOVE_WAVE,     48,    CYAN,         1,   2,   10
         LEVEL_ROW  400,    65,      170,     48,    BOMB_W, CFG_SPIN_INK,  MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     RED,          1,   2,   10
-        LEVEL_ROW  500,    60,      155,     72,    BOMB_W, CFG_HUNT_INK,  MOVE_HOME, 48,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  500,    60,      155,     72,    BOMB_W, CFG_HUNT_INK,  MOVE_HOME, 48,  MOVE_WAVE,     56,    BORDER_BEAT,  1,   2,   10
         LEVEL_ROW  600,    55,      140,     96,    BOMB_W, CFG_L5_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
-        LEVEL_ROW  700,    50,      125,     120,   BOMB_W, CFG_L6_INK,    MOVE_HOME, 88,  MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  700,    50,      125,     120,   BOMB_W, CFG_L6_INK,    MOVE_HOME, 88,  MOVE_WAVE,     64,    BORDER_BEAT,  1,   2,   10
         LEVEL_ROW  800,    45,      110,     144,   BOMB_W, CFG_L7_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
-        LEVEL_ROW  900,    40,      95,      168,   BOMB_W, CFG_L8_INK,    MOVE_HOME, 128, MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
-        LEVEL_ROW  1000,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_HOME, 128, MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  900,    40,      95,      168,   BOMB_W, CFG_L8_INK,    MOVE_HOME, 128, MOVE_WAVE,     72,    BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  1000,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_HOME, 128, MOVE_WAVE,     80,    BORDER_BEAT,  1,   2,   10
         ENDM
 
 ; The waves (MOVE_WAVE). A wave is a sine, AMP pixels above the middle

@@ -102,7 +102,9 @@ are on row 1, beside the hearts. Each level has a target, and each is
 longer than the last. Reaching it puts up a big "LEVEL n" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
 fly a little faster. Level 2 has a yellow bomb on a wave, a faster fish
-on a wave and a cyan border (`docs/LEVEL-2.md`). From level 3 the bomb is a
+on a wave and a cyan border (`docs/LEVEL-2.md`); the fish waves again on
+every even level from 4, a little faster each time, and from level 9.
+A new level's fish movement starts with the next fish. From level 3 the bomb is a
 spinning wheel that rolls as it goes, in a new colour each level. Levels
 3, 5 and 7 swing it on a wide wave; levels 4, 6 and 8 make it a hunter
 that drifts towards the diver's depth until it has passed him, harder

@@ -194,13 +194,9 @@ fish_wait_step:
         ld (fish_x),a
         ld a,FACE_LEFT
         ld (fish_facing),a
-        ld a,FISH_SWIM_Y
-    IFDEF POWERUPS
-        ld (fish_wave.in + 1),a ; at its own depth, if suction moved the last
-        call fish_set_y
-    ELSE
-        ld (fish_y),a
-    ENDIF
+        ld a,FISH_SWIM_Y        ; at its own depth, whatever the last did:
+        ld (fish_wave.in + 1),a ; a wave's middle (suction moves it), and
+        call fish_set_y         ; a straight fish's height and hit tests
         xor a
         ld (fish_busy),a
         ld (fish_wave_p),a      ; a wave starts again at the middle

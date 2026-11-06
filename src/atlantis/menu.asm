@@ -612,8 +612,11 @@ game_reset:
 
         ld a,180
         ld (fish_x),a
-        ld a,FISH_SWIM_Y
-        ld (fish_y),a
+        ld a,FISH_SWIM_Y        ; its own depth and hit tests, the wave's middle
+        ld (fish_wave.in + 1),a
+        call fish_set_y
+        xor a
+        ld (fish_wave_p),a      ; boom_reset gives it the level's mover
         ld a,FACE_LEFT
         ld (fish_facing),a
 

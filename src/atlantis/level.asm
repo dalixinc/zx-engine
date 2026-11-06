@@ -262,29 +262,24 @@ fish_set_y:
 ; level_style - HL = the look and points bytes of a CFG_LEVELS row
 ; Called by level_enter, at a new game and at each new level. The bomb
 ; on the screen keeps its colour and movement: wheel_type gives the next
-; one the level's. The fish changes at once, and so does the border.
+; one the level's. The fish too: the next fish swims the level's way
+; (its haste, a wave fish's speed across, changes at once). The border
+; changes at once.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 level_style:
         ld de,level_look
         ld bc,LEVEL_LOOK
         ldir
-        xor a
-        ld (fish_wave_p),a
-        ld a,FISH_SWIM_Y
-        ld (fish_wave.in + 1),a ; the wave's middle back, if suction moved it
+        ; The fish's movement is the next fish's: the one swimming keeps
+        ; its own, as it keeps its kind. fish_unhold hands fish_mover to
+        ; the moves when a fish appears (fish_wait_step, and a new game).
         ld hl,fish_wave
         ld a,(level_fmove)
         or a
         jr nz,.mover
-        ; Straight across at its own depth, with the hit tests there.
-        ld a,FISH_SWIM_Y
-        call fish_set_y
         ld hl,update_fish
 .mover: ld (fish_mover),hl
-        ld a,(fish_busy)
-        or a
-        call z,fish_unhold      ; a fish held for a burst gets it when let go
 
         ; The border. The heartbeat's first four bytes are either its own
         ; or "LD A,colour : JR to the border". These builds have their own

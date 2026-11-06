@@ -321,3 +321,40 @@ Levels 1 and 2 are within the usual one-line drift of main.
 in a bomb's ink) for 3 minutes each on levels 3, 5, 7 and 9; a homing
 missile seen drifting towards the diver in Fuse; the level codes and
 Engine Demo 1 unchanged.
+
+## Fish movement by level
+
+The fish's movement is a column of `CFG_LEVELS` (`fmove`, with its
+speed in `fspeed`), and level 2's wave fish (`fish_wave`) now swims on
+the even levels too. No new movement code.
+
+| Level | Fish | Across |
+|---|---|---|
+| 1, 3, 5, 7 | straight | 50 pixels a second |
+| 2 | wave | 59 |
+| 4 | wave | 61 |
+| 6 | wave | 63 |
+| 8 | wave | 64 |
+| 9 and on | wave | 66 |
+
+- **The next fish, not this one.** A level no longer changes the fish
+  that is swimming: `level_style` only sets `fish_mover`, and the next
+  fish to appear (`fish_wait_step`, or a new game) gets it, as it gets
+  its kind (round or piranha). Each new fish starts at its own depth,
+  with its hit tests there (`fish_set_y`). The speed across of a wave
+  fish changes at once.
+- **Bytes:** none in the hot code (`code_end` stays `$B8EB`, 53 free);
+  the cold block is 14 bytes smaller (`cold_end` `$7255`).
+- **Timing** (spare lines, late steps in brackets), before and after.
+  The wave fish costs about a scanline, as on level 2:
+
+  | Level | Seabed | + fire |
+  |---|---|---|
+  | 4 | 6, now 5 | 0 (1), now 0 (1) |
+  | 6 | 4, now 2 | 0 (1), now 0 (3) |
+  | 8 | 5, now 4 | 0 (2), now 0 (2) |
+  | 9 | 3, now 3 | 0 (4), now 0 (7) |
+
+  One interrupt a step everywhere, so 50 holds. Levels 1 and 2 are the
+  same as before in all twelve measured cases, and the soak is green at
+  50 and 25.
