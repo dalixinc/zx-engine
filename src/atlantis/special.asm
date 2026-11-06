@@ -5,8 +5,7 @@
 ; bubble (missile.asm), each with its own share of the roll and its own
 ; first level (config.asm). Touching one does not set it off: the diver
 ; carries it, one at a time, and a new one replaces the one he had. Its
-; picture is on row 1, left of the bubble's cell. Symbol Shift + B sets
-; it off.
+; picture is on row 1, left of the bubble's cell. B sets it off.
 ;   suction  the bomb and the fish are pulled down towards the seabed,
 ;            CFG_SUCTION_SPEED pixels a 1/50 second for CFG_SPECIAL_TIME,
 ;            to the lowest middle their swing still fits above the weed
@@ -34,8 +33,8 @@ sp_kind:        db 0            ; the kind moving things now
 sp_left:        db 0            ; 1/50 seconds of it still to go, 0 = none
 sp_prev:        db 0            ; the key last step (rising_edge)
 
-; The two keys on port $7FFE: Symbol Shift (bit 1) and B (bit 4).
-SP_KEYS         equ %00010010
+; The key: B, on port $7FFE (bit 4). Nothing else in play uses it.
+SP_KEYS         equ %00010000
 
 ; How low the pull takes them: the bomb's middle as low as the wave's
 ; lowest (it fits the drift's and the hunter's too), the fish's as low
@@ -51,15 +50,15 @@ SUCK_FISH_LOW   equ BACK_ROW * 8 - FISH_HEIGHT - CFG_FISH_WAVE_AMP
 
 ;------------------------------------------------------------------------------
 ; sp_poll - in chords_poll's place while a bomb is held: the chords, then
-; Symbol Shift + B, on the edge. Corrupts: AF, BC, DE, HL
+; B, on the edge. Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 sp_poll:
         call chords_poll        ; Symbol Shift + P does not come back
         ld bc,ROW_SPC_B * 256 + ULA_PORT
         in a,(c)
-        and SP_KEYS             ; 0: both down
+        and SP_KEYS             ; 0: down
         sub 1
-        sbc a,a                 ; $FF: both down, 0: not
+        sbc a,a                 ; $FF: down, 0: not
         ld hl,sp_prev
         call rising_edge
         ret z
@@ -172,7 +171,7 @@ special_take:
         jp power_done
 
 ;------------------------------------------------------------------------------
-; special_fire - Symbol Shift + B with a bomb held. Not while he dies.
+; special_fire - B with a bomb held. Not while he dies.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 special_fire:
