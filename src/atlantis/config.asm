@@ -249,6 +249,13 @@ CFG_QUAKE_SHAKE      equ 3
 CFG_QUAKE_HOLD       equ 2
 CFG_QUAKE_PITCH      equ 3
 
+; --- The attract demo (demo.asm) ----------------------------------------------
+; After CFG_DEMO_WAIT seconds on the menu with no key down, the computer
+; plays level 1 for CFG_DEMO_TIME seconds, then the menu comes back.
+; Any key stops it at once.
+CFG_DEMO_WAIT        equ 15
+CFG_DEMO_TIME        equ 25
+
 ; --- Score and levels (score.asm) ---------------------------------------------
 ; The levels, one row each, in order:
 ;   points   what this level needs, on top of the last level's target

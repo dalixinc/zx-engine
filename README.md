@@ -68,7 +68,10 @@ on a black screen, then starts the game (any key skips the story;
 [docs/STORY-AND-LIVES.md](docs/STORY-AND-LIVES.md)), `2` swaps between
 50 and 25 frames a second, and `3` takes a six-letter level code
 (`0` rubs out a letter, Space gives up). The choice is kept when you come back to the
-menu.
+menu. Left alone for 15 seconds, the menu plays a short demo of level 1,
+with the computer swimming and firing, for 25 seconds, then comes back;
+any key stops it (`src/atlantis/demo.asm`, `CFG_DEMO_*`). A demo's
+score never counts as a high score.
 
 The diver has three lives (`CFG_LIVES` in `src/atlantis/config.asm`),
 shown as hearts at the top right of the screen. Each new level brings
@@ -176,6 +179,7 @@ src/atlantis/layout.asm  the game's rows, colours, buffer addresses
 src/atlantis/data.asm    menu words, stat-line template, sine table (at $C400)
 src/atlantis/menu.asm    the start screen, and Symbol Shift + P back to it
 src/atlantis/story.asm   the story, typed out when 1 starts a game
+src/atlantis/demo.asm    the attract demo the menu plays when left alone
 src/atlantis/rate.asm    50 or 25 frames a second, the chords, the spare-scanline count
 src/atlantis/scenery.asm water, sand and ground colours
 src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
