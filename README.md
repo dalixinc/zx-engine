@@ -223,7 +223,7 @@ gfx/torpedo.asm          GENERATED from torpedo.txt: 8 shifts x 1 frame x 2 faci
 gfx/missile.txt          silo missile, 6 x 8, one frame, mirror off
 gfx/missile.asm          GENERATED from missile.txt: 8 shifts x 1 frame
 gfx/loading.scr          GENERATED loading screen, 6912 bytes (tools/mkloadscreen.py)
-VERSION                  the version printed on the loading screen (0.9.0)
+VERSION                  the version printed on the loading screen (0.9.2)
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
 tools/gfx2asm.py         ASCII art -> pre-shifted masked .asm (Python 3)
