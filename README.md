@@ -221,15 +221,16 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 ```
 
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
-the tape is packed with ZX0. After the BASIC come two blocks: a small
-unpacker with the packed loading screen, which it shows at once, then
-the packed game (14,972 bytes in all). The unpacker writes four
-blocks. The cold block at `$6000-$72B0` (4,785 bytes) is the menu, the
-level codes, start-up, the diver's death, each level's look and anything else that runs
-once in a while, with the raw art that start-up shifts. It is
+the tape is packed with ZX0. After the BASIC come two blocks: the
+packed loading screen with a small unpacker, which shows it at once,
+then the packed game (14,943 bytes in all). The unpacker writes four
+blocks. The cold block at `$6000-$74E5` (5,350 bytes, and it may grow to
+`$78DF`) is the menu, the level codes, start-up, the diver's death, each
+level's look, going up a level, and anything else that runs once in a
+while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The
-instructions are at `$8000-$B906` (`code_end` is `$B907`) and must stay
-below half the round fish's pictures at `$B920-$BC7F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CD6A`, and the one-cell pictures and the title's letters in the ROM's UDG area and 16 bytes below it, `$FF48-$FFFF`. The four
+instructions are at `$8000-$B63F` (`code_end` is `$B640`) and must stay
+below half the round fish's pictures at `$B920-$BC7F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CDFC`, and the one-cell pictures and the title's letters in the ROM's UDG area and 16 bytes below it, `$FF48-$FFFF`. The four
 sprites' shifted copies are built at start-up: the diver's, the
 fish's and the pulsar's at `$CF30-$EFFF`, the spinning wheel's at
 `$78E0-$7FFF`. The buffers that start empty are at `$F300-$F517`,

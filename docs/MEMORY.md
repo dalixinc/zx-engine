@@ -1,11 +1,10 @@
 # Atlantis memory
 
 How the 48K is laid out, what is built at start-up, and how the tape is
-packed. The map below is the current one, after the levels 3 and 4
-brief ([LEVELS-3-AND-4.md](LEVELS-3-AND-4.md): 173 bytes of hot code,
-272 of data, 264 of the cold block, and the jet's two still pictures,
-1,920 bytes built at start-up). Under it are the two briefs
-that made it: Quartus's **squeeze** brief (November 2026) and, before
+packed. The map below is the current one, after **the big squeeze**
+(November 2026, below), which changed how the tape loads and moved what
+only runs now and then out of the hot code. Under it are the briefs
+that made it: the big squeeze, Quartus's **squeeze** brief and, before
 it, the **housekeeping** brief (PR #23).
 
 ## The map
@@ -14,15 +13,15 @@ it, the **housekeeping** brief (PR #23).
 |---|---|
 | `$4000-$5AFF` | screen |
 | `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
-| `$6000-$72B0` | **cold block** (4,785 bytes): menu, the title (`title_draw`), the testers' switch (`cheat_poll`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, the seabed's slope tables' builder (`slope_build`), the power-ups' picture builder (`power_build`), taking and setting off a special bomb and blowing up what a throw moves (`special.asm`), `torpedo_reset`, and the raw art `preshift` reads (fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
-| `$72B1-$78DF` | free (1,583; but the tape's first block loads from the page after `cold_end` and must end below `$8000`: it now loads at `$7300` and ends `$7F97`, so the cold block can grow only 79 bytes, to `$7300`, before that block moves up another page, where it would not fit) |
-| `$78E0-$7FFF` | the spinning wheel's shifted pictures (4 quarter turns, 1,824, built at start-up) |
-| `$8000-$B906` | code (`code_end` `$B907`), with the double shot's patch tables, and the round fish's raw art and tables |
-| `$B907-$B91F` | free (25) |
+| `$6000-$74E5` | **cold block** (5,350 bytes): menu, the title (`title_draw`), the testers' switch (`cheat_poll`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, the seabed's slope tables' builder (`slope_build`), the power-ups' picture builder (`power_build`), going up a level (`level_up`, `level_advance`, `level_enter`, `banner_show`), a new bomb's settings (`wheel_type`), a missile's end and the power-up roll (`missile_gone`), taking and setting off a special bomb and blowing up what a throw moves (`special.asm`), `torpedo_reset`, and the raw art `preshift` reads (fish, round fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
+| `$74E6-$78DF` | free (1,018, all of it usable: the tape's unpacker sits above `$78E0`, asserted above `cold_end`) |
+| `$78E0-$7FFF` | the spinning wheel's shifted pictures (4 quarter turns, 1,824, built at start-up; while the tape loads, its first block is here, `$791D-$7FFF`) |
+| `$8000-$B63F` | code (`code_end` `$B640`) |
+| `$B640-$B91F` | free (736) |
 | `$B920-$BC7F` | the round fish's left-facing shifted pictures (`RFISH_BUF`, 864, built at start-up; the tape build only, `TWO_FISH`: builds with the stat line and the soak have their code here instead) |
 | `$BC80-$C3FF` | the diver's two still pictures with the jet's other phase (`JET_BUF`, 1,920, built at start-up; the soak build has its code here instead) |
-| `$C400-$CD6A` | data: graphics, tables, `data.asm` (`data_end` `$CD6B`) |
-| `$CD6B-$CF2F` | free (453) |
+| `$C400-$CDFC` | data: graphics, tables (the round fish's pointer tables and the double shot's patch tables too), `data.asm` (`data_end` `$CDFD`); while the tape loads, its second block starts here |
+| `$CDFD-$CF2F` | free (307) |
 | `$CF30-$E5AF` | the diver's shifted pictures (5,760, built at start-up) |
 | `$E5B0-$EC6F` | the fish's shifted pictures (built at start-up) |
 | `$EC70-$EFFF` | the pulsar's shifted pictures (built at start-up) |
@@ -50,12 +49,73 @@ The ends come from the build's `DISPLAY` lines (`atlantis code_end`,
 build if any of them runs into the next thing up.
 
 While the tape loads, two more things sit in memory for a moment: the
-first block, from the page after `cold_end` (`$7300-$7F97`: the
-unpacker, the packed loading screen, the packed data block and the
-packed UDG block), and the second, the packed cold block and code, from
-the page after `data_end` (`$CE00-$FB5B`, 1,005 bytes below the UDG
-block at `$FF48`, its limit). Start-up builds the shifted pictures over
-both. See [UDG-AND-SEABED.md](UDG-AND-SEABED.md).
+first block, the packed loading screen and then the unpacker, ending at
+`$8000` (`$791D-$7FFF`), and the second, the packed code, cold block,
+data and UDG block, from `DATA_START` (`$C400-$F6F1`, 2,134 bytes below
+the UDG block at `$FF48`, its limit). The unpacker writes them in that
+order, each over bytes it has already read: the code between the two
+blocks, the cold block over the first block's screen (already shown)
+but below the unpacker, the data over the second block's code and cold
+block, and the UDG block last. Start-up builds the shifted pictures
+over both. See [the big squeeze](#the-big-squeeze-the-tape-and-the-hot-code)
+and [UDG-AND-SEABED.md](UDG-AND-SEABED.md).
+
+## The big squeeze: the tape and the hot code
+
+The cold block had 1,583 bytes free, but only 79 could be used, and the
+hot code 25. Neither was the game's doing: both came from where the
+tape's two blocks loaded. The first block (the unpacker, the packed
+screen, data and UDG block) loaded on the page after `cold_end` and had
+to end below `$8000`; the second (the packed cold block and code) loaded
+on the page after `data_end` and had to end below the UDGs, so data
+could not grow either. Things that only start-up reads had been parked
+in the hot code to keep out of both.
+
+**1. The tape** (`tape.asm`, `c621a88`). The first block is now only
+the packed screen and the unpacker, ending at `$8000`. The second loads
+at `DATA_START`, in the room the code and data are unpacked into, and
+holds the packed code, cold block, data and UDG block, unpacked in that
+order. The game's bytes did not change (`atlantis.sna` was identical),
+and `make unpack-check` now sums the UDG block too.
+
+**2. What start-up reads** (`c4a57dc`). The round fish's raw art went to
+the cold block, beside the other raw art; its pointer tables and the
+double shot's patch tables to the data block. 290 bytes out of the hot
+code.
+
+**3. What runs once per event**, to the cold block, like `code_text`
+before them: going up a level (`level_up`, `level_advance`,
+`level_enter`, `banner_show`: once a level), a new bomb's settings
+(`wheel_type` and its two tables: once a bomb) and a missile's end
+(`missile_gone`: once a missile). 421 bytes. The banner's painting
+stays hot, as its erase uses it on another step, and `missile_pick`
+stays, as a missile waiting for a silo near the diver tries it every
+step.
+
+| | Before (main `6864b9d`) | After |
+|---|---|---|
+| hot code free (`code_end` to `RFISH_BUF`) | 25 | **736** |
+| cold block room (`cold_end` to `$78E0`) | 79 usable | **1,018** |
+| data free (`data_end` to `$CF30`) | 453 | 307 |
+| packed game room (below `$FF48`) | 1,005 | **2,134** |
+| tape | 14,972 bytes | 14,943 bytes |
+| unpacking the game | 32 frames | 33 frames |
+
+**Checks.**
+
+- **Timing**, eleven measurement cases on main and on the branch, the
+  same in every figure (spare lines, late steps, interrupts): the
+  seabed, with fire, with a missile, with the spinning wheel, the
+  burst, levels 2, 4 and 9, the double shot, and the seabed and level 9
+  at 25. A scratch copy that adds 99 points every 16 steps, so the
+  levels go up all the time, is also the same on both (at 50, at 25,
+  and with a missile).
+- **The soak:** green at 50 and 25.
+- **`make unpack-check`:** the screen's, the cold block's, the code's,
+  the data's and the UDG block's sums match the files.
+- **The tape** loads in Fuse and plays: the round fish, built from the
+  art now in the cold block, swims both ways.
+- **Every build assembles,** and Engine Demo 1 is byte-identical.
 
 ## The squeeze brief: free bytes, before and after
 

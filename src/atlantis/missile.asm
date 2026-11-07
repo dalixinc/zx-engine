@@ -542,6 +542,8 @@ double_end:
         ASSERT CFG_POWER_LEVEL >= 1 && CFG_POWER_LEVEL <= 99 && CFG_DOUBLE_LEVEL >= 1 && CFG_DOUBLE_LEVEL <= 99 && CFG_PIRANHA_LEVEL >= 1 && CFG_PIRANHA_LEVEL <= 99
     ENDIF
 
+        ; Once a missile, as it ends: in the cold block.
+        COLD
 ;------------------------------------------------------------------------------
 ; missile_gone - shot, spent on the diver, or out of the top. The next
 ; restore takes it off the screen. The next one is a random gap away.
@@ -596,6 +598,7 @@ missile_gone:
         ld (msl_wait),a
         ret
     ENDIF
+        HOT
 
 ; Out: A = the next value of an 8-bit shift register. Corrupts: F
 msl_rng:

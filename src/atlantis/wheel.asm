@@ -484,6 +484,8 @@ wheel_clamp_base:
         ld (wheel_base),a
         ret
 
+        ; Once a bomb, as it appears: in the cold block, with its tables.
+        COLD
 ;------------------------------------------------------------------------------
 ; wheel_type - this level's kind of bomb: its five settings, its pictures
 ; level_bomb (from CFG_LEVELS) picks the pulsar or the spinning wheel.
@@ -549,6 +551,7 @@ wheel_type:
 ; Each kind's pictures and animation order.
 wheel_pics:     dw wheel_images, wheel_seq
 spin_pics:      dw wspin_images, wspin_seq
+        HOT
 
 ;------------------------------------------------------------------------------
 ; wheel_spawn_type - copy the settings onto this bomb
