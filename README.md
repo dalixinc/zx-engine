@@ -100,7 +100,9 @@ falling jingle says it has run out (`docs/POWER-UPS.md`; `CFG_POWER_*`,
 Rarer still, from level 5, a special bomb: he carries one at a time
 (its picture shows on row 1, left of the bubble's cell; a new one
 replaces it) and sets it off with B: the border flashes in its colour
-and it plays its own slide, down for suction, up for shove. The suction bomb
+and it plays its own slide, down for suction, up for shove. Shove
+first stops the action for a second and shakes the screen, with a
+rumble (`CFG_QUAKE_*`). The suction bomb
 (from level 5), the escape, pulls the enemy bomb and the fish down
 towards the seabed and leaves them there; the shove bomb (from level
 7), rarer, throws them to the right edge, where they blow up (or where

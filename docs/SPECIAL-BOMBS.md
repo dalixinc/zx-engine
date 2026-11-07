@@ -29,6 +29,12 @@ bytes moved to where they belong.
   `CFG_SHOVE_INK`), and it plays its own slide: suction falls from about
   1,300 Hz to 260 Hz over the pull, shove rises the other way and holds
   its top note. A thrown missile's bang cuts the slide short.
+- **Shove shakes the screen first.** Setting it off stops the action
+  for a second: the whole picture jumps a few pixel rows down and back,
+  again and again, the border flashes yellow and black, and the beeper
+  rumbles and fades. Then the throw goes ahead, with its slide. Suction,
+  the escape, has no shake: just its slide and the flash. See "The
+  quake" below.
 - **How often:** each has its own share of the roll when a missile
   ends, and its own first level. Suction is about twice as common:
   11 in 256 (about one turn in 23), shove 5 in 256 (one in 51).
@@ -226,3 +232,31 @@ the pull, which repaints the whole bomb each 1/50 second.)
   Suction's pull is main's code, byte for byte.
 - **The soak and measurement builds** differ from main's only in the
   two odds bytes of `power_tab`, which they never read.
+
+## The quake
+
+Shove got more drama for 1.0: when it goes off, the game stops for a
+second (`CFG_QUAKE_TIME`, 50 1/50 seconds) and all the time goes to the
+effect (`sp_quake`, cold block, `special.asm`).
+
+- **The shake.** The Spectrum has no hardware scroll, so the shake moves
+  the pixels themselves: every pixel row is copied `CFG_QUAKE_SHAKE` (3)
+  rows down, held for `CFG_QUAKE_HOLD` (2) television frames, then copied
+  back up, again until the second is up. Each copy of the whole picture
+  takes two to three frames, so the beam catches it half moved and it
+  tears a little, which reads as part of the shake. The colours stay
+  where they are, so for a moment ink slips into the next cell's colour.
+- **Why nothing breaks.** A shift down and then up puts every pixel
+  row back exactly, except the bottom three, which come back as copies.
+  They are the ground's (asserted: up to `GROUND_PX`), and the next
+  step's seabed copy rewrites them. The sprites' photographs of the
+  background stay true, and the game carries on from the very picture
+  it stopped on.
+- **The rumble** is the speaker moved at random every `CFG_QUAKE_PITCH`
+  (3) pixel rows copied, about 600 changes a second, less and less often
+  as the second runs out. The same port write flashes the border.
+- **The clocks.** Nothing moves while it shakes, but the television
+  frames still count: the banner's clock and the double shot's are
+  pushed on by the time the quake took, as a death does.
+- **Bytes:** 248 in the cold block, nothing in the hot code.
+

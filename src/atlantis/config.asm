@@ -237,6 +237,17 @@ CFG_SHOVE_SPEED      equ 8       ; right
 CFG_SPECIAL_FLASH    equ 24
 CFG_SUCTION_INK      equ 5
 CFG_SHOVE_INK        equ 6
+; The quake: shove and the nuke stop the action for CFG_QUAKE_TIME 1/50
+; seconds (50 is a second) while the picture shakes up and down by
+; CFG_QUAKE_SHAKE pixel rows (1 to 8; each jump is held CFG_QUAKE_HOLD
+; television frames), the border flashes, and the beeper rumbles and
+; fades. CFG_QUAKE_PITCH is the rumble's pitch: pixel rows copied per
+; noise value, so higher is deeper. Suction has no quake: the escape
+; stays quiet.
+CFG_QUAKE_TIME       equ 50
+CFG_QUAKE_SHAKE      equ 3
+CFG_QUAKE_HOLD       equ 2
+CFG_QUAKE_PITCH      equ 3
 
 ; --- Score and levels (score.asm) ---------------------------------------------
 ; The levels, one row each, in order:

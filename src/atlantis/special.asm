@@ -286,6 +286,15 @@ special_fire:
         ld (step_skip.flash_ink + 1),a ; the rest of the flash's colour
         ld a,CFG_SPECIAL_FLASH
         ld (chord_flash),a      ; the border flashes, as for a chord
+        ; Shove and the nuke stop the action for a moment and shake the
+        ; screen first; suction, the escape, stays quiet.
+        ld a,(sp_kind)
+        cp MSL_KIND_SUCTION
+        jr z,.calm
+        push hl
+        call sp_quake           ; B is still the colour
+        pop hl
+.calm:
     IFNDEF NO_SOUND
         ld a,h
         or l
@@ -342,6 +351,180 @@ special_nuke:
         ret nz
         jp boom_at_fish
     ENDIF
+
+;------------------------------------------------------------------------------
+; sp_quake - shove or the nuke: the action stops for CFG_QUAKE_TIME 1/50
+; seconds. The whole picture jumps CFG_QUAKE_SHAKE pixel rows down and
+; back, again and again, the border flashes the bomb's colour and black,
+; and the beeper rumbles, fading out. Nothing else runs meanwhile, as in
+; the knell. A shift down and then up puts every pixel row back but the
+; bottom CFG_QUAKE_SHAKE, which are the ground's, and the next step's
+; seabed copy rewrites those; the sprites' photographs stay true. The
+; colours never move. Each shift takes two to three television frames,
+; so the beam sees it tear a little: that is part of the shake. The
+; clocks that count television frames (the banner's, the double shot's)
+; are pushed on by the time it took, as a death does.
+; In: B = the border colour. Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+sp_quake:
+        ld a,b
+        ld (qk_ink),a
+        ld (qk_port),a
+        out (ULA_PORT),a
+        ld a,CFG_QUAKE_TIME
+        ld (qk_loud),a
+        ld hl,(frame_count)
+        ld (qk_start),hl
+.again: call qk_down
+        call qk_hold
+        call qk_up
+        call qk_hold
+        call qk_spent
+        cp CFG_QUAKE_TIME
+        jr c,.again
+        ex de,hl                ; DE = television frames it took
+        ld hl,(banner_until)
+        add hl,de
+        ld (banner_until),hl
+    IFDEF DOUBLE_SHOT
+        ld hl,(double_until)
+        add hl,de
+        ld (double_until),hl
+    ENDIF
+        ld a,(qk_ink)
+        out (ULA_PORT),a        ; speaker in
+        ret
+
+; Out: HL = television frames since the quake began, A = L (it is short).
+qk_spent:
+        ld hl,(frame_count)
+        ld de,(qk_start)
+        or a
+        sbc hl,de
+        ld a,l
+        ret
+
+; The picture down CFG_QUAKE_SHAKE rows, from the bottom up, and back up.
+qk_down:
+        ld hl,ROW_TABLE + 191 * 2
+        ld de,ROW_TABLE + (191 - CFG_QUAKE_SHAKE) * 2
+        ld b,192 - CFG_QUAKE_SHAKE
+.row:   push bc
+        call qk_row
+        dec hl
+        dec hl
+        dec de
+        dec de
+        pop bc
+        djnz .row
+        ret
+
+qk_up:
+        ld hl,ROW_TABLE
+        ld de,ROW_TABLE + CFG_QUAKE_SHAKE * 2
+        ld b,192 - CFG_QUAKE_SHAKE
+.row:   push bc
+        call qk_row
+        inc hl
+        inc hl
+        inc de
+        inc de
+        pop bc
+        djnz .row
+        ret
+
+; One pixel row: HL -> the destination's entry in ROW_TABLE, DE -> the
+; source's. Keeps HL and DE. Corrupts: AF, BC
+qk_row:
+        push hl
+        push de
+        ld c,(hl)
+        inc hl
+        ld b,(hl)               ; BC = the destination row
+        ex de,hl
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        ex de,hl                ; HL = the source row
+        ld d,b
+        ld e,c
+        ld bc,32
+        ldir
+        call qk_click
+        pop de
+        pop hl
+        ret
+
+; Hold the picture for CFG_QUAKE_HOLD television frames, still rumbling,
+; with the border the other way (the colour or black), and the rumble a
+; little quieter as the time runs out. Corrupts: AF, BC, DE, HL
+qk_hold:
+        ld a,(qk_port)
+        ld b,a
+        and 7
+        ld a,(qk_ink)
+        jr z,.lit
+        xor a                   ; BLACK
+.lit:   ld c,a
+        ld a,b
+        and $F8
+        or c
+        ld (qk_port),a
+        out (ULA_PORT),a
+        call qk_spent
+        ld b,a
+        ld a,CFG_QUAKE_TIME
+        sub b
+        jr nc,.loud
+        xor a
+.loud:  ld (qk_loud),a
+        ld b,CFG_QUAKE_HOLD
+.frame: ld a,(frame_count)
+        ld c,a
+.wait:  call qk_click
+        ld a,QK_ROW_WAIT
+.idle:  dec a                   ; about as long as a row's copy
+        jr nz,.idle
+        ld a,(frame_count)
+        cp c
+        jr z,.wait
+        djnz .frame
+        ret
+QK_ROW_WAIT     equ 50
+
+; The rumble: every CFG_QUAKE_PITCH rows a random number decides whether
+; the speaker moves, more often the louder it still is. Corrupts: AF, HL
+qk_click:
+        ld hl,qk_tick
+        dec (hl)
+        ret nz
+        ld (hl),CFG_QUAKE_PITCH
+        ld a,(qk_seed)
+        add a,a
+        jr nc,.same
+        xor $1D                 ; a shift register: 255 values, never 0
+.same:  ld (qk_seed),a
+        and 63
+        ld hl,qk_loud
+        cp (hl)
+        ret nc
+        ld a,(qk_port)
+        xor %00010000           ; the speaker
+        ld (qk_port),a
+        out (ULA_PORT),a
+        ret
+
+qk_ink:         db 0            ; the bomb's colour
+qk_port:        db 0            ; what goes to the port: the border, the speaker
+qk_loud:        db 0            ; out of 64: how often the speaker moves
+qk_tick:        db 1            ; rows to the next noise value
+qk_seed:        db $A5          ; never 0
+qk_start:       dw 0            ; frame_count when it began
+
+        ASSERT CFG_QUAKE_SHAKE >= 1 && CFG_QUAKE_SHAKE <= GROUND_PX, "the rows a shake loses must be the ground's, which the seabed copy rewrites"
+        ASSERT CFG_QUAKE_TIME >= 2 && CFG_QUAKE_TIME <= 200
+        ASSERT CFG_QUAKE_HOLD >= 1 && CFG_QUAKE_HOLD <= 10
+        ASSERT CFG_QUAKE_PITCH >= 1 && CFG_QUAKE_PITCH <= 255
 
 ;------------------------------------------------------------------------------
 ; special_reset - nothing held, nothing moving, the key unread
