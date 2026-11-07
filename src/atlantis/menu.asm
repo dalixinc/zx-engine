@@ -33,6 +33,11 @@ menu_game_over: db 0            ; 1 = the last life was lost: say GAME OVER
 ; called, so the stack is the main loop's and nothing is left on it.
 ;------------------------------------------------------------------------------
 game_over:
+    IFDEF AUTOPLAY
+        ld a,(demo_on)
+        or a
+        jp nz,enter_menu        ; a demo: no knell, no high score
+    ENDIF
     IFNDEF NO_SOUND
         call snd_knell          ; the last picture stays up while it plays
     ENDIF
@@ -96,6 +101,9 @@ enter_menu:
         call menu_draw
         call menu_draw_game_over
         call menu_arm
+    IFDEF AUTOPLAY
+        call demo_off           ; the keyboard again, and the demo's wait
+    ENDIF
         ; fall through
 
 ;------------------------------------------------------------------------------
@@ -111,7 +119,14 @@ menu_loop:
         call cheat_poll         ; missile.asm
     ENDIF
         call menu_poll
+    IFDEF AUTOPLAY
+        jr c,.go
+        call demo_idle          ; long enough without a key: the demo
+        jr menu_loop
+.go:
+    ELSE
         jr nc,menu_loop
+    ENDIF
     IFDEF TYPEWRITER
         ld a,(start_level)
         dec a
@@ -705,6 +720,11 @@ game_reset:
         call rate_arm
         call leave_arm
         call draw_scenery
+    IFDEF AUTOPLAY
+        ld a,(demo_on)
+        or a
+        call nz,demo_label      ; DEMO on row 0
+    ENDIF
         ; Start the first picture on an interrupt, so the work below
         ; begins while the beam is still in the top border.
         call wait_frame

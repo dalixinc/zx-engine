@@ -68,7 +68,10 @@ on a black screen, then starts the game (any key skips the story;
 [docs/STORY-AND-LIVES.md](docs/STORY-AND-LIVES.md)), `2` swaps between
 50 and 25 frames a second, and `3` takes a six-letter level code
 (`0` rubs out a letter, Space gives up). The choice is kept when you come back to the
-menu.
+menu. Left alone for 15 seconds, the menu plays a short demo of level 1,
+with the computer swimming and firing, for 25 seconds, then comes back;
+any key stops it (`src/atlantis/demo.asm`, `CFG_DEMO_*`). A demo's
+score never counts as a high score.
 
 The diver has three lives (`CFG_LIVES` in `src/atlantis/config.asm`),
 shown as hearts at the top right of the screen. Each new level brings
@@ -86,8 +89,9 @@ GAME OVER with your score. The menu always shows the high score, kept
 until the machine is switched off.
 
 Shooting scores: 1 for a fish (2 for a piranha, which comes one fish in
-four), 2 for a bomb, 10 for a missile on the
-first levels (each level's row of `CFG_LEVELS` in `config.asm` says).
+four), 2 for a bomb (3 for the spinning wheel, from level 3), 10 for a
+missile, and 15 for a homing missile (each level's row of `CFG_LEVELS`
+in `config.asm` says; `CFG_MSL_HOME_PTS`).
 Something that runs into him scores nothing.
 
 From level 2, now and then a power-up sinks from the top instead of a
@@ -99,7 +103,9 @@ falling jingle says it has run out (`docs/POWER-UPS.md`; `CFG_POWER_*`,
 Rarer still, from level 5, a special bomb: he carries one at a time
 (its picture shows on row 1, left of the bubble's cell; a new one
 replaces it) and sets it off with B: the border flashes in its colour
-and it plays its own slide, down for suction, up for shove. The suction bomb
+and it plays its own slide, down for suction, up for shove. Shove
+first stops the action for a second and shakes the screen, with a
+rumble (`CFG_QUAKE_*`). The suction bomb
 (from level 5), the escape, pulls the enemy bomb and the fish down
 towards the seabed and leaves them there; the shove bomb (from level
 7), rarer, throws them to the right edge, where they blow up (or where
@@ -112,13 +118,13 @@ are on row 1, beside the hearts. Each level has a target, and each is
 longer than the last. Reaching it puts up a big "LEVEL n" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
 fly a little faster. Level 2 has a yellow bomb on a wave, a faster fish
-on a wave and a cyan border (`docs/LEVEL-2.md`); the fish waves again on
+on a wave (`docs/LEVEL-2.md`); the fish waves again on
 every even level from 4, a little faster each time, and from level 9.
 A new level's fish movement starts with the next fish. From level 3 the bomb is a
 spinning wheel that rolls as it goes, in a new colour each level. Levels
 3, 5 and 7 swing it on a wide wave; levels 4, 6 and 8 make it a hunter
 that drifts towards the diver's depth until it has passed him, harder
-each time. On level 9 the silos' missiles home in on him too
+each time. On level 10 the silos' missiles home in on him too
 (`docs/LEVELS-3-AND-4.md`).
 
 Level 2 and level 3 each open with a message and the level's code, up
@@ -173,6 +179,7 @@ src/atlantis/layout.asm  the game's rows, colours, buffer addresses
 src/atlantis/data.asm    menu words, stat-line template, sine table (at $C400)
 src/atlantis/menu.asm    the start screen, and Symbol Shift + P back to it
 src/atlantis/story.asm   the story, typed out when 1 starts a game
+src/atlantis/demo.asm    the attract demo the menu plays when left alone
 src/atlantis/rate.asm    50 or 25 frames a second, the chords, the spare-scanline count
 src/atlantis/scenery.asm water, sand and ground colours
 src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
@@ -216,7 +223,7 @@ gfx/torpedo.asm          GENERATED from torpedo.txt: 8 shifts x 1 frame x 2 faci
 gfx/missile.txt          silo missile, 6 x 8, one frame, mirror off
 gfx/missile.asm          GENERATED from missile.txt: 8 shifts x 1 frame
 gfx/loading.scr          GENERATED loading screen, 6912 bytes (tools/mkloadscreen.py)
-VERSION                  the version printed on the loading screen (0.9.0)
+VERSION                  the version printed on the loading screen (0.9.2)
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
 tools/gfx2asm.py         ASCII art -> pre-shifted masked .asm (Python 3)
@@ -375,8 +382,11 @@ swim up to the top row, and down over the weed and the sand, until his
 feet are one pixel above the black under him. A silo or a rising hill
 lifts him. Over a coloured cell he takes on its colours. The strips keep
 scrolling whether or not he moves. The stat line is hidden until
-Symbol Shift + S; the border cycles every 8 frames so the loop is still
-obvious. See `build/atlantis-seabed.png`, `build/atlantis-low.png`,
+Symbol Shift + S. Each level has its own steady border colour, one of
+the light ones (cyan, green, yellow, white; the dark ones are saved for
+the levels after Atlantis), and it flashes only when something happens:
+a death, a new level, a special bomb going off (`CFG_LEVEL_FLASH` and
+its neighbours in `config.asm`). See `build/atlantis-seabed.png`, `build/atlantis-low.png`,
 `build/atlantis-stats.png` and `build/atlantis-stats-off.png`. The
 timing border is `build/atlantis-timing-water.png` (he is up in the
 water) and `build/atlantis-timing-low.png` (he is down on the seabed).

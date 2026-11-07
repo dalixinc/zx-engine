@@ -103,6 +103,7 @@
     IFNDEF SHOT_FRAME
     IFNDEF SLACK_LINES
         DEFINE TYPEWRITER
+        DEFINE AUTOPLAY         ; the attract demo (demo.asm)
     ENDIF
     ENDIF
     ENDIF
@@ -331,6 +332,7 @@ main_loop:
         ; return to the menu does not swim a frame on the way out.
 .chord_call:                   ; sp_poll while a special bomb is held (special.asm)
         call chords_poll        ; Symbol Shift with P, F or S. One read of Shift.
+.input_call:                   ; demo_input in the attract demo (demo.asm)
         call read_input
     IFDEF SOAK
         call soak_apply_input   ; the script wins over the real keyboard
@@ -579,8 +581,9 @@ step_skip:
         out (ULA_PORT),a
     ELSE
     IFNDEF SOAK
-        ; Heartbeat. The digits are hidden by default, so the border is
-        ; what shows the frame loop is alive. rrca x3 is / BORDER_FRAMES.
+        ; The border: the level's steady colour (level_style writes it
+        ; over the heartbeat's first four bytes), or, with BORDER_BEAT,
+        ; the heartbeat, a round of colours. rrca x3 is / BORDER_FRAMES.
         ; After a hit, hit_flash counts down and the border flashes red
         ; and black, four steps each. Otherwise, after a Symbol Shift
         ; chord, chord_flash blinks it white and black, two steps each.
@@ -1051,6 +1054,7 @@ wheel_first:    db 0
         INCLUDE "story.asm"      ; when 1 starts a game
         HOT
     ENDIF
+        INCLUDE "demo.asm"       ; the attract demo: hot input, cold the rest
 
     IFDEF SLACK_LINES
 slack_loops:    dw 0            ; loops since entry, including the warmup

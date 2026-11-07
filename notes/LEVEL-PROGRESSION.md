@@ -6,22 +6,30 @@ gives the targets. If the table in `config.asm` changes, update this.
 
 | Level | Points to finish (total at end) | Bomb | Colour | Bomb movement | Bomb speed | Missile wait | Fish | Border | New from this level |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 200 (200) | pulsar | black | small bob | 50 px/s | 1.5–4.0 s | round, straight | heartbeat | — |
-| 2 | 300 (500) | pulsar | yellow | wave (±16 px) | 55 px/s | 1.4–3.7 s | round, wave, a bit faster | cyan | **hearts**; "starts now" panel |
-| 3 | 400 (900) | spinning wheel | red | wave | 59 px/s | 1.3–3.4 s | round, straight | red | "stay tuned" panel |
-| 4 | 500 (1,400) | spinning wheel | magenta | hunts, 48 | 64 px/s | 1.2–3.1 s | round, wave, 61 px/s | heartbeat | **double-shot bubble** |
-| 5 | 600 (2,000) | spinning wheel | green | wave | 69 px/s | 1.1–2.8 s | round, straight | heartbeat | **suction bomb** |
-| 6 | 700 (2,700) | spinning wheel | cyan | hunts, 88 | 73 px/s | 1.0–2.5 s | wave, 63 px/s; **1 in 4 piranha** | heartbeat | **piranhas** |
-| 7 | 800 (3,500) | spinning wheel | yellow | wave | 78 px/s | 0.9–2.2 s | straight; piranhas | heartbeat | **shove bomb** |
-| 8 | 900 (4,400) | spinning wheel | black | hunts, 128 (max) | 83 px/s | 0.8–1.9 s | wave, 64 px/s; piranhas | heartbeat | — |
-| 9+ | 1,000 each | spinning wheel | red | hunts, 128 | 88 px/s | 0.7–1.6 s | wave, 66 px/s; piranhas | heartbeat | **homing silo missiles** |
+| 1 | 200 (200) | pulsar | black | small bob | 50 px/s | 1.5–4.0 s | round, straight | cyan | — |
+| 2 | 300 (500) | pulsar | yellow | wave (±16 px) | 55 px/s | 1.4–3.7 s | round, wave, a bit faster | green | **hearts**; "starts now" panel |
+| 3 | 450 (950) | spinning wheel | red | wave | 59 px/s | 1.3–3.4 s | round, straight | yellow | "stay tuned" panel |
+| 4 | 550 (1,500) | spinning wheel | magenta | hunts, 48 | 64 px/s | 1.2–3.1 s | round, wave, 61 px/s | white | **double-shot bubble** |
+| 5 | 650 (2,150) | spinning wheel | green | wave | 69 px/s | 1.1–2.8 s | round, straight | cyan | **suction bomb** |
+| 6 | 750 (2,900) | spinning wheel | cyan | hunts, 88 | 73 px/s | 1.0–2.5 s | wave, 63 px/s; **1 in 4 piranha** | green | **piranhas** |
+| 7 | 850 (3,750) | spinning wheel | yellow | wave | 78 px/s | 0.9–2.2 s | straight; piranhas | yellow | **shove bomb** |
+| 8 | 950 (4,700) | spinning wheel | black | hunts, 128 (max) | 83 px/s | 0.8–1.9 s | wave, 64 px/s; piranhas | white | — |
+| 9 | 1,100 (5,800) | spinning wheel | red | hunts, 128 | 88 px/s | 0.7–1.6 s | wave, 66 px/s; piranhas | cyan | — |
+| 10+ | 1,400 each (7,200 at the end of 10) | spinning wheel | red | hunts, 128 | 88 px/s | 0.7–1.6 s | wave, 66 px/s; piranhas | green | **homing silo missiles** |
 
 ## Notes
 
 - **Hunt** is how hard the bomb drifts to the diver's depth: 48 is about
   9 px/s, 128 about 25 px/s (half the diver's speed).
-- **Points on every level:** a fish 1 (a piranha 2), a bomb 2, a
-  missile 10.
+- **Points:** a fish 1 (a piranha 2); a bomb 2 on levels 1-2 (the
+  pulsar) and 3 from level 3 (the spinning wheel); a missile 10, and a
+  homing missile (level 10 on) 15 (`CFG_MSL_HOME_PTS`).
+- **Targets after the higher scores (Atlantis 1.0 brief, part A):** the
+  bomb's extra point is worth roughly a tenth more per level (missiles
+  are most of a level's points), so levels 3-8 need 50 more each (400 ->
+  450 ... 900 -> 950). Level 9 lost its homing missiles, which made it
+  easier, so it goes from 1,000 to 1,100. Level 10 is a row of its own:
+  homing missiles at 15 put about 40% more on each missile, so 1,400.
 - **Power-ups** sink at about 31 px/s, slower than the diver. A heart
   turns up about one missile turn in 8, a bubble about one in 21 (the
   double shot lasts 30 seconds), a suction bomb about one in 23 and a
@@ -38,11 +46,13 @@ gives the targets. If the table in `config.asm` changes, update this.
   bomb hunting. The nuke scores
   nothing. The nuke (testing only, `CFG_NUKE_LEVEL` 99) is in
   [CHEATS.md](CHEATS.md).
-- **After level 9** its row repeats.
+- **After level 10** its row repeats.
 - **The testers' switch** (see [CHEATS.md](CHEATS.md)) brings every
   power-up (the special bombs and the nuke too) and the piranha in from
   level 1. It doesn't touch the enemy bombs or the missiles.
 - **A bomb's look and movement** change with the next bomb, not in
   mid-flight, and the fish's movement with the next fish (the one
   swimming keeps its way until it is shot or bumps him). The border
-  changes at once.
+  changes at once. Each level's border is one steady light colour; it
+  flashes only for a death, a new level (white), a special bomb or a
+  chord.

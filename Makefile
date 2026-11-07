@@ -38,7 +38,7 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/menu.asm src/atlantis/wheel.asm src/atlantis/hit.asm src/atlantis/torpedo.asm \
              src/atlantis/fastsprite.asm src/atlantis/boom.asm src/atlantis/sound.asm \
              src/atlantis/silo.asm src/atlantis/missile.asm src/atlantis/score.asm src/atlantis/codes.asm src/atlantis/preshift.asm src/atlantis/bss.asm \
-             src/atlantis/soak.asm src/atlantis/udg.asm $(SHARED)
+             src/atlantis/soak.asm src/atlantis/udg.asm src/atlantis/demo.asm $(SHARED)
 ZX0       := build/zx0
 CC        ?= cc
 

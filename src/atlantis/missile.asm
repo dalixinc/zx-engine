@@ -261,7 +261,7 @@ missile_armed:
         ret nc                  ; not 3, 4 or 5: one more 1/50 second
         ld a,MSL_FLY
         ld (msl_phase),a
-        ; Homing from CFG_MSL_HOME_LEVEL (and on a measured level 9).
+        ; Homing from CFG_MSL_HOME_LEVEL (and on a measured level 10).
         ld a,(level_n)
         cp CFG_MSL_HOME_LEVEL
         sbc a,a                 ; $FF below that level, 0 from it
@@ -545,6 +545,21 @@ double_end:
         ; Once a missile, as it ends: in the cold block.
         COLD
 ;------------------------------------------------------------------------------
+; msl_points - what the missile just shot or thrown scores: its level's
+; points, or CFG_MSL_HOME_PTS if it was homing. missile_gone leaves
+; msl_home alone, so this may come before or after it.
+; Out: A = the points, BCD. Corrupts: F
+;------------------------------------------------------------------------------
+msl_points:
+        ld a,(msl_home)
+        or a
+        ld a,(level_pts_msl)
+        ret z
+        ld a,((CFG_MSL_HOME_PTS / 10) << 4) | (CFG_MSL_HOME_PTS % 10)
+        ret
+        ASSERT CFG_MSL_HOME_PTS >= 0 && CFG_MSL_HOME_PTS <= 99, "points are one BCD byte: 0 to 99"
+
+;------------------------------------------------------------------------------
 ; missile_gone - shot, spent on the diver, or out of the top. The next
 ; restore takes it off the screen. The next one is a random gap away.
 ; Corrupts: AF, BC, D, HL
@@ -696,7 +711,7 @@ missile_shot:
         call boom_at_missile
         call missile_gone
         call torpedo_spent
-        ld a,(level_pts_msl)
+        call msl_points
         call score_add
         scf
         ret

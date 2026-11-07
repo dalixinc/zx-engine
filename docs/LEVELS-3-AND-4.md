@@ -297,7 +297,8 @@ room.
   table of 16 pixels each way, against the small bob's 6, and cheaper
   than widening the bob (whose wide path does arithmetic the heavy frame
   has no room for). The even levels hunt, harder each time.
-- **Homing missiles** from `CFG_MSL_HOME_LEVEL` (9). As a missile climbs,
+- **Homing missiles** from `CFG_MSL_HOME_LEVEL` (9 when this was
+  written, 10 now; a homing missile scores `CFG_MSL_HOME_PTS`, 15). As a missile climbs,
   it moves a pixel towards the diver's middle each time `CFG_MSL_HOME`
   (128, half a pixel a 1/50 second) carries: about 35 pixels on its way
   up. Off a byte boundary it is two bytes a row, which `missile_draw`

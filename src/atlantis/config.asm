@@ -78,6 +78,17 @@ CFG_DEATH_TIME      equ 90
 ; second, half a second at 25. 0 turns the blink off.
 CFG_CHORD_FLASH     equ 12
 
+; The border. Each level has one steady colour, its row's border in
+; CFG_LEVELS below, and the border flashes only for something that
+; happens: a death (red and black, hit.asm), a new level (white and
+; black, for CFG_LEVEL_FLASH steps), a special bomb going off (its own
+; colour, CFG_SPECIAL_FLASH), and a Symbol Shift chord (above). Then it
+; goes back to the level's colour.
+; Atlantis keeps to the light colours: GREEN, CYAN, YELLOW, WHITE.
+; The dark ones (BLACK, BLUE, RED, MAGENTA) are kept for Trigon, the
+; levels after 10, so its borders say at once that it is somewhere worse.
+CFG_LEVEL_FLASH     equ 24
+
 ; Television frames before another torpedo can be launched.
 ; frame_count ticks once per interrupt, so 48 is about a second
 ; at either game speed. One torpedo at a time already applies.
@@ -163,8 +174,11 @@ CFG_MISSILE_SPEED    equ 2
 ; drifts towards the diver's middle, a pixel each time CFG_MSL_HOME
 ; (256ths of a pixel a 1/50 second, 1-255) carries. 128 is 25 pixels a
 ; second, so on its way up from the hatch it can close about 35.
-CFG_MSL_HOME_LEVEL   equ 9
+; A homing missile shot (or thrown) scores CFG_MSL_HOME_PTS, 0 to 99,
+; instead of its level's missile points.
+CFG_MSL_HOME_LEVEL   equ 10
 CFG_MSL_HOME         equ 128
+CFG_MSL_HOME_PTS     equ 15
 
 ; --- Power-ups (missile.asm, torpedo.asm) --------------------------------------
 ; Now and then the missile's turn brings a power-up instead: it sinks
@@ -223,6 +237,24 @@ CFG_SHOVE_SPEED      equ 8       ; right
 CFG_SPECIAL_FLASH    equ 24
 CFG_SUCTION_INK      equ 5
 CFG_SHOVE_INK        equ 6
+; The quake: shove and the nuke stop the action for CFG_QUAKE_TIME 1/50
+; seconds (50 is a second) while the picture shakes up and down by
+; CFG_QUAKE_SHAKE pixel rows (1 to 8; each jump is held CFG_QUAKE_HOLD
+; television frames), the border flashes, and the beeper rumbles and
+; fades. CFG_QUAKE_PITCH is the rumble's pitch: pixel rows copied per
+; noise value, so higher is deeper. Suction has no quake: the escape
+; stays quiet.
+CFG_QUAKE_TIME       equ 50
+CFG_QUAKE_SHAKE      equ 3
+CFG_QUAKE_HOLD       equ 2
+CFG_QUAKE_PITCH      equ 3
+
+; --- The attract demo (demo.asm) ----------------------------------------------
+; After CFG_DEMO_WAIT seconds on the menu with no key down, the computer
+; plays level 1 for CFG_DEMO_TIME seconds, then the menu comes back.
+; Any key stops it at once.
+CFG_DEMO_WAIT        equ 15
+CFG_DEMO_TIME        equ 25
 
 ; --- Score and levels (score.asm) ---------------------------------------------
 ; The levels, one row each, in order:
@@ -253,10 +285,12 @@ CFG_SHOVE_INK        equ 6
 ;   fspeed   the fish's haste, the same way as the bomb's: 0 is a pixel
 ;            per 1/50 second, 64 a quarter faster. Only with MOVE_WAVE;
 ;            MOVE_STRAIGHT is the old fish and must have 0.
-;   border   a border colour (BLACK to WHITE), or BORDER_BEAT for the
-;            heartbeat, the slow round of colours level 1 has.
+;   border   the level's steady border colour (see CFG_LEVEL_FLASH
+;            above: light colours for Atlantis), or BORDER_BEAT for the
+;            heartbeat, the slow round of colours level 1 once had.
 ; Then what a torpedo scores on this level, 0 to 99 each:
-;   fish, bomb, missile. Something that runs into the diver scores
+;   fish, bomb, missile. The spinning wheel's rows score 3 for a bomb, the
+;            pulsar's 2. A homing missile scores CFG_MSL_HOME_PTS instead. Something that runs into the diver scores
 ;            nothing.
 ; Level 1 is the game as it was: the soak expects that. After the last
 ; row, the last row repeats. The level codes depend only on the level's
@@ -279,15 +313,17 @@ CFG_L8_INK          equ BRIGHT | BLACK | (BLUE << 3)
 
         MACRO CFG_LEVELS
         ;          points  gap min  gap max  haste  bomb    ink            bmove      hunt fmove          fspeed border        fish bomb missile
-        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P, CFG_WHEEL_INK, MOVE_BOB, 0, MOVE_STRAIGHT, 0, BORDER_BEAT, 1, 2, 10
-        LEVEL_ROW  300,    70,      185,     24,    BOMB_P, CFG_L2_INK,    MOVE_WAVE, 0,   MOVE_WAVE,     48,    CYAN,         1,   2,   10
-        LEVEL_ROW  400,    65,      170,     48,    BOMB_W, CFG_SPIN_INK,  MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     RED,          1,   2,   10
-        LEVEL_ROW  500,    60,      155,     72,    BOMB_W, CFG_HUNT_INK,  MOVE_HOME, 48,  MOVE_WAVE,     56,    BORDER_BEAT,  1,   2,   10
-        LEVEL_ROW  600,    55,      140,     96,    BOMB_W, CFG_L5_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
-        LEVEL_ROW  700,    50,      125,     120,   BOMB_W, CFG_L6_INK,    MOVE_HOME, 88,  MOVE_WAVE,     64,    BORDER_BEAT,  1,   2,   10
-        LEVEL_ROW  800,    45,      110,     144,   BOMB_W, CFG_L7_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   2,   10
-        LEVEL_ROW  900,    40,      95,      168,   BOMB_W, CFG_L8_INK,    MOVE_HOME, 128, MOVE_WAVE,     72,    BORDER_BEAT,  1,   2,   10
-        LEVEL_ROW  1000,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_HOME, 128, MOVE_WAVE,     80,    BORDER_BEAT,  1,   2,   10
+        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P, CFG_WHEEL_INK, MOVE_BOB, 0, MOVE_STRAIGHT, 0, CYAN, 1, 2, 10
+        LEVEL_ROW  300,    70,      185,     24,    BOMB_P, CFG_L2_INK,    MOVE_WAVE, 0,   MOVE_WAVE,     48,    GREEN,        1,   2,   10
+        LEVEL_ROW  450,    65,      170,     48,    BOMB_W, CFG_SPIN_INK,  MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     YELLOW,       1,   3,   10
+        LEVEL_ROW  550,    60,      155,     72,    BOMB_W, CFG_HUNT_INK,  MOVE_HOME, 48,  MOVE_WAVE,     56,    WHITE,        1,   3,   10
+        LEVEL_ROW  650,    55,      140,     96,    BOMB_W, CFG_L5_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     CYAN,         1,   3,   10
+        LEVEL_ROW  750,    50,      125,     120,   BOMB_W, CFG_L6_INK,    MOVE_HOME, 88,  MOVE_WAVE,     64,    GREEN,        1,   3,   10
+        LEVEL_ROW  850,    45,      110,     144,   BOMB_W, CFG_L7_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     YELLOW,       1,   3,   10
+        LEVEL_ROW  950,    40,      95,      168,   BOMB_W, CFG_L8_INK,    MOVE_HOME, 128, MOVE_WAVE,     72,    WHITE,        1,   3,   10
+        LEVEL_ROW  1100,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_HOME, 128, MOVE_WAVE,     80,    CYAN,         1,   3,   10
+        ; Level 10, the last of Atlantis: the missiles home (CFG_MSL_HOME_LEVEL).
+        LEVEL_ROW  1400,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_HOME, 128, MOVE_WAVE,     80,    GREEN,        1,   3,   10
         ENDM
 
 ; The waves (MOVE_WAVE). A wave is a sine, AMP pixels above the middle

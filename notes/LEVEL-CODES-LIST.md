@@ -25,10 +25,11 @@ above don't.
 
 | Level | Starts at | Level | Starts at |
 |---|---|---|---|
-| 1 | 0 | 6 | 2,000 |
-| 2 | 200 | 7 | 2,700 |
-| 3 | 500 | 8 | 3,500 |
-| 4 | 900 | 9 | 4,400 |
-| 5 | 1,400 | 10 | 5,400 |
+| 1 | 0 | 6 | 2,150 |
+| 2 | 200 | 7 | 2,900 |
+| 3 | 500 | 8 | 3,750 |
+| 4 | 950 | 9 | 4,700 |
+| 5 | 1,500 | 10 | 5,800 |
 
-From level 10 the last row repeats: 1,000 more for each level.
+From level 10 the last row repeats: 1,400 more for each level (level 11
+starts at 7,200).
