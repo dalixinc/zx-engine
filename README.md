@@ -59,14 +59,18 @@ hard refresh (Ctrl+Shift+R) fetches the new snapshot.
 | Menu   | Symbol Shift + P       |             |          |
 
 The tape shows a loading screen while the game loads (it is drawn from
-the game's own sprites by `tools/mkloadscreen.py`). The game then opens
-on a start screen: `1` starts the game, `2` swaps between
+the game's own sprites by `tools/mkloadscreen.py`). The game then opens on
+a start screen: `1` types out the story, letter by letter with a click,
+on a black screen, then starts the game (any key skips the story;
+`CFG_STORY_*` in `config.asm`,
+[docs/STORY-AND-LIVES.md](docs/STORY-AND-LIVES.md)), `2` swaps between
 50 and 25 frames a second, and `3` takes a six-letter level code
 (`0` rubs out a letter, Space gives up). The choice is kept when you come back to the
 menu.
 
 The diver has three lives (`CFG_LIVES` in `src/atlantis/config.asm`),
-shown as hearts at the top right of the screen. A wheel bomb that
+shown as hearts at the top right of the screen. Each new level brings
+him back up to three if he has fewer (`CFG_LEVEL_LIVES`). A wheel bomb that
 touches him costs one: the bomb vanishes, a heart goes, and the border
 flashes red. The hit boxes are a little smaller than the pictures, so a
 graze of the flippers or the rim does not count. Sinking onto the black
@@ -92,7 +96,8 @@ falling jingle says it has run out (`docs/POWER-UPS.md`; `CFG_POWER_*`,
 `CFG_HEART_ODDS`, `CFG_DOUBLE_*`, `CFG_LIVES_MAX` in `config.asm`).
 Rarer still, from level 5, a special bomb: he carries one at a time
 (its picture shows on row 1, left of the bubble's cell; a new one
-replaces it) and sets it off with B. The suction bomb
+replaces it) and sets it off with B: the border flashes in its colour
+and it plays its own slide, down for suction, up for shove. The suction bomb
 (from level 5), the escape, pulls the enemy bomb and the fish down
 towards the seabed and leaves them there; the shove bomb (from level
 7), rarer, throws them to the right edge, where they blow up (or where
@@ -100,7 +105,7 @@ they are after half a second) and score what a torpedo would. Shove
 blows up a silo missile at once, for a torpedo's points; suction takes
 it away
 (`docs/SPECIAL-BOMBS.md`; `CFG_SUCTION_*`, `CFG_SHOVE_*`,
-`CFG_SPECIAL_TIME` in `config.asm`). The score and the level
+`CFG_SPECIAL_TIME`, `CFG_SPECIAL_FLASH` in `config.asm`). The score and the level
 are on row 1, beside the hearts. Each level has a target, and each is
 longer than the last. Reaching it puts up a big "LEVEL n" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
@@ -165,6 +170,7 @@ src/atlantis/config.asm  the numbers you change: diver range, start speed, bomb 
 src/atlantis/layout.asm  the game's rows, colours, buffer addresses
 src/atlantis/data.asm    menu words, stat-line template, sine table (at $C400)
 src/atlantis/menu.asm    the start screen, and Symbol Shift + P back to it
+src/atlantis/story.asm   the story, typed out when 1 starts a game
 src/atlantis/rate.asm    50 or 25 frames a second, the chords, the spare-scanline count
 src/atlantis/scenery.asm water, sand and ground colours
 src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
@@ -223,13 +229,13 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: the
 packed loading screen with a small unpacker, which shows it at once,
-then the packed game (14,943 bytes in all). The unpacker writes four
-blocks. The cold block at `$6000-$74E5` (5,350 bytes, and it may grow to
-`$78DF`) is the menu, the level codes, start-up, the diver's death, each
-level's look, going up a level, and anything else that runs once in a
-while, with the raw art that start-up shifts. It is
+then the packed game (15,362 bytes in all). The unpacker writes four
+blocks. The cold block at `$6000-$76E6` (5,863 bytes, and it may grow to
+`$78DF`) is the menu and the story, the the level codes, start-up, the diver's
+death, each level's look, going up a level, and anything else that runs
+once in a while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The
-instructions are at `$8000-$B63F` (`code_end` is `$B640`) and must stay
+instructions are at `$8000-$B672` (`code_end` is `$B673`) and must stay
 below half the round fish's pictures at `$B920-$BC7F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CDFC`, and the one-cell pictures and the title's letters in the ROM's UDG area and 16 bytes below it, `$FF48-$FFFF`. The four
 sprites' shifted copies are built at start-up: the diver's, the
 fish's and the pulsar's at `$CF30-$EFFF`, the spinning wheel's at

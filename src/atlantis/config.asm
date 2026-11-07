@@ -36,6 +36,21 @@ CFG_START_RATE      equ 50
 ; game and the menu says GAME OVER. 1 to 9: the stat line has one digit.
 CFG_LIVES           equ 3
 
+; Each new level brings him back up to this many lives if he has fewer
+; (score.asm, level_up): on the level change only, not on a death or a
+; start from a level code. 0 turns it off; at most CFG_LIVES_MAX.
+CFG_LEVEL_LIVES     equ 3
+
+; --- The story (story.asm) ------------------------------------------------------
+; Typed out when 1 starts a game, before it. In 1/50 seconds: a
+; letter, the pause at a paragraph, and the wait after the last line
+; (a key ends it sooner). The click is a speaker pulse this many
+; DJNZ loops long (about 13 T-states each).
+CFG_STORY_CHAR      equ 3
+CFG_STORY_PARA      equ 40
+CFG_STORY_END       equ 250
+CFG_STORY_CLICK     equ 30
+
 ; After a hit the border flashes red and black for this many game
 ; steps. 32 is about two thirds of a second at 50 frames a second, and
 ; twice that at 25. 0 turns the flash off.
@@ -195,6 +210,12 @@ CFG_NUKE_ODDS        equ 8
 CFG_SPECIAL_TIME     equ 24
 CFG_SUCTION_SPEED    equ 6       ; down
 CFG_SHOVE_SPEED      equ 8       ; right
+; Setting one off flashes the border in its colour and black, two steps
+; each, for this many steps (a chord's flash is CFG_CHORD_FLASH), and
+; plays its own slide (sound.asm). Colours: 5 cyan, 6 yellow.
+CFG_SPECIAL_FLASH    equ 24
+CFG_SUCTION_INK      equ 5
+CFG_SHOVE_INK        equ 6
 
 ; --- Score and levels (score.asm) ---------------------------------------------
 ; The levels, one row each, in order:

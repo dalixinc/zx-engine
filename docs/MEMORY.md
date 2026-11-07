@@ -1,9 +1,10 @@
 # Atlantis memory
 
 How the 48K is laid out, what is built at start-up, and how the tape is
-packed. The map below is the current one, after **the big squeeze**
-(November 2026, below), which changed how the tape loads and moved what
-only runs now and then out of the hot code. Under it are the briefs
+packed. The map below is the current one, after the story and lives
+brief ([STORY-AND-LIVES.md](STORY-AND-LIVES.md)), which came after **the
+big squeeze** (November 2026, below): that changed how the tape loads
+and moved what only runs now and then out of the hot code. Under it are the briefs
 that made it: the big squeeze, Quartus's **squeeze** brief and, before
 it, the **housekeeping** brief (PR #23).
 
@@ -13,11 +14,11 @@ it, the **housekeeping** brief (PR #23).
 |---|---|
 | `$4000-$5AFF` | screen |
 | `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
-| `$6000-$74E5` | **cold block** (5,350 bytes): menu, the title (`title_draw`), the testers' switch (`cheat_poll`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, the seabed's slope tables' builder (`slope_build`), the power-ups' picture builder (`power_build`), going up a level (`level_up`, `level_advance`, `level_enter`, `banner_show`), a new bomb's settings (`wheel_type`), a missile's end and the power-up roll (`missile_gone`), taking and setting off a special bomb and blowing up what a throw moves (`special.asm`), `torpedo_reset`, and the raw art `preshift` reads (fish, round fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
-| `$74E6-$78DF` | free (1,018, all of it usable: the tape's unpacker sits above `$78E0`, asserted above `cold_end`) |
+| `$6000-$76E6` | **cold block** (5,863 bytes): the story, typed when 1 starts a game (`story.asm`), menu, the title (`title_draw`), the testers' switch (`cheat_poll`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, the seabed's slope tables' builder (`slope_build`), the power-ups' picture builder (`power_build`), going up a level and its lives top-up (`level_up`, `level_advance`, `level_enter`, `banner_show`), a new bomb's settings (`wheel_type`), a missile's end and the power-up roll (`missile_gone`), taking and setting off a special bomb and blowing up what a throw moves (`special.asm`), `torpedo_reset`, and the raw art `preshift` reads (fish, round fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
+| `$76E7-$78DF` | free (505, all of it usable: the tape's unpacker sits above `$78E0`, asserted above `cold_end`) |
 | `$78E0-$7FFF` | the spinning wheel's shifted pictures (4 quarter turns, 1,824, built at start-up; while the tape loads, its first block is here, `$791D-$7FFF`) |
-| `$8000-$B63F` | code (`code_end` `$B640`) |
-| `$B640-$B91F` | free (736) |
+| `$8000-$B672` | code (`code_end` `$B673`) |
+| `$B673-$B91F` | free (685) |
 | `$B920-$BC7F` | the round fish's left-facing shifted pictures (`RFISH_BUF`, 864, built at start-up; the tape build only, `TWO_FISH`: builds with the stat line and the soak have their code here instead) |
 | `$BC80-$C3FF` | the diver's two still pictures with the jet's other phase (`JET_BUF`, 1,920, built at start-up; the soak build has its code here instead) |
 | `$C400-$CDFC` | data: graphics, tables (the round fish's pointer tables and the double shot's patch tables too), `data.asm` (`data_end` `$CDFD`); while the tape loads, its second block starts here |
@@ -51,7 +52,7 @@ build if any of them runs into the next thing up.
 While the tape loads, two more things sit in memory for a moment: the
 first block, the packed loading screen and then the unpacker, ending at
 `$8000` (`$791D-$7FFF`), and the second, the packed code, cold block,
-data and UDG block, from `DATA_START` (`$C400-$F6F1`, 2,134 bytes below
+data and UDG block, from `DATA_START` (`$C400-$F894`, 1,715 bytes below
 the UDG block at `$FF48`, its limit). The unpacker writes them in that
 order, each over bytes it has already read: the code between the two
 blocks, the cold block over the first block's screen (already shown)

@@ -56,6 +56,7 @@ SHOVE_BOMB_MAX  equ 256 - WHEEL_WIDTH
         ASSERT SUCK_BOMB_LOW <= WHEEL_LOW_BASE && SUCK_FISH_LOW >= FISH_SWIM_Y
         ASSERT SUCK_FISH_LOW + CFG_FISH_WAVE_AMP + FISH_HEIGHT <= BACK_ROW * 8, "a pulled fish would reach the seabed: it is drawn before the copy"
         ASSERT CFG_SPECIAL_TIME >= 1 && CFG_SPECIAL_TIME <= 255
+        ASSERT CFG_SPECIAL_FLASH >= 1 && CFG_SPECIAL_FLASH <= 255 && CFG_SUCTION_INK <= 7 && CFG_SHOVE_INK <= 7
         ASSERT CFG_SUCTION_SPEED >= 1 && CFG_SUCTION_SPEED <= 32 && CFG_SHOVE_SPEED >= 1 && CFG_SHOVE_SPEED <= 32
         ASSERT CFG_SUCTION_LEVEL >= 1 && CFG_SUCTION_LEVEL <= 99 && CFG_SHOVE_LEVEL >= 1 && CFG_SHOVE_LEVEL <= 99 && CFG_NUKE_LEVEL <= 99
         ASSERT LIVES_COL - 4 >= HUD_LEN, "the held bomb's cell would cover the score line"
@@ -267,8 +268,33 @@ special_fire:
         set HUD_HEARTS,(hl)     ; row 1's cell back to water
         ld hl,chords_poll
         call sp_chords
+        ; Its own sound and border colour: suction a falling slide and
+        ; cyan, shove a rising one and yellow, the nuke the whoosh and
+        ; white. A thrown missile's bang, below, cuts the slide short.
+        ld a,(sp_kind)
+        ld hl,snd_tune_suction
+        ld b,CFG_SUCTION_INK
+        cp MSL_KIND_SUCTION
+        jr z,.look
+        ld hl,snd_tune_shove
+        ld b,CFG_SHOVE_INK
+        cp MSL_KIND_SHOVE
+        jr z,.look
+        ld hl,0                 ; the nuke
+        ld b,WHITE
+.look:  ld a,b
+        ld (step_skip.flash_ink + 1),a ; the rest of the flash's colour
+        ld a,CFG_SPECIAL_FLASH
+        ld (chord_flash),a      ; the border flashes, as for a chord
     IFNDEF NO_SOUND
-        call snd_launch_start   ; the whoosh (a thrown missile's bang replaces it)
+        ld a,h
+        or l
+        jr z,.whoosh
+        call snd_tune_start
+        jr .sounded
+.whoosh:
+        call snd_launch_start
+.sounded:
     ENDIF
         ; A silo's missile, armed or flying: a throw blows it up and it
         ; scores, as if shot; suction (the escape) and the nuke only take
@@ -287,8 +313,6 @@ special_fire:
         call score_add
 .gone:  call missile_gone
 .nomsl:
-        ld a,CFG_CHORD_FLASH
-        ld (chord_flash),a      ; the border flashes, as for a chord
     IF CFG_NUKE_LEVEL
         ld a,(sp_kind)
         cp MSL_KIND_NUKE

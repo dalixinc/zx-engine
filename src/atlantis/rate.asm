@@ -117,6 +117,10 @@ chords_poll:
         ld a,1
         ld (stats_on),a         ; show the new speed on the stat line
     ENDIF
+    IFDEF POWERUPS
+        ld a,WHITE
+        ld (step_skip.flash_ink + 1),a ; a special bomb may have changed it
+    ENDIF
         ld a,CFG_CHORD_FLASH
         ld (chord_flash),a
 .stats:
@@ -129,6 +133,10 @@ chords_poll:
         ld a,(stats_on)
         xor 1
         ld (stats_on),a
+    IFDEF POWERUPS
+        ld a,WHITE
+        ld (step_skip.flash_ink + 1),a ; a special bomb may have changed it
+    ENDIF
         ld a,CFG_CHORD_FLASH
         ld (chord_flash),a
         ret

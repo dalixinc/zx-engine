@@ -112,7 +112,12 @@ menu_loop:
     ENDIF
         call menu_poll
         jr nc,menu_loop
-        jp game_reset
+    IFDEF TYPEWRITER
+        ld a,(start_level)
+        dec a
+        jp z,story_show         ; 1: the story, then the game (story.asm)
+    ENDIF
+        jp game_reset           ; a level code: straight in
 
 ;------------------------------------------------------------------------------
 ; menu_draw_game_over - GAME OVER under the options, after the last life

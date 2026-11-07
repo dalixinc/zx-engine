@@ -96,6 +96,18 @@
     IFDEF POWERUPS
         DEFINE DOUBLE_SHOT
     ENDIF
+        ; The story when 1 starts a game: only where boot goes to the menu.
+    IFNDEF SOAK
+    IFNDEF MEASURE
+    IFNDEF TIMING_BARS
+    IFNDEF SHOT_FRAME
+    IFNDEF SLACK_LINES
+        DEFINE TYPEWRITER
+    ENDIF
+    ENDIF
+    ENDIF
+    ENDIF
+    ENDIF
     IFDEF MEAS_DOUBLE
         DEFINE DOUBLE_SHOT
     ENDIF
@@ -587,6 +599,7 @@ step_skip:
         dec a
         ld (chord_flash),a
         and 2
+.flash_ink:                     ; patched: a special bomb's colour (special.asm)
         ld a,WHITE
         jr nz,.border
         xor a                   ; BLACK
@@ -1030,6 +1043,11 @@ wheel_first:    db 0
         INCLUDE "death.asm"      ; a death stops the game: no hurry there
         HOT
         INCLUDE "menu.asm"
+    IFDEF TYPEWRITER
+        COLD
+        INCLUDE "story.asm"      ; when 1 starts a game
+        HOT
+    ENDIF
 
     IFDEF SLACK_LINES
 slack_loops:    dw 0            ; loops since entry, including the warmup
@@ -1193,6 +1211,7 @@ UDG_LENGTH      equ udg_end - udg_start
         ; A hasty level's bomb can move a second pixel in a 1/50 second.
         ASSERT 2 * (TORP_SPEED + WHEEL_SPEED + 1) < TORP_X_SPAN, "at 25 a torpedo could jump over a bomb"
         ASSERT CFG_LIVES >= 1 && CFG_LIVES <= 9, "the stat line has one digit for the lives"
+        ASSERT CFG_LEVEL_LIVES <= LIVES_CELLS, "CFG_LEVEL_LIVES: more hearts than row 1 has cells for"
         ASSERT HIT_X_SPAN > 0 && HIT_Y_SPAN > 0, "a hit box has no size"
         ASSERT BORDER_FRAMES == 8, "the rrca x3 above assumes BORDER_FRAMES = 8"
     IFDEF SOAK
