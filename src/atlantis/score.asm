@@ -252,6 +252,17 @@ score_add:
 ;------------------------------------------------------------------------------
 level_up:
         call level_advance
+    IF CFG_LEVEL_LIVES
+        ; Back up to CFG_LEVEL_LIVES if he has fewer: a new level only.
+        ld hl,lives
+        ld a,(hl)
+        cp CFG_LEVEL_LIVES
+        jr nc,.full
+        ld (hl),CFG_LEVEL_LIVES
+        ld hl,hud_dirty
+        set HUD_HEARTS,(hl)     ; row 1's hearts, on the next step
+.full:
+    ENDIF
         ld hl,hud_dirty
         set HUD_TEXT,(hl)
         bit HUD_BANNER,(hl)     ; a banner still up comes down first,

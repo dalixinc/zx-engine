@@ -23,8 +23,12 @@ bytes moved to where they belong.
   when the half second is up. Each scores what a torpedo would on that
   level (a piranha twice a fish). A silo missile, armed or flying,
   blows up at once, for a torpedo's points.
-- **Either one** stops a hunting bomb hunting. The border flashes and
-  the missile's whoosh plays (a thrown missile's bang replaces it).
+- **Either one** stops a hunting bomb hunting. The border flashes in
+  its colour and black for about half a second (cyan for suction,
+  yellow for shove; `CFG_SPECIAL_FLASH`, `CFG_SUCTION_INK`,
+  `CFG_SHOVE_INK`), and it plays its own slide: suction falls from about
+  1,300 Hz to 260 Hz over the pull, shove rises the other way and holds
+  its top note. A thrown missile's bang cuts the slide short.
 - **How often:** each has its own share of the roll when a missile
   ends, and its own first level. Suction is about twice as common:
   11 in 256 (about one turn in 23), shove 5 in 256 (one in 51).

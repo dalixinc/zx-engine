@@ -174,6 +174,17 @@ snd_tune_power:
 snd_tune_down:
         db 10, 3, 12, 3, 15, 3, 20, 10, 0
 
+    IFDEF POWERUPS
+; The special bombs (special.asm). Suction: a slide down, as long as the
+; pull (12 notes of 2 1/50 seconds, about 1,300 Hz to 260 Hz). Shove: a
+; slide up, from 260 Hz to about 1,560 Hz, and the top note held. The
+; first note of a tune is counted down before it plays, so it is short.
+snd_tune_suction:
+        db 6, 2, 7, 2, 8, 2, 9, 2, 10, 2, 12, 2, 14, 2, 16, 2, 19, 2, 22, 2, 26, 2, 30, 2, 0
+snd_tune_shove:
+        db 30, 2, 24, 2, 19, 2, 15, 2, 12, 2, 10, 2, 8, 2, 7, 2, 6, 2, 5, 4, 0
+    ENDIF
+
 ; The torpedo's laser (CFG_LASER). A tune counts down a note before it
 ; plays it, so a one-tick first note is never heard. The lead-in is
 ; that note: it is used up on the step that fires, which then plays the

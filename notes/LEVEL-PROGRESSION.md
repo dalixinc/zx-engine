@@ -26,6 +26,8 @@ gives the targets. If the table in `config.asm` changes, update this.
   turns up about one missile turn in 8, a bubble about one in 21 (the
   double shot lasts 30 seconds), a suction bomb about one in 23 and a
   shove bomb about one in 51. Lives top out at 5.
+- **Each new level** brings him back up to 3 lives if he has fewer
+  (`CFG_LEVEL_LIVES`); not a death, and not a start from a level code.
 - **Special bombs** are carried, one at a time (a new one replaces the
   old), shown on row 1 left of the bubble's cell, and set off with
   B. Suction, the escape, pulls the bomb and the fish down towards the
