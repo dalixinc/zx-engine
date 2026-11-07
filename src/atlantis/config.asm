@@ -86,7 +86,7 @@ CFG_CHORD_FLASH     equ 12
 ; goes back to the level's colour.
 ; Atlantis keeps to the light colours: GREEN, CYAN, YELLOW, WHITE.
 ; The dark ones (BLACK, BLUE, RED, MAGENTA) are kept for Trigon, the
-; levels after 10, so its borders say at once that it is somewhere worse.
+; levels after 20, so its borders say at once that it is somewhere worse.
 CFG_LEVEL_FLASH     equ 24
 
 ; Television frames before another torpedo can be launched.
@@ -255,7 +255,7 @@ CFG_QUAKE_PITCH      equ 3
 ; or CFG_INTERLUDE_TIME 1/50 seconds (up to 255: 250 is 5 seconds). Then
 ; the next level starts as usual. The border while it shows is
 ; CFG_INTERLUDE_BORDER, the blue of the water round the picture.
-CFG_INTERLUDE_LEVEL  equ 10
+CFG_INTERLUDE_LEVEL  equ 20
 CFG_INTERLUDE_TIME   equ 250
 CFG_INTERLUDE_BORDER equ BLUE
 
@@ -332,7 +332,8 @@ CFG_L8_INK          equ BRIGHT | BLACK | (BLUE << 3)
         LEVEL_ROW  850,    45,      110,     144,   BOMB_W, CFG_L7_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     YELLOW,       1,   3,   10
         LEVEL_ROW  950,    40,      95,      168,   BOMB_W, CFG_L8_INK,    MOVE_HOME, 128, MOVE_WAVE,     72,    WHITE,        1,   3,   10
         LEVEL_ROW  1100,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_HOME, 128, MOVE_WAVE,     80,    CYAN,         1,   3,   10
-        ; Level 10, the last of Atlantis: the missiles home (CFG_MSL_HOME_LEVEL).
+        ; Level 10: the missiles home (CFG_MSL_HOME_LEVEL). It repeats to 20,
+        ; the last of Atlantis (CFG_INTERLUDE_LEVEL).
         LEVEL_ROW  1400,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_HOME, 128, MOVE_WAVE,     80,    GREEN,        1,   3,   10
         ENDM
 
@@ -360,8 +361,8 @@ CFG_FISH_WAVE_SPEED  equ 3
 CFG_BANNER_TIME      equ 100
 CFG_BANNER_CODE_TIME equ 200
 
-; Levels with a code (codes.asm): 2 to this. Atlantis is 1 to 10 and
-; Trigon 11 to 20. Each code is worked out from its level number, so
+; Levels with a code (codes.asm): 2 to this. Atlantis is 1 to 20, then
+; the city interlude; Trigon, after it, will need this raised. Each code is worked out from its level number, so
 ; changing this changes no code, it only adds or drops some. Up to 31.
 CFG_CODE_LEVELS      equ 20
 

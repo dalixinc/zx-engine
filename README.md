@@ -125,7 +125,7 @@ spinning wheel that rolls as it goes, in a new colour each level. Levels
 3, 5 and 7 swing it on a wide wave; levels 4, 6 and 8 make it a hunter
 that drifts towards the diver's depth until it has passed him, harder
 each time. On level 10 the silos' missiles home in on him too
-(`docs/LEVELS-3-AND-4.md`). Finishing level 10, the last of Atlantis,
+(`docs/LEVELS-3-AND-4.md`). Finishing level 20, the last of Atlantis,
 shows a picture of the city, **drawn by Erin**, with a chime, before
 the game goes on (`docs/CITY-INTERLUDE.md`).
 
@@ -232,7 +232,7 @@ gfx/missile.asm          GENERATED from missile.txt: 8 shifts x 1 frame
 gfx/loading.scr          GENERATED loading screen, 6912 bytes (tools/mkloadscreen.py)
 gfx/city_*.bin           Erin's Atlantis city, 192 x 128: pixels and colours
 gfx/city.scr, city.zx0   GENERATED: the city as a screen (tools/mkcity.py), and packed
-VERSION                  the version printed on the loading screen (0.9.5)
+VERSION                  the version printed on the loading screen (0.9.6)
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
 tools/gfx2asm.py         ASCII art -> pre-shifted masked .asm (Python 3)

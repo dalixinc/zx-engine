@@ -35,6 +35,35 @@ IL_LINE2_ROW    equ 22
 interlude:
         ld hl,(frame_count)
         ld (il_start),hl
+        call il_show
+        jr il_back
+
+;------------------------------------------------------------------------------
+; il_menu_code - option 3 on the menu (menu_code), after the sixth letter:
+; the city's own code (notes/CHEATS.md) shows it, then the menu again.
+; It has an N, which no level's code has (codes.asm), so it is never
+; one. Returns if the letters are not it. Corrupts: AF, B, DE, HL
+;------------------------------------------------------------------------------
+il_menu_code:
+        ld hl,code_buf
+        ld de,il_code
+        ld b,CODE_LEN
+.cmp:   ld a,(de)
+        cp (hl)
+        ret nz
+        inc hl
+        inc de
+        djnz .cmp
+        call il_show
+        jp enter_menu           ; it starts the stack again
+il_code:        db "SUNKEN"
+        ASSERT $ - il_code == CODE_LEN
+
+;------------------------------------------------------------------------------
+; il_show - the city, the words and the chime, until a fresh key or
+; CFG_INTERLUDE_TIME. Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+il_show:
         ld a,CFG_INTERLUDE_BORDER
         call set_border
         ld hl,city_zx0
@@ -67,12 +96,14 @@ interlude:
 .down:  ld a,(il_armed)
         or a
         jr z,.on
-        call keys_up            ; the key does not reach the game
-        jr .back
+        jp keys_up              ; the key does not reach the game
 .on:    dec d
         jr nz,.frame
+        ret
 
-.back:  ld a,WATER_ATTR
+; The play screen back, as it was.
+il_back:
+        ld a,WATER_ATTR
         call cls
         ld b,SAND_ROW
         ld d,1

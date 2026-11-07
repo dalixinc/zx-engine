@@ -46,7 +46,9 @@ gives the targets. If the table in `config.asm` changes, update this.
   bomb hunting. The nuke scores
   nothing. The nuke (testing only, `CFG_NUKE_LEVEL` 99) is in
   [CHEATS.md](CHEATS.md).
-- **After level 10** its row repeats.
+- **After level 10** its row repeats, up to 20, the last of Atlantis.
+  Finishing level 20 (`CFG_INTERLUDE_LEVEL`) shows the city interlude,
+  then level 21 goes on with the same row until Trigon has its own.
 - **The testers' switch** (see [CHEATS.md](CHEATS.md)) brings every
   power-up (the special bombs and the nuke too) and the piranha in from
   level 1. It doesn't touch the enemy bombs or the missiles.

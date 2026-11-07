@@ -27,8 +27,8 @@
 ; its 24 bits and looked up in the table, 3 bytes a level, which is
 ; smaller than the code to reverse it.
 ;
-; Levels 2 to CFG_CODE_LEVELS have codes (Atlantis is 1 to 10, Trigon
-; 11 to 20). Level 1 is the menu's "Start game".
+; Levels 2 to CFG_CODE_LEVELS have codes (Atlantis is 1 to 20, then the
+; city interlude; Trigon comes after). Level 1 is the menu's "Start game".
 ;==============================================================================
 
 CODE_KEY_SUM    equ $5A3C9      ; the checksum's key, 19 bits
