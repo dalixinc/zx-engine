@@ -38,7 +38,7 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/menu.asm src/atlantis/wheel.asm src/atlantis/hit.asm src/atlantis/torpedo.asm \
              src/atlantis/fastsprite.asm src/atlantis/boom.asm src/atlantis/sound.asm \
              src/atlantis/silo.asm src/atlantis/missile.asm src/atlantis/score.asm src/atlantis/codes.asm src/atlantis/preshift.asm src/atlantis/bss.asm \
-             src/atlantis/soak.asm src/atlantis/udg.asm src/atlantis/demo.asm $(SHARED)
+             src/atlantis/soak.asm src/atlantis/udg.asm src/atlantis/demo.asm src/atlantis/interlude.asm $(SHARED)
 ZX0       := build/zx0
 CC        ?= cc
 
@@ -54,7 +54,7 @@ all: $(TAP) $(SNA)
 # main.asm writes the snapshot, the plain tape and the three blocks as
 # they are in memory, with their ends in build/atlantis.exp.
 ATL_BLOCKS := build/atlantis-cold.bin build/atlantis-code.bin build/atlantis-data.bin build/atlantis-udg.bin
-$(SNA) $(ATL_BLOCKS) build/atlantis.exp build/atlantis-plain.tap &: $(ATL_SRC) $(ATL_GFX) gfx/loading.scr | build
+$(SNA) $(ATL_BLOCKS) build/atlantis.exp build/atlantis-plain.tap &: $(ATL_SRC) $(ATL_GFX) gfx/loading.scr gfx/city_pix.zx0 gfx/city_atr.zx0 | build
 	$(ASM) --nologo --fullpath=off --lst=build/atlantis.lst --sym=build/atlantis.sym --exp=build/atlantis.exp src/atlantis/main.asm
 
 # ZX0 packs them and the loading screen, and tape.asm puts them on the
@@ -64,6 +64,19 @@ $(ZX0): tools/zx0/zx0.c tools/zx0/optimize.c tools/zx0/compress.c tools/zx0/memo
 
 build/%.zx0: build/%.bin $(ZX0)
 	$(ZX0) -f $< $@ >/dev/null
+
+# Erin's city for the interlude: a whole screen, packed. Both committed,
+# so the game builds without Python or zx0 (build.bat).
+gfx/city.scr: tools/mkcity.py gfx/city_bitmap.bin gfx/city_attrs.bin
+	$(PYTHON) tools/mkcity.py $@
+# Packed in two: the pixels go straight to the screen, the colours aside
+# until the circle shows them (interlude.asm).
+gfx/city_pix.zx0: gfx/city.scr $(ZX0) | build
+	head -c 6144 $< > build/city_pix.bin
+	$(ZX0) -f build/city_pix.bin $@ >/dev/null
+gfx/city_atr.zx0: gfx/city.scr $(ZX0) | build
+	tail -c 768 $< > build/city_atr.bin
+	$(ZX0) -f build/city_atr.bin $@ >/dev/null
 
 build/loading.zx0: gfx/loading.scr $(ZX0)
 	$(ZX0) -f $< $@ >/dev/null

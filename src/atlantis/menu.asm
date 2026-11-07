@@ -512,6 +512,9 @@ menu_code:
         ld a,e
         cp CODE_LEN
         jr c,.key
+    IFDEF CITY_SHOW
+        call il_menu_code       ; the city's own code: shown, then the menu
+    ENDIF
         call code_level
         or a
         jr z,.bad
