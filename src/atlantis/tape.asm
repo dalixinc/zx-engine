@@ -15,7 +15,7 @@
 ;   CODE    "atlantis"  the packed loading screen, then the unpacker
 ;                         and dzx0, ending just below $8000
 ;   CODE    "atlantc"   the packed code, cold block, data and UDG block,
-;                         from DATA_START
+;                         ending at the ROM's UDGs ($FF48)
 ;
 ; WHERE. The unpacker must stay out of what it unpacks, and nothing
 ; packed may be overwritten before it has been read. go unpacks in the
@@ -29,6 +29,13 @@
 ;   - the data, to DATA_START: over the second block's packed code and
 ;     cold block, already read. Its own packed bytes are further up
 ;     (asserted past data_end).
+; The second block is loaded as high as it goes, ending at $FF48, so the
+; only things below it are the code's destination (asserted: it starts
+; at or above code_end) and nothing else that matters while the tape
+; loads. Its room is from code_end to $FF48, not from DATA_START: the
+; round fish's and the jet's pictures, between the code and the data,
+; are built at start-up, after it has been read. (Until 0.9.4 it loaded
+; at DATA_START, about 3,280 bytes higher, which was all the room lost.)
 ;   - the UDG block, last, above everything else.
 ; At start-up the spinning wheel's pictures are built over the first
 ; block, and the diver's copies and the scroll buffers over the second.
@@ -58,7 +65,9 @@ FRAMES          equ 23672       ; the ROM counts interrupts here
 ; The first block ends at $8000: its length is fixed by the INCBIN and
 ; the code, so the assembler settles this in its first passes.
 UNPACK_ORG      equ CODE_START - (unpack_end - unpack_start)
-PACKED_ORG      equ DATA_START
+; The second block ends at the ROM's UDGs; its length is fixed by the
+; INCBINs, so the assembler settles this as it does UNPACK_ORG.
+PACKED_ORG      equ UDG_START - (packed_end - packed_start)
 
 ;------------------------------------------------------------------------------
 ; The first block: the packed loading screen, then the unpacker.
@@ -154,6 +163,7 @@ packed_end:
 
         DISPLAY "tape unpacker ", unpack_start, " to ", unpack_end
         DISPLAY "tape packed game ", packed_start, " to ", packed_end
+        DISPLAY "tape room below the packed game ", /D, packed_start - code_end
 
 ;------------------------------------------------------------------------------
 ; The BASIC. Scratch: SAVETAP copies these bytes into the BASIC block.

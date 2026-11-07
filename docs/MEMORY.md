@@ -21,7 +21,7 @@ it, the **housekeeping** brief (PR #23).
 | `$B731-$BCDF` | free (1,455) |
 | `$BCE0-$C03F` | the round fish's left-facing shifted pictures (`RFISH_BUF`, 864, built at start-up; the tape build only, `TWO_FISH`: builds with the stat line and the soak have their code here instead) |
 | `$C040-$C3FF` | the diver's two still pictures with the jet's other phase (`JET_BUF`, 960: even shifts only, built at start-up; the soak build has its code here instead) |
-| `$C400-$CE0B` | data: graphics, tables (the round fish's pointer tables and the double shot's patch tables too), `data.asm` (`data_end` `$CE0C`); while the tape loads, its second block starts here |
+| `$C400-$CE0B` | data: graphics, tables (the round fish's pointer tables and the double shot's patch tables too), `data.asm` (`data_end` `$CE0C`); while the tape loads, the second block runs from `$C8F0` to `$FF47` |
 | `$CE0C-$DA6F` | free (3,172) |
 | `$DA70-$E5AF` | the diver's shifted pictures (2,880: shifts 0, 2, 4 and 6 only, built at start-up) |
 | `$E5B0-$EC6F` | the fish's shifted pictures (built at start-up) |
@@ -51,9 +51,10 @@ build if any of them runs into the next thing up.
 
 While the tape loads, two more things sit in memory for a moment: the
 first block, the packed loading screen and then the unpacker, ending at
-`$8000` (`$791D-$7FFF`), and the second, the packed code, cold block,
-data and UDG block, from `DATA_START` (`$C400-$F8A5`, 1,698 bytes below
-the UDG block at `$FF48`, its limit). The unpacker writes them in that
+`$8000` (`$790D-$7FFF`), and the second, the packed code, cold block,
+data and UDG block, loaded as high as it goes so that it ends at the UDG
+block's `$FF48` (`$C8F0-$FF47`). Its limit is the code's end below it:
+4,543 bytes of room between `code_end` and its start. The unpacker writes them in that
 order, each over bytes it has already read: the code between the two
 blocks, the cold block over the first block's screen (already shown)
 but below the unpacker, the data over the second block's code and cold
@@ -338,4 +339,19 @@ run-time room, 2,880 in the data block's room and 960 in the hot
 code's. The tape is 33 bytes shorter (the copies were never on it).
 The frame's timing is unchanged: the heavy seabed frame still has 8
 spare scanlines and no late step, and the soak is green at 50 and 25.
+
+## The second block loads high (after 0.9.4)
+
+The second tape block used to load at `DATA_START`, so its room was
+`$C400` to `$FF48`. Only two of its four destinations lie under the
+stream at all: the code's (`$8000` to `code_end`) and the data's
+(`$C400` to `data_end`). The code is unpacked first and lands wholly
+below the block if the block starts at or above `code_end`; the data
+is unpacked third, over bytes already read, as long as its own packed
+bytes are above `data_end`. Both are asserted in `tape.asm`. So the
+block now ends at `$FF48` and starts wherever its length puts it
+(`PACKED_ORG`), and its room runs down to `code_end`: 4,543 bytes,
+where it was 1,264. The round fish's and the jet's pictures between the
+code and the data are built at start-up, after the tape has been read.
+`make unpack-check` gave the same sums as `build/*.bin`.
 
