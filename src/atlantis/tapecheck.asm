@@ -7,6 +7,7 @@
 ;   row 2   the code's
 ;   row 3   the data's
 ;   row 4   frames to unpack the screen, frames to unpack the game
+;   row 5   the UDG block's
 ; then stop. The screen is summed before anything is printed on it.
 ; The sums of build/*.bin and gfx/loading.scr must match (docs/MEMORY.md).
 ;==============================================================================
@@ -37,7 +38,7 @@ check:
         push de
         ld hl,ATTRS
         ld de,ATTRS + 1
-        ld bc,5 * 32 - 1
+        ld bc,6 * 32 - 1
         ld (hl),$47
         ldir
         pop de
@@ -59,6 +60,11 @@ check:
         ld de,(t_screen)
         ld hl,(t_game)
         ld b,4
+        call print_pair
+        ld hl,udg_start
+        ld bc,udg_end - udg_start
+        call sum
+        ld b,5
         call print_pair
         ld a,4                  ; green border: done
         out ($FE),a

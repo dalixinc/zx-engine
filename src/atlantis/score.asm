@@ -242,6 +242,9 @@ score_add:
         call level_up           ; equal, or below: reached
         jr .check
 
+        ; Once a level, on the step a shot passes the target: the cold
+        ; block's slower fetches cost that step a little, as code_text's do.
+        COLD
 ;------------------------------------------------------------------------------
 ; level_up - the target is reached: the next row, the banner, its code,
 ;            the jingle. Level 2 also gets the message (teaser).
@@ -351,7 +354,6 @@ level_enter:
         inc hl
         jp level_style          ; how it looks (level.asm)
 
-        COLD
 ;------------------------------------------------------------------------------
 ; score_game_over - the last life: a new high score?
 ; Corrupts: AF, B, DE, HL
@@ -488,7 +490,10 @@ hud_glyph:
 ;------------------------------------------------------------------------------
 BANNER_ROW      equ 7
 
-; Build "LEVEL n", paint it, start its clock. Corrupts: AF, BC, DE, HL
+; Build "LEVEL n", paint it, start its clock. Once a level (level_up),
+; so it is in the cold block; the painting it calls is not, as the
+; banner's erase uses it too. Corrupts: AF, BC, DE, HL
+        COLD
 banner_show:
         ld a,(hud_dirty)
         bit HUD_BANNER,a
@@ -543,6 +548,7 @@ banner_show:
         ld hl,hud_dirty
         set HUD_BANNER,(hl)
         ret
+        HOT
 
 ; Each step while it is up: time to take it down? After level 2's,
 ; the message, at the end of this step.

@@ -674,8 +674,8 @@ torpedo_reset:
     ENDIF
         HOT
 
-; The double shot's patch tables. In the code block: the data block's
-; end decides where the packed tape loads, and that has no room left.
+; The double shot's patch tables. Only read, so they live in the data
+; block (main.asm puts them there).
         MACRO DOUBLE_DATA
 ; Opcode bytes: where, one torpedo, two. Then 0.
 double_bytes:
@@ -705,6 +705,3 @@ double_words:
         dw fish_mv2.torp_hc2 + 1, torpedo_hit, hit_both
         dw 0
         ENDM
-    IFDEF DOUBLE_SHOT
-        DOUBLE_DATA
-    ENDIF

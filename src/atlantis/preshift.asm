@@ -484,7 +484,7 @@ wspin_seq:                      ; the 4 quarter turns, twice: WHEEL_FRAMES steps
         ASSERT WSPIN_WIDE == WHEEL_WIDE, "both bombs share wheel_shift_bytes"
         ASSERT WHEEL_FRAMES == 8, "wspin_seq is WHEEL_FRAMES (8) steps, as the pulsar's"
 
-; The round fish's tables, in the code block (main.asm, before code_end).
+; The round fish's tables, in the data block (main.asm, before data_end).
         MACRO RFISH_TABLES
 rfish_images:
         PRESHIFT_INDEX rfish_shifts, RFISH_PICS
