@@ -38,7 +38,7 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/menu.asm src/atlantis/wheel.asm src/atlantis/hit.asm src/atlantis/torpedo.asm \
              src/atlantis/fastsprite.asm src/atlantis/boom.asm src/atlantis/sound.asm \
              src/atlantis/silo.asm src/atlantis/missile.asm src/atlantis/score.asm src/atlantis/codes.asm src/atlantis/preshift.asm src/atlantis/bss.asm \
-             src/atlantis/soak.asm src/atlantis/udg.asm src/atlantis/demo.asm $(SHARED)
+             src/atlantis/soak.asm src/atlantis/udg.asm src/atlantis/demo.asm src/atlantis/interlude.asm $(SHARED)
 ZX0       := build/zx0
 CC        ?= cc
 
@@ -54,7 +54,7 @@ all: $(TAP) $(SNA)
 # main.asm writes the snapshot, the plain tape and the three blocks as
 # they are in memory, with their ends in build/atlantis.exp.
 ATL_BLOCKS := build/atlantis-cold.bin build/atlantis-code.bin build/atlantis-data.bin build/atlantis-udg.bin
-$(SNA) $(ATL_BLOCKS) build/atlantis.exp build/atlantis-plain.tap &: $(ATL_SRC) $(ATL_GFX) gfx/loading.scr | build
+$(SNA) $(ATL_BLOCKS) build/atlantis.exp build/atlantis-plain.tap &: $(ATL_SRC) $(ATL_GFX) gfx/loading.scr gfx/city.zx0 | build
 	$(ASM) --nologo --fullpath=off --lst=build/atlantis.lst --sym=build/atlantis.sym --exp=build/atlantis.exp src/atlantis/main.asm
 
 # ZX0 packs them and the loading screen, and tape.asm puts them on the
@@ -63,6 +63,13 @@ $(ZX0): tools/zx0/zx0.c tools/zx0/optimize.c tools/zx0/compress.c tools/zx0/memo
 	$(CC) -O2 -o $@ tools/zx0/zx0.c tools/zx0/optimize.c tools/zx0/compress.c tools/zx0/memory.c
 
 build/%.zx0: build/%.bin $(ZX0)
+	$(ZX0) -f $< $@ >/dev/null
+
+# Erin's city for the interlude: a whole screen, packed. Both committed,
+# so the game builds without Python or zx0 (build.bat).
+gfx/city.scr: tools/mkcity.py gfx/city_bitmap.bin gfx/city_attrs.bin
+	$(PYTHON) tools/mkcity.py $@
+gfx/city.zx0: gfx/city.scr $(ZX0)
 	$(ZX0) -f $< $@ >/dev/null
 
 build/loading.zx0: gfx/loading.scr $(ZX0)

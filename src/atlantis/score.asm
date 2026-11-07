@@ -185,6 +185,22 @@ score_reset:
         call level_advance
         pop bc
         djnz .skip
+    IFDEF CITY_SHOW
+    IFDEF POWERUPS
+        ; Testers (notes/CHEATS.md): with the switch on, a game started at
+        ; the last Atlantis level ends it with the first point scored.
+        ld a,(cheat_on)
+        or a
+        jr z,.go
+        ld a,(start_level)
+        cp CFG_INTERLUDE_LEVEL
+        jr nz,.go
+        ld hl,score
+        ld de,level_next
+        ld bc,3
+        ldir
+    ENDIF
+    ENDIF
 .go:    ld a,(1 << HUD_HEARTS) | (1 << HUD_TEXT)
         ld (hud_dirty),a
         ret
@@ -252,6 +268,11 @@ score_add:
 ;------------------------------------------------------------------------------
 level_up:
         call level_advance
+    IFDEF CITY_SHOW
+        ld a,(level_n)
+        cp CFG_INTERLUDE_LEVEL + 1
+        call z,interlude        ; Atlantis is done: the city (interlude.asm)
+    ENDIF
     IF CFG_LEVEL_LIVES
         ; Back up to CFG_LEVEL_LIVES if he has fewer: a new level only.
         ld hl,lives

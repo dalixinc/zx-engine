@@ -26,3 +26,13 @@ missile is taken away. `CFG_NUKE_LEVEL` is 99, so only the testers'
 switch brings it in play; set it to 0 to leave its code and its picture
 out of the build (for Atlantis), or to a real level to play with it
 (for Trigon later). Its share of the roll is `CFG_NUKE_ODDS`.
+
+## Straight to the city interlude
+
+With the testers' switch on (Symbol Shift + M on the menu), start a game
+with the code of the last Atlantis level, `CFG_INTERLUDE_LEVEL` (level
+10: ASEHEC, see LEVEL-CODES-LIST.md). Its target is then the score it
+starts with, so the first point scored finishes the level and the city
+comes up. It is in `score_reset` (`score.asm`), under `CITY_SHOW` and
+`POWERUPS`.
+

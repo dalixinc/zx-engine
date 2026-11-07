@@ -104,6 +104,7 @@
     IFNDEF SLACK_LINES
         DEFINE TYPEWRITER
         DEFINE AUTOPLAY         ; the attract demo (demo.asm)
+        DEFINE CITY_SHOW        ; the city between Atlantis and Trigon (interlude.asm)
     ENDIF
     ENDIF
     ENDIF
@@ -1055,6 +1056,7 @@ wheel_first:    db 0
         HOT
     ENDIF
         INCLUDE "demo.asm"       ; the attract demo: hot input, cold the rest
+        INCLUDE "interlude.asm"  ; the city, after the last Atlantis level
 
     IFDEF SLACK_LINES
 slack_loops:    dw 0            ; loops since entry, including the warmup
@@ -1133,6 +1135,10 @@ data_start:
     ENDIF
     IFDEF DOUBLE_SHOT
         DOUBLE_DATA             ; the double shot's patch tables (torpedo.asm)
+    ENDIF
+    IFDEF CITY_SHOW
+city_zx0:                       ; Erin's city, a whole screen, packed (interlude.asm)
+        INCBIN "../../gfx/city.zx0"
     ENDIF
 data_end:
 

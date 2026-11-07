@@ -249,6 +249,16 @@ CFG_QUAKE_SHAKE      equ 3
 CFG_QUAKE_HOLD       equ 2
 CFG_QUAKE_PITCH      equ 3
 
+; --- The city interlude (interlude.asm) -----------------------------------------
+; Finishing level CFG_INTERLUDE_LEVEL, the last of Atlantis, stops the
+; game for Erin's picture of the city, with a chime, until a fresh key
+; or CFG_INTERLUDE_TIME 1/50 seconds (up to 255: 250 is 5 seconds). Then
+; the next level starts as usual. The border while it shows is
+; CFG_INTERLUDE_BORDER, the blue of the water round the picture.
+CFG_INTERLUDE_LEVEL  equ 10
+CFG_INTERLUDE_TIME   equ 250
+CFG_INTERLUDE_BORDER equ BLUE
+
 ; --- The attract demo (demo.asm) ----------------------------------------------
 ; After CFG_DEMO_WAIT seconds on the menu with no key down, the computer
 ; plays level 1 for CFG_DEMO_TIME seconds, then the menu comes back.
