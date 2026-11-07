@@ -17,6 +17,10 @@ prints the cells that did, so a change that causes colour clash shows.
 The sprites are read from gfx/*.txt, the same art the game draws, and
 drawn twice the size. The title letters are drawn in this file.
 
+The version in VERSION (at the top of the repository) is printed small
+on the sand in the bottom right corner, black on yellow like the stones,
+so it adds no colour. Change VERSION for a release and run make.
+
 The optional second argument writes a PNG of the result (needs Pillow).
 Only Python 3 is needed for the .scr itself.
 """
@@ -459,6 +463,40 @@ def ruins():
                 plot(x, y, lit)
 
 
+# --- The version, bottom right ---------------------------------------------------
+# A 3 x 5 font for the few characters a version number needs, one string
+# per pixel row, # for ink.
+
+TINY = {
+    "0": ("###", "#.#", "#.#", "#.#", "###"),
+    "1": (".#.", "##.", ".#.", ".#.", "###"),
+    "2": ("###", "..#", "###", "#..", "###"),
+    "3": ("###", "..#", ".##", "..#", "###"),
+    "4": ("#.#", "#.#", "###", "..#", "..#"),
+    "5": ("###", "#..", "###", "..#", "###"),
+    "6": ("###", "#..", "###", "#.#", "###"),
+    "7": ("###", "..#", "..#", ".#.", ".#."),
+    "8": ("###", "#.#", "###", "#.#", "###"),
+    "9": ("###", "#.#", "###", "..#", "###"),
+    ".": (".", ".", ".", ".", "#"),
+    "v": ("...", "#.#", "#.#", "#.#", ".#."),
+}
+
+
+def version_mark():
+    text = "v" + Path("VERSION").read_text().strip()
+    width = sum(len(TINY[ch][0]) + 1 for ch in text) - 1
+    x, y = W - 2 - width, H - 7
+    # A clear patch of sand first, so no stone runs into the letters.
+    fill(x - 2, y - 1, width + 4, 7, SAND)
+    for ch in text:
+        for dy, line in enumerate(TINY[ch]):
+            for dx, p in enumerate(line):
+                if p == "#":
+                    plot(x + dx, y + dy, BLACK)
+        x += len(TINY[ch][0]) + 1
+
+
 # --- Fit every cell to two colours ----------------------------------------------
 
 def dist(a, b):
@@ -517,6 +555,7 @@ def main():
         sys.exit(__doc__)
     paint()
     title("ATLANTIS", 8)
+    version_mark()
     bits, attrs, clashes = quantise()
     Path(sys.argv[1]).write_bytes(scr_bytes(bits, attrs))
     print(f"{sys.argv[1]}: 6912 bytes, {len(clashes)} cells had to lose a colour")
