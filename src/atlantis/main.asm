@@ -1235,6 +1235,7 @@ loading_screen:
         EXPORT code_end
         EXPORT data_end
         EXPORT udg_start
+        EXPORT udg_end
         EXPORT entry
         SAVESNA  "build/atlantis.sna", entry
     ENDIF

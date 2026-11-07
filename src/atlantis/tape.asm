@@ -12,23 +12,30 @@
 ; The tape:
 ;   BASIC   10 CLEAR VAL "24575": LOAD ""CODE : RANDOMIZE USR VAL "<show>":
 ;              POKE VAL "23739",VAL "111": LOAD ""CODE : RANDOMIZE USR VAL "<go>"
-;   CODE    "atlantis"  the unpacker, dzx0, the packed loading screen,
-;                         the packed data and the packed UDG block
-;   CODE    "atlantc"   the packed cold block and code
+;   CODE    "atlantis"  the packed loading screen, then the unpacker
+;                         and dzx0, ending just below $8000
+;   CODE    "atlantc"   the packed code, cold block, data and UDG block,
+;                         from DATA_START
 ;
-; WHERE. The unpacker must stay out of what it unpacks, and the packed
-; game must not be overwritten before it has been read:
-;   - the first block goes in the free room above the cold block, from
-;     the page after cold_end, and must end below $8000. At start-up
-;     the spinning wheel's pictures are built over its top half.
-;   - the second goes from the page after data_end, above everything the
-;     unpacker writes. The diver's copies and the scroll buffers are
-;     built over it at start-up.
-; The first block also carries the packed data and the packed UDG block
-; (udg.asm): the second must end below UDG_START and had no room. The
-; cold block is unpacked first (below the first block), then the code
-; (below the second block's packed bytes still to be read), then the data
-; and the UDG block, from the first block, above $8000.
+; WHERE. The unpacker must stay out of what it unpacks, and nothing
+; packed may be overwritten before it has been read. go unpacks in the
+; order the second block holds them, so each write lands only on bytes
+; already read:
+;   - the code, to $8000: between the two blocks.
+;   - the cold block, to $6000: over the first block's packed screen,
+;     which show has already unpacked, but below the unpacker itself,
+;     which sits at the first block's top (asserted above cold_end, and
+;     the cold block may grow to the spinning wheel's pictures).
+;   - the data, to DATA_START: over the second block's packed code and
+;     cold block, already read. Its own packed bytes are further up
+;     (asserted past data_end).
+;   - the UDG block, last, above everything else.
+; At start-up the spinning wheel's pictures are built over the first
+; block, and the diver's copies and the scroll buffers over the second.
+; (Until November 2026 the first block sat on the page after cold_end
+; and carried the data, and the second loaded on the page after
+; data_end: that left the cold block 79 bytes and the packed game
+; 1,005, docs/MEMORY.md.)
 ;
 ; show returns to BASIC (it keeps IY and the alternate registers, as the
 ; ROM needs); go jumps to entry and never returns. POKE 23739,111 stops
@@ -48,16 +55,19 @@ COLD_START      equ $6000
 UDG_START       equ $FF48       ; the ROM's user-defined graphics, and 16 bytes below
 FRAMES          equ 23672       ; the ROM counts interrupts here
 
-UNPACK_ORG      equ (cold_end + $FF) & $FF00
-PACKED_ORG      equ (data_end + $FF) & $FF00
+; The first block ends at $8000: its length is fixed by the INCBIN and
+; the code, so the assembler settles this in its first passes.
+UNPACK_ORG      equ CODE_START - (unpack_end - unpack_start)
+PACKED_ORG      equ DATA_START
 
 ;------------------------------------------------------------------------------
-; The first block: the unpacker and the packed loading screen.
+; The first block: the packed loading screen, then the unpacker.
 ;------------------------------------------------------------------------------
         ORG UNPACK_ORG
 unpack_start:
-        jp show                 ; USR UNPACK_ORG
-        jp go                   ; USR UNPACK_ORG + 3
+packed_screen:
+        INCBIN "../../build/loading.zx0"
+unpack_code:
 
 ; show - the loading screen, while the rest of the tape loads.
 show:
@@ -85,16 +95,17 @@ go:
         ld hl,(FRAMES)
         ld (t_game),hl
     ENDIF
-        ld hl,packed_cold
-        ld de,COLD_START
-        call dzx0_standard
+        ; In the order the second block holds them (WHERE, above).
         ld hl,packed_code
         ld de,entry
+        call dzx0_standard
+        ld hl,packed_cold
+        ld de,COLD_START
         call dzx0_standard
         ld hl,packed_data
         ld de,DATA_START
         call dzx0_standard
-        ld hl,packed_udg        ; last, from the first block
+        ld hl,packed_udg
         ld de,udg_start
         call dzx0_standard
     IFDEF UNPACK_CHECK
@@ -117,32 +128,27 @@ t_screen        equ 0           ; only the check build counts frames
 t_game          equ 0
     ENDIF
 
-packed_screen:
-        INCBIN "../../build/loading.zx0"
-; The data block and the UDG block (udg.asm) ride here, not in the
-; second block: that one must end below UDG_START, and it had no room
-; left. Nothing is unpacked over this block before go reads it: the cold
-; block ends below UNPACK_ORG, and the code, the data and the UDG block
-; go above $8000.
-packed_data:
-        INCBIN "../../build/atlantis-data.zx0"
-packed_udg:
-        INCBIN "../../build/atlantis-udg.zx0"
 unpack_end:
-        ASSERT UNPACK_ORG >= cold_end, "the unpacker would sit on the cold block"
-        ASSERT unpack_end <= CODE_START, "the unpacker and the packed screen run into the code"
+        ASSERT unpack_end == CODE_START, "the first block does not end at the code"
+        ASSERT unpack_code >= cold_end, "the cold block would be unpacked over the unpacker"
+        ASSERT UNPACK_ORG >= COLD_START, "the first block runs below the cold block"
 
 ;------------------------------------------------------------------------------
 ; The second block: the packed game.
 ;------------------------------------------------------------------------------
         ORG PACKED_ORG
 packed_start:
-packed_cold:
-        INCBIN "../../build/atlantis-cold.zx0"
 packed_code:
         INCBIN "../../build/atlantis-code.zx0"
+packed_cold:
+        INCBIN "../../build/atlantis-cold.zx0"
+packed_data:
+        INCBIN "../../build/atlantis-data.zx0"
+packed_udg:
+        INCBIN "../../build/atlantis-udg.zx0"
 packed_end:
-        ASSERT PACKED_ORG >= data_end, "the packed game would sit on the data"
+        ASSERT PACKED_ORG >= code_end, "the packed game would sit on the code"
+        ASSERT packed_data >= data_end, "the data would be unpacked over its own packed bytes"
         ASSERT packed_end <= UDG_START, "the packed game runs into the ROM's UDGs"
         ASSERT udg_start == UDG_START, "the UDG block is not at the ROM's UDGs"
 
