@@ -106,7 +106,7 @@
   missiles for points; touching anything, or the black ground, costs a life.
   Runs in <a href="https://github.com/gasman/jsspeccy3">JSSpeccy 3</a>
   (GPL-3.0, <a href="jsspeccy/COPYING">licence</a>). For a real
-  Spectrum or another emulator: <a href="atlantis.tap" download>atlantis.tap</a>.</p>
+  Spectrum or another emulator: <a href="atlantis.tap?v=893a0fb6" download="atlantis.tap">atlantis.tap</a>.</p>
 </main>
 
 <script>
@@ -131,7 +131,10 @@
     JSSpeccy(stage, {
       machine: 48,
       zoom: zoom,
-      openUrl: 'atlantis.sna',   // the menu, straight away
+      // The menu, straight away. make web stamps the snapshot's hash in
+      // (v=), so a browser fetches each new build at once; JSSpeccy picks
+      // the file's type by how the address ends, hence type=.sna.
+      openUrl: 'atlantis.sna?v=e13d4153&type=.sna',
       autoStart: true,
       sandbox: true              // no "open a file" in its menus
     });
