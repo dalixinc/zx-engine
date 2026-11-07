@@ -126,7 +126,8 @@ spinning wheel that rolls as it goes, in a new colour each level. Levels
 that drifts towards the diver's depth until it has passed him, harder
 each time. On level 10 the silos' missiles home in on him too
 (`docs/LEVELS-3-AND-4.md`). Finishing level 20, the last of Atlantis,
-shows a picture of the city, **drawn by Erin**, with a chime, before
+shows a picture of the city, **drawn by Erin**, its colours coming on
+in a growing circle, with a chime, before
 the game goes on (`docs/CITY-INTERLUDE.md`).
 
 Level 2 and level 3 each open with a message and the level's code, up
@@ -231,7 +232,7 @@ gfx/missile.txt          silo missile, 6 x 8, one frame, mirror off
 gfx/missile.asm          GENERATED from missile.txt: 8 shifts x 1 frame
 gfx/loading.scr          GENERATED loading screen, 6912 bytes (tools/mkloadscreen.py)
 gfx/city_*.bin           Erin's Atlantis city, 192 x 128: pixels and colours
-gfx/city.scr, city.zx0   GENERATED: the city as a screen (tools/mkcity.py), and packed
+gfx/city.scr, city_*.zx0 GENERATED: the city as a screen (tools/mkcity.py); pixels, colours packed
 VERSION                  the version printed on the loading screen (0.9.6)
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed

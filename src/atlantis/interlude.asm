@@ -36,7 +36,7 @@ interlude:
         ld hl,(frame_count)
         ld (il_start),hl
         call il_show
-        jr il_back
+        jp il_back
 
 ;------------------------------------------------------------------------------
 ; il_menu_code - option 3 on the menu (menu_code), after the sixth letter:
@@ -64,13 +64,35 @@ il_code:        db "SUNKEN"
 ; CFG_INTERLUDE_TIME. Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 il_show:
-        ld a,CFG_INTERLUDE_BORDER
+        ; Black first: the border, and every cell black on black, so the
+        ; pixels unpacked under them do not show yet.
+        xor a                   ; BLACK
         call set_border
-        ld hl,city_zx0
+        ld hl,ATTRS
+        ld de,ATTRS + 1
+        ld bc,ATTRS_SIZE - 1
+        ld (hl),a
+        ldir
+        ld hl,city_pix_zx0
         ld de,SCREEN
-        call dzx0_standard      ; the whole screen, pixels and colours
-        call title_draw         ; ATLANTIS, rows 2 and 3 (menu.asm)
-        ld a,WATER_ATTR
+        call dzx0_standard      ; the pixels, unseen
+        ld hl,city_atr_zx0
+        ld de,IL_ATTRS
+        call dzx0_standard      ; the colours, aside for the circle
+        ; ATLANTIS, rows 2 and 3 (menu.asm), alone on the black at once;
+        ; the circle puts its colours back as it passes.
+        call title_draw
+        ld hl,ATTRS + TITLE_ROW * 32 + TITLE_COL
+        ld de,IL_ATTRS + TITLE_ROW * 32 + TITLE_COL
+        ld bc,8
+        ldir
+        ld hl,ATTRS + (TITLE_ROW + 1) * 32 + TITLE_COL
+        ld de,IL_ATTRS + (TITLE_ROW + 1) * 32 + TITLE_COL
+        ld bc,8
+        ldir
+        ; The words in black for now: their cells are water colour in
+        ; the picture's colours, so the circle shows them.
+        xor a
         ld (text_attr),a
         ld hl,str_il_line1
         ld bc,(IL_LINE1_ROW << 8) | IL_LINE1_COL
@@ -78,6 +100,9 @@ il_show:
         ld hl,str_il_line2
         ld bc,(IL_LINE2_ROW << 8) | IL_LINE2_COL
         call print_string
+        call il_circle
+        ld a,CFG_INTERLUDE_BORDER
+        call set_border
     IFNDEF NO_SOUND
         call il_chime
     ENDIF
@@ -179,6 +204,113 @@ il_chime:
 
 il_tune:        db 134, 6, 106, 6, 89, 6, 67, 24, 0     ; C5 E5 G5 C6
     ENDIF
+
+;------------------------------------------------------------------------------
+; il_circle - the colours come on in a circle that grows from the middle
+; of the screen, a ring of CFG_INTERLUDE_RIM leading it. Distances are in
+; half cells, so the middle (between cells 15 and 16, and 11 and 12) is
+; whole: a cell's is |2x - 31| and |2y - 23|, and it is inside when the
+; sum of their squares is under R squared. Each ring looks at all 768
+; cells, about two television frames, and R grows by IL_STEP.
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+IL_STEP         equ 2           ; half cells a ring
+IL_RIM          equ 4           ; the ring's width, half cells
+IL_R_END        equ 40          ; past the corners (38.6)
+
+il_circle:
+        xor a
+.ring:  ld (il_r),a
+        call il_sq
+        ld (il_in),hl
+        ld a,(il_r)
+        add a,IL_RIM
+        call il_sq
+        ld (il_rim),hl
+        ld hl,ATTRS
+        ld de,IL_ATTRS
+        ld b,0                  ; the row
+.row:   ld a,b
+        add a,a
+        sub 23
+        jr nc,.ydown
+        neg
+.ydown: push hl
+        call il_sq
+        ld (il_dy),hl
+        pop hl
+        ld c,0                  ; the column
+.cell:  push bc
+        ld a,c
+        add a,a
+        sub 31
+        jr nc,.xright
+        neg
+.xright:
+        push hl
+        call il_sq
+        ld bc,(il_dy)
+        add hl,bc               ; the distance squared
+        ld bc,(il_in)
+        or a
+        sbc hl,bc
+        jr c,.inside
+        add hl,bc
+        ld bc,(il_rim)
+        or a
+        sbc hl,bc
+        pop hl
+        jr nc,.next             ; not reached yet
+        ld (hl),CFG_INTERLUDE_RIM
+        jr .next
+.inside:
+        pop hl
+        ld a,(de)               ; its own colours
+        ld (hl),a
+.next:  inc hl
+        inc de
+        pop bc
+        inc c
+        bit 5,c
+        jr z,.cell              ; 32 columns
+        inc b
+        ld a,b
+        cp 24
+        jr c,.row
+        ld a,(il_r)
+        add a,IL_STEP
+        cp IL_R_END + IL_STEP
+        jr c,.ring
+        ret
+
+; HL = A squared, A up to IL_R_END + IL_STEP + IL_RIM. Corrupts: AF
+il_sq:  push de
+        ld e,a
+        ld d,0
+        ld hl,il_squares
+        add hl,de
+        add hl,de
+        ld a,(hl)
+        inc hl
+        ld h,(hl)
+        ld l,a
+        pop de
+        ret
+il_squares:
+il_n = 0
+        DUP IL_R_END + IL_STEP + IL_RIM + 1
+        dw il_n * il_n
+il_n = il_n + 1
+        EDUP
+il_r:           db 0
+il_in:          dw 0
+il_rim:         dw 0
+il_dy:          dw 0
+; The picture's colours wait here while the circle grows: free room
+; above the data block, below the diver's shifted copies.
+IL_ATTRS        equ data_end
+        ASSERT IL_ATTRS + ATTRS_SIZE <= PRESHIFT_START, "no room above the data for the city's colours"
+        ASSERT (IL_R_END / 2) * (IL_R_END / 2) * 4 > 31 * 31 + 23 * 23, "the circle stops short of the corners"
 
 str_il_line1:   db "The city holds.", 0
 str_il_line2:   db "Take the neutron bomb to Trigon.", 0

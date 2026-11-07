@@ -258,6 +258,9 @@ CFG_QUAKE_PITCH      equ 3
 CFG_INTERLUDE_LEVEL  equ 20
 CFG_INTERLUDE_TIME   equ 250
 CFG_INTERLUDE_BORDER equ BLUE
+; It starts black but for ATLANTIS, and the picture's colours come on in a
+; circle growing from the middle, led by a ring of this cell colour.
+CFG_INTERLUDE_RIM    equ BRIGHT | (WHITE << 3) | WHITE
 
 ; --- The attract demo (demo.asm) ----------------------------------------------
 ; After CFG_DEMO_WAIT seconds on the menu with no key down, the computer

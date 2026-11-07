@@ -1137,8 +1137,10 @@ data_start:
         DOUBLE_DATA             ; the double shot's patch tables (torpedo.asm)
     ENDIF
     IFDEF CITY_SHOW
-city_zx0:                       ; Erin's city, a whole screen, packed (interlude.asm)
-        INCBIN "../../gfx/city.zx0"
+city_pix_zx0:                   ; Erin's city, a whole screen, packed:
+        INCBIN "../../gfx/city_pix.zx0" ; the pixels (interlude.asm)
+city_atr_zx0:
+        INCBIN "../../gfx/city_atr.zx0" ; and the colours
     ENDIF
 data_end:
 
