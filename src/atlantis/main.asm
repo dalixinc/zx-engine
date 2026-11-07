@@ -579,8 +579,9 @@ step_skip:
         out (ULA_PORT),a
     ELSE
     IFNDEF SOAK
-        ; Heartbeat. The digits are hidden by default, so the border is
-        ; what shows the frame loop is alive. rrca x3 is / BORDER_FRAMES.
+        ; The border: the level's steady colour (level_style writes it
+        ; over the heartbeat's first four bytes), or, with BORDER_BEAT,
+        ; the heartbeat, a round of colours. rrca x3 is / BORDER_FRAMES.
         ; After a hit, hit_flash counts down and the border flashes red
         ; and black, four steps each. Otherwise, after a Symbol Shift
         ; chord, chord_flash blinks it white and black, two steps each.

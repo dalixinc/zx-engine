@@ -6,16 +6,16 @@ gives the targets. If the table in `config.asm` changes, update this.
 
 | Level | Points to finish (total at end) | Bomb | Colour | Bomb movement | Bomb speed | Missile wait | Fish | Border | New from this level |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 200 (200) | pulsar | black | small bob | 50 px/s | 1.5–4.0 s | round, straight | heartbeat | — |
-| 2 | 300 (500) | pulsar | yellow | wave (±16 px) | 55 px/s | 1.4–3.7 s | round, wave, a bit faster | cyan | **hearts**; "starts now" panel |
-| 3 | 450 (950) | spinning wheel | red | wave | 59 px/s | 1.3–3.4 s | round, straight | red | "stay tuned" panel |
-| 4 | 550 (1,500) | spinning wheel | magenta | hunts, 48 | 64 px/s | 1.2–3.1 s | round, wave, 61 px/s | heartbeat | **double-shot bubble** |
-| 5 | 650 (2,150) | spinning wheel | green | wave | 69 px/s | 1.1–2.8 s | round, straight | heartbeat | **suction bomb** |
-| 6 | 750 (2,900) | spinning wheel | cyan | hunts, 88 | 73 px/s | 1.0–2.5 s | wave, 63 px/s; **1 in 4 piranha** | heartbeat | **piranhas** |
-| 7 | 850 (3,750) | spinning wheel | yellow | wave | 78 px/s | 0.9–2.2 s | straight; piranhas | heartbeat | **shove bomb** |
-| 8 | 950 (4,700) | spinning wheel | black | hunts, 128 (max) | 83 px/s | 0.8–1.9 s | wave, 64 px/s; piranhas | heartbeat | — |
-| 9 | 1,100 (5,800) | spinning wheel | red | hunts, 128 | 88 px/s | 0.7–1.6 s | wave, 66 px/s; piranhas | heartbeat | — |
-| 10+ | 1,400 each (7,200 at the end of 10) | spinning wheel | red | hunts, 128 | 88 px/s | 0.7–1.6 s | wave, 66 px/s; piranhas | heartbeat | **homing silo missiles** |
+| 1 | 200 (200) | pulsar | black | small bob | 50 px/s | 1.5–4.0 s | round, straight | cyan | — |
+| 2 | 300 (500) | pulsar | yellow | wave (±16 px) | 55 px/s | 1.4–3.7 s | round, wave, a bit faster | green | **hearts**; "starts now" panel |
+| 3 | 450 (950) | spinning wheel | red | wave | 59 px/s | 1.3–3.4 s | round, straight | yellow | "stay tuned" panel |
+| 4 | 550 (1,500) | spinning wheel | magenta | hunts, 48 | 64 px/s | 1.2–3.1 s | round, wave, 61 px/s | white | **double-shot bubble** |
+| 5 | 650 (2,150) | spinning wheel | green | wave | 69 px/s | 1.1–2.8 s | round, straight | cyan | **suction bomb** |
+| 6 | 750 (2,900) | spinning wheel | cyan | hunts, 88 | 73 px/s | 1.0–2.5 s | wave, 63 px/s; **1 in 4 piranha** | green | **piranhas** |
+| 7 | 850 (3,750) | spinning wheel | yellow | wave | 78 px/s | 0.9–2.2 s | straight; piranhas | yellow | **shove bomb** |
+| 8 | 950 (4,700) | spinning wheel | black | hunts, 128 (max) | 83 px/s | 0.8–1.9 s | wave, 64 px/s; piranhas | white | — |
+| 9 | 1,100 (5,800) | spinning wheel | red | hunts, 128 | 88 px/s | 0.7–1.6 s | wave, 66 px/s; piranhas | cyan | — |
+| 10+ | 1,400 each (7,200 at the end of 10) | spinning wheel | red | hunts, 128 | 88 px/s | 0.7–1.6 s | wave, 66 px/s; piranhas | green | **homing silo missiles** |
 
 ## Notes
 
@@ -53,4 +53,6 @@ gives the targets. If the table in `config.asm` changes, update this.
 - **A bomb's look and movement** change with the next bomb, not in
   mid-flight, and the fish's movement with the next fish (the one
   swimming keeps its way until it is shot or bumps him). The border
-  changes at once.
+  changes at once. Each level's border is one steady light colour; it
+  flashes only for a death, a new level (white), a special bomb or a
+  chord.

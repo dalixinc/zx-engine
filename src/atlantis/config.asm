@@ -78,6 +78,17 @@ CFG_DEATH_TIME      equ 90
 ; second, half a second at 25. 0 turns the blink off.
 CFG_CHORD_FLASH     equ 12
 
+; The border. Each level has one steady colour, its row's border in
+; CFG_LEVELS below, and the border flashes only for something that
+; happens: a death (red and black, hit.asm), a new level (white and
+; black, for CFG_LEVEL_FLASH steps), a special bomb going off (its own
+; colour, CFG_SPECIAL_FLASH), and a Symbol Shift chord (above). Then it
+; goes back to the level's colour.
+; Atlantis keeps to the light colours: GREEN, CYAN, YELLOW, WHITE.
+; The dark ones (BLACK, BLUE, RED, MAGENTA) are kept for Trigon, the
+; levels after 10, so its borders say at once that it is somewhere worse.
+CFG_LEVEL_FLASH     equ 24
+
 ; Television frames before another torpedo can be launched.
 ; frame_count ticks once per interrupt, so 48 is about a second
 ; at either game speed. One torpedo at a time already applies.
@@ -256,8 +267,9 @@ CFG_SHOVE_INK        equ 6
 ;   fspeed   the fish's haste, the same way as the bomb's: 0 is a pixel
 ;            per 1/50 second, 64 a quarter faster. Only with MOVE_WAVE;
 ;            MOVE_STRAIGHT is the old fish and must have 0.
-;   border   a border colour (BLACK to WHITE), or BORDER_BEAT for the
-;            heartbeat, the slow round of colours level 1 has.
+;   border   the level's steady border colour (see CFG_LEVEL_FLASH
+;            above: light colours for Atlantis), or BORDER_BEAT for the
+;            heartbeat, the slow round of colours level 1 once had.
 ; Then what a torpedo scores on this level, 0 to 99 each:
 ;   fish, bomb, missile. The spinning wheel's rows score 3 for a bomb, the
 ;            pulsar's 2. A homing missile scores CFG_MSL_HOME_PTS instead. Something that runs into the diver scores
@@ -283,17 +295,17 @@ CFG_L8_INK          equ BRIGHT | BLACK | (BLUE << 3)
 
         MACRO CFG_LEVELS
         ;          points  gap min  gap max  haste  bomb    ink            bmove      hunt fmove          fspeed border        fish bomb missile
-        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P, CFG_WHEEL_INK, MOVE_BOB, 0, MOVE_STRAIGHT, 0, BORDER_BEAT, 1, 2, 10
-        LEVEL_ROW  300,    70,      185,     24,    BOMB_P, CFG_L2_INK,    MOVE_WAVE, 0,   MOVE_WAVE,     48,    CYAN,         1,   2,   10
-        LEVEL_ROW  450,    65,      170,     48,    BOMB_W, CFG_SPIN_INK,  MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     RED,          1,   3,   10
-        LEVEL_ROW  550,    60,      155,     72,    BOMB_W, CFG_HUNT_INK,  MOVE_HOME, 48,  MOVE_WAVE,     56,    BORDER_BEAT,  1,   3,   10
-        LEVEL_ROW  650,    55,      140,     96,    BOMB_W, CFG_L5_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   3,   10
-        LEVEL_ROW  750,    50,      125,     120,   BOMB_W, CFG_L6_INK,    MOVE_HOME, 88,  MOVE_WAVE,     64,    BORDER_BEAT,  1,   3,   10
-        LEVEL_ROW  850,    45,      110,     144,   BOMB_W, CFG_L7_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     BORDER_BEAT,  1,   3,   10
-        LEVEL_ROW  950,    40,      95,      168,   BOMB_W, CFG_L8_INK,    MOVE_HOME, 128, MOVE_WAVE,     72,    BORDER_BEAT,  1,   3,   10
-        LEVEL_ROW  1100,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_HOME, 128, MOVE_WAVE,     80,    BORDER_BEAT,  1,   3,   10
+        LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P, CFG_WHEEL_INK, MOVE_BOB, 0, MOVE_STRAIGHT, 0, CYAN, 1, 2, 10
+        LEVEL_ROW  300,    70,      185,     24,    BOMB_P, CFG_L2_INK,    MOVE_WAVE, 0,   MOVE_WAVE,     48,    GREEN,        1,   2,   10
+        LEVEL_ROW  450,    65,      170,     48,    BOMB_W, CFG_SPIN_INK,  MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     YELLOW,       1,   3,   10
+        LEVEL_ROW  550,    60,      155,     72,    BOMB_W, CFG_HUNT_INK,  MOVE_HOME, 48,  MOVE_WAVE,     56,    WHITE,        1,   3,   10
+        LEVEL_ROW  650,    55,      140,     96,    BOMB_W, CFG_L5_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     CYAN,         1,   3,   10
+        LEVEL_ROW  750,    50,      125,     120,   BOMB_W, CFG_L6_INK,    MOVE_HOME, 88,  MOVE_WAVE,     64,    GREEN,        1,   3,   10
+        LEVEL_ROW  850,    45,      110,     144,   BOMB_W, CFG_L7_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     YELLOW,       1,   3,   10
+        LEVEL_ROW  950,    40,      95,      168,   BOMB_W, CFG_L8_INK,    MOVE_HOME, 128, MOVE_WAVE,     72,    WHITE,        1,   3,   10
+        LEVEL_ROW  1100,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_HOME, 128, MOVE_WAVE,     80,    CYAN,         1,   3,   10
         ; Level 10, the last of Atlantis: the missiles home (CFG_MSL_HOME_LEVEL).
-        LEVEL_ROW  1400,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_HOME, 128, MOVE_WAVE,     80,    BORDER_BEAT,  1,   3,   10
+        LEVEL_ROW  1400,   35,      80,      192,   BOMB_W, CFG_SPIN_INK,  MOVE_HOME, 128, MOVE_WAVE,     80,    GREEN,        1,   3,   10
         ENDM
 
 ; The waves (MOVE_WAVE). A wave is a sine, AMP pixels above the middle

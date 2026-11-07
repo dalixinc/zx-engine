@@ -113,7 +113,7 @@ are on row 1, beside the hearts. Each level has a target, and each is
 longer than the last. Reaching it puts up a big "LEVEL n" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
 fly a little faster. Level 2 has a yellow bomb on a wave, a faster fish
-on a wave and a cyan border (`docs/LEVEL-2.md`); the fish waves again on
+on a wave (`docs/LEVEL-2.md`); the fish waves again on
 every even level from 4, a little faster each time, and from level 9.
 A new level's fish movement starts with the next fish. From level 3 the bomb is a
 spinning wheel that rolls as it goes, in a new colour each level. Levels
@@ -376,8 +376,11 @@ swim up to the top row, and down over the weed and the sand, until his
 feet are one pixel above the black under him. A silo or a rising hill
 lifts him. Over a coloured cell he takes on its colours. The strips keep
 scrolling whether or not he moves. The stat line is hidden until
-Symbol Shift + S; the border cycles every 8 frames so the loop is still
-obvious. See `build/atlantis-seabed.png`, `build/atlantis-low.png`,
+Symbol Shift + S. Each level has its own steady border colour, one of
+the light ones (cyan, green, yellow, white; the dark ones are saved for
+the levels after Atlantis), and it flashes only when something happens:
+a death, a new level, a special bomb going off (`CFG_LEVEL_FLASH` and
+its neighbours in `config.asm`). See `build/atlantis-seabed.png`, `build/atlantis-low.png`,
 `build/atlantis-stats.png` and `build/atlantis-stats-off.png`. The
 timing border is `build/atlantis-timing-water.png` (he is up in the
 water) and `build/atlantis-timing-low.png` (he is down on the seabed).

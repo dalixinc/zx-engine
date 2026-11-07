@@ -72,7 +72,7 @@ level_rows = 0
         ASSERT bomb == BOMB_P, "level 1's bomb is the pulsar"
         ASSERT gmin == CFG_MISSILE_GAP_MIN && gmax == CFG_MISSILE_GAP_MAX, "level 1's missile wait is CFG_MISSILE_GAP_*"
         ASSERT ink == CFG_WHEEL_INK && bmove == MOVE_BOB, "level 1's bomb is the old one"
-        ASSERT fmove == MOVE_STRAIGHT && border == BORDER_BEAT, "level 1's fish and border are the old ones"
+        ASSERT fmove == MOVE_STRAIGHT, "level 1's fish is the old one"
         ASSERT pfish == 1 && pbomb == 2 && pmsl == 10, "level 1 scores as the old game: 1, 2, 10"
         ENDIF
         db (((need % 100) / 10) << 4) | (need % 10)
@@ -263,6 +263,14 @@ level_up:
         set HUD_HEARTS,(hl)     ; row 1's hearts, on the next step
 .full:
     ENDIF
+        ; The border flashes white and black, then takes the level's
+        ; colour (level_style has already set it).
+    IFDEF POWERUPS
+        ld a,WHITE
+        ld (step_skip.flash_ink + 1),a ; a special bomb may have changed it
+    ENDIF
+        ld a,CFG_LEVEL_FLASH
+        ld (chord_flash),a
         ld hl,hud_dirty
         set HUD_TEXT,(hl)
         bit HUD_BANNER,(hl)     ; a banner still up comes down first,
