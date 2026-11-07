@@ -309,7 +309,7 @@ special_fire:
         cp MSL_KIND_SHOVE
         jr nz,.gone
         call boom_at_missile
-        ld a,(level_pts_msl)
+        call msl_points
         call score_add
 .gone:  call missile_gone
 .nomsl:

@@ -88,10 +88,10 @@ in the repository, outside `docs/`, so it isn't served with the game.
 (Anyone can still work the codes out from the source or the tape. That's
 fine for a challenge among friends.)
 
-`CFG_LEVELS` has 9 rows, and the last row repeats. A code for level 10
-or above therefore starts the score at the sum of the 9 rows' points
-plus the last row's for each level past 9, and plays level 9's settings
-until Trigon has rows of its own.
+`CFG_LEVELS` has 10 rows, one for each level of Atlantis, and the last
+row repeats. A code for level 11 or above therefore starts the score at
+the sum of the 10 rows' points plus the last row's for each level past
+10, and plays level 10's settings until Trigon has rows of its own.
 
 **Changing the targets doesn't change the codes.** A code depends only
 on its level's number, not on `CFG_LEVELS`; only the score a code starts

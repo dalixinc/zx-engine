@@ -86,8 +86,9 @@ GAME OVER with your score. The menu always shows the high score, kept
 until the machine is switched off.
 
 Shooting scores: 1 for a fish (2 for a piranha, which comes one fish in
-four), 2 for a bomb, 10 for a missile on the
-first levels (each level's row of `CFG_LEVELS` in `config.asm` says).
+four), 2 for a bomb (3 for the spinning wheel, from level 3), 10 for a
+missile, and 15 for a homing missile (each level's row of `CFG_LEVELS`
+in `config.asm` says; `CFG_MSL_HOME_PTS`).
 Something that runs into him scores nothing.
 
 From level 2, now and then a power-up sinks from the top instead of a
@@ -118,7 +119,7 @@ A new level's fish movement starts with the next fish. From level 3 the bomb is 
 spinning wheel that rolls as it goes, in a new colour each level. Levels
 3, 5 and 7 swing it on a wide wave; levels 4, 6 and 8 make it a hunter
 that drifts towards the diver's depth until it has passed him, harder
-each time. On level 9 the silos' missiles home in on him too
+each time. On level 10 the silos' missiles home in on him too
 (`docs/LEVELS-3-AND-4.md`).
 
 Level 2 and level 3 each open with a message and the level's code, up
