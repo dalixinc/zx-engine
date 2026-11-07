@@ -6,7 +6,8 @@
 ; the art. For four sprites the tape carries only the art, each row once
 ; (tools/gfx2raw.py), and preshift makes the copies when the game starts:
 ;
-;   the diver        6 pictures (3 frames, 2 facings)   540 -> 5,760 bytes
+;   the diver        6 pictures (3 frames, 2 facings)   540 -> 2,880 bytes
+;                    (even shifts only: he is drawn at even x)
 ;   the fish         4 pictures (2 frames, 2 facings)   144 -> 1,728 bytes
 ;   the pulsar       2 pictures                          96 ->   912 bytes
 ;   the spinning     4 pictures                         192 -> 1,824 bytes
