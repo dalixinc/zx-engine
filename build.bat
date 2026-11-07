@@ -68,7 +68,9 @@ if /i "%1"=="web" (
     if errorlevel 1 goto failed
     copy /y build\atlantis.tap docs\play\atlantis.tap >nul
     if errorlevel 1 goto failed
-    echo Copied to docs\play\: commit atlantis.sna and .tap and push to update the site
+    powershell -NoProfile -ExecutionPolicy Bypass -File tools\webstamp.ps1
+    if errorlevel 1 goto failed
+    echo Copied to docs\play\: commit atlantis.sna, .tap and index.html and push to update the site
 )
 if /i "%1"=="run" start "" "%EMU%" --graphics-filter %SIZE% --machine 48 --auto-load --traps --fastload build\atlantis.tap
 goto done
