@@ -1064,15 +1064,9 @@ meas_max2:      db 0
 meas_zeros2:    dw 0
     ENDIF
 
-        ; The round fish's raw art and pointer tables (TWO_FISH). The art
-        ; is read once at start-up, but the cold block has no room left,
-        ; and in the data block it would push data_end, and so the packed
-        ; tape that loads in the page after it, past the ROM's UDGs.
+        ; The round fish (TWO_FISH): its raw art goes in the cold block and
+        ; its pointer tables in the data block, below.
         INCLUDE "../../gfx/rfish_raw.asm"
-    IFDEF TWO_FISH
-        RFISH_ART
-        RFISH_TABLES            ; preshift.asm
-    ENDIF
 
 code_end:
 CODE_LENGTH     equ code_end - code_start
@@ -1109,6 +1103,12 @@ data_start:
         INCLUDE "../../gfx/torpedo.asm"
         INCLUDE "../../gfx/missile.asm"
         SILO_DATA               ; silo.asm
+    IFDEF TWO_FISH
+        RFISH_TABLES            ; the round fish's pointer tables (preshift.asm)
+    ENDIF
+    IFDEF DOUBLE_SHOT
+        DOUBLE_DATA             ; the double shot's patch tables (torpedo.asm)
+    ENDIF
 data_end:
 
         ; The raw art that preshift reads once, at start-up, goes in the
@@ -1118,6 +1118,9 @@ data_end:
         FISH_ART
         WHEEL_ART
         WSPIN_ART
+    IFDEF TWO_FISH
+        RFISH_ART
+    ENDIF
         HOT
 DATA_LENGTH     equ data_end - data_start
         DISPLAY "atlantis data_end ", data_end
