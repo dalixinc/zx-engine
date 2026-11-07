@@ -106,7 +106,7 @@ gfx/diver_raw.asm: gfx/diver-atlantis.txt tools/gfx2raw.py tools/gfx2asm.py
 
 # The loading screen, drawn from the same sprites. Committed, like the
 # .asm above, so the tape builds without Python.
-gfx/loading.scr: tools/mkloadscreen.py gfx/diver-atlantis.txt gfx/fish-atlantis.txt gfx/wheel.txt gfx/torpedo.txt
+gfx/loading.scr: VERSION tools/mkloadscreen.py gfx/diver-atlantis.txt gfx/fish-atlantis.txt gfx/wheel.txt gfx/torpedo.txt
 	$(PYTHON) tools/mkloadscreen.py $@
 
 run: $(TAP)

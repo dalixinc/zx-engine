@@ -59,7 +59,8 @@ hard refresh (Ctrl+Shift+R) fetches the new snapshot.
 | Menu   | Symbol Shift + P       |             |          |
 
 The tape shows a loading screen while the game loads (it is drawn from
-the game's own sprites by `tools/mkloadscreen.py`), and keeps it up for two
+the game's own sprites by `tools/mkloadscreen.py`, with the version from
+`VERSION` small in the bottom right corner), and keeps it up for two
 more seconds after start-up (`CFG_SCREEN_PAUSE`; a key skips it), so the
 web page's snapshot shows it too. The game then opens on a start screen: `1` types out the story, letter by letter with a click,
 on a black screen, then starts the game (any key skips the story;
@@ -215,6 +216,7 @@ gfx/torpedo.asm          GENERATED from torpedo.txt: 8 shifts x 1 frame x 2 faci
 gfx/missile.txt          silo missile, 6 x 8, one frame, mirror off
 gfx/missile.asm          GENERATED from missile.txt: 8 shifts x 1 frame
 gfx/loading.scr          GENERATED loading screen, 6912 bytes (tools/mkloadscreen.py)
+VERSION                  the version printed on the loading screen (0.9.0)
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
 tools/gfx2asm.py         ASCII art -> pre-shifted masked .asm (Python 3)
@@ -262,7 +264,7 @@ buffers are `$F000-$F3FF`.
 
 Graphics: `make` regenerates `gfx/fish.asm`, `gfx/diver.asm`,
 `gfx/wheel.asm`, `gfx/torpedo.asm` and `gfx/missile.asm` from the `.txt` art with Python 3 when the art changes,
-and redraws `gfx/loading.scr` when the art or `tools/mkloadscreen.py` changes. The
+and redraws `gfx/loading.scr` when the art, `VERSION` or `tools/mkloadscreen.py` changes. The
 generated files are committed, so Windows users can build with `build.bat`
 without Python. After editing the art, run e.g.
 `python tools\gfx2asm.py gfx\wheel.txt gfx\wheel.asm wheel` first. A line
