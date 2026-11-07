@@ -6,7 +6,8 @@
 ; the art. For four sprites the tape carries only the art, each row once
 ; (tools/gfx2raw.py), and preshift makes the copies when the game starts:
 ;
-;   the diver        6 pictures (3 frames, 2 facings)   540 -> 5,760 bytes
+;   the diver        6 pictures (3 frames, 2 facings)   540 -> 2,880 bytes
+;                    (even shifts only: he is drawn at even x)
 ;   the fish         4 pictures (2 frames, 2 facings)   144 -> 1,728 bytes
 ;   the pulsar       2 pictures                          96 ->   912 bytes
 ;   the spinning     4 pictures                         192 -> 1,824 bytes
@@ -34,7 +35,12 @@
 result? equ (pics?) * (rows?) * 2 * ((raw?) * 8 + 8 - (wide?))
         ENDM
 
-        PRESHIFT_SIZE DIVER_SHIFTED, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
+; The diver is drawn only at even x (diver_draw_fast), so only his even
+; shifts, 0, 2, 4 and 6, are made: half the bytes. Every shift of his is
+; the same width (DIVER_WIDE 0), so half is exact.
+        PRESHIFT_SIZE DIVER_ALL8, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
+DIVER_SHIFTED   equ DIVER_ALL8 / 2
+        ASSERT DIVER_WIDE == 0, "the diver's shifts are not all one size"
         PRESHIFT_SIZE FISH_SHIFTED, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW
         PRESHIFT_SIZE WHEEL_SHIFTED, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW
         PRESHIFT_SIZE WSPIN_SHIFTED, WSPIN_PICS, WSPIN_HEIGHT, WSPIN_WIDE, WSPIN_RAW
@@ -59,7 +65,8 @@ WSPIN_BUF       equ WSPIN_BUF_END - WSPIN_SHIFTED
 ; still pose without them.
 DIVER_RAW_PIC   equ DIVER_HEIGHT * DIVER_RAW * 2       ; one picture of art
     IFDEF DIVER_JET
-        PRESHIFT_SIZE JET_SHIFTED, 2, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
+        PRESHIFT_SIZE JET_ALL8, 2, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
+JET_SHIFTED     equ JET_ALL8 / 2    ; even shifts only, as his others
 JET_BUF         equ DATA_START - JET_SHIFTED
     ENDIF
 
@@ -80,24 +87,25 @@ RFISH_HI        equ BSS_LIMIT - RFISH_HALF
     ENDIF
 
 ; One job per sprite, for preshift_all.
-        MACRO PRESHIFT_JOB src?, buf?, pics?, rows?, wide?, raw?
+; odd? is 1 for the diver: his odd shifts are not made.
+        MACRO PRESHIFT_JOB src?, buf?, pics?, rows?, wide?, raw?, odd?
         dw src?, buf?
-        db pics?, rows?, wide?, raw?
+        db pics?, rows?, wide?, raw?, odd?
         ENDM
 
 preshift_jobs:
     IFDEF DIVER_JET
         ; First: its art is a copy in DIVER_BUF, which the next job fills.
-        PRESHIFT_JOB DIVER_BUF, JET_BUF, 2, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
+        PRESHIFT_JOB DIVER_BUF, JET_BUF, 2, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW, 1
     ENDIF
     IFDEF TWO_FISH
-        PRESHIFT_JOB rfish_src, RFISH_HI, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
-        PRESHIFT_JOB rfish_src + 2 * RFISH_RAW_PIC, RFISH_BUF, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW
+        PRESHIFT_JOB rfish_src, RFISH_HI, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW, 0
+        PRESHIFT_JOB rfish_src + 2 * RFISH_RAW_PIC, RFISH_BUF, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW, 0
     ENDIF
-        PRESHIFT_JOB diver_src, DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
-        PRESHIFT_JOB fish_src, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW
-        PRESHIFT_JOB wheel_src, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW
-        PRESHIFT_JOB wspin_src, WSPIN_BUF, WSPIN_PICS, WSPIN_HEIGHT, WSPIN_WIDE, WSPIN_RAW
+        PRESHIFT_JOB diver_src, DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW, 1
+        PRESHIFT_JOB fish_src, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW, 0
+        PRESHIFT_JOB wheel_src, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW, 0
+        PRESHIFT_JOB wspin_src, WSPIN_BUF, WSPIN_PICS, WSPIN_HEIGHT, WSPIN_WIDE, WSPIN_RAW, 0
         dw 0
 
 ;------------------------------------------------------------------------------
@@ -129,6 +137,9 @@ preshift_all:
         inc hl
         ld a,(hl)
         ld (preshift.raw+1),a
+        inc hl
+        ld a,(hl)
+        ld (preshift.odd+1),a
         inc hl
         ex (sp),hl              ; HL = the art; the job list is kept
         call preshift
@@ -166,6 +177,7 @@ preshift:
         inc ix
         inc ix
         call .size
+        jr z,.next              ; an odd shift not made: no room for it
         ld h,0
         ld l,a
         ex de,hl
@@ -173,7 +185,7 @@ preshift:
 .mul:   add hl,de
         djnz .mul
         ex de,hl
-        inc c
+.next:  inc c
         ld a,c
         cp 8
         jr c,.base
@@ -197,6 +209,7 @@ preshift:
 .shift: ld e,(ix+0)
         ld d,(ix+1)
         call .size
+        jr z,.moved             ; not made: just move the row on
         ld hl,preshift_row
         push bc
         ld c,a
@@ -205,7 +218,7 @@ preshift:
         pop bc
         ld (ix+0),e
         ld (ix+1),d
-        inc ix
+.moved: inc ix
         inc ix
         ld hl,preshift_row      ; one pixel more to the right
         scf                     ; a 1 comes into the mask
@@ -244,8 +257,14 @@ preshift:
         ret
 
 ; A = the bytes in one row of pairs at shift C: 2 * NAME_RAW, or one pair
-; more from the shift .wide on.
+; more from the shift .wide on. Z set (and A 0) for an odd shift when
+; .odd is 1: that shift is not made. NZ otherwise.
 .size:  ld a,c
+.odd:   and 0                   ; patched: 1 skips the odd shifts
+        jr z,.made
+        xor a                   ; Z: not made
+        ret
+.made:  ld a,c
 .wide:  cp 0                    ; patched: the first wider shift
 .raw:   ld a,0                  ; patched: NAME_RAW. LD keeps the carry.
         ccf
@@ -449,6 +468,18 @@ pst_s = pst_s + 1
         EDUP
         ENDM
 
+; The diver's: only the even shifts are made. An odd shift's word points
+; at the even one before it; nothing asks for it (he is drawn at even x).
+        MACRO PRESHIFT_EVEN buf?, pics?, rows?, raw?
+pst_a = buf?
+        DUP pics?
+        DUP 4
+        dw pst_a, pst_a
+pst_a = pst_a + (rows?) * 2 * ((raw?) + 1)
+        EDUP
+        EDUP
+        ENDM
+
 ; All four, and the spinning wheel's animation: every picture in turn,
 ; the cross turning. (The pulsar's, wheel_seq, is in gfx/wheel_raw.asm.)
         MACRO PRESHIFT_DATA
@@ -460,11 +491,11 @@ diver_images:
         PRESHIFT_INDEX jet_shifts, 2
     ENDIF
 diver_shifts:
-        PRESHIFT_SHIFTS DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
+        PRESHIFT_EVEN DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_RAW
         ASSERT pst_a == DIVER_BUF + DIVER_SHIFTED, "the diver's tables and preshift disagree"
     IFDEF DIVER_JET
 jet_shifts:
-        PRESHIFT_SHIFTS JET_BUF, 2, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW
+        PRESHIFT_EVEN JET_BUF, 2, DIVER_HEIGHT, DIVER_RAW
         ASSERT pst_a == DATA_START, "the jet's tables and preshift disagree"
     ENDIF
         PRESHIFT_TABLES fish_images, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW

@@ -15,15 +15,15 @@ it, the **housekeeping** brief (PR #23).
 | `$4000-$5AFF` | screen |
 | `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
 | `$6000-$76F6` | **cold block** (5,879 bytes): the story, typed when 1 starts a game, and the loading screen's pause (`story.asm`), menu, the title (`title_draw`), the testers' switch (`cheat_poll`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, the seabed's slope tables' builder (`slope_build`), the power-ups' picture builder (`power_build`), going up a level and its lives top-up (`level_up`, `level_advance`, `level_enter`, `banner_show`), a new bomb's settings (`wheel_type`), a missile's end and the power-up roll (`missile_gone`), taking and setting off a special bomb and blowing up what a throw moves (`special.asm`), `torpedo_reset`, and the raw art `preshift` reads (fish, round fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
-| `$76F7-$78DF` | free (489, all of it usable: the tape's unpacker sits above `$78E0`, asserted above `cold_end`) |
-| `$78E0-$7FFF` | the spinning wheel's shifted pictures (4 quarter turns, 1,824, built at start-up; while the tape loads, its first block is here, `$791D-$7FFF`) |
-| `$8000-$B672` | code (`code_end` `$B673`) |
-| `$B673-$B91F` | free (685) |
-| `$B920-$BC7F` | the round fish's left-facing shifted pictures (`RFISH_BUF`, 864, built at start-up; the tape build only, `TWO_FISH`: builds with the stat line and the soak have their code here instead) |
-| `$BC80-$C3FF` | the diver's two still pictures with the jet's other phase (`JET_BUF`, 1,920, built at start-up; the soak build has its code here instead) |
-| `$C400-$CDFC` | data: graphics, tables (the round fish's pointer tables and the double shot's patch tables too), `data.asm` (`data_end` `$CDFD`); while the tape loads, its second block starts here |
-| `$CDFD-$CF2F` | free (307) |
-| `$CF30-$E5AF` | the diver's shifted pictures (5,760, built at start-up) |
+| `$7892-$78DF` | free (78, all of it usable: the tape's unpacker sits above `$78E0`, asserted above `cold_end`) |
+| `$78E0-$7FFF` | the spinning wheel's shifted pictures (4 quarter turns, 1,824, built at start-up; while the tape loads, its first block is here, `$790D-$7FFF`) |
+| `$8000-$B730` | code (`code_end` `$B731`) |
+| `$B731-$BCDF` | free (1,455) |
+| `$BCE0-$C03F` | the round fish's left-facing shifted pictures (`RFISH_BUF`, 864, built at start-up; the tape build only, `TWO_FISH`: builds with the stat line and the soak have their code here instead) |
+| `$C040-$C3FF` | the diver's two still pictures with the jet's other phase (`JET_BUF`, 960: even shifts only, built at start-up; the soak build has its code here instead) |
+| `$C400-$CE0B` | data: graphics, tables (the round fish's pointer tables and the double shot's patch tables too), `data.asm` (`data_end` `$CE0C`); while the tape loads, its second block starts here |
+| `$CE0C-$DA6F` | free (3,172) |
+| `$DA70-$E5AF` | the diver's shifted pictures (2,880: shifts 0, 2, 4 and 6 only, built at start-up) |
 | `$E5B0-$EC6F` | the fish's shifted pictures (built at start-up) |
 | `$EC70-$EFFF` | the pulsar's shifted pictures (built at start-up) |
 | `$F000-$F2FF` | scroll buffers |
@@ -324,3 +324,18 @@ the menu appears.
   at normal speed.
 - **Engine Demo 1:** byte-identical.
 - `make web` refreshed `docs/play/`.
+
+## The 2-pixel diver (0.9.4)
+
+The diver is drawn only at even x (`diver_draw_fast` clears bit 0 of
+his x), so only his shifts 0, 2, 4 and 6 are made: `preshift` skips the
+odd ones for a job flagged so, and `PRESHIFT_EVEN` points each odd
+shift's table word at the even one before it. The game still moves him
+a pixel at a time; only the picture goes in 2-pixel steps (at 25 frames
+a second he already moved 2 pixels a picture). His copies went from
+5,760 bytes to 2,880 and the jet's from 1,920 to 960: 3,840 bytes of
+run-time room, 2,880 in the data block's room and 960 in the hot
+code's. The tape is 33 bytes shorter (the copies were never on it).
+The frame's timing is unchanged: the heavy seabed frame still has 8
+spare scanlines and no late step, and the soak is green at 50 and 25.
+

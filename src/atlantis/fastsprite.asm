@@ -534,7 +534,8 @@ diver_draw_fast:
 .patched:                       ; the end of the bytes death_hide covers
         ld b,a
         ld a,(diver_x)
-        ld c,a
+        and $FE                 ; drawn at even x only: 2-pixel steps,
+        ld c,a                  ; and only the even shifts are made
         ld d,DIVER_BYTES
         ld e,DIVER_HEIGHT
         call sprite_set_pos

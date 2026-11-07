@@ -223,7 +223,7 @@ gfx/torpedo.asm          GENERATED from torpedo.txt: 8 shifts x 1 frame x 2 faci
 gfx/missile.txt          silo missile, 6 x 8, one frame, mirror off
 gfx/missile.asm          GENERATED from missile.txt: 8 shifts x 1 frame
 gfx/loading.scr          GENERATED loading screen, 6912 bytes (tools/mkloadscreen.py)
-VERSION                  the version printed on the loading screen (0.9.2)
+VERSION                  the version printed on the loading screen (0.9.4)
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
 tools/gfx2asm.py         ASCII art -> pre-shifted masked .asm (Python 3)
@@ -246,9 +246,9 @@ death, each level's look, going up a level, and anything else that runs
 once in a while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The
 instructions are at `$8000-$B672` (`code_end` is `$B673`) and must stay
-below half the round fish's pictures at `$B920-$BC7F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$BC80-$C3FF`. The pictures and tables are at `$C400-$CDFC`, and the one-cell pictures and the title's letters in the ROM's UDG area and 16 bytes below it, `$FF48-$FFFF`. The four
+below half the round fish's pictures at `$BCE0-$C03F` (the other half is at `$F5A0-$F8FF`) and the diver's two still jet pictures at `$C040-$C3FF`. The pictures and tables are at `$C400-$CE0B`, and the one-cell pictures and the title's letters in the ROM's UDG area and 16 bytes below it, `$FF48-$FFFF`. The four
 sprites' shifted copies are built at start-up: the diver's, the
-fish's and the pulsar's at `$CF30-$EFFF`, the spinning wheel's at
+fish's and the pulsar's at `$DA70-$EFFF` (the diver's drawn at even x only, so half his shifts), the spinning wheel's at
 `$78E0-$7FFF`. The buffers that start empty are at `$F300-$F517`,
 zeroed at start-up. The tape build has no stat line.
 The soak build puts its checks after the cold block and its photographs
