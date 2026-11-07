@@ -233,7 +233,7 @@ gfx/missile.asm          GENERATED from missile.txt: 8 shifts x 1 frame
 gfx/loading.scr          GENERATED loading screen, 6912 bytes (tools/mkloadscreen.py)
 gfx/city_*.bin           Erin's Atlantis city, 192 x 128: pixels and colours
 gfx/city.scr, city_*.zx0 GENERATED: the city as a screen (tools/mkcity.py); pixels, colours packed
-VERSION                  the version printed on the loading screen (0.9.6)
+VERSION                  the version printed on the loading screen (0.9.7)
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
 tools/gfx2asm.py         ASCII art -> pre-shifted masked .asm (Python 3)
