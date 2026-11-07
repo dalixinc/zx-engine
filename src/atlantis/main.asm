@@ -201,6 +201,9 @@ boot:
     IFDEF MEASURE
         jp game_reset
     ELSE
+      IFDEF TYPEWRITER
+        call screen_pause       ; the loading screen a little longer (story.asm)
+      ENDIF
         jp enter_menu
     ENDIF
     ENDIF

@@ -58,6 +58,21 @@ code climbs with `level_advance`, so neither tops up. The hearts on
 row 1 are marked for drawing, so they show it on the next step, with
 the "LEVEL n" banner. 15 bytes, in the cold block.
 
+## The loading screen, a little longer
+
+The web page plays the snapshot, not the tape (JSSpeccy can't load our
+tape instantly, [WEB.md](WEB.md)), and the snapshot starts with the
+loading screen in screen memory. Start-up used to clear it for the menu
+after half a second. Now boot holds it for `CFG_SCREEN_PAUSE` (100, two
+seconds) more before the menu, and any key ends it sooner
+(`screen_pause`, story.asm, 16 cold bytes; 0 leaves it out). Quartus's
+idea was a pause in the tape's unpacker, after it unpacks the screen,
+but the web page never runs the unpacker; start-up is what both the
+tape and the snapshot run. On a tape the screen has already been up for
+the whole load, so there it is two seconds more. Only where start-up
+goes to the menu (`TYPEWRITER`): the soak and the measurements are as
+they were.
+
 ## The special bombs' flash and sound
 
 Setting one off now flashes the border in the bomb's colour and black,

@@ -79,8 +79,11 @@ So this looks like a JSSpeccy problem with this particular tape. I
 didn't chase it further.
 
 The quick one is the game's own snapshot, `atlantis.sna`, which `make`
-already builds. JSSpeccy opens it at once, straight to the menu, so the
-loading screen is not seen. The tape is beside it, `docs/play/atlantis.tap`,
+already builds. JSSpeccy opens it at once. The snapshot starts with the
+loading screen in screen memory, and start-up now holds it there for
+two seconds before the menu (`CFG_SCREEN_PAUSE`, any key skips it;
+[STORY-AND-LIVES.md](STORY-AND-LIVES.md)): before that it was cleared
+after half a second. The tape is beside it, `docs/play/atlantis.tap`,
 linked on the page for anyone who wants it in another emulator or on a
 real Spectrum.
 
