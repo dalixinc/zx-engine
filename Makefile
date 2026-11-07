@@ -148,7 +148,8 @@ soak: $(ATL_SRC) $(ATL_GFX) | build
 web: $(TAP) $(SNA)
 	cp $(SNA) docs/play/atlantis.sna
 	cp $(TAP) docs/play/atlantis.tap
-	@echo "docs/play/atlantis.sna and .tap updated: commit them and push to update the site"
+	@sh tools/webstamp.sh
+	@echo "docs/play/atlantis.sna, .tap and index.html updated: commit them and push to update the site"
 
 clean:
 	rm -f build/*.tap build/*.sna build/*.lst build/*.sym build/*.png \

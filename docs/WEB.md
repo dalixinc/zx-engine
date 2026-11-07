@@ -92,12 +92,28 @@ real Spectrum.
 ```
 make web                    # Linux: rebuilds, copies atlantis.sna and .tap to docs/play/
 build.bat web               # Windows: the same
-git add docs/play/atlantis.sna docs/play/atlantis.tap
+git add docs/play/atlantis.sna docs/play/atlantis.tap docs/play/index.html
 git commit -m "Update the web build." && git push
 ```
 
 `build/` stays out of git. The two copies in `docs/play/` are committed,
 because GitHub Pages serves `docs/` from git.
+
+**Each build has its own address.** GitHub Pages tells browsers to keep
+a file for ten minutes (`cache-control: max-age=600`), and the page
+fetches the snapshot from its script, so after an update a browser could
+go on playing the last build for up to ten minutes, even after a hard
+refresh. So `make web` also stamps the first 8 hex digits of each file's
+SHA-1 into `index.html`: the snapshot is opened as
+`atlantis.sna?v=<hash>&type=.sna` and the tape's link is
+`atlantis.tap?v=<hash>`. A new build is a new address, fetched at once;
+the server ignores the query. The `&type=.sna` is there because JSSpeccy
+picks a file's type by how the whole address ends
+(`getFileOpener(url).endsWith(".sna")`): `atlantis.sna?v=<hash>` alone
+would be "Unrecognised file type". The stamp is `tools/webstamp.sh` (from
+the Makefile) and `tools/webstamp.ps1` (from `build.bat`, through
+Windows PowerShell); both rewrite only those two addresses, so running
+`make web` again changes nothing.
 
 ## 4. Browsers
 
@@ -167,6 +183,7 @@ A few things to know about the site:
 | `docs/play/index.html` | the page |
 | `docs/play/atlantis.sna` | what the page plays (`make web`) |
 | `docs/play/atlantis.tap` | the tape, to download (`make web`) |
+| `tools/webstamp.sh`, `tools/webstamp.ps1` | stamp each file's hash into the page's addresses (`make web`, `build.bat web`) |
 | `docs/play/jsspeccy/` | JSSpeccy 3.2, with `COPYING` and `SOURCE.md` |
 | `docs/index.html` | sends the site's root to `play/` |
 | `docs/.nojekyll` | serve `docs/` as plain files |
