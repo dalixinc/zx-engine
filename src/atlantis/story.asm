@@ -91,6 +91,21 @@ story_wait:
         jr nz,.frame
         ret
 
+; screen_pause - boot, before the menu: the loading screen, still on the
+; screen, for CFG_SCREEN_PAUSE more 1/50 seconds, or until a key.
+; Corrupts: AF, D
+screen_pause:
+    IF CFG_SCREEN_PAUSE
+        ld d,CFG_SCREEN_PAUSE
+.frame: call wait_frame
+        call any_key
+        ret nz
+        dec d
+        jr nz,.frame
+    ENDIF
+        ret
+        ASSERT CFG_SCREEN_PAUSE <= 255
+
 ; One short pulse of the speaker, the border kept black. Corrupts: AF
 story_click:
     IFNDEF NO_SOUND

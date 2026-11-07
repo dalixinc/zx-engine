@@ -59,8 +59,9 @@ hard refresh (Ctrl+Shift+R) fetches the new snapshot.
 | Menu   | Symbol Shift + P       |             |          |
 
 The tape shows a loading screen while the game loads (it is drawn from
-the game's own sprites by `tools/mkloadscreen.py`). The game then opens on
-a start screen: `1` types out the story, letter by letter with a click,
+the game's own sprites by `tools/mkloadscreen.py`), and keeps it up for two
+more seconds after start-up (`CFG_SCREEN_PAUSE`; a key skips it), so the
+web page's snapshot shows it too. The game then opens on a start screen: `1` types out the story, letter by letter with a click,
 on a black screen, then starts the game (any key skips the story;
 `CFG_STORY_*` in `config.asm`,
 [docs/STORY-AND-LIVES.md](docs/STORY-AND-LIVES.md)), `2` swaps between
@@ -229,8 +230,8 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: the
 packed loading screen with a small unpacker, which shows it at once,
-then the packed game (15,362 bytes in all). The unpacker writes four
-blocks. The cold block at `$6000-$76E6` (5,863 bytes, and it may grow to
+then the packed game (15,379 bytes in all). The unpacker writes four
+blocks. The cold block at `$6000-$76F6` (5,879 bytes, and it may grow to
 `$78DF`) is the menu and the story, the the level codes, start-up, the diver's
 death, each level's look, going up a level, and anything else that runs
 once in a while, with the raw art that start-up shifts. It is

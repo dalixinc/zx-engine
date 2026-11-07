@@ -51,6 +51,13 @@ CFG_STORY_PARA      equ 40
 CFG_STORY_END       equ 250
 CFG_STORY_CLICK     equ 30
 
+; The loading screen stays up this many 1/50 seconds after start-up,
+; before the menu, or until a key (story.asm, screen_pause). The web
+; page plays the snapshot, which starts with the screen and clears it
+; for the menu half a second later; a tape has shown it while loading.
+; 0 leaves the pause out.
+CFG_SCREEN_PAUSE    equ 100
+
 ; After a hit the border flashes red and black for this many game
 ; steps. 32 is about two thirds of a second at 50 frames a second, and
 ; twice that at 25. 0 turns the flash off.
