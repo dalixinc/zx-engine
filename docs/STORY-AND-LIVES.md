@@ -1,7 +1,7 @@
 # The story, the lives top-up, and the special bombs' flash
 
 Quartus's brief after the big squeeze (whose memory work is in
-[MEMORY.md](MEMORY.md)): a story typed out before the menu, the lives
+[MEMORY.md](MEMORY.md)): a story typed out as a game starts, the lives
 topped up at each new level, and a flash and a sound of their own for
 the special bombs.
 
@@ -9,20 +9,24 @@ the special bombs.
 
 ![The story, being typed](images/story-typewriter.png)
 
-- **Once, as the game loads,** between start-up and the menu, on a black
+- **When 1 starts a game,** between the menu and the game, on a black
   screen in the ROM's font, 30 columns with a column free each side.
+  (The brief had it once as the game loads; Dalix moved it here, so it
+  is told as each game begins.) A game started with a level code goes
+  straight in.
 - **Typed letter by letter,** a letter every 3/50 second with a short
   speaker click (spaces are silent), a pause of 0.8 seconds at each
-  paragraph, then five seconds or a key, and the menu.
-- **Any key skips it,** straight to the menu. A key that is already down
-  when it starts must be let go first, and the skipping key is let go
-  before the menu reads its keys, so it never starts a game.
+  paragraph, then five seconds or a key, and the game.
+- **Any key skips it,** straight into the game. The 1 that started it
+  must be let go first, and the skipping key is let go before the game
+  reads its keys.
 - **The knobs** are in `config.asm`: `CFG_STORY_CHAR`, `CFG_STORY_PARA`,
   `CFG_STORY_END` (in 1/50 seconds) and `CFG_STORY_CLICK` (the click's
   length).
-- **Where:** `story.asm`, code and words in the cold block (453 bytes).
-  It is built only where start-up goes to the menu (`TYPEWRITER`), so
-  the soak and the measurements are as they were.
+- **Where:** `story.asm`, code and words in the cold block (459
+  bytes, with the menu's branch to it). It is built only where start-up
+  goes to the menu (`TYPEWRITER`), so the soak and the measurements are
+  as they were.
 
 The words are Quartus's, broken by hand at sentences where they fit:
 
@@ -75,9 +79,9 @@ jingle.
 | | After the big squeeze | Story | Lives | Flash and sound | Left |
 |---|---|---|---|---|---|
 | hot code | 736 free | | | 51 | **685** |
-| cold block | 1,018 free | 445 | 15 | 39 | **519** |
-| packed game (below `$FF48`) | 2,134 | | | | **1,726** |
-| tape | 14,943 bytes | | | | 15,351 bytes |
+| cold block | 1,018 free | 459 | 15 | 39 | **505** |
+| packed game (below `$FF48`) | 2,134 | | | | **1,715** |
+| tape | 14,943 bytes | | | | 15,362 bytes |
 
 The story's text is most of its bytes (313; the code is 132); the slides are 46
 of the hot bytes, and could go to the data block if the hot code ever
@@ -90,9 +94,10 @@ needs them.
 - **The soak:** green at 50 and 25.
 - **`make unpack-check`:** the sums match the files; the game unpacks in
   34 frames.
-- **In Fuse:** the story types out, pauses at each paragraph and goes to
-  the menu; Space part way goes straight to the menu, and the menu does
-  not start a game from it. Recorded, the clicks come every 60 ms. A
+- **In Fuse:** the menu comes up straight after loading; 1 types the
+  story out, with a pause at each paragraph, and the game starts after
+  it; Space part way goes straight into the game, and the 1 that
+  started it does not skip it. Recorded, the clicks come every 60 ms. A
   scratch copy that starts with one life and scores fast shows one
   heart, then three on the frame "LEVEL 2" comes up. A scratch copy
   setting off the bombs in turn shows the yellow flash, and its sound

@@ -42,7 +42,7 @@ CFG_LIVES           equ 3
 CFG_LEVEL_LIVES     equ 3
 
 ; --- The story (story.asm) ------------------------------------------------------
-; Typed out once, between loading and the menu. In 1/50 seconds: a
+; Typed out when 1 starts a game, before it. In 1/50 seconds: a
 ; letter, the pause at a paragraph, and the wait after the last line
 ; (a key ends it sooner). The click is a speaker pulse this many
 ; DJNZ loops long (about 13 T-states each).

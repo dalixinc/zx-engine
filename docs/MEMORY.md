@@ -14,8 +14,8 @@ it, the **housekeeping** brief (PR #23).
 |---|---|
 | `$4000-$5AFF` | screen |
 | `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
-| `$6000-$76D8` | **cold block** (5,849 bytes): the story before the menu (`story.asm`), menu, the title (`title_draw`), the testers' switch (`cheat_poll`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, the seabed's slope tables' builder (`slope_build`), the power-ups' picture builder (`power_build`), going up a level and its lives top-up (`level_up`, `level_advance`, `level_enter`, `banner_show`), a new bomb's settings (`wheel_type`), a missile's end and the power-up roll (`missile_gone`), taking and setting off a special bomb and blowing up what a throw moves (`special.asm`), `torpedo_reset`, and the raw art `preshift` reads (fish, round fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
-| `$76D9-$78DF` | free (519, all of it usable: the tape's unpacker sits above `$78E0`, asserted above `cold_end`) |
+| `$6000-$76E6` | **cold block** (5,863 bytes): the story, typed when 1 starts a game (`story.asm`), menu, the title (`title_draw`), the testers' switch (`cheat_poll`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, the seabed's slope tables' builder (`slope_build`), the power-ups' picture builder (`power_build`), going up a level and its lives top-up (`level_up`, `level_advance`, `level_enter`, `banner_show`), a new bomb's settings (`wheel_type`), a missile's end and the power-up roll (`missile_gone`), taking and setting off a special bomb and blowing up what a throw moves (`special.asm`), `torpedo_reset`, and the raw art `preshift` reads (fish, round fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
+| `$76E7-$78DF` | free (505, all of it usable: the tape's unpacker sits above `$78E0`, asserted above `cold_end`) |
 | `$78E0-$7FFF` | the spinning wheel's shifted pictures (4 quarter turns, 1,824, built at start-up; while the tape loads, its first block is here, `$791D-$7FFF`) |
 | `$8000-$B672` | code (`code_end` `$B673`) |
 | `$B673-$B91F` | free (685) |
@@ -52,7 +52,7 @@ build if any of them runs into the next thing up.
 While the tape loads, two more things sit in memory for a moment: the
 first block, the packed loading screen and then the unpacker, ending at
 `$8000` (`$791D-$7FFF`), and the second, the packed code, cold block,
-data and UDG block, from `DATA_START` (`$C400-$F889`, 1,726 bytes below
+data and UDG block, from `DATA_START` (`$C400-$F894`, 1,715 bytes below
 the UDG block at `$FF48`, its limit). The unpacker writes them in that
 order, each over bytes it has already read: the code between the two
 blocks, the cold block over the first block's screen (already shown)

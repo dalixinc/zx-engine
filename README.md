@@ -59,11 +59,11 @@ hard refresh (Ctrl+Shift+R) fetches the new snapshot.
 | Menu   | Symbol Shift + P       |             |          |
 
 The tape shows a loading screen while the game loads (it is drawn from
-the game's own sprites by `tools/mkloadscreen.py`). The game then types
-out its story, letter by letter with a click, on a black screen (any
-key skips it; `CFG_STORY_*` in `config.asm`,
-[docs/STORY-AND-LIVES.md](docs/STORY-AND-LIVES.md)), and opens on a
-start screen: `1` starts the game, `2` swaps between
+the game's own sprites by `tools/mkloadscreen.py`). The game then opens on
+a start screen: `1` types out the story, letter by letter with a click,
+on a black screen, then starts the game (any key skips the story;
+`CFG_STORY_*` in `config.asm`,
+[docs/STORY-AND-LIVES.md](docs/STORY-AND-LIVES.md)), `2` swaps between
 50 and 25 frames a second, and `3` takes a six-letter level code
 (`0` rubs out a letter, Space gives up). The choice is kept when you come back to the
 menu.
@@ -170,7 +170,7 @@ src/atlantis/config.asm  the numbers you change: diver range, start speed, bomb 
 src/atlantis/layout.asm  the game's rows, colours, buffer addresses
 src/atlantis/data.asm    menu words, stat-line template, sine table (at $C400)
 src/atlantis/menu.asm    the start screen, and Symbol Shift + P back to it
-src/atlantis/story.asm   the story, typed out once before the menu
+src/atlantis/story.asm   the story, typed out when 1 starts a game
 src/atlantis/rate.asm    50 or 25 frames a second, the chords, the spare-scanline count
 src/atlantis/scenery.asm water, sand and ground colours
 src/atlantis/scroll.asm  the game's seabed: buffers, blit, silo stamp, weed
@@ -229,9 +229,9 @@ build.bat                Windows build (Atlantis; build.bat demo for the demo)
 Atlantis memory (the full map is in [docs/MEMORY.md](docs/MEMORY.md)):
 the tape is packed with ZX0. After the BASIC come two blocks: the
 packed loading screen with a small unpacker, which shows it at once,
-then the packed game (15,351 bytes in all). The unpacker writes four
-blocks. The cold block at `$6000-$76D8` (5,849 bytes, and it may grow to
-`$78DF`) is the story, the menu, the level codes, start-up, the diver's
+then the packed game (15,362 bytes in all). The unpacker writes four
+blocks. The cold block at `$6000-$76E6` (5,863 bytes, and it may grow to
+`$78DF`) is the menu and the story, the the level codes, start-up, the diver's
 death, each level's look, going up a level, and anything else that runs
 once in a while, with the raw art that start-up shifts. It is
 contended RAM, so nothing that runs every frame goes there. The

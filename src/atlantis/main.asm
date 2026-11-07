@@ -96,7 +96,7 @@
     IFDEF POWERUPS
         DEFINE DOUBLE_SHOT
     ENDIF
-        ; The story before the menu: only where boot goes to the menu.
+        ; The story when 1 starts a game: only where boot goes to the menu.
     IFNDEF SOAK
     IFNDEF MEASURE
     IFNDEF TIMING_BARS
@@ -201,11 +201,7 @@ boot:
     IFDEF MEASURE
         jp game_reset
     ELSE
-      IFDEF TYPEWRITER
-        jp story_show           ; then the menu (story.asm)
-      ELSE
         jp enter_menu
-      ENDIF
     ENDIF
     ENDIF
     ENDIF
@@ -1049,7 +1045,7 @@ wheel_first:    db 0
         INCLUDE "menu.asm"
     IFDEF TYPEWRITER
         COLD
-        INCLUDE "story.asm"      ; once, before the menu
+        INCLUDE "story.asm"      ; when 1 starts a game
         HOT
     ENDIF
 

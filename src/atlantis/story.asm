@@ -1,16 +1,16 @@
 ;==============================================================================
-; story.asm - the story, typed out once, as the tape's game starts
+; story.asm - the story, typed out when 1 starts a game
 ;
-; Between start-up and the menu (boot), on a black screen in the ROM's
-; font: a letter every CFG_STORY_CHAR 1/50 seconds with a click, a pause
-; of CFG_STORY_PARA at each paragraph, then CFG_STORY_END or a key, and
-; the menu. Any key skips it, straight to the menu; a key already down
-; when it starts must be let go first, or the one that loaded the tape
-; would skip it.
+; Between the menu and the game (menu_loop; a level code goes straight
+; in), on a black screen in the ROM's font: a letter every
+; CFG_STORY_CHAR 1/50 seconds with a click, a pause of CFG_STORY_PARA at
+; each paragraph, then CFG_STORY_END or a key, and the game. Any key
+; skips it, straight to the game; a key already down when it starts
+; must be let go first, or the 1 that started it would skip it.
 ;
 ; Only where boot goes to the menu (TYPEWRITER, main.asm): the soak, the
 ; measurements and the other test builds go straight to their work.
-; All of it is in the cold block: it runs once, before the game.
+; All of it is in the cold block: it runs before a game, not in one.
 ;==============================================================================
 
 STORY_NL        equ 13          ; the next line
@@ -24,13 +24,15 @@ STORY_ATTR      equ WHITE | (BLACK << 3)
         ASSERT CFG_STORY_END >= 1 && CFG_STORY_END <= 255 && CFG_STORY_CLICK >= 1 && CFG_STORY_CLICK <= 255
 
 ;------------------------------------------------------------------------------
-; story_show - type the story, then the menu. boot jumps here.
+; story_show - type the story, then the game. menu_loop jumps here.
 ;------------------------------------------------------------------------------
 story_show:
         ld a,BLACK
         call set_border
         ld a,STORY_ATTR
         call cls
+        xor a
+        ld (story_armed),a      ; the 1 must be let go first
         ld a,(text_attr)
         ld (story_attr),a
         ld a,STORY_ATTR
@@ -68,11 +70,12 @@ story_show:
 story_done:
         ld a,(story_attr)
         ld (text_attr),a
-        call keys_up            ; the skipping key does not reach the menu
-        jp enter_menu           ; it starts its own stack
+        call keys_up            ; the skipping key does not reach the game
+        ld sp,STACK_TOP         ; a skip leaves story_wait's return behind
+        jp game_reset
 
-; A = 1/50 seconds to wait. A fresh key skips the rest: to the menu.
-; Corrupts: AF, DE (and the stack, when it skips: enter_menu resets it)
+; A = 1/50 seconds to wait. A fresh key skips the rest: to the game.
+; Corrupts: AF, DE (and the stack, when it skips: story_done resets it)
 story_wait:
         ld d,a
 .frame: call wait_frame
@@ -103,7 +106,7 @@ story_click:
         ret
 
 story_armed:    db 0            ; 1 once every key has been up
-story_attr:     db 0            ; text_attr as it was, for the menu
+story_attr:     db 0            ; text_attr as it was, for the menu's next visit
 
 ; The words, as Quartus wrote them, broken by hand for 30 columns.
 story_text:
