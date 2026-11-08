@@ -15,8 +15,11 @@
 ;            they are when the time runs out
 ;   nuke     they go up as if shot (CFG_NUKE_LEVEL; 0 leaves it out)
 ; Shove blows up a silo's missile, armed or in flight, as B is pressed;
-; suction and the nuke take it away, with no burst. What blows up scores
-; what a torpedo would, by the level's points; nothing else scores. A
+; suction and the nuke take it away, with no burst. Each thing a power
+; clears scores its points (CFG_PTS_SUCTION, _SHOVE, _NUKE: sp_score),
+; not the level's: suction's are for what it pulled out of the way and
+; the missile it took, and the total shows where it was (pop_add,
+; pop_here, boom.asm). A
 ; throw kills as a torpedo would, with one burst on the screen at a
 ; time (boom.asm): the bomb waits at the edge until a missile's burst
 ; is over, and the fish flashes while a burst is up or the bomb is
@@ -191,7 +194,7 @@ sp_end:
         call msl_calls_set
         ld a,(sp_kind)
         cp MSL_KIND_SHOVE
-        ret nz                  ; suction: nothing dies
+        jp nz,sp_sucked         ; suction: nothing dies
         call sp_bomb_kill
     IFDEF TWO_BOMBS
         call tb_kill            ; and the second bomb
@@ -208,35 +211,25 @@ sp_bomb_kill:
         ret z
         call wheel_remove
         call boom_at_bomb
-        ld a,(level_pts_bomb)
-        jp score_add
+        jp sp_score
 
 sp_fish_kill_on:
         call sp_fish_kill
         jp sp_tick.on
 
-; The fish as a torpedo kills it (torpedo_fish): a piranha scores twice.
+; The fish as a torpedo kills it (torpedo_fish), for shove's points.
 ; It flashes while the bomb is there or a burst is up.
 sp_fish_kill:
         ld a,(fish_busy)
         or a
         ret nz
-    IFDEF TWO_FISH
-        ld a,(fish_piranha)
-        or a
-        ld a,(level_pts_fish)
-        jr z,.pts
-        add a,a
-        daa
-.pts:
-    ELSE
-        ld a,(level_pts_fish)
-    ENDIF
-        call score_add
         ld a,(boom_t)
         ld hl,wheel_phase
         or (hl)
-        jp z,boom_at_fish
+        jr nz,.flash
+        call sp_score
+        jp boom_at_fish
+.flash: call sp_fish_pts
         jp fish_flash_begin
 
 ; HL = chords_poll or sp_poll: main_loop's call. Corrupts: nothing else
@@ -321,12 +314,20 @@ special_fire:
         ld a,(msl_kind)
         or a
         jr nz,.nomsl
+        call sp_score           ; before missile_gone: its place
         ld a,(sp_kind)
         cp MSL_KIND_SHOVE
-        jr nz,.gone
+        jr nz,.taken
         call boom_at_missile
-        call msl_points
-        call score_add
+        jr .gone
+.taken: ld a,(msl_x)            ; where it was, as boom_at_missile
+        ld l,a
+        ld h,0
+        ld de,(MISSILE_WIDTH - 16) / 2
+        add hl,de
+        ld a,(msl_y)
+        add a,(MISSILE_HEIGHT - BOOM_ROWS) / 2
+        call pop_here
 .gone:  call missile_gone
 .nomsl:
     IF CFG_NUKE_LEVEL
@@ -345,7 +346,8 @@ special_fire:
 
     IF CFG_NUKE_LEVEL
 ; The nuke: the bomb and the fish go up as a torpedo would take them,
-; with no points. The bomb's burst first, then the fish's flash.
+; for the nuke's points each. The bomb's burst first, then the fish's
+; flash.
 special_nuke:
     IFDEF TWO_BOMBS
         call tb_nuke            ; the second bomb goes too
@@ -355,13 +357,16 @@ special_nuke:
         jr z,.fish
         call wheel_remove
         call boom_at_bomb
+        call sp_score
         ld a,(fish_busy)
         or a
         ret nz
+        call sp_score
         jp fish_flash_begin
 .fish:  ld a,(fish_busy)
         or a
         ret nz
+        call sp_score
         jp boom_at_fish
     ENDIF
 
@@ -571,5 +576,47 @@ power_build:
         djnz .row
         ret
         HOT
+
+; Suction's end: what it pulled out of the way scores, and the points
+; show where the bomb is (or the fish, with no bomb). Both stay, alive.
+sp_sucked:
+    IFDEF TWO_BOMBS
+        call tb_sucked
+    ENDIF
+        ld a,(fish_busy)
+        or a
+        call z,sp_fish_pts
+        ld a,(wheel_phase)
+        or a
+        ret z
+        call sp_score
+        ld hl,(wheel_x)
+        ld a,(wheel_y)
+        jp pop_here
+
+; The fish's points, shown where it is unless a burst shows them.
+; Corrupts: AF, BC, DE, HL
+sp_fish_pts:
+        call sp_score
+        ld a,(fish_x)
+        ld l,a
+        ld h,0
+        ld a,(fish_y)
+        jp pop_here
+
+; sp_score - this power's points (sp_kind) for one thing it cleared,
+; onto the score and the pop-up. Corrupts: AF, BC, DE, HL
+sp_score:
+        ld a,(sp_kind)
+        cp MSL_KIND_SHOVE
+        ld a,CFG_PTS_SHOVE
+        jr z,.add
+        ld a,CFG_PTS_SUCTION
+        jr c,.add               ; MSL_KIND_SUCTION is below shove
+        ld a,CFG_PTS_NUKE
+.add:   jp pop_add
+        ASSERT MSL_KIND_SUCTION < MSL_KIND_SHOVE && MSL_KIND_SHOVE < MSL_KIND_NUKE, "sp_score tells the kinds apart by order"
+        ASSERT CFG_PTS_SUCTION <= 99 && CFG_PTS_SHOVE <= 99 && CFG_PTS_NUKE <= 99, "a power's points are 0 to 99"
+
 
     ENDIF
