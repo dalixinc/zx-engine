@@ -257,7 +257,10 @@ From level 4 the diver has a second weapon on the fire key
   charge, so the whole width after two seconds. It stays a moment
   (`CFG_LANCE_TIME`), blows up the bombs, the fish and a silo's missile
   it touches, `CFG_PTS_LANCE` (15) points each, shown as "+15" where
-  they were, then rests (`CFG_LANCE_REST`) before the next.
+  they were, then rests (`CFG_LANCE_REST`) before the next. It goes
+  with a quick falling "pew" (`CFG_LANCE_PEW`, about 980 Hz down to
+  390 Hz in 0.16 seconds; lower notes come out as clicks, as the beeper
+  only plays in each step's spare time).
 - **Reaching level 4** shows a message in the level panel: "THE LANCE
   LASER IS YOURS: HOLD FIRE, LET GO TO SHOOT".
 

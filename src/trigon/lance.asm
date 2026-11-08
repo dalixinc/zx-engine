@@ -388,7 +388,8 @@ lance_fire:
         ld hl,hud_dirty
         set HUD_LANCE,(hl)
     IFNDEF NO_SOUND
-        jp snd_launch_start     ; the whoosh
+        ld hl,snd_lance         ; the pew, over whatever was playing
+        jp snd_tune_start
     ELSE
         ret
     ENDIF
@@ -656,6 +657,13 @@ lance_cell_draw:
         ld a,%10000001          ; empty: its two ends
 .bar:   ld (hl),a
         ret
+
+    IFNDEF NO_SOUND
+snd_lance:
+        db 1, 1                 ; the lead-in, never heard (as snd_laser's)
+        CFG_LANCE_PEW
+        db 0
+    ENDIF
 
 lance_pic:      db %00000000
                 db %00000100
