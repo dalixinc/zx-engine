@@ -66,6 +66,7 @@ trigon_off:
         ret z
         xor a
         ld (trigon_on),a
+        call trigon_plain       ; the Atlantis death flash (theme.asm)
         call il_art_atlantis    ; the enemies' copies (interlude.asm)
         ; fall through: the missile's pictures back
 

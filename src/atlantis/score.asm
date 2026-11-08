@@ -269,9 +269,7 @@ score_add:
 level_up:
         call level_advance
     IFDEF CITY_SHOW
-        ld a,(level_n)
-        cp CFG_INTERLUDE_LEVEL + 1
-        call z,interlude        ; Atlantis is done: the city (interlude.asm)
+        call il_level           ; the city after Atlantis, Trigon's look after it
     ENDIF
     IF CFG_LEVEL_LIVES
         ; Back up to CFG_LEVEL_LIVES if he has fewer: a new level only.

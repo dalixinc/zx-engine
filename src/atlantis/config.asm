@@ -262,6 +262,24 @@ CFG_INTERLUDE_BORDER equ BLUE
 ; circle growing from the middle, led by a ring of this cell colour.
 CFG_INTERLUDE_RIM    equ BRIGHT | (WHITE << 3) | WHITE
 
+; --- Trigon's colours (src/trigon/theme.asm) -------------------------------------
+; After the city, until the menu. Each level's border and bomb colour go
+; by its number (0 to 3 is the level number's last two bits), so two
+; levels in a row never share a border. The borders are the dark set
+; kept for Trigon. A bomb's colour is a whole cell: its ink on the sea's
+; paper (BRIGHT, blue), as CFG_WHEEL_INK is. Black ink is fine on the
+; blue sea; on a black sea it would vanish. The death's border flash is
+; CFG_TRIGON_HIT_INK and black, not red: red would hardly show on red.
+CFG_TRIGON_BORDER_0  equ BLUE
+CFG_TRIGON_BORDER_1  equ RED
+CFG_TRIGON_BORDER_2  equ MAGENTA
+CFG_TRIGON_BORDER_3  equ BLACK
+CFG_TRIGON_INK_0     equ BRIGHT | RED | (BLUE << 3)
+CFG_TRIGON_INK_1     equ BRIGHT | BLACK | (BLUE << 3)
+CFG_TRIGON_INK_2     equ BRIGHT | MAGENTA | (BLUE << 3)
+CFG_TRIGON_INK_3     equ BRIGHT | RED | (BLUE << 3)
+CFG_TRIGON_HIT_INK   equ WHITE
+
 ; --- The attract demo (demo.asm) ----------------------------------------------
 ; After CFG_DEMO_WAIT seconds on the menu with no key down, the computer
 ; plays level 1 for CFG_DEMO_TIME seconds, then the menu comes back.

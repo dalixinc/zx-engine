@@ -597,6 +597,7 @@ step_skip:
         dec a
         ld (hit_flash),a
         and 4
+.hit_ink:                       ; patched: white in Trigon (src/trigon/theme.asm)
         ld a,RED
         jr nz,.border
         xor a                   ; BLACK
@@ -1060,6 +1061,7 @@ wheel_first:    db 0
         INCLUDE "interlude.asm"  ; the city, after the last Atlantis level
     IFDEF TRIGON_PART
         INCLUDE "../trigon/art.asm"  ; Erin's Trigon sprites, swapped in at the city
+        INCLUDE "../trigon/theme.asm" ; Trigon's colours
     ENDIF
 
     IFDEF SLACK_LINES

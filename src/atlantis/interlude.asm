@@ -32,6 +32,20 @@ IL_LINE2_ROW    equ 22
 ; interlude - the city, then the play screen back
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
+; il_level - level_up, after the next row is in: the city at the end of
+; Atlantis, then, while Trigon lasts, its colours over the row's.
+; Corrupts: AF, BC, DE, HL, IX
+il_level:
+        ld a,(level_n)
+        cp CFG_INTERLUDE_LEVEL + 1
+        call z,interlude
+    IFDEF TRIGON_PART
+        ld a,(trigon_on)
+        or a
+        jp nz,trigon_style      ; src/trigon/theme.asm
+    ENDIF
+        ret
+
 interlude:
         ld hl,(frame_count)
         ld (il_start),hl
