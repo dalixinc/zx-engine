@@ -91,15 +91,41 @@ tb_move:
 tb_idle:
         ld a,(tb_forced)
         or a
-        ret z
+        jr z,.off
         xor a
         ld (tb_forced),a
         ld a,(game_rate)
         cp 25
         ret nz                  ; Symbol Shift + F has changed it since
         ld a,50
-        ld (tb_want),a
+        ld (tb_want),a          ; the next step's tb_restore asks for it
         ret
+.off:   ld a,(tb_want)
+        or a
+        ret nz                  ; a speed still to ask for
+        ld a,TB_CALLS_OFF       ; gone, wiped and its colours given back:
+        ; fall through          ; nothing more until the next one
+
+;------------------------------------------------------------------------------
+; tb_calls - main_loop's four calls to tb_restore, tb_draw and tb_move
+; (two) are CALLs only while a second bomb is out, and until the steps
+; after it has gone have wiped it, given its cells back and put the
+; speed back. Otherwise each is LD HL,nn: 10 T-states, against some
+; hundreds a step for the three routines finding nothing to do.
+; In: A = TB_CALLS_ON or TB_CALLS_OFF. Corrupts: nothing else
+;------------------------------------------------------------------------------
+tb_calls:
+        ld (main_loop.tb_c1),a
+        ld (fish_draw_call.tb_c2),a
+        ld (fish_mv.tb_c3),a
+        ld (fish_mv2.tb_c4),a
+        ret
+TB_CALLS_ON     equ $CD                 ; CALL nn
+TB_CALLS_OFF    equ $21                 ; LD HL,nn: HL is free at all four
+        ASSERT ({main_loop.tb_c1} & $FF) == $CD && {main_loop.tb_c1 + 1} == tb_restore, ".tb_c1 is not CALL tb_restore"
+        ASSERT ({fish_draw_call.tb_c2} & $FF) == $CD && {fish_draw_call.tb_c2 + 1} == tb_draw, ".tb_c2 is not CALL tb_draw"
+        ASSERT ({fish_mv.tb_c3} & $FF) == $CD && {fish_mv.tb_c3 + 1} == tb_move, ".tb_c3 is not CALL tb_move"
+        ASSERT ({fish_mv2.tb_c4} & $FF) == $CD && {fish_mv2.tb_c4 + 1} == tb_move, ".tb_c4 is not CALL tb_move"
 
 ;------------------------------------------------------------------------------
 ; The hits: hit_check and torpedo_hit (hit.asm, torpedo.asm) go on to the
@@ -271,6 +297,36 @@ tb_nuke:
 
     ENDIF
 
+    IFDEF FISH_LEAVES
+;------------------------------------------------------------------------------
+; fish_once - the fish's move (fish_mv, fish_mv2) in Trigon: the level's
+; own (fish_unhold patches .real), then, if that turned it at the left
+; edge, it has crossed once and goes: no burst, no points. Its draw is
+; dropped on the next step (the restore takes it away) and the usual
+; wait follows, so the next wave, a fish or two bombs (tb_launch), comes
+; sooner than if it swam back. About 40 T-states a move.
+; Corrupts: AF, B, HL (and what the mover does)
+;------------------------------------------------------------------------------
+fish_once:
+.real:  call update_fish
+        ld a,(fish_facing)
+        cp FACE_RIGHT
+        ret nz
+        call fish_hold          ; no second move this step (at 25)
+        ld a,1
+        ld (fish_busy),a        ; nothing hits it meanwhile
+        ld hl,fish_gone_draw
+        ld (FISH_DRAW_TO),hl
+        ret
+        ASSERT FISH_MIN_X == 0  ; it turns only at the left edge, facing right
+
+; In the fish's draw place, its restore just done: not drawn again.
+fish_gone_draw:
+        ld iy,fish_bg
+        ld (iy+BG_VALID),0
+        jp fish_begin_wait
+    ENDIF
+
 ;------------------------------------------------------------------------------
 ; tb_launch - fish_wait_step, as a new fish is due: two bombs instead?
 ; Out: carry set if the second bomb has gone out (the fish waits again).
@@ -284,7 +340,9 @@ tb_launch:
         call b2.wheel_rng
         cp b
         ret nc                  ; a fish this time
-tb_go:  ld a,(wheel_haste)      ; the level's haste, as the first bomb's
+tb_go:  ld a,TB_CALLS_ON
+        call tb_calls
+        ld a,(wheel_haste)      ; the level's haste, as the first bomb's
         ld (b2.wheel_haste),a
         call b2.wheel_drift.spawn ; in from the right edge, at its own height
         ld a,(tb_slow)
@@ -322,8 +380,11 @@ tb_reset:
         ld (tb_meas_fish),a     ; A is not 0: TB_SEED
         xor a
         ld (tb_meas_fish),a
+        ret                     ; measuring: the calls stay, as it is always out
+    ELSE
+        ld a,TB_CALLS_OFF
+        jp tb_calls
     ENDIF
-        ret
     IFDEF MEAS_TWO
 tb_meas_fish:   db 0
     ENDIF
@@ -436,6 +497,25 @@ bomb_art:
         pop af
         ret
 bomb_built:     db BOMB_P               ; start-up made the pulsar's
+
+; tb_art_now - level_up, with the "LEVEL n" banner just painted: if the
+; new level's bomb is the other kind, its pictures are made now, while
+; the banner holds the eye, not when its first bomb appears. A bomb
+; still out takes the new kind at once (wheel_type), as bomb_art does
+; to the second; it is repainted whole, as its box may change.
+; Corrupts: AF, BC, DE, HL, IX
+tb_art_now:
+        ld a,(level_bomb)
+        ld hl,bomb_built
+        cp (hl)
+        ret z
+        ld a,(wheel_phase)
+        or a
+        ld a,(level_bomb)
+        jp z,bomb_art
+        ld a,1
+        ld (wheel_odd),a
+        jp wheel_type
 bomb_job_pulsar:
         PRESHIFT_JOB wheel_src, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW, 0
         dw 0

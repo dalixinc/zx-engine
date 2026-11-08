@@ -324,6 +324,9 @@ level_up:
         ld a,1
         ld (banner_code),a
 .show:  call banner_show
+    IFDEF SHARED_BOMB
+        call tb_art_now         ; Trigon: the bomb's pictures, under the banner
+    ENDIF
     IFNDEF NO_SOUND
         ld hl,snd_tune_level
         jp snd_tune_start

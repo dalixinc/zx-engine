@@ -102,11 +102,15 @@ everything dimmer, as the bright bit belongs to the whole cell).
 Each is a step on from the end of Atlantis, from the movements it
 already has:
 
-| Level | Bomb | Moves | Fish | Border |
-|---|---|---|---|---|
-| 1 | the pulsar | on a wave | the angler, on a wave | blue |
-| 2 | the spinning wheel | hunting the diver | from here, one in four a piranha | red |
-| 3 | the spinning wheel | hunting harder, the missiles home in | on a wave, faster | magenta |
+| Level | Bomb | Moves | Fish | Border | Its fight |
+|---|---|---|---|---|---|
+| 1 | the pulsar | on a wave | the angler, on a wave | blue | the fish's: mostly a bomb and a fish |
+| 2 | the spinning wheel | hunting the diver | from here, one in four a piranha | red | the pairs': two bombs more often than not |
+| 3 | the spinning wheel | hunting harder, the missiles home in | on a wave, faster | magenta | the hunters': fewer pairs, but both hunt |
+
+The fish crosses the water once, right to left, and goes; the
+next wave, a fish or two bombs, follows after the usual pause. It is not
+shot for leaving, and scores nothing.
 
 They score as Atlantis does. Hearts come from level 1, the double shot
 and suction from level 2, shove from level 3. After level 3, level 3
@@ -122,12 +126,11 @@ its own colour and movement, so the two cross differently
 
 | Level | Two-bomb waves | First bomb (the level's) | Second bomb |
 |---|---|---|---|
-| 1 | 1 in 4 | magenta pulsar, on a wave | red pulsar, bobbing straight |
-| 2 | about 3 in 8 | red spinning wheel, hunting | magenta wheel, on a wave |
-| 3 | 1 in 2 | magenta wheel, hunting harder | red wheel, on a wave |
+| 1 | about 1 in 6 | magenta pulsar, on a wave | red pulsar, bobbing straight |
+| 2 | about 2 in 3 | red spinning wheel, hunting | magenta wheel, on a wave |
+| 3 | about 3 in 7 | magenta wheel, hunting harder | red wheel, hunting too |
 
-The fish swims back and forth until it is shot, so a two-bomb wave comes
-after the player shoots the fish.
+The first bomb is always out; the share decides what comes with it.
 
 **How:** the second bomb is the first one's code assembled a second
 time (`src/trigon/twobomb.asm`): `wheel.asm` and the bomb's movers in
@@ -135,8 +138,12 @@ time (`src/trigon/twobomb.asm`): `wheel.asm` and the bomb's movers in
 and colour, placed in the data block. Shots, the diver's touch, the
 special bombs (suction pulls it down, shove throws it and blows it up)
 and the fish's and missile's colours all treat it as
-they treat the first. A second bomb of another type, and enemy divers in
-place of bombs, come later.
+they treat the first. A second bomb of another type may come later.
+
+While no second bomb is out, the main loop's four calls to it are
+switched off (`tb_calls`: each `CALL` becomes a 10 T-state `LD HL,nn`)
+and switched back on when one sets out, so one bomb and the fish pay
+almost nothing for it.
 
 **At 25 or at 50: menu option 3.** Two bombs do not fit in a 50 frames
 a second step (below). Option 3 on Trigon's menu picks:
@@ -153,8 +160,9 @@ a second step (below). Option 3 on Trigon's menu picks:
 room for their shifted copies (`SHARED_BOMB`): the spinning wheel's, at
 $78E0. The first bomb of the other kind has them made again from its
 art (`bomb_art`), about 4.5 television frames for the spinning wheel,
-once when a level brings the new kind; a second bomb out at that moment
-takes the new pictures too. That frees the pulsar's own 912 bytes, below
+once when a level brings the new kind. That happens as the
+"LEVEL n" banner goes up (`tb_art_now`), not when the new kind's first
+bomb appears, and a bomb still out takes the new kind at once. That frees the pulsar's own 912 bytes, below
 the scroll buffers: the fish's and the diver's copies move up into
 them, and the data block gains them. Less the rebuild's code (52 bytes),
 Trigon gains 866 bytes (860 data, 6 cold).
@@ -170,10 +178,10 @@ started late and caught up:
 | Atlantis, level 1 | 8 | 0 | 512 |
 | Atlantis, level 3 | 1 | 0 | 512 |
 | Atlantis, level 3, a missile always up | 1 | 1 | 512 |
-| Trigon, level 1 | 0 | 1 (was 3) | 512 |
-| Trigon, level 2 | 2 | 0 (was 6) | 512 |
-| Trigon, level 3 | 0 | 6 (was 20) | 512 |
-| Trigon, level 3, a missile always up | 0 | 11 (was 24) | 512 |
+| Trigon, level 1 | 0 | 1 | 512 |
+| Trigon, level 2 | 0 | 0 | 512 |
+| Trigon, level 3 | 0 | 8 | 512 |
+| Trigon, level 3, a missile always up | 0 | 19 | 512 |
 
 512 interrupts for 512 steps: no frame is lost. The fish's and the
 missile's colours cost about 8 scanlines when they were painted every
@@ -199,21 +207,22 @@ the work:
 **Two bombs**, measured the same way with the second bomb always out
 and no fish (`-DMEAS_TWO`), against one bomb and the fish:
 
-| | One bomb and the fish, 50 | Two bombs, 50 | Two bombs, 25 (picture frame) |
-|---|---|---|---|
-| Level 1 | 0 spare, 1 late | 0 spare, 66 late | 17 spare, 0 late |
-| Level 2 | 0 spare, 3 late | 0 spare, 125 late | 17 spare, 0 late |
-| Level 3 | 0 spare, 20 late | 0 spare, 157 late | |
-| Level 3, a missile always up | | 0 spare, 217 late | 13 spare, 0 late |
+| | One bomb and the fish, 50 | One bomb and the fish, 25 | Two bombs, 50 | Two bombs, 25 |
+|---|---|---|---|---|
+| Level 1 | 0 spare, 1 late | 30 spare, 0 late | 0 spare, 66 late | 17 spare, 0 late |
+| Level 2 | 0 spare, 0 late | 33 spare, 0 late | 0 spare, 125 late | 17 spare, 0 late |
+| Level 3 | 0 spare, 8 late | 28 spare, 0 late | 0 spare, 166 late | 15 spare, 0 late |
 
 No frame is lost in any of them (512 interrupts at 50, 1,024 at 25), but
 the fish's time does not cover a second bomb at 50: a bomb's draw, its
 colours and its movement cost more than the fish's. Where its pictures
 live makes little difference (two pulsars from fast RAM measured 131
 late steps against two spinning wheels' 142 from contended RAM). At 25
-two bombs fit with 13 to 17 scanlines to spare. One bomb and the fish
-on level 3 went from 6 late steps to 20 with the second bomb's checks in
-the paint and the hit tests.
+two bombs fit with 15 to 17 scanlines to spare. One bomb and the fish
+on level 3 went from 6 late steps to 20 with the second bomb's calls
+and checks in 0.2.0; switching the calls off while it is not out brought
+that back to 8. Level 3's second bomb now hunts, which costs a
+little more at 50 than the wave did (166 late steps against 157).
 
 ## Room
 
@@ -222,11 +231,11 @@ Trigon has the whole 48K to itself, laid out as Atlantis is
 
 | Free bytes | Atlantis | Trigon |
 |---|---|---|
-| Hot code (to `RFISH_BUF`) | 628 | 754 |
-| Cold block (to the unpacker) | 43 | 155 |
-| Data (to `PRESHIFT_START`) | 1,153 | 1,713 |
-| Tape room (below the packed game) | 985 | 1,666 |
-| The tape | 18,560 bytes | 17,917 bytes |
+| Hot code (to `RFISH_BUF`) | 339 | 456 |
+| Cold block (to the unpacker) | 21 | 130 |
+| Data (to `PRESHIFT_START`) | 1,093 | 1,545 |
+| Tape room (below the packed game) | 412 | 959 |
+| The tape | 18,845 bytes | 18,324 bytes |
 
 Trigon 0.2.0's second bomb takes about 2,040 bytes of the data block
 (the bomb code again), 164 of hot code (the main loop's calls, the
@@ -239,6 +248,9 @@ A Trigon diver who swims at the player, sketched to see what one costs
 before anything is built round him: `src/trigon/ediver.asm`, only with
 `-DENEMY_DIVER` (`make trigon-ediver` writes `build/trigon-ediver.sna`;
 the tape and the web page do not have him).
+
+He is not coming to Trigon: enemy divers belong to the third game,
+Finale. Trigon's spare room is kept for what comes next in it.
 
 - **Cheap on purpose.** One frame and one facing (ours has three frames
   and two facings), drawn at even x only like ours, so four shifted
