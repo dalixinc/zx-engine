@@ -16,13 +16,22 @@ bytes moved to where they belong.
   fish down towards the seabed for half a second, 6 pixels a 1/50
   second, to the lowest height whose swing still stays above the weed,
   and leaves them there, alive. A silo missile, armed or flying, is
-  taken away with no burst. Nothing scores. He can escape above
+  taken away with no burst. Each one it pulls out of the way, and the
+  missile, scores 10 (`CFG_PTS_SUCTION`). He can escape above
   them. If he is low himself, he can pull them onto himself.
 - **Shove** (from level 7) kills. It throws them to the right, 8 pixels
   a 1/50 second, and each blows up at the right edge, or where it is
-  when the half second is up. Each scores what a torpedo would on that
-  level (a piranha twice a fish). A silo missile, armed or flying,
-  blows up at once, for a torpedo's points.
+  when the half second is up. Each scores 20 (`CFG_PTS_SHOVE`), in
+  place of what a torpedo would score. A silo missile, armed or flying,
+  blows up at once, for the same 20.
+- **The points show where they were won**, in small figures ("+20"),
+  for about a second (`CFG_POP_TIME`): in the burst's place when the
+  burst ends, or where the bomb (or the fish) was left after suction.
+  What one bomb clears in one go shows as one total ("+40"); a later
+  burst takes the place of an earlier pop-up. It is drawn as the
+  burst's last picture, from the burst's own photograph, so it costs
+  nothing on the steps it stays up, and about 16 scanlines, once, on
+  the step it appears.
 - **Either one** stops a hunting bomb hunting. The border flashes in
   its colour and black for about half a second (cyan for suction,
   yellow for shove; `CFG_SPECIAL_FLASH`, `CFG_SUCTION_INK`,

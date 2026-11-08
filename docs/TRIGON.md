@@ -133,8 +133,8 @@ after the player shoots the fish.
 time (`src/trigon/twobomb.asm`): `wheel.asm` and the bomb's movers in
 `level.asm`, inside `MODULE b2`, with its own state, background record
 and colour, placed in the data block. Shots, the diver's touch, the
-special bombs (suction pulls it down, shove throws it and blows it up,
-the nuke takes it) and the fish's and missile's colours all treat it as
+special bombs (suction pulls it down, shove throws it and blows it up)
+and the fish's and missile's colours all treat it as
 they treat the first. A second bomb of another type, and enemy divers in
 place of bombs, come later.
 

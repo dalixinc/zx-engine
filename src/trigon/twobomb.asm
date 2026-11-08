@@ -245,8 +245,17 @@ tb_kill:
         ret z
         call b2.wheel_remove
         call tb_boom
-        ld a,(level_pts_bomb)
-        jp score_add
+        jp sp_score
+
+; Suction's end: it pulled the second bomb out of the way too.
+tb_sucked:
+        ld a,(b2.wheel_phase)
+        or a
+        ret z
+        call sp_score
+        ld hl,(b2.wheel_x)
+        ld a,(b2.wheel_y)
+        jp pop_here
 
 ; The nuke: gone, its burst only if the first bomb has none.
 tb_nuke:
@@ -254,6 +263,7 @@ tb_nuke:
         or a
         ret z
         call b2.wheel_remove
+        call sp_score
         ld a,(wheel_phase)
         or a
         ret nz

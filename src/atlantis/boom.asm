@@ -74,6 +74,9 @@ boom_reset:
         ld (fish_rest_call+1),hl
         ld hl,stats_prepare
         ld (boom_hook+1),hl
+    IFDEF POWERUPS
+        ld (pop_pts),a          ; A = 0: no points waiting to show
+    ENDIF
         call fish_kind_pick
         jp fish_unhold
 
@@ -330,6 +333,14 @@ boom_at_fish:
 ; puts nothing back. A burst already showing is put back by the next
 ; boom_step, from where it was drawn, before the new one is painted.
 boom_arm:
+    IFDEF POWERUPS
+        call boom_place
+        jr boom_armed
+
+; boom_place - where boom_arm puts it: boom_col and boom_y from HL, A
+; (a power's points with no burst use it: pop_here). Corrupts: AF, DE, HL
+boom_place:
+    ENDIF
         ld (boom_y),a
         ld de,4                 ; nearest byte
         add hl,de
@@ -360,6 +371,10 @@ boom_arm:
         jr c,.sty
         ld a,BOOM_LOW
 .sty:   ld (boom_y),a
+    IFDEF POWERUPS
+        ret
+boom_armed:
+    ENDIF
         ld hl,boom_step
         ld (boom_hook+1),hl
         ld a,BOOM_HOLD
@@ -523,6 +538,14 @@ boom_service:
         ld a,(boom_got)
         or a
         call nz,boom_restore    ; the last burst, from where it was drawn
+    IFDEF POWERUPS
+        call boom_photo
+        jr boom_photo_done
+
+; boom_photo - boom_addr from boom_col and boom_y, and the screen there
+; into boom_bg (boom_got = 1). Corrupts: AF, B, DE, HL
+boom_photo:
+    ENDIF
         ld a,1
         ld (boom_got),a
         ; The screen byte of the top-left corner. Its row is a whole
@@ -544,7 +567,12 @@ boom_service:
         ld l,a
         ld (boom_addr),hl
         ld de,boom_bg
+    IFDEF POWERUPS
+        jp boom_read            ; the photograph
+boom_photo_done:
+    ELSE
         call boom_read          ; the photograph
+    ENDIF
         call boom_shape
         ld hl,(boom_addr)
         jr boom_write
@@ -556,6 +584,11 @@ boom_end:
         xor a
         ld (boom_t),a
         ld (boom_got),a
+    IFDEF POWERUPS
+        ld a,(pop_pts)
+        or a
+        jp nz,pop_show          ; a power's points take the burst's place
+    ENDIF
         ld hl,stats_prepare
         ld (boom_hook+1),hl
         jp boom_show_fish
@@ -637,6 +670,168 @@ boom_next_cell:
         add a,8
         ld h,a
         ret
+
+    IFDEF POWERUPS
+;------------------------------------------------------------------------------
+; A power's points: the pop-up. What a power clears adds up in pop_pts,
+; and when the burst ends (boom_end) the total is drawn in its place, in
+; 3x5 figures ("+20", "+150"), for CFG_POP_TIME television frames. It is
+; the burst's last shape, so it lives as the burst does: drawn and wiped
+; at boom_hook, while no sprite is on the screen, from the burst's
+; photograph, and a new burst puts that photograph back first. It is
+; not part of the burst: boom_t is 0 meanwhile, so nothing waits for it.
+; With no burst (suction, or a missile taken away), pop_here arms an
+; empty one where it should show. Each step costs only the clock's test.
+;------------------------------------------------------------------------------
+pop_pts:        db 0            ; binary: points still to show, 0 = none
+pop_until:      dw 0            ; frame_count when the pop-up comes down
+POP_ROW         equ 3           ; its top pixel row in the burst's 12
+
+; pop_add - A = points (0 to 99, binary) onto the score and the pop-up.
+; Corrupts: AF, BC, DE, HL
+pop_add:
+        ld hl,pop_pts
+        ld c,a
+        add a,(hl)
+        jr nc,.sum
+        ld a,255
+.sum:   ld (hl),a
+        ld a,c
+        ld b,-1
+.ten:   inc b
+        sub 10
+        jr nc,.ten
+        add a,10
+        ld c,a
+        ld a,b
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        or c                    ; BCD
+        jp score_add
+
+; pop_here - HL = pixel x, A = pixel y: show the points there, unless a
+; burst is coming or up (its end shows them). Corrupts: AF, B, DE, HL
+pop_here:
+        ld b,a
+        ld a,(boom_t)
+        or a
+        ret nz
+        ld a,b
+        call boom_place
+        xor a
+        ld (boom_left),a        ; no shapes: boom_step goes to boom_end
+        ld hl,boom_step
+        ld (boom_hook+1),hl
+        ret
+
+; The burst has ended and its photograph is back: draw the points.
+; In: A = pop_pts. Corrupts: AF, BC, DE, HL
+pop_show:
+        ld c,a
+        xor a
+        ld (pop_pts),a
+        push bc
+        call boom_photo
+        pop bc
+        ld a,c                  ; hundreds, tens, units
+        ld d,-1
+.hun:   inc d
+        sub 100
+        jr nc,.hun
+        add a,100
+        ld e,-1
+.ten:   inc e
+        sub 10
+        jr nc,.ten
+        add a,10 + POP_DIGIT
+        ld hl,pop_glyph + 3
+        ld (hl),a
+        dec hl
+        ld a,e
+        add a,POP_DIGIT
+        ld (hl),a
+        dec hl
+        ld a,d
+        or a
+        ld b,POP_PLUS
+        jr z,.small             ; " +20"
+        add a,POP_DIGIT
+        ld b,a                  ; "+150"
+        ld a,POP_PLUS
+.small: ld (hl),b
+        dec hl
+        ld (hl),a
+        ld hl,(boom_addr)
+        ld a,h
+        add a,POP_ROW
+        ld h,a
+        ld b,0                  ; the glyphs' row
+.row:   ld a,(pop_glyph)
+        call pop_nib
+        ld c,a
+        ld a,(pop_glyph + 1)
+        call pop_nib
+        call pop_pair
+        inc l
+        ld a,(pop_glyph + 2)
+        call pop_nib
+        ld c,a
+        ld a,(pop_glyph + 3)
+        call pop_nib
+        call pop_pair
+        dec l
+        inc h
+        inc b
+        ld a,b
+        cp 5
+        jr c,.row
+        ld hl,(frame_count)
+        ld de,CFG_POP_TIME
+        add hl,de
+        ld (pop_until),hl
+        ld hl,pop_step
+        ld (boom_hook+1),hl
+        jp boom_show_fish
+
+; C = the left glyph's row, A = the right's (both in the top nibble):
+; one byte onto (HL). Corrupts: AF
+pop_pair:
+        rrca
+        rrca
+        rrca
+        rrca
+        or c
+        ld (hl),a
+        ret
+
+; A = a glyph's number, B = its row: A = that row. Corrupts: DE
+pop_nib:
+        ld e,a
+        add a,a
+        add a,a
+        add a,e                 ; five bytes a glyph
+        add a,b
+        add a,low pop_font
+        ld e,a
+        adc a,high pop_font
+        sub e
+        ld d,a
+        ld a,(de)
+        ret
+
+; boom_hook while the points show: their clock, then the burst's end
+; wipes them (and shows any new ones).
+pop_step:
+        call stats_prepare
+        ld hl,(frame_count)
+        ld de,(pop_until)
+        or a
+        sbc hl,de
+        ret c
+        jp boom_end
+    ENDIF
 
 ; Four shapes, 12 rows, 2 bytes each. A bit set is ink.
 boom_shapes:

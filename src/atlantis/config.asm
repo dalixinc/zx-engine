@@ -232,6 +232,15 @@ CFG_NUKE_ODDS        equ 8
 CFG_SPECIAL_TIME     equ 24
 CFG_SUCTION_SPEED    equ 6       ; down
 CFG_SHOVE_SPEED      equ 8       ; right
+; What a power scores, 0 to 99, for each thing it clears, in place of
+; the level's points: suction for each enemy it pulls out of the way
+; and the missile it takes away, shove for each one it blows up, the
+; nuke for each one it takes. The total shows in small figures ("+20")
+; where the last burst was, for CFG_POP_TIME television frames.
+CFG_PTS_SUCTION      equ 10
+CFG_PTS_SHOVE        equ 20
+CFG_PTS_NUKE         equ 50
+CFG_POP_TIME         equ 50
 ; Setting one off flashes the border in its colour and black, two steps
 ; each, for this many steps (a chord's flash is CFG_CHORD_FLASH), and
 ; plays its own slide (sound.asm). Colours: 5 cyan, 6 yellow.
