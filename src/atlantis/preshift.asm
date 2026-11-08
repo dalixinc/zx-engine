@@ -48,8 +48,18 @@ DIVER_SHIFTED   equ DIVER_ALL8 / 2
 ; The pulsar ends at the scroll buffers, the fish below it, the diver
 ; below that. main.asm checks that the data (data_end) stops short of
 ; PRESHIFT_START.
+    IFDEF SHARED_BOMB
+; Trigon: the pulsar's copies share the spinning wheel's room, which holds
+; either kind; each level's are made when its first bomb appears
+; (bomb_art, src/trigon/twobomb.asm). The fish's and the diver's copies
+; move up into the room the pulsar's had, and the data block gains it.
+WHEEL_BUF       equ WSPIN_BUF
+FISH_BUF        equ SCROLL_BASE - FISH_SHIFTED
+        ASSERT WHEEL_SHIFTED <= WSPIN_SHIFTED, "the pulsar's copies do not fit the spinning wheel's room"
+    ELSE
 WHEEL_BUF       equ SCROLL_BASE - WHEEL_SHIFTED
 FISH_BUF        equ WHEEL_BUF - FISH_SHIFTED
+    ENDIF
 DIVER_BUF       equ FISH_BUF - DIVER_SHIFTED
 PRESHIFT_START  equ DIVER_BUF
 
@@ -105,7 +115,9 @@ preshift_jobs:
         PRESHIFT_JOB diver_src, DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW, 1
         PRESHIFT_JOB fish_src, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW, 0
         PRESHIFT_JOB wheel_src, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW, 0
+    IFNDEF SHARED_BOMB                  ; Trigon makes it when its level comes
         PRESHIFT_JOB wspin_src, WSPIN_BUF, WSPIN_PICS, WSPIN_HEIGHT, WSPIN_WIDE, WSPIN_RAW, 0
+    ENDIF
     IFDEF ENEMY_DIVER
         PRESHIFT_JOB ediver_src, ED_BUF, EDIVER_PICS, EDIVER_HEIGHT, EDIVER_WIDE, EDIVER_RAW, 1
     ENDIF
@@ -119,6 +131,8 @@ preshift_jobs:
 preshift_all:
         call diver_jet_build
         ld hl,preshift_jobs
+; HL = a list of PRESHIFT_JOBs, ending in a 0 word: make each one's copies.
+preshift_list:
 .job:   ld e,(hl)
         inc hl
         ld d,(hl)               ; the art

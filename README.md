@@ -267,6 +267,7 @@ src/trigon/main.asm      Trigon: the game again with TRIGON defined, and its out
 src/trigon/config.asm    Trigon's numbers: levels, colours, the sea (CFG_SEA)
 src/trigon/theme.asm     the fish's and the missile's colours, painted each step
 src/trigon/gate.asm      the code on Trigon's menu, and its buzz
+src/trigon/twobomb.asm   a second bomb in the fish's place (the bomb code again, as module b2)
 src/trigon/ediver.asm    an enemy diver, an experiment (-DENEMY_DIVER only)
 src/main.asm             Engine Demo 1 entry and loop
 src/layout.asm           the demo's rows and buffer addresses
@@ -297,7 +298,7 @@ gfx/city.scr, city_*.zx0 GENERATED: the city as a screen (tools/mkcity.py); pixe
 VERSION                  the version printed on the loading screen (0.9.8)
 gfx/trigon/              Erin's Trigon sprites (.txt) and what is GENERATED from them
 gfx/trigon/loading.scr   GENERATED Trigon loading screen (mkloadscreen.py --trigon)
-src/trigon/VERSION       Trigon's version, on its loading screen (0.1.0)
+src/trigon/VERSION       Trigon's version, on its loading screen (0.2.0)
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
 tools/gfx2asm.py         ASCII art -> pre-shifted masked .asm (Python 3)

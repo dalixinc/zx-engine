@@ -178,6 +178,14 @@ menu_tab:
         db 4
         dw str_opt_code
         dw menu_code
+    ELSE
+    IFDEF TWO_BOMBS
+        db 4                    ; Trigon: two bombs at 25, or not (twobomb.asm)
+        db TB_OPT_ROW
+        db 4
+        dw str_tb_opt
+        dw tb_toggle
+    ENDIF
     ENDIF
         db 0
         HOT

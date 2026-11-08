@@ -28,6 +28,7 @@
 
 ; How this level looks and what it scores, in CFG_LEVELS' order.
 ; level_style fills it. The points are BCD, for score_add.
+    IFNDEF B2_PASS              ; Trigon's second bomb takes only the bomb's movers (src/trigon/twobomb.asm)
 level_look:
 level_ink:      db CFG_WHEEL_INK ; the bomb's cell colour (wheel_type)
 level_bmove:    db MOVE_BOB     ; the bomb's movement (wheel_kind)
@@ -43,6 +44,7 @@ LEVEL_LOOK      equ $ - level_look
 fish_mover:     dw update_fish  ; what fish_unhold puts back in the moves
 fish_wave_p:    db 0            ; the fish's place on its wave
 fish_frac:      db 0            ; its haste's fraction of a pixel
+    ENDIF
 wheel_wave_p:   db 0            ; the bomb's place on its wave
 
 ; The bomb's middle stays this far from the score row and the seaweed,
@@ -198,6 +200,7 @@ wheel_home:
         ld (wheel_base),a
         jp wheel_drift
 
+    IFNDEF B2_PASS
 ;------------------------------------------------------------------------------
 ; fish_wave - one 1/50 second of the level 2 fish, in update_fish's place
 ; Across: a pixel, and one more each time the level's haste carries out
@@ -271,6 +274,9 @@ level_style:
         ld de,level_look
         ld bc,LEVEL_LOOK
         ldir
+    IFDEF TWO_BOMBS
+        call tb_level           ; the level's two-bomb waves (src/trigon/twobomb.asm)
+    ENDIF
         ; The fish's movement is the next fish's: the one swimming keeps
         ; its own, as it keeps its kind. fish_unhold hands fish_mover to
         ; the moves when a fish appears (fish_wait_step, and a new game).
@@ -314,3 +320,4 @@ beat_fixed:
     ENDIF
     ENDIF
         HOT
+    ENDIF

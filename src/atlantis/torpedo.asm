@@ -434,12 +434,17 @@ torpedo_spent:
 ; main_loop calls this only while a torpedo is running.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
+    IFDEF TWO_BOMBS
+TORP_NOT_BOMB   equ tb_torpedo  ; Trigon: the second bomb, then the fish
+    ELSE
+TORP_NOT_BOMB   equ torpedo_fish
+    ENDIF
 torpedo_hit:
         call missile_shot       ; a missile in the way goes first
         ret c
         ld a,(wheel_phase)
         or a
-        jp z,torpedo_fish       ; no bomb: the fish, if it is in the way
+        jp z,TORP_NOT_BOMB      ; no bomb: the fish, if it is in the way
 
         ; The same compare as hit_check: the bomb's x minus the torpedo's,
         ; moved so the overlap is 0 .. span-1. Both are 16 bits here.
@@ -451,10 +456,10 @@ torpedo_hit:
         add hl,de
         ld a,h
         or a
-        jp nz,torpedo_fish
+        jp nz,TORP_NOT_BOMB
         ld a,l
         cp TORP_X_SPAN
-        jp nc,torpedo_fish
+        jp nc,TORP_NOT_BOMB
 
         ld a,(torp_y)
         ld b,a
@@ -462,7 +467,7 @@ torpedo_hit:
         sub b
         add a,-TORP_Y_LO
 .yspan: cp TORP_Y_SPAN
-        jp nc,torpedo_fish
+        jp nc,TORP_NOT_BOMB
 
         call wheel_remove
         call boom_at_bomb

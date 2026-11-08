@@ -485,7 +485,10 @@ wheel_clamp_base:
         ret
 
         ; Once a bomb, as it appears: in the cold block, with its tables.
+        ; (Trigon's second bomb, B2_PASS, keeps its copy with its code.)
+    IFNDEF B2_PASS
         COLD
+    ENDIF
 ;------------------------------------------------------------------------------
 ; wheel_type - this level's kind of bomb: its five settings, its pictures
 ; level_bomb (from CFG_LEVELS) picks the pulsar or the spinning wheel.
@@ -498,6 +501,11 @@ wheel_type:
         ld a,(level_bomb)
     IFDEF MEAS_SPIN
         ld a,BOMB_W             ; measure the spinning wheel at level 1
+    ENDIF
+    IFDEF SHARED_BOMB
+    IFNDEF B2_PASS
+        call bomb_art           ; Trigon: this kind's copies, if not made (twobomb.asm)
+    ENDIF
     ENDIF
         ld hl,enemy_wheel
         ld de,wheel_pics
@@ -551,7 +559,9 @@ wheel_type:
 ; Each kind's pictures and animation order.
 wheel_pics:     dw wheel_images, wheel_seq
 spin_pics:      dw wspin_images, wspin_seq
+    IFNDEF B2_PASS
         HOT
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; wheel_spawn_type - copy the settings onto this bomb
@@ -600,7 +610,9 @@ wheel_next_frame:
         ld (wheel_frame),a
         ret
 
+    IFNDEF B2_PASS
         COLD
+    ENDIF
 ;------------------------------------------------------------------------------
 ; wheel_reset - the bomb the tape starts with
 ; Fixed height, the start of the sine, just off the right edge. This is
@@ -633,7 +645,9 @@ wheel_reset:
         ld (wheel_phase),a
         ret
 
+    IFNDEF B2_PASS
         HOT
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; wheel_is_low - carry clear if this bomb has to be drawn after the seabed
