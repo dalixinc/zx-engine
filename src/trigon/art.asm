@@ -50,9 +50,10 @@ trigon_art_in:
         call preshift_list
         ld a,(trigon_on)
         or a
-        ld a,1
+        ret nz                  ; already in: the missile is hers
+        inc a
         ld (trigon_on),a
-        ret nz                  ; the missile is hers already
+        call tp_on              ; the fish and the missile in colour (theme.asm)
         jr trigon_missile
 
 ;------------------------------------------------------------------------------
@@ -67,6 +68,7 @@ trigon_off:
         xor a
         ld (trigon_on),a
         call trigon_plain       ; the Atlantis death flash (theme.asm)
+        call tp_off             ; the fish's draw place its own again
         call il_art_atlantis    ; the enemies' copies (interlude.asm)
         ; fall through: the missile's pictures back
 

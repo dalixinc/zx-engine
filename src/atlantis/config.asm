@@ -279,6 +279,12 @@ CFG_TRIGON_INK_1     equ BRIGHT | BLACK | (BLUE << 3)
 CFG_TRIGON_INK_2     equ BRIGHT | MAGENTA | (BLUE << 3)
 CFG_TRIGON_INK_3     equ BRIGHT | RED | (BLUE << 3)
 CFG_TRIGON_HIT_INK   equ WHITE
+; The fish and the missile have their cells painted in Trigon (a sprite
+; takes its cells' colours): the angler, the piranha, and a missile up in
+; the water. Whole cells, on the sea's paper, as the bombs' are.
+CFG_TRIGON_ANGLER    equ BRIGHT | CYAN | (BLUE << 3)
+CFG_TRIGON_PIRANHA   equ BRIGHT | RED | (BLUE << 3)
+CFG_TRIGON_MISSILE   equ BRIGHT | BLACK | (BLUE << 3)
 
 ; --- The attract demo (demo.asm) ----------------------------------------------
 ; After CFG_DEMO_WAIT seconds on the menu with no key down, the computer

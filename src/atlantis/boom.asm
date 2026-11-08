@@ -61,7 +61,7 @@ boom_reset:
         ld (fish_left),a
         ld (fish_wait),a
         ld hl,fish_draw_fast
-        ld (fish_draw_call+1),hl
+.fdc:   ld (fish_draw_call+1),hl ; Trigon sends it to tp_real (theme.asm)
         ld hl,fish_restore_fast
         ld (fish_rest_call+1),hl
         ld hl,stats_prepare
@@ -124,7 +124,7 @@ fish_flash_begin:
         ld a,1
         ld (fish_busy),a
         ld hl,fish_flash_draw
-        ld (fish_draw_call+1),hl
+.fdc:   ld (fish_draw_call+1),hl ; Trigon sends it to tp_real (theme.asm)
         jp fish_hold
 
 ; In the fish's draw place. Its restore has just run.
@@ -183,7 +183,7 @@ fish_begin_wait:
         ld a,1
         ld (fish_busy),a
         ld hl,fish_wait_step
-        ld (fish_draw_call+1),hl
+.fdc:   ld (fish_draw_call+1),hl ; Trigon sends it to tp_real (theme.asm)
         jp fish_hold
 
 fish_wait_step:
@@ -201,7 +201,7 @@ fish_wait_step:
         ld (fish_busy),a
         ld (fish_wave_p),a      ; a wave starts again at the middle
         ld hl,fish_draw_fast
-        ld (fish_draw_call+1),hl
+.fdc:   ld (fish_draw_call+1),hl ; Trigon sends it to tp_real (theme.asm)
         call fish_kind_pick
         jp fish_unhold
 
@@ -297,7 +297,7 @@ boom_at_fish:
         ld (boom_fish),a
         ld (fish_busy),a
         ld hl,fish_draw_skip
-        ld (fish_draw_call+1),hl
+.fdc:   ld (fish_draw_call+1),hl ; Trigon sends it to tp_real (theme.asm)
         call fish_hold
 .arm:   ld a,(fish_x)
         ld l,a

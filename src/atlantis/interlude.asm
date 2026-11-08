@@ -239,6 +239,23 @@ IL_RIM          equ 4           ; the ring's width, half cells
 IL_R_END        equ 40          ; past the corners (38.6)
 
 il_circle:
+        ; The squares, worked out into the room after the colours: each
+        ; one the last plus the next odd number.
+        ld hl,IL_SQUARES
+        ld de,0
+        ld bc,1
+        ld a,IL_SQ_COUNT
+.sq:    ld (hl),e
+        inc hl
+        ld (hl),d
+        inc hl
+        ex de,hl
+        add hl,bc
+        ex de,hl
+        inc bc
+        inc bc
+        dec a
+        jr nz,.sq
         xor a
 .ring:  ld (il_r),a
         call il_sq
@@ -307,7 +324,7 @@ il_circle:
 il_sq:  push de
         ld e,a
         ld d,0
-        ld hl,il_squares
+        ld hl,IL_SQUARES
         add hl,de
         add hl,de
         ld a,(hl)
@@ -316,12 +333,7 @@ il_sq:  push de
         ld l,a
         pop de
         ret
-il_squares:
-il_n = 0
-        DUP IL_R_END + IL_STEP + IL_RIM + 1
-        dw il_n * il_n
-il_n = il_n + 1
-        EDUP
+IL_SQ_COUNT     equ IL_R_END + IL_STEP + IL_RIM + 1
 il_r:           db 0
 il_in:          dw 0
 il_rim:         dw 0
@@ -330,7 +342,8 @@ il_dy:          dw 0
 ; spinning wheel's shifted copies, which are made again from the art
 ; straight after (il_art_atlantis, or Trigon's: src/trigon/art.asm).
 IL_ATTRS        equ WSPIN_BUF
-        ASSERT WSPIN_SHIFTED >= ATTRS_SIZE, "the spinning wheel's copies cannot hold the city's colours"
+IL_SQUARES      equ IL_ATTRS + ATTRS_SIZE       ; and the circle's squares
+        ASSERT WSPIN_SHIFTED >= ATTRS_SIZE + 2 * IL_SQ_COUNT, "the spinning wheel's copies cannot hold the city's colours and squares"
 
 ; The enemies' shifted copies made again from the Atlantis art.
 ; Corrupts: AF, BC, DE, HL, IX
