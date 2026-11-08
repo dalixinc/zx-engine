@@ -129,6 +129,9 @@
         DEFINE TWO_BOMBS        ; a second bomb in the fish's place (twobomb.asm)
     ENDIF
         DEFINE SHARED_BOMB      ; one set of bomb copies for both kinds (twobomb.asm)
+    IFDEF POWERUPS
+        DEFINE LANCEGUN         ; the Lance laser, from CFG_LANCE_LEVEL (lance.asm)
+    ENDIF
     IFNDEF SOAK
     IFNDEF MEASURE              ; which measures a fish that always swims
         DEFINE FISH_LEAVES      ; the fish crosses once, then goes (twobomb.asm)
@@ -683,7 +686,7 @@ fish_mv:
         call nz,torpedo_move
         ld a,(input_state)
         and IN_FIRE
-        call nz,torpedo_fire
+.lf1:   call nz,torpedo_fire    ; Trigon: CALL lance_input once it is his
 .msl_uc1:                      ; patched while the double shot lasts (missile.asm)
         call missile_update
     IFNDEF NO_WHEEL
@@ -973,7 +976,7 @@ fish_mv2:
         call nz,torpedo_move
         ld a,(input_state)
         and IN_FIRE
-        call nz,torpedo_fire
+.lf2:   call nz,torpedo_fire    ; Trigon: CALL lance_input once it is his
 .msl_uc2:                      ; patched while the double shot lasts (missile.asm)
         call missile_update
     IFNDEF NO_WHEEL
@@ -1219,6 +1222,7 @@ data_start:
         ; code is, and where Trigon has the room; and the shared bomb
         ; copies' rebuild.
         INCLUDE "../trigon/twobomb.asm"
+        INCLUDE "../trigon/lance.asm"
     ENDIF
     IFDEF CITY_SHOW
 city_pix_zx0:                   ; Erin's city, a whole screen, packed:

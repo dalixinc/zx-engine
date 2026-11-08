@@ -49,3 +49,7 @@ The testers' switch (Symbol Shift + M on the menu) works in Trigon as
 in Atlantis. Trigon's menu wants a code before anything starts: the
 Trigon code (KRAKEN, from the Atlantis ending) for level 1, or a Trigon
 level code (LEVEL-CODES-LIST.md) for a later level.
+
+The testers' switch also gives the Lance laser from level 1 (it is
+Trigon's from `CFG_LANCE_LEVEL`, 4), with its picture on the score line
+at once and no level 4 message.

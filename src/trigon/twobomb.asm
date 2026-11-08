@@ -410,7 +410,11 @@ tb_level:
         ld de,tb_share
         ld bc,4
         ldir
+    IFDEF LANCEGUN
+        jp lance_level          ; is the Lance his now? (lance.asm)
+    ELSE
         ret
+    ENDIF
 
         MACRO TB_ROW share?, ink?, bmove?, hunt?
         ASSERT share? >= 0 && share? <= 255

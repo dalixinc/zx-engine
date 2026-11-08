@@ -327,6 +327,11 @@ level_up:
     IFDEF SHARED_BOMB
         call tb_art_now         ; Trigon: the bomb's pictures, under the banner
     ENDIF
+    IFDEF LANCEGUN
+    IFDEF TEASER
+        call lance_news         ; Trigon: the Lance's message, at its level
+    ENDIF
+    ENDIF
     IFNDEF NO_SOUND
         ld hl,snd_tune_level
         jp snd_tune_start
@@ -437,6 +442,11 @@ hud_draw:
         ld hl,hud_dirty
         bit HUD_TEXT,(hl)
         call nz,hud_text_draw
+    IFDEF LANCEGUN
+        ld hl,hud_dirty
+        bit HUD_LANCE,(hl)
+        call nz,lance_hud       ; Trigon's Lance: its gauge and beam (lance.asm)
+    ENDIF
         ld hl,hud_dirty
         bit HUD_BANNER,(hl)
         ret z
@@ -752,6 +762,10 @@ teaser:
         ld hl,str_tease_go      ; level 2: it starts now
         ld bc,((TEASE_ROW + 3) << 8) | TEASE_GO_COL
         ld a,(level_n)
+    IFDEF LANCEGUN
+        cp CFG_LANCE_LEVEL
+        jr z,.lance             ; Trigon: the Lance is his (lance.asm)
+    ENDIF
         cp 2
         jr z,.line2
         ld hl,str_tease_2       ; level 3: more is coming
@@ -769,6 +783,7 @@ teaser:
         ld (text_attr),a
         ld hl,code_buf
         call print_string
+.keys:
         call keys_up            ; he is holding a direction, or fire
 .wait:  call wait_frame
         call any_key
@@ -778,6 +793,18 @@ teaser:
         call teaser_fill
         call banner_bomb        ; the bomb's ink, if the panel covered it
         jp spare_count
+    IFDEF LANCEGUN
+.lance: ld hl,str_lance_1       ; B is the second line's row
+        ld c,(32 - LANCE_1_LEN) / 2
+        call print_string
+        ld hl,str_lance_2
+        ld bc,((TEASE_ROW + 5) << 8) | ((32 - LANCE_2_LEN) / 2)
+        call print_string
+        ld hl,str_tease_key
+        ld bc,((TEASE_ROW + 7) << 8) | 10
+        call print_string
+        jr .keys
+    ENDIF
 
 ; A = attribute for the panel's rows, whose pixels are cleared.
 ; Corrupts: F, BC, DE, HL

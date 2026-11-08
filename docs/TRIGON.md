@@ -231,16 +231,53 @@ Trigon has the whole 48K to itself, laid out as Atlantis is
 
 | Free bytes | Atlantis | Trigon |
 |---|---|---|
-| Hot code (to `RFISH_BUF`) | 339 | 456 |
-| Cold block (to the unpacker) | 21 | 130 |
-| Data (to `PRESHIFT_START`) | 1,093 | 1,545 |
-| Tape room (below the packed game) | 412 | 959 |
-| The tape | 18,845 bytes | 18,324 bytes |
+| Hot code (to `RFISH_BUF`) | 339 | 445 |
+| Cold block (to the unpacker) | 21 | 95 |
+| Data (to `PRESHIFT_START`) | 1,093 | 621 |
+| Tape room (below the packed game) | 412 | 196 |
+| The tape | 18,845 bytes | 19,076 bytes |
 
 Trigon 0.2.0's second bomb takes about 2,040 bytes of the data block
 (the bomb code again), 164 of hot code (the main loop's calls, the
 paint's and the hits' checks) and 19 of the cold block; the shared bomb
-copies give back 866.
+copies give back 866. The Lance takes 924 bytes of the data block, 11
+of hot code and 35 of the cold block, and 763 of the tape room.
+
+## The Lance laser
+
+From level 4 the diver has a second weapon on the fire key
+(`src/trigon/lance.asm`, `CFG_LANCE_*` in `src/trigon/config.asm`):
+
+- **A tap** fires a torpedo, as always.
+- **Holding fire charges the Lance.** Its picture sits on the score
+  line, left of the special bomb's cell, from the moment it is his, and
+  the bar under it fills in eighths as he holds.
+- **Letting go** after half a second throws a beam from his gun the way
+  he faces: two pixel rows, white, a byte longer for each 3/50 second of
+  charge, so the whole width after two seconds. It stays a moment
+  (`CFG_LANCE_TIME`), blows up the bombs, the fish and a silo's missile
+  it touches, `CFG_PTS_LANCE` (15) points each, shown as "+15" where
+  they were, then rests (`CFG_LANCE_REST`) before the next.
+- **Reaching level 4** shows a message in the level panel: "THE LANCE
+  LASER IS YOURS: HOLD FIRE, LET GO TO SHOOT".
+
+**Drawing it:** the sea is empty pixels under white ink, so the beam is
+pixels only: white, nothing written to the colours, so no clash on open
+water. Nothing is under it to keep, so it is drawn once and wiped once,
+at the moment in the step when no sprite is on the screen (where row 1
+is drawn), and the sprites photograph it as water. It stays out of the
+score line and the seabed's rows. A burst that photographed it has
+those bytes cleared when the beam goes, or the burst's end would put
+the beam back.
+
+**What it costs:** nothing before level 4, and nothing while fire is up
+and no beam is out: the main loop's two fire calls are `CALL NZ`, as
+before, until fire goes down. On level 3's movers with the diver on the
+seabed, held and let go every two seconds (the press's torpedo left
+out), it measured 17 late steps in 512 at 50 against 9, and two bombs
+197 against 161, with no frame lost; at 25, none late (29 scanlines
+spare, two bombs 14). At 50 its hit tests, gauge and drawing keep off
+the heaviest step, the one that rotates the sand and weed.
 
 ## An enemy diver (an experiment)
 
