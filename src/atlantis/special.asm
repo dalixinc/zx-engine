@@ -13,7 +13,7 @@
 ;   shove    they are thrown right, CFG_SHOVE_SPEED pixels a 1/50 second
 ;            for the same time, and blow up at the right edge, or where
 ;            they are when the time runs out
-;   nuke     they go up as if shot (CFG_NUKE_LEVEL; 0 leaves it out)
+;   nuke     they go up as if shot, from CFG_NUKE_LEVEL (0 leaves it out)
 ; Shove blows up a silo's missile, armed or in flight, as B is pressed;
 ; suction and the nuke take it away, with no burst. Each thing a power
 ; clears scores its points (CFG_PTS_SUCTION, _SHOVE, _NUKE: sp_score),

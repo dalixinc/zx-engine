@@ -266,10 +266,10 @@ CFG_DOUBLE_COOLDOWN  equ 10
 ;             they stay, alive: the escape. The missile goes silently.
 ;   shove     throws them to the right edge, where they blow up and
 ;             score as if shot, and so does the missile
-;   nuke      clears them (a testing knob: 0 leaves it out of the build)
+;   nuke      clears them all, from CFG_NUKE_LEVEL (0 leaves it out of the build)
 CFG_SUCTION_LEVEL    equ 2
 CFG_SHOVE_LEVEL      equ 3
-CFG_NUKE_LEVEL       equ 99      ; only the testers' switch brings it
+CFG_NUKE_LEVEL       equ 12      ; from level 12 (0 leaves it out of the build)
 CFG_SUCTION_ODDS     equ 11      ; about one turn in 23: the escape, twice as
 CFG_SHOVE_ODDS       equ 5       ; common as the throw (one in 51), which kills
 CFG_NUKE_ODDS        equ 8
