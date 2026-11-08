@@ -116,6 +116,7 @@ lance_dirty:
         ret
 
     IFDEF TEASER
+        COLD                    ; once a level
 ; level_up, after the banner: on reaching CFG_LANCE_LEVEL, the message
 ; (teaser, score.asm, hands over to lance_teaser). Not with the testers'
 ; switch, which gave it at level 1. Corrupts: AF
@@ -135,6 +136,7 @@ str_lance_1:    db "LANCE LASER:",0
 LANCE_1_LEN     equ $ - 1 - str_lance_1
 str_lance_2:    db "HOLD FIRE, LET GO",0
 LANCE_2_LEN     equ $ - 1 - str_lance_2
+        HOT
     ENDIF
 
 ;------------------------------------------------------------------------------

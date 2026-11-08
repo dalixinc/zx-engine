@@ -72,6 +72,16 @@ bss_ptr = bss_ptr + (size?)
         BSS fish_bg, BG_DATA + FISH_BYTES * FISH_HEIGHT
         BSS diver_bg, BG_DATA + DIVER_BYTES * DIVER_HEIGHT
         BSS boom_bg, BOOM_ROWS * 2
+    IFDEF TRIGON
+        ; the diver's belt (src/trigon/theme.asm)
+        BSS tp_belt, 1                  ; his belt's colour, 0 = white (nothing painted)
+        BSS tp_d_on, 1                  ; not 0 = tp_d_at's cells are painted
+        BSS tp_d_at, 2                  ; L column, H row
+        BSS tp_d_size, 2                ; C columns, B rows
+        BSS tp_new_don, 1
+        BSS tp_new_dat, 2
+        BSS tp_new_dsize, 2
+    ENDIF
     IFDEF POWERUPS
         BSS pop_glyph, 4                ; a power's points: the pop-up's four glyphs (boom.asm)
     ENDIF

@@ -125,6 +125,14 @@ and suction from level 2, shove from level 3, the Lance from level 4.
 Each level from 2 to 10 has a code (in the message for level 2, under
 the banner from level 3).
 
+**Belts.** The diver earns a belt every two levels, and swims in its
+colour: white for levels 1 and 2, yellow for 3 and 4, cyan for 5 and 6,
+green for 7 and 8, magenta for 9 and 10 (`CFG_BELTS`). White is the
+sea's own ink; from yellow his cells are painted as the fish's are
+(`tp_diver`, `src/trigon/theme.asm`), his own box only, as he moves, on
+the steps the paint already uses. It costs a few late steps at 50 (level
+3: 22 in 512 against 8, level 10: 12 against 7), none at 25.
+
 **The end.** Finishing level 10 (`CFG_ENDING_LEVEL`) stops the game:
 black, "TRIGON HAS FALLEN", and the code for the third game, Finale,
 until a key (`src/trigon/ending.asm`). The score counts for the high
@@ -248,11 +256,11 @@ Trigon has the whole 48K to itself, laid out as Atlantis is
 
 | Free bytes | Atlantis | Trigon |
 |---|---|---|
-| Hot code (to `RFISH_BUF`) | 339 | 647 |
-| Cold block (to the unpacker) | 21 | 102 |
-| Data (to `PRESHIFT_START`) | 1,093 | 153 |
-| Tape room (below the packed game) | 412 | 168 |
-| The tape | 18,845 bytes | 19,306 bytes |
+| Hot code (to `RFISH_BUF`) | 339 | 682 |
+| Cold block (to the unpacker) | 21 | 20 |
+| Data (to `PRESHIFT_START`) | 1,093 | 10 |
+| Tape room (below the packed game) | 412 | 27 |
+| The tape | 18,845 bytes | 19,482 bytes |
 
 Trigon 0.2.0's second bomb takes about 2,040 bytes of the data block
 (the bomb code again), 164 of hot code (the main loop's calls, the
@@ -263,7 +271,10 @@ Levels 4 to 10 and their codes took 136 of the tape room, and the
 ending about 100. To pay for them, the paint's box helpers (`tp_box`,
 `tp_cells`, 202 bytes) moved from the hot code into the data block
 (`TP_DATA`): just as fast there, and a byte of hot code costs the tape
-two, as the code's end and the packed game both move.
+two, as the code's end and the packed game both move. The belts took
+about 140 more; the missile's paint helpers moved to the data block too,
+and the Lance's level 4 message and the belt table to the cold block.
+Trigon is now full: what comes next goes into Finale.
 
 ## The Lance laser
 
