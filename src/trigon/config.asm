@@ -334,10 +334,27 @@ MOVE_STRAIGHT       equ 0       ; fish: straight across
 MOVE_WAVE           equ 1       ; either: the wave
 MOVE_HOME           equ 2       ; bomb: the bob, drifting to the diver's depth
 BORDER_BEAT         equ $FF     ; the heartbeat's round of colours
-; One level for now: Atlantis's level 1 in Trigon's colours.
+CFG_L2_INK          equ RED | SEA
+CFG_L3_INK          equ MAGENTA | SEA
+
+; Three levels for now, each a step past Atlantis's level 1: the pulsar
+; on a wave with a waving fish, then the spinning wheel hunting, then
+; the wheel hunting harder with the homing missiles (CFG_MSL_HOME_LEVEL).
+; One bomb at a time (docs/TRIGON.md: two do not fit at 50).
+; The soak plays level 1 and its frame numbers expect Atlantis's level 1
+; (score.asm asserts it), so a soak build has that row first, in Trigon's
+; colours; the game's own level 1 is a harder one.
+    IFNDEF SOAK
+        DEFINE LEVEL1_FREE
+    ENDIF
         MACRO CFG_LEVELS
-        ;          points  gap min  gap max  haste  bomb    ink            bmove      hunt fmove          fspeed border        fish bomb missile
+    IFDEF SOAK
         LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P, CFG_WHEEL_INK, MOVE_BOB, 0, MOVE_STRAIGHT, 0, BLUE, 1, 2, 10
+    ENDIF
+        ;          points  gap min  gap max  haste  bomb    ink            bmove      hunt fmove          fspeed border        fish bomb missile
+        LEVEL_ROW  300,    60,      150,     32,    BOMB_P, CFG_WHEEL_INK, MOVE_WAVE, 0,   MOVE_WAVE,     48,    BLUE,         1,   2,   10
+        LEVEL_ROW  450,    50,      130,     72,    BOMB_W, CFG_L2_INK,    MOVE_HOME, 64,  MOVE_STRAIGHT, 0,     RED,          1,   3,   10
+        LEVEL_ROW  600,    40,      110,     120,   BOMB_W, CFG_L3_INK,    MOVE_HOME, 112, MOVE_WAVE,     64,    MAGENTA,      1,   3,   10
         ENDM
 
 ; The waves (MOVE_WAVE). A wave is a sine, AMP pixels above the middle

@@ -66,6 +66,7 @@ level_rows = 0
         ASSERT border == BORDER_BEAT || (border >= 0 && border <= 7)
         ASSERT pfish <= 49, "a piranha scores twice the fish's points: keep them under 50"
         ASSERT pfish >= 0 && pfish <= 99 && pbomb >= 0 && pbomb <= 99 && pmsl >= 0 && pmsl <= 99, "points are one BCD byte: 0 to 99"
+        IFNDEF LEVEL1_FREE      ; Trigon's level 1 is its own, but for its soak
         IF level_rows == 0
         ; The soak plays level 1 and its frame numbers expect the old game.
         ASSERT haste == 0, "level 1's bombs must keep the old speed"
@@ -74,6 +75,7 @@ level_rows = 0
         ASSERT ink == CFG_WHEEL_INK && bmove == MOVE_BOB, "level 1's bomb is the old one"
         ASSERT fmove == MOVE_STRAIGHT, "level 1's fish is the old one"
         ASSERT pfish == 1 && pbomb == 2 && pmsl == 10, "level 1 scores as the old game: 1, 2, 10"
+        ENDIF
         ENDIF
         db (((need % 100) / 10) << 4) | (need % 10)
         db (((need / 1000) % 10) << 4) | ((need / 100) % 10)
