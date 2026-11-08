@@ -300,6 +300,7 @@ CFG_LANCE_MIN        equ 24      ; about half a second: 8 bytes, 64 pixels
 CFG_LANCE_TIME       equ 8
 CFG_LANCE_REST       equ 25
 CFG_PTS_LANCE        equ 15
+CFG_LANCE_INK        equ RED     ; the beam's colour, on the sea's cells it crosses
 ; Setting one off flashes the border in its colour and black, two steps
 ; each, for this many steps (a chord's flash is CFG_CHORD_FLASH), and
 ; plays its own slide (sound.asm). Colours: 5 cyan, 6 yellow.

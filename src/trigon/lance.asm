@@ -22,10 +22,14 @@
 ; (29 scanlines spare, two bombs 14).
 ;
 ; The beam is two pixel rows of ink at the gun's height, whole bytes,
-; and the sea is empty pixels under white ink, so it is white with no
-; colour written, and it needs no photograph: it is drawn once and
-; wiped once (zeros), at the HUD's place in the step (lance_hud), when
-; no sprite is on the screen, so the sprites photograph it as water.
+; both in one row of cells, and the sea is empty pixels, so it needs no
+; photograph: it is drawn once and wiped once (zeros), at the HUD's
+; place in the step (lance_hud), when no sprite is on the screen, so the
+; sprites photograph it as water. Its colour (CFG_LANCE_INK) goes on
+; the cells it crosses that are the water's, and comes off the ones
+; still its own when it goes (lance_tint), so the bombs', the fish's and
+; the banner's colours are left alone; a sprite crossing it meanwhile
+; takes its colour, for the moment it is up.
 ; The burst is the one other thing drawn there: a burst that
 ; photographed the beam has those bytes zeroed in its photograph when
 ; the beam is wiped (lance_unphoto), or its end would put the beam back.
@@ -64,6 +68,8 @@ ln_a1:          dw 0            ; and the row below
 ln_x0:          dw 0            ; its first pixel column
 ln_x1:          dw 0            ; its last
 ln_start:       dw 0            ; frame_count when fire went down
+ln_at:          dw 0            ; the colour byte of its first cell
+LANCE_ATTR      equ CFG_LANCE_INK | SEA
         ASSERT ln_n == ln_c0 + 1
 
 ;------------------------------------------------------------------------------
@@ -281,7 +287,8 @@ lance_fire:
 .low:   cp LANCE_LOW + 1
         jr c,.y
         ld a,LANCE_LOW
-.y:     ld (ln_y),a
+.y:     and $FE                 ; even: both rows in one row of cells
+        ld (ln_y),a
         ; The columns, from the gun out.
         ld a,(diver_facing)
         or a                    ; FACE_RIGHT is 0
@@ -361,6 +368,18 @@ lance_fire:
         add a,b
         ld e,a
         ld (ln_a1),de
+        ld a,(ln_y)             ; the colour bytes' row: (y / 8) * 32
+        and $F8
+        ld l,a
+        ld h,0
+        add hl,hl
+        add hl,hl
+        ld a,l
+        add a,b                 ; a row of 32 starts on a multiple of 32
+        ld l,a
+        ld de,ATTRS
+        add hl,de
+        ld (ln_at),hl
         ld a,1
         ld (ln_beam),a
         ld (ln_draw),a
@@ -518,11 +537,15 @@ lance_hud:
         xor a
         ld (ln_draw),a
         ld a,$FF
-        jr lance_rows
+        call lance_rows
+        ld de,(LANCE_ATTR << 8) | WATER_ATTR
+        jr lance_tint
 
 lance_wipe:
         xor a
         ld (ln_wipe),a
+        ld de,(WATER_ATTR << 8) | LANCE_ATTR
+        call lance_tint
         call lance_unphoto
         xor a
         ; fall through
@@ -544,6 +567,21 @@ lance_fill:
         inc l
         djnz lance_fill
         ret
+
+; The beam's cells that are colour E become colour D.
+; Corrupts: AF, B, HL
+lance_tint:
+        ld hl,(ln_at)
+        ld a,(ln_n)
+        ld b,a
+.cell:  ld a,(hl)
+        cp e
+        jr nz,.next
+        ld (hl),d
+.next:  inc l
+        djnz .cell
+        ret
+        ASSERT LANCE_ATTR != WATER_ATTR
 
 ; A burst's photograph (boom_bg, 2 bytes x BOOM_ROWS from boom_col,
 ; boom_y) holds the beam's bytes if it was taken while the beam was up:

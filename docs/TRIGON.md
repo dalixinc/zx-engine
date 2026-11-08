@@ -233,15 +233,15 @@ Trigon has the whole 48K to itself, laid out as Atlantis is
 |---|---|---|
 | Hot code (to `RFISH_BUF`) | 339 | 445 |
 | Cold block (to the unpacker) | 21 | 95 |
-| Data (to `PRESHIFT_START`) | 1,093 | 621 |
-| Tape room (below the packed game) | 412 | 196 |
-| The tape | 18,845 bytes | 19,076 bytes |
+| Data (to `PRESHIFT_START`) | 1,093 | 569 |
+| Tape room (below the packed game) | 412 | 151 |
+| The tape | 18,845 bytes | 19,121 bytes |
 
 Trigon 0.2.0's second bomb takes about 2,040 bytes of the data block
 (the bomb code again), 164 of hot code (the main loop's calls, the
 paint's and the hits' checks) and 19 of the cold block; the shared bomb
-copies give back 866. The Lance takes 924 bytes of the data block, 11
-of hot code and 35 of the cold block, and 763 of the tape room.
+copies give back 866. The Lance takes 976 bytes of the data block, 11
+of hot code and 35 of the cold block, and 808 of the tape room.
 
 ## The Lance laser
 
@@ -253,7 +253,7 @@ From level 4 the diver has a second weapon on the fire key
   line, left of the special bomb's cell, from the moment it is his, and
   the bar under it fills in eighths as he holds.
 - **Letting go** after half a second throws a beam from his gun the way
-  he faces: two pixel rows, white, a byte longer for each 3/50 second of
+  he faces: two pixel rows, red, a byte longer for each 3/50 second of
   charge, so the whole width after two seconds. It stays a moment
   (`CFG_LANCE_TIME`), blows up the bombs, the fish and a silo's missile
   it touches, `CFG_PTS_LANCE` (15) points each, shown as "+15" where
@@ -261,9 +261,13 @@ From level 4 the diver has a second weapon on the fire key
 - **Reaching level 4** shows a message in the level panel: "THE LANCE
   LASER IS YOURS: HOLD FIRE, LET GO TO SHOOT".
 
-**Drawing it:** the sea is empty pixels under white ink, so the beam is
-pixels only: white, nothing written to the colours, so no clash on open
-water. Nothing is under it to keep, so it is drawn once and wiped once,
+**Drawing it:** the sea is empty pixels, so the beam's two rows (always
+in one row of cells) need nothing kept from under them: drawn once and
+wiped once. Its red (`CFG_LANCE_INK`) goes on the cells it crosses that
+are the water's colour, and comes off the ones still red when it goes,
+so the bombs', the fish's and the banner's colours are left alone. A
+sprite that crosses it in the moment it is up turns red there: the
+Spectrum's clash, for about a sixth of a second. It is drawn and wiped
 at the moment in the step when no sprite is on the screen (where row 1
 is drawn), and the sprites photograph it as water. It stays out of the
 score line and the seabed's rows. A burst that photographed it has
