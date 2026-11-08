@@ -176,7 +176,7 @@ THEME = {
     "fish_inks": (YELLOW, BLUE | BRIGHT, BLUE | BRIGHT),
     "remap": {},
 }
-# Trigon's, as the game's (src/trigon/config.asm): a black sea, cyan
+# Trigon's, as the game's (src/trigon/config.asm): a black sea, red
 # weed, the temple red, a magenta glow at the surface.
 TRIGON_THEME = {
     "word": "TRIGON",
@@ -186,7 +186,7 @@ TRIGON_THEME = {
     "fish_inks": (RED, BLACK, BLACK),
     "remap": {
         CYAN | BRIGHT: MAGENTA | BRIGHT, CYAN: RED, BLUE | BRIGHT: BLACK, BLUE: BLACK,
-        GREEN | BRIGHT: CYAN | BRIGHT, GREEN: CYAN | BRIGHT,
+        GREEN | BRIGHT: RED | BRIGHT, GREEN: RED | BRIGHT,
     },
     "title_inks": [YELLOW | BRIGHT, RED | BRIGHT, RED | BRIGHT, MAGENTA | BRIGHT],
 }

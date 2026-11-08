@@ -242,6 +242,46 @@ title_font:
 ; in column 6: WEED_SPILL_AT and WEED_LEAVE_AT count on both edges (the
 ; soak checks it). The bottom row has pixels, so a full dune touches it.
 weed_pics:
+    IFDEF TRIGON
+        ; Trigon's, by Erin (gfx/trigon/weeds/): the same four places, the
+        ; same rules (columns 2 to 6, both edges touched, the bottom row inked).
+        ; barbed spire (fir)
+        db %00001000  ; ....#...
+        db %00011100  ; ...###..
+        db %00001100  ; ....##..
+        db %00101010  ; ..#.#.#.
+        db %00011100  ; ...###..
+        db %00110100  ; ..##.#..
+        db %00001000  ; ....#...
+        db %00111110  ; ..#####.
+        ; hooked whip (kelp)
+        db %00000110  ; .....##.
+        db %00001100  ; ....##..
+        db %00011000  ; ...##...
+        db %00110000  ; ..##....
+        db %00011000  ; ...##...
+        db %00001100  ; ....##..
+        db %00101100  ; ..#.##..
+        db %00011100  ; ...###..
+        ; skeletal coral (fan coral)
+        db %00100010  ; ..#...#.
+        db %00110110  ; ..##.##.
+        db %00010100  ; ...#.#..
+        db %00011100  ; ...###..
+        db %00101000  ; ..#.#...
+        db %00011000  ; ...##...
+        db %00001000  ; ....#...
+        db %00011100  ; ...###..
+        ; razor reeds (sea grass)
+        db %00100010  ; ..#...#.
+        db %00110010  ; ..##..#.
+        db %00010010  ; ...#..#.
+        db %00011010  ; ...##.#.
+        db %00101010  ; ..#.#.#.
+        db %00011100  ; ...###..
+        db %00001000  ; ....#...
+        db %00011100  ; ...###..
+    ELSE
         ; fir
         db %00001000  ; ....#...
         db %00011100  ; ...###..
@@ -278,6 +318,7 @@ weed_pics:
         db %00001000  ; ....#...
         db %00001000  ; ....#...
         db %00011100  ; ...###..
+    ENDIF
 
 ; A rock on the ground (build_front_pat, scroll.asm): two clear rows,
 ; then a mound ROCK_H tall.

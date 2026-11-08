@@ -73,7 +73,7 @@ CFG_MISSILE_INK     equ CFG_DARK_INK | SEA
 ; The seabed: the weed (and the silos' domes, which stand in its row)
 ; is an ink on the sea, and the ground row is a whole cell colour, its
 ; rocks and the silos' bases in the ink, the rest in the paper.
-CFG_WEED_INK        equ CYAN
+CFG_WEED_INK        equ RED     ; Erin's ominous plants (cyan was 0.2.0's)
     IFNDEF CFG_GROUND_ATTR
 CFG_GROUND_ATTR     equ CFG_BRIGHT_SEA | BLACK | (RED << 3)
     ENDIF
