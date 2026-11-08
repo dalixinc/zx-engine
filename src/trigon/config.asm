@@ -287,6 +287,31 @@ CFG_PTS_SUCTION      equ 10
 CFG_PTS_SHOVE        equ 20
 CFG_PTS_NUKE         equ 50
 CFG_POP_TIME         equ 150
+
+; The Lance laser (src/trigon/lance.asm): from this level, holding fire
+; charges a beam and letting go throws it. FULL is the charge, in 1/50
+; seconds, for a beam the whole width (a multiple of 32: a byte of beam
+; for each FULL / 32); a hold shorter than MIN is a tap, a torpedo only.
+; The beam stays TIME 1/50 seconds, then rests REST before the next. A
+; thing it burns scores PTS_LANCE (0 to 99).
+CFG_LANCE_LEVEL      equ 4
+CFG_LANCE_FULL       equ 96      ; about 2 seconds for the whole width
+CFG_LANCE_MIN        equ 24      ; about half a second: 8 bytes, 64 pixels
+CFG_LANCE_TIME       equ 8
+CFG_LANCE_REST       equ 25
+CFG_PTS_LANCE        equ 15
+CFG_LANCE_INK        equ RED     ; the beam's colour, on the sea's cells it crosses
+; Its sound, a low quick "pew": falling notes, as CFG_LASER's are written
+; (half-period in scanlines, 7812 / it Hz; then 1/50 seconds): about
+; 980, 710, 520 and 390 Hz, 0.16 seconds at 50 or 25. The beeper only
+; plays in a step's spare time, often a millisecond or two, so a note
+; much lower than these fits less than one wave and is heard as a click.
+        MACRO CFG_LANCE_PEW
+        LASER_NOTE 8, 2
+        LASER_NOTE 11, 2
+        LASER_NOTE 15, 2
+        LASER_NOTE 20, 2
+        ENDM
 ; Setting one off flashes the border in its colour and black, two steps
 ; each, for this many steps (a chord's flash is CFG_CHORD_FLASH), and
 ; plays its own slide (sound.asm). Colours: 5 cyan, 6 yellow.

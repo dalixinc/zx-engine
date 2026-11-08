@@ -185,6 +185,9 @@ lives_draw:
         dec c
 .next:  djnz .cell
     IFDEF POWERUPS
+    IFDEF LANCEGUN
+        call lance_cell_draw    ; Trigon: the Lance's gauge (lance.asm)
+    ENDIF
         ; The double shot's bubble, a cell of water away from the hearts,
         ; while it lasts, and the special bomb he carries two cells left
         ; of that; water when not. A cell is udg_water + 8 * its kind.
