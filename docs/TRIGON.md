@@ -73,8 +73,11 @@ on the water is bright:
   bomb's cells are left alone, so where they meet the bomb keeps its
   colour. Another sprite in a painted cell takes its colour for a
   moment: the Spectrum's colour clash.
-- **The seabed:** cyan weed and silo domes (`CFG_WEED_INK`), the yellow
-  sand, and a red ground under it (`CFG_GROUND_ATTR`), like magma.
+- **The seabed:** Erin's ominous plants in red, with the silo domes in
+  their row (`CFG_WEED_INK`; Atlantis keeps its own, green), the yellow
+  sand, and the ground under it black on yellow (`CFG_GROUND_ATTR`). A red
+  ground was tried and dropped: the yellow has more impact with the red
+  weed.
 - **The diver stays white.**
 - **The flashes still show:** a death flashes white and black
   (`CFG_HIT_INK`; red would vanish against a red border), a new level

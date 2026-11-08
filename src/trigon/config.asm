@@ -75,7 +75,7 @@ CFG_MISSILE_INK     equ CFG_DARK_INK | SEA
 ; rocks and the silos' bases in the ink, the rest in the paper.
 CFG_WEED_INK        equ RED     ; Erin's ominous plants (cyan was 0.2.0's)
     IFNDEF CFG_GROUND_ATTR
-CFG_GROUND_ATTR     equ CFG_BRIGHT_SEA | BLACK | (RED << 3)
+CFG_GROUND_ATTR     equ CFG_BRIGHT_SEA | BLACK | (YELLOW << 3)   ; as Atlantis's (red was tried)
     ENDIF
 
 ; TRIGON on the menu: the tall letters' top halves and bottom halves.
