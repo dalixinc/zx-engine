@@ -269,7 +269,7 @@ CFG_DOUBLE_COOLDOWN  equ 10
 ;   nuke      clears them all, from CFG_NUKE_LEVEL (0 leaves it out of the build)
 CFG_SUCTION_LEVEL    equ 2
 CFG_SHOVE_LEVEL      equ 3
-CFG_NUKE_LEVEL       equ 12      ; from level 12 (0 leaves it out of the build)
+CFG_NUKE_LEVEL       equ 6       ; from level 6, the swarm (0 leaves it out of the build)
 CFG_SUCTION_ODDS     equ 11      ; about one turn in 23: the escape, twice as
 CFG_SHOVE_ODDS       equ 5       ; common as the throw (one in 51), which kills
 CFG_NUKE_ODDS        equ 8
