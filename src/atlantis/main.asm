@@ -541,7 +541,11 @@ boom_hook:
 .wheel_drawn:
     ENDIF
 fish_draw_call:
+    IFDEF TRIGON
+        call trigon_paint       ; the fish's and the missile's colours, then the fish
+    ELSE
         call fish_draw_fast
+    ENDIF
         ; If a sprite is on row 0, the digits go back on top now,
         ; after the photograph and before we spend the frame on the seabed.
         ; The wheel is included: it can bob up to y = 0.
@@ -609,7 +613,7 @@ step_skip:
         dec a
         ld (hit_flash),a
         and 4
-        ld a,RED
+        ld a,CFG_HIT_INK
         jr nz,.border
         xor a                   ; BLACK
         jr .border
@@ -1070,10 +1074,13 @@ wheel_first:    db 0
     ENDIF
         INCLUDE "demo.asm"       ; the attract demo: hot input, cold the rest
         INCLUDE "interlude.asm"  ; the city, after the last Atlantis level
+    IFDEF TRIGON
+        INCLUDE "../trigon/theme.asm" ; the fish's and the missile's colours
     IFDEF CODE_GATE
         COLD
         INCLUDE "../trigon/gate.asm"  ; the Trigon code on the menu
         HOT
+    ENDIF
     ENDIF
 
     IFDEF SLACK_LINES

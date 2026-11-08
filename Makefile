@@ -18,6 +18,7 @@
 # make trigon     TRIGON, the second game: build/trigon.tap and .sna
 #                 (src/trigon/main.asm: the Atlantis game with TRIGON defined)
 # make run-trigon launch its tape
+# make trigon-seas build/trigon-sea-black.sna and -dark.sna, to compare
 # make trigon-soak build/trigon-soak.sna, the soak with Trigon's art and colours
 # make clean
 
@@ -45,7 +46,7 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/silo.asm src/atlantis/missile.asm src/atlantis/score.asm src/atlantis/codes.asm src/atlantis/preshift.asm src/atlantis/bss.asm \
              src/atlantis/soak.asm src/atlantis/udg.asm src/atlantis/demo.asm src/atlantis/interlude.asm $(SHARED)
 TRI_SRC   := $(ATL_SRC) src/trigon/main.asm src/trigon/config.asm \
-             src/trigon/gate.asm
+             src/trigon/theme.asm src/trigon/gate.asm
 TRI_GFX   := gfx/diver_raw.asm gfx/torpedo.asm gfx/trigon/piranha_raw.asm \
              gfx/trigon/round-fish_raw.asm gfx/trigon/pulsar_raw.asm \
              gfx/trigon/spinning-wheel_raw.asm gfx/trigon/missile.asm
@@ -60,7 +61,7 @@ DEMO_TAP  := build/diver.tap
 DEMO_SNA  := build/diver.sna
 
 .PHONY: all run run-sna shot timing demo run-demo input-test sprite-test soak web clean unpack-check \
-        trigon run-trigon trigon-soak unpack-check-trigon
+        trigon run-trigon trigon-seas trigon-soak unpack-check-trigon
 
 all: $(TAP) $(SNA) $(TRI_TAP) $(TRI_SNA)
 
@@ -121,6 +122,11 @@ unpack-check-trigon: $(TRI_TAP)
 
 run-trigon: $(TRI_TAP)
 	$(EMU) --machine 48 --auto-load --traps --fastload $(TRI_TAP)
+
+# The two seas side by side (CFG_SEA, src/trigon/config.asm): snapshots only.
+trigon-seas: $(TRI_SRC) $(TRI_GFX) gfx/trigon/loading.scr | build
+	$(ASM) --nologo --fullpath=off -DSEA_SNA -DCFG_SEA=0 src/trigon/main.asm
+	$(ASM) --nologo --fullpath=off -DSEA_SNA -DCFG_SEA=1 src/trigon/main.asm
 
 trigon-soak: $(TRI_SRC) $(TRI_GFX) | build
 	$(ASM) --nologo --fullpath=off -DSOAK --lst=build/trigon-soak.lst src/trigon/main.asm

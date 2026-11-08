@@ -56,6 +56,13 @@ CFG_BRIGHT_SEA      equ 0
 CFG_DARK_INK        equ BLACK
     ENDIF
 
+; The enemies' colours (src/trigon/theme.asm paints the fish's and a
+; flying missile's cells each step; the bombs' come from CFG_LEVELS):
+; inks on the sea: black (CFG_DARK_INK: magenta on a black sea), red and
+; magenta.
+CFG_ANGLER_INK      equ MAGENTA | SEA           ; the round fish
+CFG_PIRANHA_INK     equ RED | SEA
+CFG_MISSILE_INK     equ CFG_DARK_INK | SEA
 ; TRIGON on the menu: the tall letters' top halves and bottom halves.
 CFG_TITLE_INK       equ RED
 CFG_TITLE_LOW_INK   equ MAGENTA
@@ -91,6 +98,8 @@ CFG_SCREEN_PAUSE    equ 100
 ; steps. 32 is about two thirds of a second at 50 frames a second, and
 ; twice that at 25. 0 turns the flash off.
 CFG_HIT_FLASH       equ 32
+; Trigon's borders are dark, so the death flashes white and black.
+CFG_HIT_INK         equ WHITE
 
 ; When the diver is hit, the game stops for a moment: nothing moves, he
 ; flashes through four colours for CFG_DEATH_FLASH 1/50 seconds, then

@@ -38,6 +38,14 @@ FISH_FLASHES    equ 4
 FISH_GAP        equ 20          ; game steps, then a new fish from the right
 FISH_YEL        equ YELLOW | SEA
 FISH_RED        equ RED | SEA
+; Where the fish's draw is set (the burst, the flash and the wait below):
+; main_loop's call, or in Trigon the jump at the end of the paint that
+; runs before it (src/trigon/theme.asm, tp_real).
+    IFDEF TRIGON
+FISH_DRAW_TO    equ tp_real
+    ELSE
+FISH_DRAW_TO    equ fish_draw_call + 1
+    ENDIF
 boom_col:       db 0            ; screen column, 0..30, of the next draw
 boom_y:         db 0
 boom_addr:      dw 0            ; screen byte of the drawn burst: the restore's place
@@ -61,7 +69,7 @@ boom_reset:
         ld (fish_left),a
         ld (fish_wait),a
         ld hl,fish_draw_fast
-        ld (fish_draw_call+1),hl
+        ld (FISH_DRAW_TO),hl
         ld hl,fish_restore_fast
         ld (fish_rest_call+1),hl
         ld hl,stats_prepare
@@ -124,7 +132,7 @@ fish_flash_begin:
         ld a,1
         ld (fish_busy),a
         ld hl,fish_flash_draw
-        ld (fish_draw_call+1),hl
+        ld (FISH_DRAW_TO),hl
         jp fish_hold
 
 ; In the fish's draw place. Its restore has just run.
@@ -183,7 +191,7 @@ fish_begin_wait:
         ld a,1
         ld (fish_busy),a
         ld hl,fish_wait_step
-        ld (fish_draw_call+1),hl
+        ld (FISH_DRAW_TO),hl
         jp fish_hold
 
 fish_wait_step:
@@ -201,7 +209,7 @@ fish_wait_step:
         ld (fish_busy),a
         ld (fish_wave_p),a      ; a wave starts again at the middle
         ld hl,fish_draw_fast
-        ld (fish_draw_call+1),hl
+        ld (FISH_DRAW_TO),hl
         call fish_kind_pick
         jp fish_unhold
 
@@ -297,7 +305,7 @@ boom_at_fish:
         ld (boom_fish),a
         ld (fish_busy),a
         ld hl,fish_draw_skip
-        ld (fish_draw_call+1),hl
+        ld (FISH_DRAW_TO),hl
         call fish_hold
 .arm:   ld a,(fish_x)
         ld l,a
