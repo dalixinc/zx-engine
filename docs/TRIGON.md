@@ -97,24 +97,39 @@ everything dimmer, as the bright bit belongs to the whole cell).
 | ![The black sea](images/trigon-sea-black.png) | ![The dark blue sea](images/trigon-sea-dark.png) |
 | `build/trigon-sea-black.sna` | `build/trigon-sea-dark.sna` |
 
-## The first three levels
+## The levels
 
-Each is a step on from the end of Atlantis, from the movements it
-already has:
+Ten levels, each its own fight, then the end. Each is a step on from
+the last, from the movements already built (`CFG_LEVELS` and
+`TB_TABLE` in `src/trigon/config.asm`):
 
-| Level | Bomb | Moves | Fish | Border | Its fight |
-|---|---|---|---|---|---|
-| 1 | the pulsar | on a wave | the angler, on a wave | blue | the fish's: mostly a bomb and a fish |
-| 2 | the spinning wheel | hunting the diver | from here, one in four a piranha | red | the pairs': two bombs more often than not |
-| 3 | the spinning wheel | hunting harder, the missiles home in | on a wave, faster | magenta | the hunters': fewer pairs, but both hunt |
+| Level | Bomb | Its fight | Border |
+|---|---|---|---|
+| 1 | the pulsar, on a wave | the fish's: mostly a bomb and a fish | blue |
+| 2 | the spinning wheel, hunting | the pairs': two bombs more often than not | red |
+| 3 | the wheel, hunting harder | the hunters': fewer pairs, both hunting; the missiles home in | magenta |
+| 4 | the pulsar again, quick, on a wave | the Lance's: pairs to line up on the beam | green |
+| 5 | the wheel, hunting, faster | the hunters back, a straight fish | cyan |
+| 6 | the wheel on a wave | the swarm: nearly always pairs | yellow |
+| 7 | the pulsar, hunting | the fish's revenge: a fast fish worth 2 | white |
+| 8 | the wheel, hunting hardest | double hunters: both of a pair hunt | red |
+| 9 | the wheel on a wave | the storm: pairs almost always, missiles close | magenta |
+| 10 | the fastest wheel, hunting hardest | Trigon's guard: pairs nearly always, both hunting | blue |
 
-The fish crosses the water once, right to left, and goes; the
-next wave, a fish or two bombs, follows after the usual pause. It is not
+The fish crosses the water once, right to left, and goes; the next
+wave, a fish or two bombs, follows after the usual pause. It is not
 shot for leaving, and scores nothing.
 
 They score as Atlantis does. Hearts come from level 1, the double shot
-and suction from level 2, shove from level 3. After level 3, level 3
-repeats.
+and suction from level 2, shove from level 3, the Lance from level 4.
+Each level from 2 to 10 has a code (in the message for level 2, under
+the banner from level 3).
+
+**The end.** Finishing level 10 (`CFG_ENDING_LEVEL`) stops the game:
+black, "TRIGON HAS FALLEN", and the code for the third game, Finale,
+until a key (`src/trigon/ending.asm`). The score counts for the high
+score, and the menu does not say GAME OVER. Erin's picture of Trigon
+City will open Finale, which has the whole 48K for it.
 
 ## Two bombs (0.2.0)
 
@@ -182,6 +197,7 @@ started late and caught up:
 | Trigon, level 2 | 0 | 0 | 512 |
 | Trigon, level 3 | 0 | 8 | 512 |
 | Trigon, level 3, a missile always up | 0 | 19 | 512 |
+| Trigon, levels 4 to 10 | 0 | 4 to 8 | 512 |
 
 512 interrupts for 512 steps: no frame is lost. The fish's and the
 missile's colours cost about 8 scanlines when they were painted every
@@ -212,6 +228,7 @@ and no fish (`-DMEAS_TWO`), against one bomb and the fish:
 | Level 1 | 0 spare, 1 late | 30 spare, 0 late | 0 spare, 66 late | 17 spare, 0 late |
 | Level 2 | 0 spare, 0 late | 33 spare, 0 late | 0 spare, 125 late | 17 spare, 0 late |
 | Level 3 | 0 spare, 8 late | 28 spare, 0 late | 0 spare, 166 late | 15 spare, 0 late |
+| Levels 4 to 10 | 0 spare, 4 to 8 late | | 0 spare, 128 to 156 late | 12 to 18 spare, 0 late |
 
 No frame is lost in any of them (512 interrupts at 50, 1,024 at 25), but
 the fish's time does not cover a second bomb at 50: a bomb's draw, its
@@ -231,17 +248,22 @@ Trigon has the whole 48K to itself, laid out as Atlantis is
 
 | Free bytes | Atlantis | Trigon |
 |---|---|---|
-| Hot code (to `RFISH_BUF`) | 339 | 445 |
-| Cold block (to the unpacker) | 21 | 95 |
-| Data (to `PRESHIFT_START`) | 1,093 | 569 |
-| Tape room (below the packed game) | 412 | 151 |
-| The tape | 18,845 bytes | 19,121 bytes |
+| Hot code (to `RFISH_BUF`) | 339 | 647 |
+| Cold block (to the unpacker) | 21 | 102 |
+| Data (to `PRESHIFT_START`) | 1,093 | 153 |
+| Tape room (below the packed game) | 412 | 168 |
+| The tape | 18,845 bytes | 19,306 bytes |
 
 Trigon 0.2.0's second bomb takes about 2,040 bytes of the data block
 (the bomb code again), 164 of hot code (the main loop's calls, the
 paint's and the hits' checks) and 19 of the cold block; the shared bomb
 copies give back 866. The Lance takes 976 bytes of the data block, 11
 of hot code and 35 of the cold block, and 808 of the tape room.
+Levels 4 to 10 and their codes took 136 of the tape room, and the
+ending about 100. To pay for them, the paint's box helpers (`tp_box`,
+`tp_cells`, 202 bytes) moved from the hot code into the data block
+(`TP_DATA`): just as fast there, and a byte of hot code costs the tape
+two, as the code's end and the packed game both move.
 
 ## The Lance laser
 

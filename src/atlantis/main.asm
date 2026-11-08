@@ -132,6 +132,9 @@
     IFDEF POWERUPS
         DEFINE LANCEGUN         ; the Lance laser, from CFG_LANCE_LEVEL (lance.asm)
     ENDIF
+    IFDEF TYPEWRITER
+        DEFINE TRIGON_END       ; the end: the Finale code (ending.asm)
+    ENDIF
     IFNDEF SOAK
     IFNDEF MEASURE              ; which measures a fish that always swims
         DEFINE FISH_LEAVES      ; the fish crosses once, then goes (twobomb.asm)
@@ -1221,8 +1224,10 @@ data_start:
         ; The second bomb's code, in the data block: uncontended, as the
         ; code is, and where Trigon has the room; and the shared bomb
         ; copies' rebuild.
+        TP_DATA                 ; the paint's box helpers (src/trigon/theme.asm)
         INCLUDE "../trigon/twobomb.asm"
         INCLUDE "../trigon/lance.asm"
+        INCLUDE "../trigon/ending.asm"
     ENDIF
     IFDEF CITY_SHOW
 city_pix_zx0:                   ; Erin's city, a whole screen, packed:

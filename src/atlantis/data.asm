@@ -53,8 +53,10 @@ str_tease_1:    db "WELL DONE, YOU REACHED LEVEL "
 str_tease_n:    db "2.",0
 str_tease_go:   db "LEVEL 2 STARTS NOW",0
 TEASE_GO_COL    equ (32 - ($ - 1 - str_tease_go)) / 2
+    IFNDEF TRIGON
 str_tease_2:    db "STAY TUNED, MORE IS COMING",0
 TEASE_2_COL     equ (32 - ($ - 1 - str_tease_2)) / 2
+    ENDIF
 str_tease_key:  db "PRESS A KEY",0
         HOT
 

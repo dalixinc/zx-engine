@@ -131,7 +131,11 @@ banner_len:     db 0            ; characters in it
 ; banner_chars: in bss.asm (zeroed at start-up, not on the tape)  ; "LEVEL" and the number
 banner_code:    db 0            ; 1 = code_buf goes under it
 teaser_due:     db 0            ; 1 = the level 2 or 3 message, once the banner is down
+    IFDEF TRIGON
+TEASE_LAST      equ 2           ; Trigon: level 2 only; level 3 has its code under the banner
+    ELSE
 TEASE_LAST      equ 3           ; levels 2 to this get the message, with the code in it
+    ENDIF
 
         ASSERT HUD_LEN <= LIVES_COL, "the score line runs into the hearts"
 
@@ -274,6 +278,11 @@ level_up:
         ld a,(level_n)
         cp CFG_INTERLUDE_LEVEL + 1
         call z,interlude        ; Atlantis is done: the city (interlude.asm)
+    ENDIF
+    IFDEF TRIGON_END
+        ld a,(level_n)
+        cp CFG_ENDING_LEVEL + 1
+        jp z,tg_ending          ; Trigon is done: the Finale code (ending.asm)
     ENDIF
     IF CFG_LEVEL_LIVES
         ; Back up to CFG_LEVEL_LIVES if he has fewer: a new level only.
@@ -766,10 +775,12 @@ teaser:
         cp CFG_LANCE_LEVEL
         jr z,.lance             ; Trigon: the Lance is his (lance.asm)
     ENDIF
+    IFNDEF TRIGON               ; Trigon: level 2's only (TEASE_LAST)
         cp 2
         jr z,.line2
         ld hl,str_tease_2       ; level 3: more is coming
         ld c,TEASE_2_COL
+    ENDIF
 .line2: call print_string
         ld hl,str_tease_key
         ld bc,((TEASE_ROW + 7) << 8) | 10
