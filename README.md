@@ -127,8 +127,9 @@ that drifts towards the diver's depth until it has passed him, harder
 each time. On level 10 the silos' missiles home in on him too
 (`docs/LEVELS-3-AND-4.md`). Finishing level 20, the last of Atlantis,
 shows a picture of the city, **drawn by Erin**, its colours coming on
-in a growing circle, with a chime, before
-the game goes on (`docs/CITY-INTERLUDE.md`).
+in a growing circle, with a chime. That is the end of Atlantis: the
+next screen gives the code for **Trigon**, the second game, which is
+loaded from its own tape (`docs/CITY-INTERLUDE.md`).
 
 Level 2 and level 3 each open with a message and the level's code, up
 until a key is pressed; from level 4 the code is under the banner. The

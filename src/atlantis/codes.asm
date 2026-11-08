@@ -35,6 +35,14 @@ CODE_KEY_SUM    equ $5A3C9      ; the checksum's key, 19 bits
 CODE_KEY_MIX    equ $B7E21D     ; the last XOR, 24 bits
 CODE_LEN        equ 6
 
+; The Trigon code: the Atlantis ending shows it (interlude.asm), and
+; Trigon's menu asks for it before level 1 (src/trigon/). Not a level
+; code: it has letters (N) that code_alpha has not, so it is never one.
+; Kept out of docs/ and the README: notes/LEVEL-CODES-LIST.md.
+        MACRO TRIGON_CODE
+        db "KRAKEN"
+        ENDM
+
 ; The table, in the data block: code_alpha, then 3 bytes a level, top
 ; byte first. The multipliers are below 128, so a 24-bit value times
 ; one stays inside the assembler's 32-bit signed numbers.

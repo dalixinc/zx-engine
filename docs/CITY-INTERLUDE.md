@@ -13,8 +13,13 @@ white ring, until it fills the screen:
 Then a chime plays (C, E, G, then a held C), the border turns the
 blue of the water round the picture, and the menu's tall ATLANTIS sits
 above it. A fresh key carries on at once; otherwise it stays about five
-seconds. Then the next level starts as usual, with its banner and its
-jingle.
+seconds.
+
+Then Atlantis ends. A black screen says the diver has reached Atlantis,
+gives the code that lets him into **Trigon**, the second game, and
+tells the player to load Trigon and type the code on its menu. A key
+goes back to the Atlantis menu. The score counts for the high score, as
+it does at GAME OVER, without the knell.
 
 ## How it fits
 
@@ -37,15 +42,11 @@ jingle.
 - **Room.** The 2-pixel diver (0.9.4) freed the data block's room the
   packed picture lives in while the game runs, and loading the tape's
   second block high (0.9.5) made the room for it on the tape.
-- **Back to the game.** The screen is cleared to water, the sand's and
-  the ground's rows get their colours again, and row 1 is redrawn in
-  full: the score, the level, the hearts, a held special bomb or the
-  double shot's bubble. The seabed's pixels come back from the scroll
-  buffers over the next two steps, as every step copies them. The
-  sprites keep their places and their photographs (water or seabed),
-  and the bomb repaints its colours. Nothing that was going on is
-  lost: the double shot's clock and the banner's are pushed on by the
-  time the picture was up.
+- **The ending** (`il_ending`) is a list of lines, each with its row,
+  column and colour, printed on black. The code comes from the same
+  macro that Trigon's menu checks it against (`TRIGON_CODE`,
+  `codes.asm`), so the two can't drift apart. (Until 0.9.8 the game
+  went on to level 21 after the picture.)
 - **Settings** (`config.asm`): `CFG_INTERLUDE_LEVEL`, the level that
   ends Atlantis; `CFG_INTERLUDE_TIME`, how long it waits (1/50
   seconds); `CFG_INTERLUDE_BORDER`.
