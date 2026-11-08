@@ -38,12 +38,25 @@ ROCK_H          equ 6           ; a rock stays inside the ground row
 ; pixels above the bottom, which is the top of row 21.
 NEAR_BOTTOM     equ 24 * 8
 
-WATER_ATTR      equ BRIGHT | WHITE | (BLUE << 3)
+; The sea: its paper, and the bright bit every cell on it shares. Each
+; colour on the water below is an ink on it. Trigon's is a setting
+; (src/trigon/config.asm, CFG_SEA): black, or a dark blue.
+    IFDEF TRIGON
+SEA             equ CFG_BRIGHT_SEA | (CFG_SEA << 3)
+    ELSE
+SEA             equ BRIGHT | (BLUE << 3)
+    ENDIF
+WATER_ATTR      equ WHITE | SEA
 ; The title word on row 2. Same ink and paper as the sand, but it is
 ; not the sand: it is the eight letters printed at column 12. The wheel
 ; puts this byte back when it moves off those cells.
-TITLE_ATTR      equ BRIGHT | YELLOW | (BLUE << 3)
-TITLE_LOW_ATTR  equ BRIGHT | BLACK | (BLUE << 3)   ; the title's bottom halves
+    IFDEF TRIGON
+TITLE_ATTR      equ CFG_TITLE_INK | SEA
+TITLE_LOW_ATTR  equ CFG_TITLE_LOW_INK | SEA
+    ELSE
+TITLE_ATTR      equ YELLOW | SEA
+TITLE_LOW_ATTR  equ BLACK | SEA         ; the title's bottom halves
+    ENDIF
 ; GAME OVER on the menu. White on red stands out from the yellow title.
 GAME_OVER_ATTR  equ BRIGHT | WHITE | (RED << 3)
 ; The "LEVEL n" banner's blocks (score.asm): yellow cells on the blue sea.
@@ -52,9 +65,13 @@ BANNER_ATTR     equ BRIGHT | BLUE | (YELLOW << 3)
 ; Level 2's message (score.asm): white on black, the code in yellow.
 TEASE_ATTR      equ BRIGHT | WHITE | (BLACK << 3)
 TEASE_CODE_ATTR equ BRIGHT | YELLOW | (BLACK << 3)
-SAND_ATTR       equ BRIGHT | YELLOW | (BLUE << 3)
-WEED_ATTR       equ BRIGHT | GREEN | (BLUE << 3)
+SAND_ATTR       equ YELLOW | SEA
+WEED_ATTR       equ GREEN | SEA
+    IFDEF TRIGON
+GROUND_ATTR     equ CFG_BRIGHT_SEA | BLACK | (YELLOW << 3)
+    ELSE
 GROUND_ATTR     equ BRIGHT | BLACK | (YELLOW << 3)
+    ENDIF
 
 ; The fish keeps the demo's depth. main.asm DEFINEs ATLANTIS so fish.asm
 ; does not recompute this from WATER_TOP_ROW (that would be pixel row 20,

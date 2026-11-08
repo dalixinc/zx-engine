@@ -1308,8 +1308,8 @@ soak_menu_back:
         ld a,(soak_menu_step)
         or a
         jr nz,.press
-        ld b,2
-        ld c,12
+        ld b,TITLE_ROW
+        ld c,TITLE_COL
         call char_addr
         ld c,8
         xor a

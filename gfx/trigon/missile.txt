@@ -1,0 +1,22 @@
+; Trigon redesign - Angular missile with long and short exhaust
+; # ink, - opaque paper, . transparent
+; Original size 6x8; 2 frames.
+mirror off
+frame 0
+..##..
+.####.
+######
+.####.
+######
+#.##.#
+..##..
+.#..#.
+frame 1
+..##..
+.####.
+######
+.####.
+######
+#.##.#
+..##..
+......

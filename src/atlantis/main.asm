@@ -48,7 +48,13 @@
 
         INCLUDE "../constants.asm"
         INCLUDE "layout.asm"
+    IFDEF TRIGON
+        ; Trigon (src/trigon/main.asm) is this game with its own numbers,
+        ; art and colours: everything it changes is under IFDEF TRIGON.
+        INCLUDE "../trigon/config.asm"
+    ELSE
         INCLUDE "config.asm"
+    ENDIF
 
         ; The debug stat line (stats.asm) is in every test build, and
         ; left out of the tape: Symbol Shift + S does nothing there.
@@ -104,7 +110,9 @@
     IFNDEF SLACK_LINES
         DEFINE TYPEWRITER
         DEFINE AUTOPLAY         ; the attract demo (demo.asm)
+    IFNDEF TRIGON
         DEFINE CITY_SHOW        ; the city between Atlantis and Trigon (interlude.asm)
+    ENDIF
     ENDIF
     ENDIF
     ENDIF
@@ -314,7 +322,7 @@ main_loop:
         ld a,RED
 .slack_colour:
         out (ULA_PORT),a
-        ld a,BRIGHT | WHITE | (BLUE << 3)
+        ld a,WATER_ATTR
         ld (text_attr),a
         pop hl                  ; extra interrupts over the 512 loops
         ld bc,(8 << 8) | 12
@@ -1093,7 +1101,11 @@ meas_zeros2:    dw 0
 
         ; The round fish (TWO_FISH): its raw art goes in the cold block and
         ; its pointer tables in the data block, below.
+    IFDEF TRIGON
+        INCLUDE "../../gfx/trigon/round-fish_raw.asm"   ; Erin's angler
+    ELSE
         INCLUDE "../../gfx/rfish_raw.asm"
+    ENDIF
 
 code_end:
 CODE_LENGTH     equ code_end - code_start
@@ -1122,6 +1134,17 @@ soak_end:
         ORG DATA_START
 data_start:
         INCLUDE "data.asm"
+    IFDEF TRIGON
+        ; Erin's Trigon art (gfx/trigon/): the same sizes and names as
+        ; the Atlantis pictures it stands in for, so the same code draws it.
+        INCLUDE "../../gfx/trigon/piranha_raw.asm"
+        INCLUDE "../../gfx/diver_raw.asm"
+        INCLUDE "../../gfx/trigon/pulsar_raw.asm"
+        INCLUDE "../../gfx/trigon/spinning-wheel_raw.asm"
+        PRESHIFT_DATA
+        INCLUDE "../../gfx/torpedo.asm"
+        INCLUDE "../../gfx/trigon/missile.asm"
+    ELSE
         INCLUDE "../../gfx/fish_raw.asm"   ; shifted at start-up (preshift.asm)
         INCLUDE "../../gfx/diver_raw.asm"  ; shifted at start-up, likewise
         INCLUDE "../../gfx/wheel_raw.asm"  ; the pulsar, likewise
@@ -1129,6 +1152,7 @@ data_start:
         PRESHIFT_DATA           ; the three's pointer tables (preshift.asm)
         INCLUDE "../../gfx/torpedo.asm"
         INCLUDE "../../gfx/missile.asm"
+    ENDIF
         SILO_DATA               ; silo.asm
     IFDEF TWO_FISH
         RFISH_TABLES            ; the round fish's pointer tables (preshift.asm)
@@ -1240,6 +1264,8 @@ UDG_LENGTH      equ udg_end - udg_start
 
         INCLUDE "../loader.asm"
 
+        ; Trigon writes its own files (src/trigon/main.asm).
+    IFNDEF TRIGON
     IFNDEF TIMING_BARS
     IFNDEF SOAK
     IFNDEF SLACK_LINES
@@ -1295,4 +1321,5 @@ loading_screen:
     ENDIF
     IFDEF MEASURE
         SAVESNA "build/atlantis-measure.sna", entry
+    ENDIF
     ENDIF

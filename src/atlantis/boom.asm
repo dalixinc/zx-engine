@@ -36,8 +36,8 @@ fish_acol:      db 0
 fish_arow:      db 0
 FISH_FLASHES    equ 4
 FISH_GAP        equ 20          ; game steps, then a new fish from the right
-FISH_YEL        equ BRIGHT | YELLOW | (BLUE << 3)
-FISH_RED        equ BRIGHT | RED | (BLUE << 3)
+FISH_YEL        equ YELLOW | SEA
+FISH_RED        equ RED | SEA
 boom_col:       db 0            ; screen column, 0..30, of the next draw
 boom_y:         db 0
 boom_addr:      dw 0            ; screen byte of the drawn burst: the restore's place

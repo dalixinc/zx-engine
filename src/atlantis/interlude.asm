@@ -13,7 +13,7 @@
 ; code that lets him into Trigon, the second game, on its own tape. A
 ; fresh key goes back to the menu: Atlantis ends at the city. The score
 ; counts for the high score, as at GAME OVER, but there is no knell.
-; The code is TRIGON_CODE (notes/LEVEL-CODES-LIST.md), which Trigon's
+; The code is GATE_WORD (notes/LEVEL-CODES-LIST.md), which Trigon's
 ; menu asks for (src/trigon/).
 ;
 ; Only where boot goes to the menu (CITY_SHOW, main.asm). Run once a
@@ -164,7 +164,7 @@ il_end_text:
         db 8, 1, IL_END_ATTR, "the Empire.", 0
         db 11, 6, IL_END_ATTR, "Your Trigon code is", 0
         db 13, (32 - CODE_LEN) / 2, IL_CODE_ATTR
-        TRIGON_CODE
+        GATE_WORD
         db 0
         db 16, 1, IL_END_ATTR, "Load Trigon, and type the code", 0
         db 17, 1, IL_END_ATTR, "on its menu.", 0

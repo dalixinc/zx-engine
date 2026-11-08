@@ -44,7 +44,7 @@ it does at GAME OVER, without the knell.
   second block high (0.9.5) made the room for it on the tape.
 - **The ending** (`il_ending`) is a list of lines, each with its row,
   column and colour, printed on black. The code comes from the same
-  macro that Trigon's menu checks it against (`TRIGON_CODE`,
+  macro that Trigon's menu checks it against (`GATE_WORD`,
   `codes.asm`), so the two can't drift apart. (Until 0.9.8 the game
   went on to level 21 after the picture.)
 - **Settings** (`config.asm`): `CFG_INTERLUDE_LEVEL`, the level that

@@ -14,6 +14,11 @@
 # make sprite-test headless diver + fish test of the DEMO
 # make web       rebuild, then copy the snapshot and the tape to docs/play/
 #                 for the browser version (docs/WEB.md). Commit and push them.
+#                 Trigon's go to docs/play/trigon/.
+# make trigon     TRIGON, the second game: build/trigon.tap and .sna
+#                 (src/trigon/main.asm: the Atlantis game with TRIGON defined)
+# make run-trigon launch its tape
+# make trigon-soak build/trigon-soak.sna, the soak with Trigon's art and colours
 # make clean
 
 ASM       ?= sjasmplus
@@ -39,17 +44,24 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/fastsprite.asm src/atlantis/boom.asm src/atlantis/sound.asm \
              src/atlantis/silo.asm src/atlantis/missile.asm src/atlantis/score.asm src/atlantis/codes.asm src/atlantis/preshift.asm src/atlantis/bss.asm \
              src/atlantis/soak.asm src/atlantis/udg.asm src/atlantis/demo.asm src/atlantis/interlude.asm $(SHARED)
+TRI_SRC   := $(ATL_SRC) src/trigon/main.asm src/trigon/config.asm
+TRI_GFX   := gfx/diver_raw.asm gfx/torpedo.asm gfx/trigon/piranha_raw.asm \
+             gfx/trigon/round-fish_raw.asm gfx/trigon/pulsar_raw.asm \
+             gfx/trigon/spinning-wheel_raw.asm gfx/trigon/missile.asm
 ZX0       := build/zx0
 CC        ?= cc
 
 TAP       := build/atlantis.tap
 SNA       := build/atlantis.sna
+TRI_TAP   := build/trigon.tap
+TRI_SNA   := build/trigon.sna
 DEMO_TAP  := build/diver.tap
 DEMO_SNA  := build/diver.sna
 
-.PHONY: all run run-sna shot timing demo run-demo input-test sprite-test soak web clean unpack-check
+.PHONY: all run run-sna shot timing demo run-demo input-test sprite-test soak web clean unpack-check \
+        trigon run-trigon trigon-soak unpack-check-trigon
 
-all: $(TAP) $(SNA)
+all: $(TAP) $(SNA) $(TRI_TAP) $(TRI_SNA)
 
 # main.asm writes the snapshot, the plain tape and the three blocks as
 # they are in memory, with their ends in build/atlantis.exp.
@@ -89,6 +101,29 @@ $(TAP): src/atlantis/tape.asm src/atlantis/tapecheck.asm tools/dzx0_standard.asm
 unpack-check: $(TAP)
 	$(ASM) --nologo --fullpath=off -DUNPACK_CHECK src/atlantis/tape.asm
 
+# Trigon: the same game with TRIGON defined (src/trigon/main.asm), its
+# own blocks, its own packed tape (tape.asm with -DTRIGON).
+trigon: $(TRI_TAP) $(TRI_SNA)
+
+TRI_BLOCKS := build/trigon-cold.bin build/trigon-code.bin build/trigon-data.bin build/trigon-udg.bin
+$(TRI_SNA) $(TRI_BLOCKS) build/trigon.exp build/trigon-plain.tap &: $(TRI_SRC) $(TRI_GFX) gfx/trigon/loading.scr | build
+	$(ASM) --nologo --fullpath=off --lst=build/trigon.lst --sym=build/trigon.sym --exp=build/trigon.exp src/trigon/main.asm
+
+build/trigon-loading.zx0: gfx/trigon/loading.scr $(ZX0)
+	$(ZX0) -f $< $@ >/dev/null
+
+$(TRI_TAP): src/atlantis/tape.asm src/atlantis/tapecheck.asm tools/dzx0_standard.asm build/trigon.exp build/trigon-loading.zx0 $(TRI_BLOCKS:.bin=.zx0)
+	$(ASM) --nologo --fullpath=off -DTRIGON src/atlantis/tape.asm
+
+unpack-check-trigon: $(TRI_TAP)
+	$(ASM) --nologo --fullpath=off -DTRIGON -DUNPACK_CHECK src/atlantis/tape.asm
+
+run-trigon: $(TRI_TAP)
+	$(EMU) --machine 48 --auto-load --traps --fastload $(TRI_TAP)
+
+trigon-soak: $(TRI_SRC) $(TRI_GFX) | build
+	$(ASM) --nologo --fullpath=off -DSOAK --lst=build/trigon-soak.lst src/trigon/main.asm
+
 demo: $(DEMO_TAP)
 
 $(DEMO_TAP) $(DEMO_SNA): $(DEMO_SRC) $(GFX) | build
@@ -116,11 +151,26 @@ gfx/wheel_raw.asm: gfx/wheel.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ wheel 1
 gfx/diver_raw.asm: gfx/diver-atlantis.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ diver 1
+# Erin's Trigon sprites: under the Atlantis names, as Trigon draws them
+# with the same code (src/trigon/main.asm).
+gfx/trigon/piranha_raw.asm: gfx/trigon/piranha.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ fish 1
+gfx/trigon/round-fish_raw.asm: gfx/trigon/round-fish.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ rfish 1
+gfx/trigon/pulsar_raw.asm: gfx/trigon/pulsar.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ wheel 1
+gfx/trigon/spinning-wheel_raw.asm: gfx/trigon/spinning-wheel.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ wspin 4
+gfx/trigon/missile.asm: gfx/trigon/missile.txt tools/gfx2asm.py
+	$(PYTHON) tools/gfx2asm.py $< $@ missile
 
 # The loading screen, drawn from the same sprites. Committed, like the
 # .asm above, so the tape builds without Python.
 gfx/loading.scr: VERSION tools/mkloadscreen.py gfx/diver-atlantis.txt gfx/fish-atlantis.txt gfx/wheel.txt gfx/torpedo.txt
 	$(PYTHON) tools/mkloadscreen.py $@
+gfx/trigon/loading.scr: src/trigon/VERSION tools/mkloadscreen.py gfx/diver-atlantis.txt gfx/torpedo.txt \
+                        gfx/trigon/pulsar.txt gfx/trigon/piranha.txt gfx/trigon/round-fish.txt
+	$(PYTHON) tools/mkloadscreen.py --trigon $@
 
 run: $(TAP)
 	$(EMU) --machine 48 --auto-load --traps --fastload $(TAP)
@@ -158,11 +208,14 @@ soak: $(ATL_SRC) $(ATL_GFX) | build
 # The web page (docs/play/index.html, JSSpeccy 3) plays the snapshot and
 # offers the tape to download. The copies are committed, because GitHub
 # Pages serves docs/ straight from git.
-web: $(TAP) $(SNA)
+web: $(TAP) $(SNA) $(TRI_TAP) $(TRI_SNA)
 	cp $(SNA) docs/play/atlantis.sna
 	cp $(TAP) docs/play/atlantis.tap
 	@sh tools/webstamp.sh
-	@echo "docs/play/atlantis.sna, .tap and index.html updated: commit them and push to update the site"
+	cp $(TRI_SNA) docs/play/trigon/trigon.sna
+	cp $(TRI_TAP) docs/play/trigon/trigon.tap
+	@sh tools/webstamp.sh trigon docs/play/trigon
+	@echo "docs/play/ and docs/play/trigon/ updated: commit them and push to update the site"
 
 clean:
 	rm -f build/*.tap build/*.sna build/*.lst build/*.sym build/*.png \
