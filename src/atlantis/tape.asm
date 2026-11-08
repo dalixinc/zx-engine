@@ -56,7 +56,11 @@
         DEVICE ZXSPECTRUM48
 
         INCLUDE "../constants.asm"
+    IFDEF TRIGON                ; -DTRIGON: Trigon's tape, from build/trigon-*
+        INCLUDE "../../build/trigon.exp"
+    ELSE
         INCLUDE "../../build/atlantis.exp"
+    ENDIF
 
 COLD_START      equ $6000
 UDG_START       equ $FF48       ; the ROM's user-defined graphics, and 16 bytes below
@@ -75,7 +79,11 @@ PACKED_ORG      equ UDG_START - (packed_end - packed_start)
         ORG UNPACK_ORG
 unpack_start:
 packed_screen:
+    IFDEF TRIGON
+        INCBIN "../../build/trigon-loading.zx0"
+    ELSE
         INCBIN "../../build/loading.zx0"
+    ENDIF
 unpack_code:
 
 ; show - the loading screen, while the rest of the tape loads.
@@ -147,6 +155,16 @@ unpack_end:
 ;------------------------------------------------------------------------------
         ORG PACKED_ORG
 packed_start:
+    IFDEF TRIGON
+packed_code:
+        INCBIN "../../build/trigon-code.zx0"
+packed_cold:
+        INCBIN "../../build/trigon-cold.zx0"
+packed_data:
+        INCBIN "../../build/trigon-data.zx0"
+packed_udg:
+        INCBIN "../../build/trigon-udg.zx0"
+    ELSE
 packed_code:
         INCBIN "../../build/atlantis-code.zx0"
 packed_cold:
@@ -155,6 +173,7 @@ packed_data:
         INCBIN "../../build/atlantis-data.zx0"
 packed_udg:
         INCBIN "../../build/atlantis-udg.zx0"
+    ENDIF
 packed_end:
         ASSERT PACKED_ORG >= code_end, "the packed game would sit on the code"
         ASSERT packed_data >= data_end, "the data would be unpacked over its own packed bytes"
@@ -202,6 +221,19 @@ basic_start:
 BASIC_LENGTH equ $ - basic_start
         ASSERT COLD_START - 1 == 24575, "the BASIC's CLEAR 24575 must sit just below the cold block"
 
+    IFDEF TRIGON
+    IFNDEF UNPACK_CHECK
+        EMPTYTAP "build/trigon.tap"
+        SAVETAP  "build/trigon.tap", BASIC, "trigon", basic_start, BASIC_LENGTH, 10
+        SAVETAP  "build/trigon.tap", CODE, "trigon", unpack_start, unpack_end - unpack_start
+        SAVETAP  "build/trigon.tap", CODE, "trigonc", packed_start, packed_end - packed_start
+    ELSE
+        EMPTYTAP "build/trigon-unpack-check.tap"
+        SAVETAP  "build/trigon-unpack-check.tap", BASIC, "trigon", basic_start, BASIC_LENGTH, 10
+        SAVETAP  "build/trigon-unpack-check.tap", CODE, "trigon", unpack_start, unpack_end - unpack_start
+        SAVETAP  "build/trigon-unpack-check.tap", CODE, "trigonc", packed_start, packed_end - packed_start
+    ENDIF
+    ELSE
     IFNDEF UNPACK_CHECK
         EMPTYTAP "build/atlantis.tap"
         SAVETAP  "build/atlantis.tap", BASIC, "atlantis", basic_start, BASIC_LENGTH, 10
@@ -212,4 +244,5 @@ BASIC_LENGTH equ $ - basic_start
         SAVETAP  "build/atlantis-unpack-check.tap", BASIC, "atlantis", basic_start, BASIC_LENGTH, 10
         SAVETAP  "build/atlantis-unpack-check.tap", CODE, "atlantis", unpack_start, unpack_end - unpack_start
         SAVETAP  "build/atlantis-unpack-check.tap", CODE, "atlantc", packed_start, packed_end - packed_start
+    ENDIF
     ENDIF

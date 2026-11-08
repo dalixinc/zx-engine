@@ -106,6 +106,9 @@ preshift_jobs:
         PRESHIFT_JOB fish_src, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW, 0
         PRESHIFT_JOB wheel_src, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW, 0
         PRESHIFT_JOB wspin_src, WSPIN_BUF, WSPIN_PICS, WSPIN_HEIGHT, WSPIN_WIDE, WSPIN_RAW, 0
+    IFDEF ENEMY_DIVER
+        PRESHIFT_JOB ediver_src, ED_BUF, EDIVER_PICS, EDIVER_HEIGHT, EDIVER_WIDE, EDIVER_RAW, 1
+    ENDIF
         dw 0
 
 ;------------------------------------------------------------------------------

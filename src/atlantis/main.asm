@@ -48,7 +48,13 @@
 
         INCLUDE "../constants.asm"
         INCLUDE "layout.asm"
+    IFDEF TRIGON
+        ; Trigon (src/trigon/main.asm) is this game with its own numbers,
+        ; art and colours: everything it changes is under IFDEF TRIGON.
+        INCLUDE "../trigon/config.asm"
+    ELSE
         INCLUDE "config.asm"
+    ENDIF
 
         ; The debug stat line (stats.asm) is in every test build, and
         ; left out of the tape: Symbol Shift + S does nothing there.
@@ -104,7 +110,9 @@
     IFNDEF SLACK_LINES
         DEFINE TYPEWRITER
         DEFINE AUTOPLAY         ; the attract demo (demo.asm)
+    IFNDEF TRIGON
         DEFINE CITY_SHOW        ; the city between Atlantis and Trigon (interlude.asm)
+    ENDIF
     ENDIF
     ENDIF
     ENDIF
@@ -112,6 +120,11 @@
     ENDIF
     IFDEF MEAS_DOUBLE
         DEFINE DOUBLE_SHOT
+    ENDIF
+    IFDEF TRIGON
+    IFNDEF SOAK                 ; whose script presses 1 to start
+        DEFINE CODE_GATE        ; Trigon's menu asks for its code first (gate.asm)
+    ENDIF
     ENDIF
 
     IFDEF MEASURE
@@ -314,7 +327,7 @@ main_loop:
         ld a,RED
 .slack_colour:
         out (ULA_PORT),a
-        ld a,BRIGHT | WHITE | (BLUE << 3)
+        ld a,WATER_ATTR
         ld (text_attr),a
         pop hl                  ; extra interrupts over the 512 loops
         ld bc,(8 << 8) | 12
@@ -420,6 +433,9 @@ main_loop:
         ld a,(msl_vn)           ; drawn after the copy, before the diver
         rla
         call c,missile_restore
+    IFDEF ENEMY_DIVER
+        call ed_restore         ; drawn after the fish (src/trigon/ediver.asm)
+    ENDIF
 fish_rest_call:
         call fish_restore_fast
     IFNDEF NO_WHEEL
@@ -528,7 +544,14 @@ boom_hook:
 .wheel_drawn:
     ENDIF
 fish_draw_call:
+    IFDEF TRIGON
+        call trigon_paint       ; the fish's and the missile's colours, then the fish
+    ELSE
         call fish_draw_fast
+    ENDIF
+    IFDEF ENEMY_DIVER
+        call ed_draw            ; Trigon's enemy diver, an experiment
+    ENDIF
         ; If a sprite is on row 0, the digits go back on top now,
         ; after the photograph and before we spend the frame on the seabed.
         ; The wheel is included: it can bob up to y = 0.
@@ -596,7 +619,7 @@ step_skip:
         dec a
         ld (hit_flash),a
         and 4
-        ld a,RED
+        ld a,CFG_HIT_INK
         jr nz,.border
         xor a                   ; BLACK
         jr .border
@@ -637,6 +660,9 @@ step_move:
         call update_diver
 fish_mv:
         call update_fish
+    IFDEF ENEMY_DIVER
+        call ed_move
+    ENDIF
         ld a,(torp_on)
         or a
         call nz,torpedo_move
@@ -921,6 +947,9 @@ idle_move:
         call update_diver
 fish_mv2:
         call update_fish
+    IFDEF ENEMY_DIVER
+        call ed_move
+    ENDIF
         ld a,(torp_on)
         or a
         call nz,torpedo_move
@@ -1057,6 +1086,15 @@ wheel_first:    db 0
     ENDIF
         INCLUDE "demo.asm"       ; the attract demo: hot input, cold the rest
         INCLUDE "interlude.asm"  ; the city, after the last Atlantis level
+    IFDEF TRIGON
+        INCLUDE "../trigon/theme.asm" ; the fish's and the missile's colours
+        INCLUDE "../trigon/ediver.asm" ; the enemy diver, -DENEMY_DIVER only
+    IFDEF CODE_GATE
+        COLD
+        INCLUDE "../trigon/gate.asm"  ; the Trigon code on the menu
+        HOT
+    ENDIF
+    ENDIF
 
     IFDEF SLACK_LINES
 slack_loops:    dw 0            ; loops since entry, including the warmup
@@ -1093,7 +1131,11 @@ meas_zeros2:    dw 0
 
         ; The round fish (TWO_FISH): its raw art goes in the cold block and
         ; its pointer tables in the data block, below.
+    IFDEF TRIGON
+        INCLUDE "../../gfx/trigon/round-fish_raw.asm"   ; Erin's angler
+    ELSE
         INCLUDE "../../gfx/rfish_raw.asm"
+    ENDIF
 
 code_end:
 CODE_LENGTH     equ code_end - code_start
@@ -1122,6 +1164,17 @@ soak_end:
         ORG DATA_START
 data_start:
         INCLUDE "data.asm"
+    IFDEF TRIGON
+        ; Erin's Trigon art (gfx/trigon/): the same sizes and names as
+        ; the Atlantis pictures it stands in for, so the same code draws it.
+        INCLUDE "../../gfx/trigon/piranha_raw.asm"
+        INCLUDE "../../gfx/diver_raw.asm"
+        INCLUDE "../../gfx/trigon/pulsar_raw.asm"
+        INCLUDE "../../gfx/trigon/spinning-wheel_raw.asm"
+        PRESHIFT_DATA
+        INCLUDE "../../gfx/torpedo.asm"
+        INCLUDE "../../gfx/trigon/missile.asm"
+    ELSE
         INCLUDE "../../gfx/fish_raw.asm"   ; shifted at start-up (preshift.asm)
         INCLUDE "../../gfx/diver_raw.asm"  ; shifted at start-up, likewise
         INCLUDE "../../gfx/wheel_raw.asm"  ; the pulsar, likewise
@@ -1129,12 +1182,16 @@ data_start:
         PRESHIFT_DATA           ; the three's pointer tables (preshift.asm)
         INCLUDE "../../gfx/torpedo.asm"
         INCLUDE "../../gfx/missile.asm"
+    ENDIF
         SILO_DATA               ; silo.asm
     IFDEF TWO_FISH
         RFISH_TABLES            ; the round fish's pointer tables (preshift.asm)
     ENDIF
     IFDEF DOUBLE_SHOT
         DOUBLE_DATA             ; the double shot's patch tables (torpedo.asm)
+    ENDIF
+    IFDEF ENEMY_DIVER
+        ED_DATA                 ; the enemy diver's tables (src/trigon/ediver.asm)
     ENDIF
     IFDEF CITY_SHOW
 city_pix_zx0:                   ; Erin's city, a whole screen, packed:
@@ -1153,6 +1210,9 @@ data_end:
         WSPIN_ART
     IFDEF TWO_FISH
         RFISH_ART
+    ENDIF
+    IFDEF ENEMY_DIVER
+        EDIVER_ART
     ENDIF
         HOT
 DATA_LENGTH     equ data_end - data_start
@@ -1204,6 +1264,9 @@ UDG_LENGTH      equ udg_end - udg_start
         ASSERT BSS_END <= RFISH_HI, "the run-time buffers have run into the round fish's pictures"
     ENDIF
         ASSERT data_end <= PRESHIFT_START, "pictures have run into the diver's, the fish's and the pulsar's shifted copies"
+    IFDEF ENEMY_DIVER
+        ASSERT data_end <= ED_BUF, "pictures have run into the enemy diver's shifted copies"
+    ENDIF
         ASSERT COLD_START - 1 == 24575, "the BASIC's CLEAR 24575 (loader.asm) must sit just below the cold block"
         ASSERT SCROLL_BUF_END <= ROW_TABLE, "scroll buffers run into the row table"
         ASSERT BSS_START >= SCROLL_BUF_END && BSS_END <= BSS_LIMIT, "the run-time buffers run into the BASIC's scratch at BSS_LIMIT"
@@ -1240,6 +1303,8 @@ UDG_LENGTH      equ udg_end - udg_start
 
         INCLUDE "../loader.asm"
 
+        ; Trigon writes its own files (src/trigon/main.asm).
+    IFNDEF TRIGON
     IFNDEF TIMING_BARS
     IFNDEF SOAK
     IFNDEF SLACK_LINES
@@ -1295,4 +1360,5 @@ loading_screen:
     ENDIF
     IFDEF MEASURE
         SAVESNA "build/atlantis-measure.sna", entry
+    ENDIF
     ENDIF

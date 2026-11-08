@@ -31,9 +31,24 @@
 ; city interlude; Trigon comes after). Level 1 is the menu's "Start game".
 ;==============================================================================
 
+    IFDEF TRIGON
+; Trigon's own keys: its codes are nothing like Atlantis's, so a code
+; from one game opens nothing in the other.
+CODE_KEY_SUM    equ $2C6F1      ; the checksum's key, 19 bits
+CODE_KEY_MIX    equ $4D93A7     ; the last XOR, 24 bits
+    ELSE
 CODE_KEY_SUM    equ $5A3C9      ; the checksum's key, 19 bits
 CODE_KEY_MIX    equ $B7E21D     ; the last XOR, 24 bits
+    ENDIF
 CODE_LEN        equ 6
+
+; The Trigon code: the Atlantis ending shows it (interlude.asm), and
+; Trigon's menu asks for it before level 1 (src/trigon/). Not a level
+; code: it has letters (N) that code_alpha has not, so it is never one.
+; Kept out of docs/ and the README: notes/LEVEL-CODES-LIST.md.
+        MACRO GATE_WORD
+        db "KRAKEN"
+        ENDM
 
 ; The table, in the data block: code_alpha, then 3 bytes a level, top
 ; byte first. The multipliers are below 128, so a 24-bit value times

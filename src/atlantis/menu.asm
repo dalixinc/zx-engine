@@ -17,7 +17,11 @@
 ; clean one.
 ;==============================================================================
 
+    IFDEF CODE_GATE
+CODE_ROW        equ 11          ; option 1, and the code typed into it
+    ELSE
 CODE_ROW        equ 13          ; option 3, and the code typed into it
+    ENDIF
 CODE_COL        equ 12          ; its first letter
 
 menu_prev:      db 0            ; last frame's 1-2-3-4-5 keys
@@ -234,7 +238,12 @@ menu_print_score:
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 TITLE_ROW       equ 2
-TITLE_COL       equ 12
+    IFDEF TRIGON
+TITLE_LEN       equ 6           ; TRIGON
+    ELSE
+TITLE_LEN       equ 8           ; ATLANTIS
+    ENDIF
+TITLE_COL       equ (32 - TITLE_LEN) / 2
 title_draw:
         ld hl,title_word
         ld c,TITLE_COL
@@ -257,7 +266,7 @@ title_draw:
         pop hl
         inc c
         ld a,c
-        cp TITLE_COL + 8
+        cp TITLE_COL + TITLE_LEN
         jr c,.char
         ; The colours: the top halves yellow, the bottom halves black.
         ; The stencil cut is the first line of row 3, so the change of
@@ -267,7 +276,7 @@ title_draw:
         call .attrs
         ld hl,ATTRS + (TITLE_ROW + 1) * 32 + TITLE_COL
         ld c,TITLE_LOW_ATTR
-.attrs: ld b,8
+.attrs: ld b,TITLE_LEN
 .attr:  ld (hl),c
         inc l
         djnz .attr
@@ -286,8 +295,14 @@ title_draw:
         pop bc
         ret
 
+    IFDEF TRIGON
+; TRIGON: title_font is T R I G O N (udg.asm).
+title_word:     db 0, 1, 2, 3, 4, 5
+    ELSE
 ; ATLANTIS as letters of title_font: A 0, T 1, L 2, N 3, I 4, S 5.
 title_word:     db 0, 1, 2, 0, 3, 1, 4, 5
+    ENDIF
+        ASSERT $ - title_word == TITLE_LEN
 
 ;------------------------------------------------------------------------------
 ; menu_draw - title, the control lines (the bomb key's with power-ups), then
@@ -515,7 +530,11 @@ menu_code:
     IFDEF CITY_SHOW
         call il_menu_code       ; the city's own code: shown, then the menu
     ENDIF
+    IFDEF CODE_GATE
+        call gate_level         ; the Trigon code is level 1 (gate.asm)
+    ELSE
         call code_level
+    ENDIF
         or a
         jr z,.bad
         ld (start_level),a
@@ -539,9 +558,22 @@ menu_code:
         ld hl,str_code_bad
         ld bc,(CODE_ROW << 8) | 4
         call print_string
+    IFDEF CODE_GATE
+        call gate_buzz          ; and the letters again at once
+        ld b,50
+.pause: call wait_frame
+        djnz .pause
+        ld a,WATER_ATTR
+        ld (text_attr),a
+        ld hl,str_opt_code      ; the whole line, over BAD CODE's red
+        ld bc,(CODE_ROW << 8) | 4
+        call print_string
+        jp menu_code
+    ELSE
         ld b,75                 ; a second and a half
 .pause: call wait_frame
         djnz .pause
+    ENDIF
 .back:  ld a,WATER_ATTR
         ld (text_attr),a
         ld hl,str_opt_code

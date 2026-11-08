@@ -9,6 +9,16 @@ Once GitHub Pages is on (the steps are at the end), it is here:
 
 `https://dalixinc.github.io/zx-engine/` forwards there too.
 
+**Trigon**, the second game ([TRIGON.md](TRIGON.md)), has its own page,
+`docs/play/trigon/index.html`, at
+**https://dalixinc.github.io/zx-engine/play/trigon/**. It is the same
+page with Trigon's title, colours and keys (option 1 asks for the code),
+and it uses Atlantis's copy of JSSpeccy, one folder up: JSSpeccy finds
+its worker, ROMs and tape loaders from its own script's address. `make
+web` copies `build/trigon.sna` and `.tap` there and stamps their hashes
+(`tools/webstamp.sh trigon docs/play/trigon`). `build.bat web` does
+Atlantis only for now.
+
 ## 1. The page
 
 `docs/play/index.html` is one plain page:
@@ -183,6 +193,7 @@ A few things to know about the site:
 | `docs/play/index.html` | the page |
 | `docs/play/atlantis.sna` | what the page plays (`make web`) |
 | `docs/play/atlantis.tap` | the tape, to download (`make web`) |
+| `docs/play/trigon/` | Trigon's page, `trigon.sna` and `trigon.tap` (`make web`) |
 | `tools/webstamp.sh`, `tools/webstamp.ps1` | stamp each file's hash into the page's addresses (`make web`, `build.bat web`) |
 | `docs/play/jsspeccy/` | JSSpeccy 3.2, with `COPYING` and `SOURCE.md` |
 | `docs/index.html` | sends the site's root to `play/` |

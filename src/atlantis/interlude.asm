@@ -9,14 +9,12 @@
 ; letters above it and a line of story under it, a solid border, and a
 ; chime. A fresh key, or CFG_INTERLUDE_TIME, carries on.
 ;
-; Then the play screen comes back: water, the sand's and the ground's
-; colours, and row 1 (the score, the hearts, a bubble or a special
-; bomb held). The seabed's pixels come back from the scroll buffers on
-; the next two steps, as every step copies them. The sprites keep their
-; places and their photographs, which hold water or seabed, so their
-; restores put back nothing wrong; the bomb repaints its colours. The
-; banner's and the double shot's clocks are pushed on by the time it
-; took, as the quake does.
+; Then the ending (il_ending): he has reached Atlantis, and here is the
+; code that lets him into Trigon, the second game, on its own tape. A
+; fresh key goes back to the menu: Atlantis ends at the city. The score
+; counts for the high score, as at GAME OVER, but there is no knell.
+; The code is GATE_WORD (notes/LEVEL-CODES-LIST.md), which Trigon's
+; menu asks for (src/trigon/).
 ;
 ; Only where boot goes to the menu (CITY_SHOW, main.asm). Run once a
 ; game, never per frame; in the hot code only because the cold block is
@@ -29,14 +27,15 @@ IL_LINE1_ROW    equ 21
 IL_LINE2_ROW    equ 22
 
 ;------------------------------------------------------------------------------
-; interlude - the city, then the play screen back
-; Corrupts: AF, BC, DE, HL
+; interlude - the city, then the ending, then the menu. Never returns.
 ;------------------------------------------------------------------------------
 interlude:
-        ld hl,(frame_count)
-        ld (il_start),hl
         call il_show
-        jp il_back
+        call il_ending
+        call score_game_over    ; a new high score?
+        xor a
+        ld (menu_game_over),a   ; not GAME OVER: he won
+        jp enter_menu           ; it starts the stack again
 
 ;------------------------------------------------------------------------------
 ; il_menu_code - option 3 on the menu (menu_code), after the sixth letter:
@@ -126,45 +125,51 @@ il_show:
         jr nz,.frame
         ret
 
-; The play screen back, as it was.
-il_back:
-        ld a,WATER_ATTR
+; The ending: black, the words, and the code in yellow, until a fresh
+; key. Corrupts: AF, BC, DE, HL
+il_ending:
+        xor a                   ; BLACK
+        call set_border
+        ld a,IL_END_ATTR
         call cls
-        ld b,SAND_ROW
-        ld d,1
-        ld e,SAND_ATTR
-        call fill_attr_rows
-        ld b,GROUND_ROW
-        ld d,1
-        ld e,GROUND_ATTR
-        call fill_attr_rows
-        xor a
-        ld (wheel_attr_n),a     ; the bomb paints its colours afresh
-        ld hl,hud_text          ; row 1 draws only the cells that changed:
-        ld b,HUD_LEN            ; forget them all, so it draws every one
-.forget:
-        ld (hl),0
+        ld (text_attr),a
+        ld hl,il_end_text
+.line:  ld b,(hl)               ; the row, or 0 at the end
+        inc b
+        dec b
+        jr z,.keys
         inc hl
-        djnz .forget
-        ld hl,hud_dirty
-        ld a,(hl)
-        or (1 << HUD_HEARTS) | (1 << HUD_TEXT)
-        ld (hl),a
-        ; The clocks that count television frames, on by the time taken.
-        ld hl,(frame_count)
-        ld de,(il_start)
-        or a
-        sbc hl,de
-        ex de,hl
-        ld hl,(banner_until)
-        add hl,de
-        ld (banner_until),hl
-    IFDEF DOUBLE_SHOT
-        ld hl,(double_until)
-        add hl,de
-        ld (double_until),hl
-    ENDIF
-        ret
+        ld c,(hl)               ; the column
+        inc hl
+        ld a,(hl)               ; the colour
+        inc hl
+        ld (text_attr),a
+        call print_string
+        inc hl                  ; past its 0
+        jr .line
+.keys:  call keys_up            ; the key that ended the city first
+.wait:  call wait_frame
+        call any_key
+        jr z,.wait
+        jp keys_up              ; it does not reach the menu
+
+IL_END_ATTR     equ BRIGHT | WHITE | (BLACK << 3)
+IL_CODE_ATTR    equ BRIGHT | YELLOW | (BLACK << 3)
+IL_KEY_ATTR     equ WHITE | (BLACK << 3)
+; Each line: row, column, colour, the words, 0. A row of 0 ends them.
+il_end_text:
+        db 4, 3, IL_END_ATTR, "You have reached Atlantis.", 0
+        db 6, 1, IL_END_ATTR, "The neutron bomb is yours. Now", 0
+        db 7, 1, IL_END_ATTR, "carry it to Trigon, and end", 0
+        db 8, 1, IL_END_ATTR, "the Empire.", 0
+        db 11, 6, IL_END_ATTR, "Your Trigon code is", 0
+        db 13, (32 - CODE_LEN) / 2, IL_CODE_ATTR
+        GATE_WORD
+        db 0
+        db 16, 1, IL_END_ATTR, "Load Trigon, and type the code", 0
+        db 17, 1, IL_END_ATTR, "on its menu.", 0
+        db 21, 10, IL_KEY_ATTR, "PRESS A KEY", 0
+        db 0
 
     IFNDEF NO_SOUND
 ;------------------------------------------------------------------------------
@@ -317,7 +322,6 @@ str_il_line2:   db "Take the neutron bomb to Trigon.", 0
 IL_LINE1_COL    equ (32 - 15) / 2
 IL_LINE2_COL    equ 0
 il_armed:       db 0
-il_start:       dw 0
 
         INCLUDE "../../tools/dzx0_standard.asm"
 

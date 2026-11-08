@@ -31,9 +31,17 @@ str_score:      db "SCORE ",0
 str_high:       db "HIGH  ",0
 ; Option 3 and what it turns into. All the same length, so each one
 ; covers the last.
+    IFDEF CODE_GATE
+; Trigon's option 1 (gate.asm): the Trigon code for level 1, or a level
+; code for a later one.
+str_opt_code:   db "1  Enter code    ",0
+str_code_ask:   db "1  Code ",0
+str_code_bad:   db "1  BAD CODE      ",0
+    ELSE
 str_opt_code:   db "3  Enter code    ",0
 str_code_ask:   db "3  Code ",0     ; then the letters typed so far
 str_code_bad:   db "3  BAD CODE      ",0
+    ENDIF
 str_code_dots:  db "......",0
 str_code_word:  db "CODE ",0
 str_level_sp:   db "LEVEL ",0
@@ -146,21 +154,31 @@ STATS_TEMPLATE_LEN equ $ - stats_template
 ; mask, character row, character column, text address, routine address
 
 menu_tab:
+    IFDEF CODE_GATE
+        db 1                    ; Trigon starts with a code (gate.asm)
+        db CODE_ROW
+        db 4
+        dw str_opt_code
+        dw menu_code
+    ELSE
         db 1
         db 11
         db 4
         dw str_opt_start
         dw menu_start
+    ENDIF
         db 2
         db 12
         db 4
         dw 0
         dw menu_toggle_rate
+    IFNDEF CODE_GATE
         db 4
         db CODE_ROW
         db 4
         dw str_opt_code
         dw menu_code
+    ENDIF
         db 0
         HOT
 

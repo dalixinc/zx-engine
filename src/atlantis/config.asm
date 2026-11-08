@@ -62,6 +62,7 @@ CFG_SCREEN_PAUSE    equ 100
 ; steps. 32 is about two thirds of a second at 50 frames a second, and
 ; twice that at 25. 0 turns the flash off.
 CFG_HIT_FLASH       equ 32
+CFG_HIT_INK         equ RED     ; and black
 
 ; When the diver is hit, the game stops for a moment: nothing moves, he
 ; flashes through four colours for CFG_DEATH_FLASH 1/50 seconds, then

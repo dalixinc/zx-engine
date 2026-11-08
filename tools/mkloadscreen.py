@@ -3,6 +3,11 @@
 mkloadscreen.py - build the Atlantis loading screen from the game's sprites.
 
 Usage:  python3 tools/mkloadscreen.py gfx/loading.scr [preview.png]
+        python3 tools/mkloadscreen.py --trigon gfx/trigon/loading.scr [preview.png]
+
+--trigon draws Trigon's: the same scene in Trigon's colours, with
+Erin's sprites (gfx/trigon/*.txt), TRIGON for the title, and the version
+from src/trigon/VERSION.
 
 Writes a 6912-byte Spectrum screen: 6144 bytes of pixels in the ROM's
 interleaved row order, then 768 bytes of colour, one per 8x8 cell. The
@@ -151,6 +156,41 @@ def make_n():
 
 LETTERS["N"] = make_n()
 
+# Trigon's three more, in the same units.
+LETTERS["O"] = ["..##########..", ".############.", "##############"] + \
+    ["####......####"] * 10 + ["##############", ".############.", "..##########.."]
+LETTERS["R"] = ["#############.", "##############", "##############"] + \
+    ["####......####"] * 3 + ["##############", "#############.", "############.."] + \
+    ["####....####..", "####.....####."] + ["####......####"] * 5
+LETTERS["G"] = [".#############", "##############", "##############"] + \
+    ["####.........."] * 4 + ["####....######"] * 2 + ["####......####"] * 4 + \
+    ["##############", "##############", ".############."]
+
+# What differs between the two games' screens. Atlantis's is the default;
+# main() swaps in TRIGON_THEME for --trigon.
+THEME = {
+    "word": "ATLANTIS",
+    "version": "VERSION",
+    "wheel": "gfx/wheel.txt",
+    "fish": ("gfx/fish-atlantis.txt", "gfx/fish-atlantis.txt", "gfx/fish-atlantis.txt"),
+    "fish_inks": (YELLOW, BLUE | BRIGHT, BLUE | BRIGHT),
+    "remap": {},
+}
+# Trigon's, as the game's (src/trigon/config.asm): a black sea, cyan
+# weed, the temple red, a magenta glow at the surface.
+TRIGON_THEME = {
+    "word": "TRIGON",
+    "version": "src/trigon/VERSION",
+    "wheel": "gfx/trigon/pulsar.txt",
+    "fish": ("gfx/trigon/piranha.txt", "gfx/trigon/round-fish.txt", "gfx/trigon/round-fish.txt"),
+    "fish_inks": (RED, BLACK, BLACK),
+    "remap": {
+        CYAN | BRIGHT: MAGENTA | BRIGHT, CYAN: RED, BLUE | BRIGHT: BLACK, BLUE: BLACK,
+        GREEN | BRIGHT: CYAN | BRIGHT, GREEN: CYAN | BRIGHT,
+    },
+    "title_inks": [YELLOW | BRIGHT, RED | BRIGHT, RED | BRIGHT, MAGENTA | BRIGHT],
+}
+
 # One ink for each cell row of the title, top to bottom: white hot at
 # the top, through yellow, to red.
 TITLE_INKS = [WHITE | BRIGHT, YELLOW | BRIGHT, YELLOW, RED | BRIGHT]
@@ -175,7 +215,7 @@ def title(word, top):
                     if py in TITLE_CUTS:
                         continue
                     for dx in range(2):
-                        plot(x + c * 2 + dx, top + py, TITLE_INKS[py // 8])
+                        plot(x + c * 2 + dx, top + py, THEME.get("title_inks", TITLE_INKS)[py // 8])
         x += (w + gap) * 2
 
 
@@ -276,8 +316,9 @@ def paint():
     ruins()
 
     diver = load_frames("gfx/diver-atlantis.txt")
-    wheel = load_frames("gfx/wheel.txt")
-    fish = load_frames("gfx/fish-atlantis.txt")
+    wheel = load_frames(THEME["wheel"])
+    fish = [load_frames(f) for f in THEME["fish"]]
+    fi = THEME["fish_inks"]
     torpedo = load_frames("gfx/torpedo.txt")
 
     # The diver, firing at a bomb.
@@ -296,9 +337,16 @@ def paint():
     sprite(wheel[0], 136, 56, BLACK)
 
     # Fish, in the game's own size.
-    sprite(fish[0], 120, 156, YELLOW, scale=1)
-    sprite(fish[1], 40, 62, BLUE | BRIGHT, scale=1, mirror=True)
-    sprite(fish[0], 216, 66, BLUE | BRIGHT, scale=1, mirror=True)
+    sprite(fish[0][0], 120, 156, fi[0], scale=1)
+    sprite(fish[1][1], 40, 62, fi[1], scale=1, mirror=True)
+    sprite(fish[2][0], 216, 66, fi[2], scale=1, mirror=True)
+
+    # Trigon's colours over the whole scene (the title comes after).
+    remap = THEME["remap"]
+    if remap:
+        for row in pix:
+            for x, c in enumerate(row):
+                row[x] = remap.get(c, c)
 
 
 # --- The big diver ----------------------------------------------------------------
@@ -484,11 +532,11 @@ TINY = {
 
 
 def version_mark():
-    text = "v" + Path("VERSION").read_text().strip()
+    text = "v" + Path(THEME["version"]).read_text().strip()
     width = sum(len(TINY[ch][0]) + 1 for ch in text) - 1
     x, y = W - 2 - width, H - 7
     # A clear patch of sand first, so no stone runs into the letters.
-    fill(x - 2, y - 1, width + 4, 7, SAND)
+    fill(x - 2, y - 1, width + 4, 7, THEME["remap"].get(SAND, SAND))
     for ch in text:
         for dy, line in enumerate(TINY[ch]):
             for dx, p in enumerate(line):
@@ -551,10 +599,13 @@ def scr_bytes(bits, attrs):
 
 
 def main():
+    if "--trigon" in sys.argv:
+        sys.argv.remove("--trigon")
+        THEME.update(TRIGON_THEME)
     if len(sys.argv) < 2:
         sys.exit(__doc__)
     paint()
-    title("ATLANTIS", 8)
+    title(THEME["word"], 8)
     version_mark()
     bits, attrs, clashes = quantise()
     Path(sys.argv[1]).write_bytes(scr_bytes(bits, attrs))

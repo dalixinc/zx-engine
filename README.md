@@ -16,16 +16,69 @@ uses its own row's colours, so it does not clash with the sand or a
 plant. The diver can sink over the sand and the weed, but touching the
 black ground, a rock or a silo costs a life.
 
+**Trigon**, the second game, is the same game built again with its own
+levels, colours and Erin's sprites (`src/trigon/`, `make trigon`, its own
+tape and snapshot). Atlantis's last screen gives the code that lets the
+player into it. See [docs/TRIGON.md](docs/TRIGON.md).
+
 **New to the sprite code? Read [docs/SPRITES.md](docs/SPRITES.md).
 New to the scrolling ground? Read [docs/SCROLLING.md](docs/SCROLLING.md)**
 (the demo's seabed first, then the Atlantis section).
+
+## Building and running
+
+**Linux** (and WSL). You need `sjasmplus` (1.24 or later), `make`, a C
+compiler (`make` builds the ZX0 packer, `build/zx0`, from `tools/zx0/`),
+Python 3 (only to redraw graphics after an art change) and Fuse. Fuse
+here is the GTK build, `fuse`; the Makefile's default is `fuse-sdl`, so
+pass `EMU=fuse` if that is the one you have. From the repository's top
+folder:
+
+```
+make                          # both games: build/atlantis.tap + .sna, build/trigon.tap + .sna
+make -B                       # the same, rebuilding everything (also redraws gfx/ with Python)
+
+make run EMU="fuse -g 3x"         # Atlantis: load its tape in Fuse, 3x size
+make run-trigon EMU="fuse -g 3x"  # Trigon: load its tape
+fuse -g 3x --machine 48 build/atlantis.sna   # or start straight from a snapshot
+fuse -g 3x --machine 48 build/trigon.sna
+
+make trigon                   # Trigon alone
+make trigon-seas              # build/trigon-sea-black.sna and -dark.sna, to compare the seas
+make soak && fuse -g 3x --machine 48 build/atlantis-soak.sna         # Atlantis's self-test
+make trigon-soak && fuse -g 3x --machine 48 build/trigon-soak.sna    # Trigon's: green and OK
+make demo && make run-demo EMU=fuse   # Engine Demo 1
+```
+
+**The web pages, locally.** `make web` copies both games into `docs/play/`
+(Atlantis) and `docs/play/trigon/` (Trigon). Then serve `docs/` with
+Python's own web server, which stays on this machine:
+
+```
+make web
+cd docs && python3 -m http.server 8000 --bind 127.0.0.1
+```
+
+and open http://localhost:8000/play/ for Atlantis and
+http://localhost:8000/play/trigon/ for Trigon (Ctrl+C stops the server).
+Another port works the same way (`python3 -m http.server 8080 ...`). A
+hard refresh (Ctrl+Shift+R) fetches a new build.
+
+**Windows:** `build.bat` builds both games the same way
+(`windows-tools\` holds sjasmplus, Fuse and zx0): `build.bat`,
+`build.bat run` (Atlantis), `build.bat runtrigon` (Trigon), `build.bat
+web`, `build.bat soak`, `build.bat trigonsoak`, `build.bat trigonseas`,
+`build.bat demo`; add `4x` (or `2x`, `3x`) after `run`/`runtrigon` for
+the window size. For the local web server, install Python and run the
+same `python -m http.server 8000 --bind 127.0.0.1` in `docs\`.
 
 ## Play in the browser
 
 GitHub Pages serves this repository's `main` branch, folder `/docs`, so
 Atlantis plays at **https://dalixinc.github.io/zx-engine/play/** in
 JSSpeccy 3. Click to play, then `1`. Ctrl is Symbol Shift there. See
-[docs/WEB.md](docs/WEB.md).
+[docs/WEB.md](docs/WEB.md). Trigon plays at
+**https://dalixinc.github.io/zx-engine/play/trigon/**.
 
 ### Deploying the latest build
 
@@ -36,7 +89,8 @@ git push
 ```
 
 `make web` (or `build.bat web`) builds the game and copies
-`build/atlantis.sna` and `.tap` into `docs/play/`. Those two copies are
+`build/atlantis.sna` and `.tap` into `docs/play/`; `make web` also copies
+`build/trigon.sna` and `.tap` into `docs/play/trigon/`. Those two copies are
 committed on purpose; `build/` is not. The site follows `main` only:
 GitHub Pages redeploys a minute or two after each change to `main`, so a
 commit on a branch goes live when its pull request is merged.
@@ -127,8 +181,9 @@ that drifts towards the diver's depth until it has passed him, harder
 each time. On level 10 the silos' missiles home in on him too
 (`docs/LEVELS-3-AND-4.md`). Finishing level 20, the last of Atlantis,
 shows a picture of the city, **drawn by Erin**, its colours coming on
-in a growing circle, with a chime, before
-the game goes on (`docs/CITY-INTERLUDE.md`).
+in a growing circle, with a chime. That is the end of Atlantis: the
+next screen gives the code for **Trigon**, the second game, which is
+loaded from its own tape (`docs/CITY-INTERLUDE.md`).
 
 Level 2 and level 3 each open with a message and the level's code, up
 until a key is pressed; from level 4 the code is under the banner. The
@@ -176,7 +231,8 @@ The demo still prints its digits on rows 22 and 23. It has no overlay.
 ## Credits
 
 The picture of the city between Atlantis and Trigon is by **Erin**
-(`gfx/city_*.bin`, from her Atlantis Spectrum pack).
+(`gfx/city_*.bin`, from her Atlantis Spectrum pack), and so are Trigon's
+enemies (`gfx/trigon/`).
 
 ## Layout
 
@@ -207,6 +263,11 @@ src/atlantis/sound.asm   beeper noise, played in each frame's spare time
 src/atlantis/torpedo.asm the diver's torpedo: fire, run, hit a bomb, its own draw
 src/atlantis/fastsprite.asm  the faster sprite walker the game uses (not the demo)
 src/atlantis/soak.asm    the background-restore check, only with -DSOAK
+src/trigon/main.asm      Trigon: the game again with TRIGON defined, and its output files
+src/trigon/config.asm    Trigon's numbers: levels, colours, the sea (CFG_SEA)
+src/trigon/theme.asm     the fish's and the missile's colours, painted each step
+src/trigon/gate.asm      the code on Trigon's menu, and its buzz
+src/trigon/ediver.asm    an enemy diver, an experiment (-DENEMY_DIVER only)
 src/main.asm             Engine Demo 1 entry and loop
 src/layout.asm           the demo's rows and buffer addresses
 src/constants.asm        memory map, colours, tuning constants
@@ -233,7 +294,10 @@ gfx/missile.asm          GENERATED from missile.txt: 8 shifts x 1 frame
 gfx/loading.scr          GENERATED loading screen, 6912 bytes (tools/mkloadscreen.py)
 gfx/city_*.bin           Erin's Atlantis city, 192 x 128: pixels and colours
 gfx/city.scr, city_*.zx0 GENERATED: the city as a screen (tools/mkcity.py); pixels, colours packed
-VERSION                  the version printed on the loading screen (0.9.7)
+VERSION                  the version printed on the loading screen (0.9.8)
+gfx/trigon/              Erin's Trigon sprites (.txt) and what is GENERATED from them
+gfx/trigon/loading.scr   GENERATED Trigon loading screen (mkloadscreen.py --trigon)
+src/trigon/VERSION       Trigon's version, on its loading screen (0.1.0)
 docs/SPRITES.md          screen layout, masking, pre-shifting, timing
 docs/SCROLLING.md        the demo seabed, then the Atlantis seabed
 tools/gfx2asm.py         ASCII art -> pre-shifted masked .asm (Python 3)

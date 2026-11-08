@@ -16,6 +16,25 @@ the list changes only if that formula does. Level 1 has no code.
 | 7 | PFCUKP | 14 | EKKEUH | | |
 | 8 | CUELRL | 15 | CDPFFC | | |
 
+## The Trigon code
+
+**KRAKEN.** The Atlantis ending shows it after the city, and Trigon's
+menu asks for it before level 1. It is the `GATE_WORD` macro in
+`src/atlantis/codes.asm`, shared by both games. It has an N, which no
+level code has, so it never clashes with one.
+
+## Trigon's level codes
+
+Trigon's codes are made the same way with its own keys (`CODE_KEY_*`
+under `IFDEF TRIGON` in `codes.asm`), so no Atlantis code opens a Trigon
+level, and none of them shares more than three letters in place with
+any code of either game.
+
+| Level | Code |
+|---|---|
+| 2 | KTHSKB |
+| 3 | CGDRBU |
+
 ## Targets (spoilers too)
 
 The score each level starts at, which is the score a code starts the

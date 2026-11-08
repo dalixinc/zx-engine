@@ -69,6 +69,9 @@ bss_ptr = bss_ptr + (size?)
         BSS fish_bg, BG_DATA + FISH_BYTES * FISH_HEIGHT
         BSS diver_bg, BG_DATA + DIVER_BYTES * DIVER_HEIGHT
         BSS boom_bg, BOOM_ROWS * 2
+    IFDEF ENEMY_DIVER
+        BSS ed_bg, BG_DATA + EDIVER_BYTES * EDIVER_HEIGHT  ; Trigon's enemy diver (experiment)
+    ENDIF
 
 BSS_END         equ bss_ptr
 BSS_LENGTH      equ BSS_END - BSS_START

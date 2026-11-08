@@ -507,6 +507,36 @@ soak_take_snap:
         jr nz,.line
         ret
 
+    IFDEF TRIGON
+; Trigon paints the fish's cells (src/trigon/theme.asm), and the script
+; takes the fish up to row 0: there, its three painted cells are right.
+; In: A = a row 0 cell, C = its column. Out: Z if it is water, or the
+; fish's paint inside its box. Corrupts: AF
+soak_r0_water:
+        cp WATER_ATTR
+        ret z
+        cp CFG_PIRANHA_INK
+        ret nz
+        push hl
+        ld a,(tp_fish_on)
+        or a
+        jr z,.no
+        ld hl,(tp_fish_at)
+        ld a,h                  ; its top row
+        or a
+        jr nz,.no
+        ld a,c
+        sub l
+        cp 3
+        jr nc,.no
+        xor a                   ; Z: one of its three
+        pop hl
+        ret
+.no:    pop hl
+        or 1                    ; NZ
+        ret
+    ENDIF
+
 soak_check_attrs:
         ; Row 0 stays water-coloured, except the columns the wheel bomb
         ; is painting: those are the bomb's ink until it leaves and the
@@ -546,7 +576,11 @@ soak_check_attrs:
         jr .row0step
 .row0sea:
         ld a,(hl)
+    IFDEF TRIGON
+        call soak_r0_water
+    ELSE
         cp WATER_ATTR
+    ENDIF
         jp nz,.bad6
 .row0step:
         inc hl
@@ -556,11 +590,25 @@ soak_check_attrs:
         jr nz,.row0mix
         jr .rows_sand
 .row0_water:
+    IFDEF TRIGON
+        ld b,0
+        ld c,0
+        call attr_addr
+.r0w:   ld a,(hl)
+        call soak_r0_water
+        jp nz,.bad6
+        inc hl
+        inc c
+        ld a,c
+        cp 32
+        jr nz,.r0w
+    ELSE
         ld b,0
         ld e,WATER_ATTR
         call soak_row_is_attr
         ld a,6
         call nz,soak_fail
+    ENDIF
 .rows_sand:
         ; Sand and ground are painted once and never touched again.
         ld b,SAND_ROW
@@ -1308,8 +1356,8 @@ soak_menu_back:
         ld a,(soak_menu_step)
         or a
         jr nz,.press
-        ld b,2
-        ld c,12
+        ld b,TITLE_ROW
+        ld c,TITLE_COL
         call char_addr
         ld c,8
         xor a
