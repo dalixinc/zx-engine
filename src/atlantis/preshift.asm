@@ -98,11 +98,14 @@ preshift_jobs:
         ; First: its art is a copy in DIVER_BUF, which the next job fills.
         PRESHIFT_JOB DIVER_BUF, JET_BUF, 2, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW, 1
     ENDIF
+        PRESHIFT_JOB diver_src, DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW, 1
+; The enemies, last, so the city interlude can make them again on their
+; own (preshift_list), from the Atlantis art or Trigon's (src/trigon/).
+preshift_enemies:
     IFDEF TWO_FISH
         PRESHIFT_JOB rfish_src, RFISH_HI, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW, 0
         PRESHIFT_JOB rfish_src + 2 * RFISH_RAW_PIC, RFISH_BUF, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW, 0
     ENDIF
-        PRESHIFT_JOB diver_src, DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW, 1
         PRESHIFT_JOB fish_src, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW, 0
         PRESHIFT_JOB wheel_src, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW, 0
         PRESHIFT_JOB wspin_src, WSPIN_BUF, WSPIN_PICS, WSPIN_HEIGHT, WSPIN_WIDE, WSPIN_RAW, 0
@@ -116,6 +119,8 @@ preshift_jobs:
 preshift_all:
         call diver_jet_build
         ld hl,preshift_jobs
+; HL = a list of PRESHIFT_JOBs, ending in a 0 word: make each one's copies.
+preshift_list:
 .job:   ld e,(hl)
         inc hl
         ld d,(hl)               ; the art

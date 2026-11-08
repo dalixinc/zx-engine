@@ -26,7 +26,9 @@ ASM       ?= sjasmplus
 EMU       ?= fuse-sdl
 PYTHON    ?= python3
 GFX       := gfx/fish.asm gfx/diver.asm
-ATL_GFX   := gfx/diver_raw.asm gfx/fish_raw.asm gfx/rfish_raw.asm gfx/wheel_raw.asm gfx/wheel_spin.asm gfx/torpedo.asm gfx/missile.asm
+ATL_GFX   := gfx/diver_raw.asm gfx/fish_raw.asm gfx/rfish_raw.asm gfx/wheel_raw.asm gfx/wheel_spin.asm gfx/torpedo.asm gfx/missile.asm \
+             gfx/trigon/piranha_raw.asm gfx/trigon/round-fish_raw.asm gfx/trigon/pulsar_raw.asm \
+             gfx/trigon/spinning-wheel_raw.asm gfx/trigon/missile.asm
 SHARED    := src/constants.asm src/interrupts.asm src/screen.asm src/text.asm \
              src/input.asm src/sprite.asm src/fish.asm src/diver.asm \
              src/loader.asm
@@ -38,7 +40,8 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/menu.asm src/atlantis/wheel.asm src/atlantis/hit.asm src/atlantis/torpedo.asm \
              src/atlantis/fastsprite.asm src/atlantis/boom.asm src/atlantis/sound.asm \
              src/atlantis/silo.asm src/atlantis/missile.asm src/atlantis/score.asm src/atlantis/codes.asm src/atlantis/preshift.asm src/atlantis/bss.asm \
-             src/atlantis/soak.asm src/atlantis/udg.asm src/atlantis/demo.asm src/atlantis/interlude.asm $(SHARED)
+             src/atlantis/soak.asm src/atlantis/udg.asm src/atlantis/demo.asm src/atlantis/interlude.asm \
+             src/trigon/art.asm src/trigon/theme.asm $(SHARED)
 ZX0       := build/zx0
 CC        ?= cc
 
@@ -114,6 +117,18 @@ gfx/rfish_raw.asm: gfx/fish.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ rfish 1
 gfx/wheel_raw.asm: gfx/wheel.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ wheel 1
+# Erin's Trigon sprites (src/trigon/art.asm): the same tools, their own
+# names, so they sit beside the Atlantis set.
+gfx/trigon/piranha_raw.asm: gfx/trigon/piranha.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ tfish 1
+gfx/trigon/round-fish_raw.asm: gfx/trigon/round-fish.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ trfish 1
+gfx/trigon/pulsar_raw.asm: gfx/trigon/pulsar.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ twheel 1
+gfx/trigon/spinning-wheel_raw.asm: gfx/trigon/spinning-wheel.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ twspin 4
+gfx/trigon/missile.asm: gfx/trigon/missile.txt tools/gfx2asm.py
+	$(PYTHON) tools/gfx2asm.py $< $@ tmissile
 gfx/diver_raw.asm: gfx/diver-atlantis.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ diver 1
 

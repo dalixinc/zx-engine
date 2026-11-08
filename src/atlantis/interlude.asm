@@ -36,6 +36,7 @@ interlude:
         ld hl,(frame_count)
         ld (il_start),hl
         call il_show
+        call il_art_atlantis    ; the spinning wheel's copies lent the colours
         jp il_back
 
 ;------------------------------------------------------------------------------
@@ -55,6 +56,7 @@ il_menu_code:
         inc de
         djnz .cmp
         call il_show
+        call il_art_atlantis    ; the spinning wheel's copies lent the colours
         jp enter_menu           ; it starts the stack again
 il_code:        db "SUNKEN"
         ASSERT $ - il_code == CODE_LEN
@@ -306,10 +308,17 @@ il_r:           db 0
 il_in:          dw 0
 il_rim:         dw 0
 il_dy:          dw 0
-; The picture's colours wait here while the circle grows: free room
-; above the data block, below the diver's shifted copies.
-IL_ATTRS        equ data_end
-        ASSERT IL_ATTRS + ATTRS_SIZE <= PRESHIFT_START, "no room above the data for the city's colours"
+; The picture's colours wait here while the circle grows: in the
+; spinning wheel's shifted copies, which are made again from the art
+; straight after (il_art_atlantis, or Trigon's: src/trigon/art.asm).
+IL_ATTRS        equ WSPIN_BUF
+        ASSERT WSPIN_SHIFTED >= ATTRS_SIZE, "the spinning wheel's copies cannot hold the city's colours"
+
+; The enemies' shifted copies made again from the Atlantis art.
+; Corrupts: AF, BC, DE, HL, IX
+il_art_atlantis:
+        ld hl,preshift_enemies
+        jp preshift_list
         ASSERT (IL_R_END / 2) * (IL_R_END / 2) * 4 > 31 * 31 + 23 * 23, "the circle stops short of the corners"
 
 str_il_line1:   db "The city holds.", 0

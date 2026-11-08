@@ -105,6 +105,7 @@
         DEFINE TYPEWRITER
         DEFINE AUTOPLAY         ; the attract demo (demo.asm)
         DEFINE CITY_SHOW        ; the city between Atlantis and Trigon (interlude.asm)
+        DEFINE TRIGON_PART      ; after the city: Erin's art, the dark theme (src/trigon/)
     ENDIF
     ENDIF
     ENDIF
@@ -1057,6 +1058,9 @@ wheel_first:    db 0
     ENDIF
         INCLUDE "demo.asm"       ; the attract demo: hot input, cold the rest
         INCLUDE "interlude.asm"  ; the city, after the last Atlantis level
+    IFDEF TRIGON_PART
+        INCLUDE "../trigon/art.asm"  ; Erin's Trigon sprites, swapped in at the city
+    ENDIF
 
     IFDEF SLACK_LINES
 slack_loops:    dw 0            ; loops since entry, including the warmup
@@ -1129,12 +1133,16 @@ data_start:
         PRESHIFT_DATA           ; the three's pointer tables (preshift.asm)
         INCLUDE "../../gfx/torpedo.asm"
         INCLUDE "../../gfx/missile.asm"
+missile_end:                    ; where its pictures stop (Trigon swaps them)
         SILO_DATA               ; silo.asm
     IFDEF TWO_FISH
         RFISH_TABLES            ; the round fish's pointer tables (preshift.asm)
     ENDIF
     IFDEF DOUBLE_SHOT
         DOUBLE_DATA             ; the double shot's patch tables (torpedo.asm)
+    ENDIF
+    IFDEF TRIGON_PART
+        TRIGON_ART_DATA         ; Erin's Trigon sprites (src/trigon/art.asm)
     ENDIF
     IFDEF CITY_SHOW
 city_pix_zx0:                   ; Erin's city, a whole screen, packed:
