@@ -104,6 +104,9 @@ enter_menu:
     IFDEF AUTOPLAY
         call demo_off           ; the keyboard again, and the demo's wait
     ENDIF
+    IFDEF TRIGON_PART
+        call trigon_off         ; Atlantis art and colours (src/trigon/)
+    ENDIF
         ; fall through
 
 ;------------------------------------------------------------------------------

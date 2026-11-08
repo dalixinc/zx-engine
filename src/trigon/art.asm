@@ -31,3 +31,72 @@
         INCLUDE "../../gfx/trigon/missile.asm"
 tmissile_end:
         ENDM
+
+;------------------------------------------------------------------------------
+; trigon_on - 1 from the city interlude to the menu: Erin's art is in
+; (and the dark theme, theme.asm). Cleared by trigon_off.
+;------------------------------------------------------------------------------
+trigon_on:      db 0
+
+;------------------------------------------------------------------------------
+; trigon_art_in - at the city, after it is shown: the enemies' shifted
+; copies made from Erin's art, into the Atlantis buffers, and the
+; missile's pictures exchanged for hers. Sets trigon_on. Takes about a
+; quarter of a second, while the picture is still up.
+; Corrupts: AF, BC, DE, HL, IX
+;------------------------------------------------------------------------------
+trigon_art_in:
+        ld hl,trigon_jobs
+        call preshift_list
+        ld a,(trigon_on)
+        or a
+        ld a,1
+        ld (trigon_on),a
+        ret nz                  ; the missile is hers already
+        jr trigon_missile
+
+;------------------------------------------------------------------------------
+; trigon_off - enter_menu: the Atlantis art back if Erin's is in, and the
+; Atlantis theme (theme.asm). The menu's demo and city use Atlantis art.
+; Corrupts: AF, BC, DE, HL, IX
+;------------------------------------------------------------------------------
+trigon_off:
+        ld a,(trigon_on)
+        or a
+        ret z
+        xor a
+        ld (trigon_on),a
+        call il_art_atlantis    ; the enemies' copies (interlude.asm)
+        ; fall through: the missile's pictures back
+
+; Exchange the missile's pictures with Erin's: the same layout, so doing
+; it twice puts them back. Corrupts: AF, BC, DE, HL
+trigon_missile:
+        ld hl,missile_right_f0_s0
+        ld de,tmissile_right_f0_s0
+        ld bc,missile_end - missile_right_f0_s0
+.swap:  ld a,(de)
+        push af
+        ld a,(hl)
+        ld (de),a
+        pop af
+        ld (hl),a
+        inc hl
+        inc de
+        dec bc
+        ld a,b
+        or c
+        jr nz,.swap
+        ret
+        ASSERT missile_end - missile_right_f0_s0 == tmissile_end - tmissile_right_f0_s0, "Erin's missile is not laid out as the Atlantis one"
+
+; As preshift_enemies (preshift.asm), from Erin's art.
+trigon_jobs:
+    IFDEF TWO_FISH
+        PRESHIFT_JOB trfish_src, RFISH_HI, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW, 0
+        PRESHIFT_JOB trfish_src + 2 * RFISH_RAW_PIC, RFISH_BUF, 2, RFISH_HEIGHT, RFISH_WIDE, RFISH_RAW, 0
+    ENDIF
+        PRESHIFT_JOB tfish_src, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW, 0
+        PRESHIFT_JOB twheel_src, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW, 0
+        PRESHIFT_JOB twspin_src, WSPIN_BUF, WSPIN_PICS, WSPIN_HEIGHT, WSPIN_WIDE, WSPIN_RAW, 0
+        dw 0

@@ -36,7 +36,11 @@ interlude:
         ld hl,(frame_count)
         ld (il_start),hl
         call il_show
+    IFDEF TRIGON_PART
+        call trigon_art_in      ; Erin's art for Trigon (src/trigon/art.asm)
+    ELSE
         call il_art_atlantis    ; the spinning wheel's copies lent the colours
+    ENDIF
         jp il_back
 
 ;------------------------------------------------------------------------------
