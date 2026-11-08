@@ -361,10 +361,14 @@ BORDER_BEAT         equ $FF     ; the heartbeat's round of colours
 CFG_L2_INK          equ RED | SEA
 CFG_L3_INK          equ MAGENTA | SEA
 
-; Three levels for now, each a step past Atlantis's level 1: the pulsar
-; on a wave with a waving fish, then the spinning wheel hunting, then
-; the wheel hunting harder with the homing missiles (CFG_MSL_HOME_LEVEL).
-; One bomb at a time (docs/TRIGON.md: two do not fit at 50).
+; Three levels for now, each a step past Atlantis's level 1, and each
+; its own kind of fight (with TB_TABLE below): level 1 is the fish's,
+; the pulsar on a wave with a waving fish and a pair of bombs now and
+; then; level 2 is the pairs', spinning wheels that come two at a time
+; more often than not, one hunting and one on the wave; level 3 is the
+; hunters', faster wheels hunting harder, a pair less often but both
+; hunting, and the homing missiles (CFG_MSL_HOME_LEVEL). The fish
+; crosses once and goes (FISH_LEAVES), so the waves keep coming.
 ; The soak plays level 1 and its frame numbers expect Atlantis's level 1
 ; (score.asm asserts it), so a soak build has that row first, in Trigon's
 ; colours; the game's own level 1 is a harder one.
@@ -398,9 +402,9 @@ CFG_L3_INK          equ MAGENTA | SEA
         TB_ROW  0,      CFG_WHEEL_INK,  MOVE_BOB,  0    ; the soak's level 1: no second bomb
     ENDIF
         ;       share   ink             bmove      hunt
-        TB_ROW  64,     RED | SEA,      MOVE_BOB,  0    ; level 1: one wave in 4
-        TB_ROW  96,     MAGENTA | SEA,  MOVE_WAVE, 0    ; level 2: about 3 in 8
-        TB_ROW  128,    RED | SEA,      MOVE_WAVE, 0    ; level 3: one in 2
+        TB_ROW  40,     RED | SEA,      MOVE_BOB,  0    ; level 1: the fish's; a pair now and then (1 in 6)
+        TB_ROW  176,    MAGENTA | SEA,  MOVE_WAVE, 0    ; level 2: pairs (about 2 in 3), one hunts, one waves
+        TB_ROW  112,    RED | SEA,      MOVE_HOME, 64   ; level 3: fewer pairs (about 3 in 7), both hunting
         ENDM
 
 ; The waves (MOVE_WAVE). A wave is a sine, AMP pixels above the middle

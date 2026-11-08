@@ -102,6 +102,10 @@ fish_hold:
 
 fish_unhold:
         ld hl,(fish_mover)      ; the level's: update_fish or fish_wave
+    IFDEF FISH_LEAVES
+        ld (fish_once.real + 1),hl
+        ld hl,fish_once         ; Trigon: it, then has it crossed? (twobomb.asm)
+    ENDIF
         ld (fish_mv+1),hl
         ld (fish_mv2+1),hl
         ret

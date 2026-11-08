@@ -129,6 +129,11 @@
         DEFINE TWO_BOMBS        ; a second bomb in the fish's place (twobomb.asm)
     ENDIF
         DEFINE SHARED_BOMB      ; one set of bomb copies for both kinds (twobomb.asm)
+    IFNDEF SOAK
+    IFNDEF MEASURE              ; which measures a fish that always swims
+        DEFINE FISH_LEAVES      ; the fish crosses once, then goes (twobomb.asm)
+    ENDIF
+    ENDIF
     ENDIF
 
     IFDEF MEASURE
@@ -441,7 +446,7 @@ main_loop:
         call ed_restore         ; drawn after the fish (src/trigon/ediver.asm)
     ENDIF
     IFDEF TWO_BOMBS
-        call tb_restore         ; drawn after the fish (src/trigon/twobomb.asm)
+.tb_c1:  call tb_restore         ; drawn after the fish (src/trigon/twobomb.asm)
     ENDIF
 fish_rest_call:
         call fish_restore_fast
@@ -560,7 +565,7 @@ fish_draw_call:
         call ed_draw            ; Trigon's enemy diver, an experiment
     ENDIF
     IFDEF TWO_BOMBS
-        call tb_draw            ; the second bomb, in the fish's place
+.tb_c2:  call tb_draw            ; the second bomb, in the fish's place
     ENDIF
         ; If a sprite is on row 0, the digits go back on top now,
         ; after the photograph and before we spend the frame on the seabed.
@@ -684,7 +689,7 @@ fish_mv:
     IFNDEF NO_WHEEL
         call update_wheel
     IFDEF TWO_BOMBS
-        call tb_move            ; the second bomb (src/trigon/twobomb.asm)
+.tb_c3:  call tb_move            ; the second bomb (src/trigon/twobomb.asm)
     ENDIF
     IFNDEF SOAK
         ; Before hit_check: a bomb that was shot first is already gone.
@@ -974,7 +979,7 @@ fish_mv2:
     IFNDEF NO_WHEEL
         call update_wheel
     IFDEF TWO_BOMBS
-        call tb_move            ; the second bomb (src/trigon/twobomb.asm)
+.tb_c4:  call tb_move            ; the second bomb (src/trigon/twobomb.asm)
     ENDIF
     IFNDEF SOAK
         ld a,(torp_on)
