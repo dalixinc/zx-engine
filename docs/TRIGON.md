@@ -56,43 +56,43 @@ the menu works as it does in Atlantis.
 
 ## Colours
 
-Trigon keeps the dark colours that Atlantis left for it:
+Trigon's sea is **black**, which sets it apart from Atlantis at once.
+Its borders keep the dark colours Atlantis left for it, and everything
+on the water is bright:
 
 - **Borders:** blue, red and magenta for its three levels; black is
   kept for the next.
-- **Enemies:** black, red and magenta inks. The bombs take theirs from
-  the level table. A sprite has no colour of its own on the Spectrum,
-  so each step `trigon_paint` (`src/trigon/theme.asm`) paints the
-  fish's cells, magenta for the angler and red for the piranha, and a
-  missile's while it flies up through the water, then gives last step's
-  cells back to the water. The bomb's cells are left alone, so where the
-  two meet the bomb keeps its colour. Another sprite in a painted cell
-  takes its colour for a moment: the Spectrum's colour clash.
+- **Bombs:** the dark set, from the level table: a magenta pulsar
+  (black ink would vanish on the black sea), then a red and a magenta
+  spinning wheel.
+- **Fish and missiles:** a splash of colour against them: a cyan
+  angler, a yellow piranha, and bright blue missiles. A sprite has no
+  colour of its own on the Spectrum, so `trigon_paint`
+  (`src/trigon/theme.asm`) paints the fish's cells and a flying
+  missile's, and gives the cells they leave back to the water. The
+  bomb's cells are left alone, so where they meet the bomb keeps its
+  colour. Another sprite in a painted cell takes its colour for a
+  moment: the Spectrum's colour clash.
+- **The seabed:** cyan weed and silo domes (`CFG_WEED_INK`), the yellow
+  sand, and a red ground under it (`CFG_GROUND_ATTR`), like magma.
 - **The diver stays white.**
 - **The flashes still show:** a death flashes white and black
   (`CFG_HIT_INK`; red would vanish against a red border), a new level
   white and black, and a special bomb cyan or yellow.
 
-## Two seas to compare
+## The sea is one setting
 
-The sea is one setting, `CFG_SEA` in `src/trigon/config.asm`: every
-colour on the water is an ink on its paper (`SEA`, `layout.asm`).
+`CFG_SEA` in `src/trigon/config.asm`: every colour on the water is an
+ink on its paper (`SEA`, `layout.asm`). Black is the game's; the dark
+blue that was tried beside it is still there to compare, with the
+first plan's colours (black, red and magenta fish and missiles, and
+everything dimmer, as the bright bit belongs to the whole cell).
 `make trigon-seas` builds both:
 
-| Black (`CFG_SEA equ BLACK`) | Dark blue (`CFG_SEA equ BLUE`) |
+| Black (`CFG_SEA equ BLACK`), the game's | Dark blue (`CFG_SEA equ BLUE`) |
 |---|---|
 | ![The black sea](images/trigon-sea-black.png) | ![The dark blue sea](images/trigon-sea-dark.png) |
 | `build/trigon-sea-black.sna` | `build/trigon-sea-dark.sna` |
-
-- **Black:** the most dramatic. Black ink would vanish on it, so the
-  black enemies (the level 1 pulsar and the missiles) are magenta
-  instead. Everything is bright.
-- **Dark blue:** the Atlantis blue without the bright bit. Black shows
-  on it, so all three enemy colours are there. The bright bit belongs to
-  the whole cell, so every ink on the water is the dark one too: the
-  diver is a dimmer white, and the sand a darker yellow.
-
-The tape and the web page are built with the dark blue for now.
 
 ## The first three levels
 
@@ -121,14 +121,31 @@ started late and caught up:
 | Atlantis, level 1 | 8 | 0 | 512 |
 | Atlantis, level 3 | 1 | 0 | 512 |
 | Atlantis, level 3, a missile always up | 1 | 1 | 512 |
-| Trigon, level 1 | 0 | 3 | 512 |
-| Trigon, level 2 | 0 | 6 | 512 |
-| Trigon, level 3 | 0 | 20 | 512 |
-| Trigon, level 3, a missile always up | 0 | 24 | 512 |
+| Trigon, level 1 | 0 | 1 (was 3) | 512 |
+| Trigon, level 2 | 2 | 0 (was 6) | 512 |
+| Trigon, level 3 | 0 | 6 (was 20) | 512 |
+| Trigon, level 3, a missile always up | 0 | 11 (was 24) | 512 |
 
 512 interrupts for 512 steps: no frame is lost. The fish's and the
-missile's colours cost about 8 scanlines, which is all of the room the
-heavy frame had, so a few steps start a little late and catch up.
+missile's colours cost about 8 scanlines when they were painted every
+step, all the room the heavy frame had. Now the paint saves itself
+the work:
+
+- **Nothing changed, nothing painted.** It works out the cells first
+  (the fish's and its colour, the missile's, and the bomb's box), about
+  3 scanlines, and if they are last step's, the cells are already right.
+  The fish crosses a cell in 8 steps and a missile in 4, so most steps
+  stop there.
+- **Otherwise,** last step's cells are given back to the water and this
+  step's painted, as before. (Repainting only the fish or only the
+  missile, when only one moved, was tried: it measured the same and cost
+  285 bytes more.)
+- **Never on the heaviest step.** At 50, every other step also rotates
+  the slow sand-and-weed buffer; the paint skips that step altogether,
+  and a change waits for the next one. So a cell can show the water's
+  colour for a 1/50 second. At 25 there is time on every picture frame.
+- **A safety net:** after the banner, and twice in every 32 1/50
+  seconds, it paints both whatever.
 
 **Two bombs** (measured before the split, PR #46): a bomb costs about 39
 to 41 scanlines in its worst frames. At 50 a second bomb would run about
@@ -141,11 +158,11 @@ Trigon has the whole 48K to itself, laid out as Atlantis is
 
 | Free bytes | Atlantis | Trigon |
 |---|---|---|
-| Hot code (to `RFISH_BUF`) | 628 | 1,138 |
+| Hot code (to `RFISH_BUF`) | 628 | 918 |
 | Cold block (to the unpacker) | 43 | 174 |
 | Data (to `PRESHIFT_START`) | 1,153 | 3,277 |
-| Tape room (below the packed game) | 985 | 4,098 |
-| The tape | 18,559 bytes | 15,908 bytes |
+| Tape room (below the packed game) | 985 | 3,722 |
+| The tape | 18,560 bytes | 16,023 bytes |
 
 ## An enemy diver (an experiment)
 
