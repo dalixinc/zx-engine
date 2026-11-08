@@ -17,7 +17,7 @@
 ;
 ; Cost (measured in docs/TRIGON.md): next to nothing on the heavy step,
 ; about 3 scanlines on another where nothing it paints has changed, and
-; up to about 11 where something has.
+; about 11 where something has.
 ;==============================================================================
 
 ;------------------------------------------------------------------------------
@@ -27,15 +27,15 @@
 ; steps, a missile in 4, and the bomb's box stays put as often. So it
 ; works out this step's cells first (the fish's, and its colour, the
 ; missile's, and the bomb's box, which it paints round), and if they are
-; last step's the cells are already right and it paints nothing (about
-; 3 scanlines). If only the fish's or only the missile's changed, only
-; that one's old cells are given back to the water and its new ones
-; painted, and the other's again only where they share a cell. If both
-; did, or the bomb's box moved, it does both. After the banner, and
-; twice in 32 1/50 seconds as a safety net, it paints both whatever.
+; last step's, the cells are already right and it paints nothing (about
+; 3 scanlines). Otherwise last step's cells are given back to the water
+; and this step's painted. After the banner, and twice in 32 1/50
+; seconds as a safety net, it paints whatever.
 ; At 50 it does nothing on the step that rotates the slow buffer, the
 ; heaviest: a change waits one step, so a cell can be the water's
-; colour for a 1/50 second.
+; colour for a 1/50 second. (Repainting only the fish or only the
+; missile, when only one moved, was tried and measured the same, for
+; 285 bytes more.)
 ; Corrupts: AF, BC, DE, HL (and what the fish's draw does)
 ;------------------------------------------------------------------------------
 trigon_paint:
@@ -181,59 +181,11 @@ trigon_paint:
         ld hl,tp_wn
         cp (hl)
         jr z,.decide
-.bdiff: ; It moved: only our cells inside its old box or its new one
-        ; (painted round it, or now under it) need painting again, in
-        ; place.
-        push de
-        ld a,(tp_fish_on)
-        or a
-        jr z,.bmsl
-        ld hl,(tp_fish_at)
-        ld bc,(2 << 8) | 3
-        call tp_bomb_near
-        pop de
-        jr z,.bf
-        set 3,e
-.bf:    push de
-.bmsl:  ld a,(tp_msl_on)
-        or a
-        jr z,.bnone
-        ld hl,(tp_msl_at)
-        ld bc,(tp_msl_size)
-        call tp_bomb_near
-        pop de
-        jr z,.p4b
-        set 4,e
-        jr .p4b
-.bnone: pop de
-.p4b:   ld hl,(wheel_pc0)       ; its box is known now, painted or not
-        ld (tp_wpc),hl
-        ld hl,(wheel_pr0)
-        ld (tp_wpr),hl
-        ld a,(wheel_attr_n)
-        ld (tp_wn),a
+.bdiff: set 2,e
 .decide:
         ld a,e
         or a
         jp z,.draw              ; the cells are as they should be
-        bit 2,e
-        jr nz,.both
-        and 3
-        cp 3
-        jr z,.both
-        cp 1
-        jr z,.fonly
-        cp 2
-        jr z,.monly
-        ; Neither moved, but the bomb did, next to one or both: paint
-        ; them again in place, the missile last.
-        bit 3,e
-        call nz,tp_fish_paint
-        bit 4,e
-        call nz,tp_msl_paint
-        jp .p4
-        ; Both, or forced: last step's cells water again, then this
-        ; step's.
 .both:
         ld a,(tp_fish_on)
         or a
@@ -244,56 +196,6 @@ trigon_paint:
         call tp_fish_new
         call tp_msl_new
         jr .p4
-        ; Only the fish's: its cells, and the missile's again if either
-        ; of the fish's boxes covered one of them.
-.fonly: push de
-        ld hl,(tp_fish_at)
-        ld (tp_prev_fat),hl
-        ld a,(tp_fish_on)
-        ld (tp_prev_fon),a
-        or a
-        call nz,tp_fish_water
-        call tp_fish_new
-        pop de
-        ld a,(tp_msl_on)
-        or a
-        jr z,.p4
-        bit 4,e
-        jr nz,.fmsl             ; the bomb moved by it
-        ld a,(tp_prev_fon)
-        or a
-        jr z,.fnow
-        ld hl,(tp_prev_fat)
-        call tp_overlap
-        jr nz,.fmsl
-.fnow:  ld a,(tp_fish_on)
-        or a
-        jr z,.p4
-        ld hl,(tp_fish_at)
-        call tp_overlap
-        jr z,.p4
-.fmsl:  call tp_msl_paint
-        jr .p4
-        ; Only the missile's: its old cells water (and the fish's again if
-        ; they shared one), then its new ones, last, so it is in front.
-.monly: push de
-        ld a,(tp_msl_on)
-        or a
-        call nz,tp_msl_water
-        pop de
-        ld a,(tp_fish_on)
-        or a
-        jr z,.mnew
-        bit 3,e
-        jr nz,.mfish            ; the bomb moved by it
-        ld a,(tp_msl_on)
-        or a
-        jr z,.mnew
-        ld hl,(tp_fish_at)
-        call tp_overlap
-        jr z,.mnew
-.mfish: call tp_fish_paint
-.mnew:  call tp_msl_new
 .p4:    ld hl,(wheel_pc0)
         ld (tp_wpc),hl
         ld hl,(wheel_pr0)
@@ -346,77 +248,6 @@ tp_msl_new:
         ld hl,(tp_new_msize)
         ld (tp_msl_size),hl
         jr tp_msl_paint
-
-; NZ if our box (H row, L column, B rows, C columns) shares a cell with
-; the bomb's painted box now (wheel_pc0-pr1) or when ours were painted
-; (tp_wpc, tp_wpr), each only while it was painted. Corrupts: AF, DE, HL
-tp_bomb_near:
-        push hl
-        ld a,(wheel_attr_n)
-        or a
-        ld de,wheel_pc0
-        call nz,tp_bov
-        pop hl
-        ret nz
-        ld a,(tp_wn)
-        or a
-        ret z
-        ld de,tp_wpc
-; NZ if our box (H, L, B, C as above) shares a cell with the box at DE:
-; first column, last column, first row, last row. Corrupts: AF, DE, HL
-tp_bov: ld a,l
-        add a,c
-        dec a                   ; our last column
-        ex de,hl                ; HL -> the box; D our row, E our column
-        cp (hl)
-        jr c,.no                ; we end left of it
-        inc hl
-        ld a,(hl)
-        cp e
-        jr c,.no                ; it ends left of us
-        inc hl
-        ld a,d
-        add a,b
-        dec a                   ; our last row
-        cp (hl)
-        jr c,.no                ; we end above it
-        inc hl
-        ld a,(hl)
-        cp d
-        jr c,.no                ; it ends above us
-        or 1                    ; NZ
-        ret
-.no:    xor a                   ; Z
-        ret
-        ASSERT tp_wpr == tp_wpc + 2
-
-; NZ if a fish's box at HL (H row, L column; 2 rows, 3 columns) shares
-; a cell with the missile's painted box. Corrupts: AF, BC, DE
-tp_overlap:
-        ld de,(tp_msl_at)       ; D row, E column
-        ld bc,(tp_msl_size)     ; B rows, C columns
-        ld a,h
-        inc a                   ; the fish's bottom row
-        cp d
-        jr c,.no                ; it ends above the missile
-        ld a,d
-        add a,b
-        dec a                   ; the missile's bottom row
-        cp h
-        jr c,.no                ; it ends above the fish
-        ld a,l
-        add a,2                 ; the fish's right column
-        cp e
-        jr c,.no
-        ld a,e
-        add a,c
-        dec a                   ; the missile's right column
-        cp l
-        jr c,.no
-        or 1                    ; NZ
-        ret
-.no:    xor a                   ; Z
-        ret
 
 ; A box of cells in one colour: H = top row, L = left column, B = rows,
 ; C = columns, A = the colour. The bomb's painted cells (wheel_pc0-pc1,
@@ -535,8 +366,6 @@ tp_new_fink:    db 0
 tp_new_mon:     db 0
 tp_new_mat:     dw 0
 tp_new_msize:   dw 0
-tp_prev_fat:    dw 0                    ; the fish's cells before this step's
-tp_prev_fon:    db 0
         ASSERT MISSILE_HEIGHT == 8 && MISSILE_WIDTH <= 8
         ASSERT FISH_MAX_X / 8 + 3 <= 32, "the fish's three columns would run off the screen"
         ASSERT FISH_HEIGHT == 9, "a 9-row fish covers two rows of cells"
