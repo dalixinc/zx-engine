@@ -17,15 +17,17 @@ since only the menu calls it), called by `menu_loop` (`menu.asm`). It
 sets every first level in `power_tab` to 1. Builds without power-ups
 (the soak, the measurements) don't have it.
 
-## The nuke (testing only)
+## The nuke
 
-A third special bomb, kept out of `docs/` and the README. Touch its
+A third special bomb, kept out of `docs/` and the README. Since
+2026-11-08 it is a real power-up in both games from level 12
+(`CFG_NUKE_LEVEL`); before that, only the testers' switch brought it. Touch its
 starburst to carry it and press B, as for the others:
 the bomb and the fish go up as if shot, and a silo's missile is taken
-away, each for `CFG_PTS_NUKE` (50) points, shown as for the other two. `CFG_NUKE_LEVEL` is 99, so only the testers'
-switch brings it in play; set it to 0 to leave its code and its picture
-out of the build (for Atlantis), or to a real level to play with it
-(for Trigon later). Its share of the roll is `CFG_NUKE_ODDS`.
+away, each for `CFG_PTS_NUKE` (50) points, shown as for the other two.
+The testers' switch still brings it from level 1. Set `CFG_NUKE_LEVEL`
+to 0 to leave its code and its picture out of a game's build. Its share
+of the roll is `CFG_NUKE_ODDS` (8 in 256).
 
 ## Straight to the city interlude
 

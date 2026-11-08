@@ -261,8 +261,8 @@ From level 4 the diver has a second weapon on the fire key
   with a quick falling "pew" (`CFG_LANCE_PEW`, about 980 Hz down to
   390 Hz in 0.16 seconds; lower notes come out as clicks, as the beeper
   only plays in each step's spare time).
-- **Reaching level 4** shows a message in the level panel: "THE LANCE
-  LASER IS YOURS: HOLD FIRE, LET GO TO SHOOT".
+- **Reaching level 4** shows a message in the level panel: "LANCE
+  LASER: HOLD FIRE, LET GO".
 
 **Drawing it:** the sea is empty pixels, so the beam's two rows (always
 in one row of cells) need nothing kept from under them: drawn once and

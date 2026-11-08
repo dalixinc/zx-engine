@@ -132,9 +132,9 @@ lance_news:
 
 ; The message's two lines (teaser, score.asm), under "WELL DONE, YOU
 ; REACHED LEVEL n."
-str_lance_1:    db "THE LANCE LASER IS YOURS:",0
+str_lance_1:    db "LANCE LASER:",0
 LANCE_1_LEN     equ $ - 1 - str_lance_1
-str_lance_2:    db "HOLD FIRE, LET GO TO SHOOT",0
+str_lance_2:    db "HOLD FIRE, LET GO",0
 LANCE_2_LEN     equ $ - 1 - str_lance_2
     ENDIF
 
