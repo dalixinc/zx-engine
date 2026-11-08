@@ -20,8 +20,8 @@ sets every first level in `power_tab` to 1. Builds without power-ups
 ## The nuke
 
 A third special bomb, kept out of `docs/` and the README. Since
-2026-11-08 it is a real power-up in both games from level 12
-(`CFG_NUKE_LEVEL`); before that, only the testers' switch brought it. Touch its
+2026-11-08 it is a real power-up: from level 12 in Atlantis, from
+level 6 in Trigon (`CFG_NUKE_LEVEL`); before that, only the testers' switch brought it. Touch its
 starburst to carry it and press B, as for the others:
 the bomb and the fish go up as if shot, and a silo's missile is taken
 away, each for `CFG_PTS_NUKE` (50) points, shown as for the other two.

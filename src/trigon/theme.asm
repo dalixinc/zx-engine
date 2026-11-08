@@ -278,6 +278,10 @@ tp_msl_new:
         ld (tp_msl_size),hl
         jr tp_msl_paint
 
+; tp_box and tp_cells are in the data block (TP_DATA, main.asm), where
+; Trigon has room and the code is as fast: a byte there costs the tape
+; one byte, a byte of hot code two.
+        MACRO TP_DATA
 ; A box of cells in one colour: H = top row, L = left column, B = rows,
 ; C = columns, A = the colour. The bomb's painted cells (wheel_pc0-pc1,
 ; wheel_pr0-pr1, while wheel_attr_n is set) are left alone: the bomb's
@@ -359,50 +363,50 @@ tp_box: ld e,a
 ; tp_box's cell by cell: H = row, L = column, B rows, C columns, E = the
 ; colour; a cell inside a bomb's box is passed over.
 tp_cells:
-.row:   push bc
+.crow:   push bc
         push hl
-.cell:  ld a,(wheel_attr_n)
+.ccell:  ld a,(wheel_attr_n)
         or a
-        jr z,.cell2
+        jr z,.ccell2
         ld a,(wheel_pr0)
         ld d,a
         ld a,h
         cp d
-        jr c,.cell2             ; above the bomb's box
+        jr c,.ccell2             ; above the bomb's box
         ld a,(wheel_pr1)
         cp h
-        jr c,.cell2             ; below it
+        jr c,.ccell2             ; below it
         ld a,(wheel_pc0)
         ld d,a
         ld a,l
         cp d
-        jr c,.cell2             ; left of it
+        jr c,.ccell2             ; left of it
         ld a,(wheel_pc1)
         cp l
-        jr nc,.next             ; inside: the bomb's
-.cell2:
+        jr nc,.cnext             ; inside: the bomb's
+.ccell2:
     IFDEF TWO_BOMBS
         ld a,(b2.wheel_attr_n)
         or a
-        jr z,.put
+        jr z,.cput
         ld a,(b2.wheel_pr0)
         ld d,a
         ld a,h
         cp d
-        jr c,.put
+        jr c,.cput
         ld a,(b2.wheel_pr1)
         cp h
-        jr c,.put
+        jr c,.cput
         ld a,(b2.wheel_pc0)
         ld d,a
         ld a,l
         cp d
-        jr c,.put
+        jr c,.cput
         ld a,(b2.wheel_pc1)
         cp l
-        jr nc,.next             ; inside: the second bomb's
+        jr nc,.cnext             ; inside: the second bomb's
     ENDIF
-.put:   push hl
+.cput:   push hl
         ld a,h
         rrca
         rrca
@@ -417,14 +421,15 @@ tp_cells:
         ld h,a
         ld (hl),e
         pop hl
-.next:  inc l
+.cnext:  inc l
         dec c
-        jr nz,.cell
+        jr nz,.ccell
         pop hl
         pop bc
         inc h
-        djnz .row
+        djnz .crow
         ret
+        ENDM
 
 tp_real:        dw fish_draw_fast       ; the fish's own draw (FISH_DRAW_TO)
 ; What is painted now (the soak reads tp_fish_on and tp_fish_at).

@@ -64,7 +64,6 @@ ln_y:           db 0            ; the beam's top pixel row
 ln_c0:          db 0            ; its first column
 ln_n:           db 0            ; its bytes (ln_c0 + 1: lance_unphoto)
 ln_a0:          dw 0            ; screen byte of its first column, top row
-ln_a1:          dw 0            ; and the row below
 ln_x0:          dw 0            ; its first pixel column
 ln_x1:          dw 0            ; its last
 ln_start:       dw 0            ; frame_count when fire went down
@@ -218,15 +217,10 @@ lance_input:
         ld (ln_charge),a
         call lance_held
         ld b,a                  ; how long it was held
-        ld a,(ln_shown)
-        or a
-        jr z,.empty
         xor a
         ld (ln_shown),a
-        push bc
-        call lance_dirty        ; the gauge empties
-        pop bc
-.empty: ld a,b
+        call lance_dirty        ; the gauge empties (keeps B)
+        ld a,b
         cp CFG_LANCE_MIN
         jp c,.clock             ; a tap
         ld a,(ln_clock)
@@ -294,19 +288,12 @@ lance_fire:
         or a                    ; FACE_RIGHT is 0
         jr nz,.left
         ld a,(diver_x)
-        ld l,a
-        ld h,0
-        ld de,DIVER_WIDTH + 7
-        add hl,de               ; the first whole byte past his nose
-        srl h
-        rr l
-        srl h
-        rr l
-        srl h
-        rr l
-        ld a,l
-        cp 32
-        ret nc                  ; at the right edge: no room
+        add a,DIVER_WIDTH + 7   ; the first whole byte past his nose
+        ret c                   ; past the right edge: no room
+        rrca
+        rrca
+        rrca
+        and 31
         ld b,a                  ; B = first column
         ld a,32
         sub b                   ; room to the edge
@@ -346,28 +333,20 @@ lance_fire:
         add hl,hl
         dec hl
         ld (ln_x1),hl
-        ; Screen bytes of its two rows, from the row table.
+        ; The screen byte of its top row, from the row table (the row
+        ; below is 256 on: ln_y is even, so both are in one cell's row).
         ld a,(ln_y)
         ld l,a
         ld h,0
         add hl,hl
         ld de,ROW_TABLE
         add hl,de
-        ld e,(hl)
-        inc hl
-        ld d,(hl)
-        inc hl
-        ld a,e
-        add a,b
-        ld e,a                  ; a row's 32 bytes share their high byte
-        ld (ln_a0),de
-        ld e,(hl)
-        inc hl
-        ld d,(hl)
-        ld a,e
-        add a,b
+        ld a,(hl)
+        add a,b                 ; a row's 32 bytes share their high byte
         ld e,a
-        ld (ln_a1),de
+        inc hl
+        ld d,(hl)
+        ld (ln_a0),de
         ld a,(ln_y)             ; the colour bytes' row: (y / 8) * 32
         and $F8
         ld l,a
@@ -555,7 +534,8 @@ lance_rows:
         ld c,a
         ld hl,(ln_a0)
         call .one
-        ld hl,(ln_a1)
+        ld hl,(ln_a0)
+        inc h                   ; the row below, in the same cell
 .one:   ld a,(ln_n)
         ld b,a
         ld a,c

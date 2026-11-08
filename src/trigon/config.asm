@@ -269,7 +269,7 @@ CFG_DOUBLE_COOLDOWN  equ 10
 ;   nuke      clears them all, from CFG_NUKE_LEVEL (0 leaves it out of the build)
 CFG_SUCTION_LEVEL    equ 2
 CFG_SHOVE_LEVEL      equ 3
-CFG_NUKE_LEVEL       equ 12      ; from level 12 (0 leaves it out of the build)
+CFG_NUKE_LEVEL       equ 6       ; from level 6, the swarm (0 leaves it out of the build)
 CFG_SUCTION_ODDS     equ 11      ; about one turn in 23: the escape, twice as
 CFG_SHOVE_ODDS       equ 5       ; common as the throw (one in 51), which kills
 CFG_NUKE_ODDS        equ 8
@@ -385,6 +385,8 @@ MOVE_HOME           equ 2       ; bomb: the bob, drifting to the diver's depth
 BORDER_BEAT         equ $FF     ; the heartbeat's round of colours
 CFG_L2_INK          equ RED | SEA
 CFG_L3_INK          equ MAGENTA | SEA
+CFG_GREEN_INK       equ GREEN | SEA
+CFG_WHITE_INK       equ WHITE | SEA
 
 ; Three levels for now, each a step past Atlantis's level 1, and each
 ; its own kind of fight (with TB_TABLE below): level 1 is the fish's,
@@ -408,6 +410,22 @@ CFG_L3_INK          equ MAGENTA | SEA
         LEVEL_ROW  300,    60,      150,     32,    BOMB_P, CFG_WHEEL_INK, MOVE_WAVE, 0,   MOVE_WAVE,     48,    BLUE,         1,   2,   10
         LEVEL_ROW  450,    50,      130,     72,    BOMB_W, CFG_L2_INK,    MOVE_HOME, 64,  MOVE_STRAIGHT, 0,     RED,          1,   3,   10
         LEVEL_ROW  600,    40,      110,     120,   BOMB_W, CFG_L3_INK,    MOVE_HOME, 112, MOVE_WAVE,     64,    MAGENTA,      1,   3,   10
+        ; 4, the Lance's: the pulsar back, quick, on the wave, and pairs
+        ; most of the time, to line up on the beam
+        LEVEL_ROW  700,    45,      120,     96,    BOMB_P, CFG_GREEN_INK, MOVE_WAVE, 0,   MOVE_WAVE,     56,    GREEN,        1,   2,   10
+        ; 5, the hunters back: wheels hunting, faster, a straight fish
+        LEVEL_ROW  800,    40,      110,     128,   BOMB_W, CFG_L2_INK,    MOVE_HOME, 96,  MOVE_STRAIGHT, 0,     CYAN,         1,   3,   10
+        ; 6, the swarm: nearly always pairs, the wheel on the wave
+        LEVEL_ROW  900,    35,      100,     144,   BOMB_W, CFG_L3_INK,    MOVE_WAVE, 0,   MOVE_WAVE,     64,    YELLOW,       1,   3,   10
+        ; 7, the fish's revenge: few pairs, but a fast fish worth 2
+        LEVEL_ROW  1000,   40,      100,     104,   BOMB_P, CFG_WHITE_INK, MOVE_HOME, 80,  MOVE_WAVE,     80,    WHITE,        2,   2,   10
+        ; 8, double hunters: both bombs of a pair hunt, harder
+        LEVEL_ROW  1100,   35,      90,      160,   BOMB_W, CFG_GREEN_INK, MOVE_HOME, 128, MOVE_STRAIGHT, 0,     RED,          1,   3,   10
+        ; 9, the storm: pairs almost always, missiles close together
+        LEVEL_ROW  1200,   30,      80,      176,   BOMB_W, CFG_L2_INK,    MOVE_WAVE, 0,   MOVE_WAVE,     72,    MAGENTA,      1,   3,   10
+        ; 10, Trigon's guard, the last (CFG_ENDING_LEVEL): the
+        ; fastest wheels, hunting hardest, pairs nearly always
+        LEVEL_ROW  1400,   30,      75,      192,   BOMB_W, CFG_WHITE_INK, MOVE_HOME, 128, MOVE_WAVE,     80,    BLUE,         1,   3,   10
         ENDM
 
 ; --- Two bombs (src/trigon/twobomb.asm) -------------------------------------------
@@ -430,6 +448,13 @@ CFG_L3_INK          equ MAGENTA | SEA
         TB_ROW  40,     RED | SEA,      MOVE_BOB,  0    ; level 1: the fish's; a pair now and then (1 in 6)
         TB_ROW  176,    MAGENTA | SEA,  MOVE_WAVE, 0    ; level 2: pairs (about 2 in 3), one hunts, one waves
         TB_ROW  112,    RED | SEA,      MOVE_HOME, 64   ; level 3: fewer pairs (about 3 in 7), both hunting
+        TB_ROW  176,    MAGENTA | SEA,  MOVE_BOB,  0    ; 4: pairs (2 in 3), one bobbing straight: the Lance's line
+        TB_ROW  96,     GREEN | SEA,    MOVE_WAVE, 0    ; 5: some pairs, one waving among the hunters
+        TB_ROW  224,    RED | SEA,      MOVE_HOME, 64   ; 6: nearly always pairs, one hunting
+        TB_ROW  48,     MAGENTA | SEA,  MOVE_BOB,  0    ; 7: few pairs: the fish's level
+        TB_ROW  160,    RED | SEA,      MOVE_HOME, 112  ; 8: pairs, both hunting hard
+        TB_ROW  208,    WHITE | SEA,    MOVE_HOME, 96   ; 9: pairs almost always
+        TB_ROW  224,    MAGENTA | SEA,  MOVE_HOME, 128  ; 10 to 20: pairs nearly always, both hunting hardest
         ENDM
 
 ; The waves (MOVE_WAVE). A wave is a sine, AMP pixels above the middle
@@ -459,7 +484,10 @@ CFG_BANNER_CODE_TIME equ 200
 ; Levels with a code (codes.asm): 2 to this. Trigon's codes have their
 ; own keys, so no Atlantis code opens a Trigon level. Level 1's is the
 ; Trigon code (GATE_WORD). Up to 31.
-CFG_CODE_LEVELS      equ 3
+CFG_CODE_LEVELS      equ 10
+; The last level (10): finishing it ends the game with the Finale code
+; (src/trigon/ending.asm). Levels past the table repeat its last row.
+CFG_ENDING_LEVEL     equ 10
 
 ; The beeper (sound.asm). Each explosion is white noise, played in
 ; short bursts in the spare time at the end of each step, so it never
