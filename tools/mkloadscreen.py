@@ -5,7 +5,7 @@ mkloadscreen.py - build the Atlantis loading screen from the game's sprites.
 Usage:  python3 tools/mkloadscreen.py gfx/loading.scr [preview.png]
         python3 tools/mkloadscreen.py --trigon gfx/trigon/loading.scr [preview.png]
 
---trigon draws Trigon's: the same scene in Trigon's dark colours, with
+--trigon draws Trigon's: the same scene in Trigon's colours, with
 Erin's sprites (gfx/trigon/*.txt), TRIGON for the title, and the version
 from src/trigon/VERSION.
 
@@ -176,9 +176,8 @@ THEME = {
     "fish_inks": (YELLOW, BLUE | BRIGHT, BLUE | BRIGHT),
     "remap": {},
 }
-# Trigon's: the lit water, the stones and the bright colours go dark, as
-# the game's do (src/trigon/config.asm): a dark blue sea, black in the
-# deep, the temple red, a magenta glow at the surface.
+# Trigon's, as the game's (src/trigon/config.asm): a black sea, cyan
+# weed, the temple red, a magenta glow at the surface.
 TRIGON_THEME = {
     "word": "TRIGON",
     "version": "src/trigon/VERSION",
@@ -186,8 +185,8 @@ TRIGON_THEME = {
     "fish": ("gfx/trigon/piranha.txt", "gfx/trigon/round-fish.txt", "gfx/trigon/round-fish.txt"),
     "fish_inks": (RED, BLACK, BLACK),
     "remap": {
-        CYAN | BRIGHT: MAGENTA, CYAN: RED, BLUE | BRIGHT: BLUE, BLUE: BLACK,
-        WHITE | BRIGHT: WHITE, GREEN | BRIGHT: GREEN, YELLOW | BRIGHT: YELLOW,
+        CYAN | BRIGHT: MAGENTA | BRIGHT, CYAN: RED, BLUE | BRIGHT: BLACK, BLUE: BLACK,
+        GREEN | BRIGHT: CYAN | BRIGHT, GREEN: CYAN | BRIGHT,
     },
     "title_inks": [YELLOW | BRIGHT, RED | BRIGHT, RED | BRIGHT, MAGENTA | BRIGHT],
 }

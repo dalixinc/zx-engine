@@ -46,7 +46,7 @@ CFG_START_RATE      equ 50
 ; sea every ink is the dark one too: the diver is a dimmer white.
 ; A build can force one with -DCFG_SEA=0 (make trigon-seas does).
     IFNDEF CFG_SEA
-CFG_SEA             equ BLUE
+CFG_SEA             equ BLACK
     ENDIF
     IF CFG_SEA == BLACK
 CFG_BRIGHT_SEA      equ BRIGHT  ; black is black either way; the inks bright
@@ -58,11 +58,26 @@ CFG_DARK_INK        equ BLACK
 
 ; The enemies' colours (src/trigon/theme.asm paints the fish's and a
 ; flying missile's cells each step; the bombs' come from CFG_LEVELS):
-; inks on the sea: black (CFG_DARK_INK: magenta on a black sea), red and
-; magenta.
+; inks on the sea. On the dark blue, black, red and magenta. On the
+; black sea the fish are a splash of colour, cyan and yellow, and the
+; missiles bright blue, while the bombs keep the dark set.
+    IF CFG_SEA == BLACK
+CFG_ANGLER_INK      equ CYAN | SEA              ; the round fish
+CFG_PIRANHA_INK     equ YELLOW | SEA
+CFG_MISSILE_INK     equ BLUE | SEA
+    ELSE
 CFG_ANGLER_INK      equ MAGENTA | SEA           ; the round fish
 CFG_PIRANHA_INK     equ RED | SEA
 CFG_MISSILE_INK     equ CFG_DARK_INK | SEA
+    ENDIF
+; The seabed: the weed (and the silos' domes, which stand in its row)
+; is an ink on the sea, and the ground row is a whole cell colour, its
+; rocks and the silos' bases in the ink, the rest in the paper.
+CFG_WEED_INK        equ CYAN
+    IFNDEF CFG_GROUND_ATTR
+CFG_GROUND_ATTR     equ CFG_BRIGHT_SEA | BLACK | (RED << 3)
+    ENDIF
+
 ; TRIGON on the menu: the tall letters' top halves and bottom halves.
 CFG_TITLE_INK       equ RED
 CFG_TITLE_LOW_INK   equ MAGENTA
