@@ -25,7 +25,7 @@ bytes moved to where they belong.
   place of what a torpedo would score. A silo missile, armed or flying,
   blows up at once, for the same 20.
 - **The points show where they were won**, in small figures ("+20"),
-  for about a second and a half (`CFG_POP_TIME`): in the burst's place when the
+  for about three seconds (`CFG_POP_TIME`): in the burst's place when the
   burst ends, or where the bomb (or the fish) was left after suction.
   What one bomb clears in one go shows as one total ("+40"); a later
   burst takes the place of an earlier pop-up. It is drawn as the
