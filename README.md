@@ -25,6 +25,53 @@ player into it. See [docs/TRIGON.md](docs/TRIGON.md).
 New to the scrolling ground? Read [docs/SCROLLING.md](docs/SCROLLING.md)**
 (the demo's seabed first, then the Atlantis section).
 
+## Building and running
+
+**Linux** (and WSL). You need `sjasmplus` (1.24 or later), `make`, a C
+compiler (`make` builds the ZX0 packer, `build/zx0`, from `tools/zx0/`),
+Python 3 (only to redraw graphics after an art change) and Fuse. Fuse
+here is the GTK build, `fuse`; the Makefile's default is `fuse-sdl`, so
+pass `EMU=fuse` if that is the one you have. From the repository's top
+folder:
+
+```
+make                          # both games: build/atlantis.tap + .sna, build/trigon.tap + .sna
+make -B                       # the same, rebuilding everything (also redraws gfx/ with Python)
+
+make run EMU="fuse -g 3x"         # Atlantis: load its tape in Fuse, 3x size
+make run-trigon EMU="fuse -g 3x"  # Trigon: load its tape
+fuse -g 3x --machine 48 build/atlantis.sna   # or start straight from a snapshot
+fuse -g 3x --machine 48 build/trigon.sna
+
+make trigon                   # Trigon alone
+make trigon-seas              # build/trigon-sea-black.sna and -dark.sna, to compare the seas
+make soak && fuse -g 3x --machine 48 build/atlantis-soak.sna         # Atlantis's self-test
+make trigon-soak && fuse -g 3x --machine 48 build/trigon-soak.sna    # Trigon's: green and OK
+make demo && make run-demo EMU=fuse   # Engine Demo 1
+```
+
+**The web pages, locally.** `make web` copies both games into `docs/play/`
+(Atlantis) and `docs/play/trigon/` (Trigon). Then serve `docs/` with
+Python's own web server, which stays on this machine:
+
+```
+make web
+cd docs && python3 -m http.server 8000 --bind 127.0.0.1
+```
+
+and open http://localhost:8000/play/ for Atlantis and
+http://localhost:8000/play/trigon/ for Trigon (Ctrl+C stops the server).
+Another port works the same way (`python3 -m http.server 8080 ...`). A
+hard refresh (Ctrl+Shift+R) fetches a new build.
+
+**Windows:** `build.bat` builds both games the same way
+(`windows-tools\` holds sjasmplus, Fuse and zx0): `build.bat`,
+`build.bat run` (Atlantis), `build.bat runtrigon` (Trigon), `build.bat
+web`, `build.bat soak`, `build.bat trigonsoak`, `build.bat trigonseas`,
+`build.bat demo`; add `4x` (or `2x`, `3x`) after `run`/`runtrigon` for
+the window size. For the local web server, install Python and run the
+same `python -m http.server 8000 --bind 127.0.0.1` in `docs\`.
+
 ## Play in the browser
 
 GitHub Pages serves this repository's `main` branch, folder `/docs`, so
