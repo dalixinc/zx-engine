@@ -20,6 +20,7 @@
 # make run-trigon launch its tape
 # make trigon-seas build/trigon-sea-black.sna and -dark.sna, to compare
 # make trigon-soak build/trigon-soak.sna, the soak with Trigon's art and colours
+# make trigon-ediver build/trigon-ediver.sna, the enemy diver experiment
 # make clean
 
 ASM       ?= sjasmplus
@@ -46,7 +47,7 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/silo.asm src/atlantis/missile.asm src/atlantis/score.asm src/atlantis/codes.asm src/atlantis/preshift.asm src/atlantis/bss.asm \
              src/atlantis/soak.asm src/atlantis/udg.asm src/atlantis/demo.asm src/atlantis/interlude.asm $(SHARED)
 TRI_SRC   := $(ATL_SRC) src/trigon/main.asm src/trigon/config.asm \
-             src/trigon/theme.asm src/trigon/gate.asm
+             src/trigon/theme.asm src/trigon/gate.asm src/trigon/ediver.asm
 TRI_GFX   := gfx/diver_raw.asm gfx/torpedo.asm gfx/trigon/piranha_raw.asm \
              gfx/trigon/round-fish_raw.asm gfx/trigon/pulsar_raw.asm \
              gfx/trigon/spinning-wheel_raw.asm gfx/trigon/missile.asm
@@ -61,7 +62,7 @@ DEMO_TAP  := build/diver.tap
 DEMO_SNA  := build/diver.sna
 
 .PHONY: all run run-sna shot timing demo run-demo input-test sprite-test soak web clean unpack-check \
-        trigon run-trigon trigon-seas trigon-soak unpack-check-trigon
+        trigon run-trigon trigon-seas trigon-soak trigon-ediver unpack-check-trigon
 
 all: $(TAP) $(SNA) $(TRI_TAP) $(TRI_SNA)
 
@@ -128,6 +129,10 @@ trigon-seas: $(TRI_SRC) $(TRI_GFX) gfx/trigon/loading.scr | build
 	$(ASM) --nologo --fullpath=off -DSEA_SNA -DCFG_SEA=0 src/trigon/main.asm
 	$(ASM) --nologo --fullpath=off -DSEA_SNA -DCFG_SEA=1 src/trigon/main.asm
 
+# The enemy diver, an experiment (src/trigon/ediver.asm): a snapshot only.
+trigon-ediver: $(TRI_SRC) $(TRI_GFX) src/trigon/ediver.asm gfx/trigon/ediver_raw.asm gfx/trigon/loading.scr | build
+	$(ASM) --nologo --fullpath=off -DENEMY_DIVER src/trigon/main.asm
+
 trigon-soak: $(TRI_SRC) $(TRI_GFX) | build
 	$(ASM) --nologo --fullpath=off -DSOAK --lst=build/trigon-soak.lst src/trigon/main.asm
 
@@ -170,6 +175,8 @@ gfx/trigon/spinning-wheel_raw.asm: gfx/trigon/spinning-wheel.txt tools/gfx2raw.p
 	$(PYTHON) tools/gfx2raw.py $< $@ wspin 4
 gfx/trigon/missile.asm: gfx/trigon/missile.txt tools/gfx2asm.py
 	$(PYTHON) tools/gfx2asm.py $< $@ missile
+gfx/trigon/ediver_raw.asm: gfx/trigon/ediver.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ ediver 1
 
 # The loading screen, drawn from the same sprites. Committed, like the
 # .asm above, so the tape builds without Python.

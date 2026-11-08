@@ -433,6 +433,9 @@ main_loop:
         ld a,(msl_vn)           ; drawn after the copy, before the diver
         rla
         call c,missile_restore
+    IFDEF ENEMY_DIVER
+        call ed_restore         ; drawn after the fish (src/trigon/ediver.asm)
+    ENDIF
 fish_rest_call:
         call fish_restore_fast
     IFNDEF NO_WHEEL
@@ -546,6 +549,9 @@ fish_draw_call:
     ELSE
         call fish_draw_fast
     ENDIF
+    IFDEF ENEMY_DIVER
+        call ed_draw            ; Trigon's enemy diver, an experiment
+    ENDIF
         ; If a sprite is on row 0, the digits go back on top now,
         ; after the photograph and before we spend the frame on the seabed.
         ; The wheel is included: it can bob up to y = 0.
@@ -654,6 +660,9 @@ step_move:
         call update_diver
 fish_mv:
         call update_fish
+    IFDEF ENEMY_DIVER
+        call ed_move
+    ENDIF
         ld a,(torp_on)
         or a
         call nz,torpedo_move
@@ -938,6 +947,9 @@ idle_move:
         call update_diver
 fish_mv2:
         call update_fish
+    IFDEF ENEMY_DIVER
+        call ed_move
+    ENDIF
         ld a,(torp_on)
         or a
         call nz,torpedo_move
@@ -1076,6 +1088,7 @@ wheel_first:    db 0
         INCLUDE "interlude.asm"  ; the city, after the last Atlantis level
     IFDEF TRIGON
         INCLUDE "../trigon/theme.asm" ; the fish's and the missile's colours
+        INCLUDE "../trigon/ediver.asm" ; the enemy diver, -DENEMY_DIVER only
     IFDEF CODE_GATE
         COLD
         INCLUDE "../trigon/gate.asm"  ; the Trigon code on the menu
@@ -1177,6 +1190,9 @@ data_start:
     IFDEF DOUBLE_SHOT
         DOUBLE_DATA             ; the double shot's patch tables (torpedo.asm)
     ENDIF
+    IFDEF ENEMY_DIVER
+        ED_DATA                 ; the enemy diver's tables (src/trigon/ediver.asm)
+    ENDIF
     IFDEF CITY_SHOW
 city_pix_zx0:                   ; Erin's city, a whole screen, packed:
         INCBIN "../../gfx/city_pix.zx0" ; the pixels (interlude.asm)
@@ -1194,6 +1210,9 @@ data_end:
         WSPIN_ART
     IFDEF TWO_FISH
         RFISH_ART
+    ENDIF
+    IFDEF ENEMY_DIVER
+        EDIVER_ART
     ENDIF
         HOT
 DATA_LENGTH     equ data_end - data_start
@@ -1245,6 +1264,9 @@ UDG_LENGTH      equ udg_end - udg_start
         ASSERT BSS_END <= RFISH_HI, "the run-time buffers have run into the round fish's pictures"
     ENDIF
         ASSERT data_end <= PRESHIFT_START, "pictures have run into the diver's, the fish's and the pulsar's shifted copies"
+    IFDEF ENEMY_DIVER
+        ASSERT data_end <= ED_BUF, "pictures have run into the enemy diver's shifted copies"
+    ENDIF
         ASSERT COLD_START - 1 == 24575, "the BASIC's CLEAR 24575 (loader.asm) must sit just below the cold block"
         ASSERT SCROLL_BUF_END <= ROW_TABLE, "scroll buffers run into the row table"
         ASSERT BSS_START >= SCROLL_BUF_END && BSS_END <= BSS_LIMIT, "the run-time buffers run into the BASIC's scratch at BSS_LIMIT"

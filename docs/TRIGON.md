@@ -141,11 +141,58 @@ Trigon has the whole 48K to itself, laid out as Atlantis is
 
 | Free bytes | Atlantis | Trigon |
 |---|---|---|
-| Hot code (to `RFISH_BUF`) | 628 | 1,232 |
+| Hot code (to `RFISH_BUF`) | 628 | 1,138 |
 | Cold block (to the unpacker) | 43 | 174 |
 | Data (to `PRESHIFT_START`) | 1,153 | 3,277 |
-| Tape room (below the packed game) | 985 | 4,261 |
-| The tape | 18,559 bytes | 15,839 bytes |
+| Tape room (below the packed game) | 985 | 4,098 |
+| The tape | 18,559 bytes | 15,908 bytes |
+
+## An enemy diver (an experiment)
+
+A Trigon diver who swims at the player, sketched to see what one costs
+before anything is built round him: `src/trigon/ediver.asm`, only with
+`-DENEMY_DIVER` (`make trigon-ediver` writes `build/trigon-ediver.sna`;
+the tape and the web page do not have him).
+
+- **Cheap on purpose.** One frame and one facing (ours has three frames
+  and two facings), drawn at even x only like ours, so four shifted
+  copies. The art is a placeholder, our diver's first frame turned to
+  face left (`gfx/trigon/ediver.txt`), until Erin draws him.
+- **What he does.** He comes in from the right edge, swims left a pixel
+  each 1/50 second, and drifts towards the player's depth every other
+  one, above the weed. Off the left edge, he comes again after a pause.
+  He is drawn and restored as the fish is, with the same fast walker,
+  clipped at the edges as the bomb is. He hits nothing, and torpedoes
+  pass through him: that is the next step, if these numbers allow it.
+
+**Memory:** 833 bytes in all: 171 of hot code (his move, draw and
+restore, and the main loop's three calls), 99 in the cold block (his art
+and its pre-shift job), 18 of data (pointer tables), a 65-byte
+background record, and 480 bytes of shifted copies, below our diver's.
+Trigon has the room for all of it.
+
+**Frame time,** measured as above (the heavy seabed frame, 512 steps):
+
+| | Spare | Late steps | Interrupts |
+|---|---|---|---|
+| Trigon, no bomb | 37 | 0 | 512 |
+| the enemy diver **in place of** the bomb, at 50 | 0 | 20 | 512 |
+| the enemy diver **and** the bomb, at 50 | 0 | 459 | 531 |
+| Trigon, one bomb, at 25 (picture frame) | 38 | 0 | 1,024 |
+| the enemy diver and the bomb, at 25 | 0 | 8 | 1,032 |
+
+He costs about what a bomb does (a bomb is 39 to 41 scanlines at worst):
+he is 24 pixels wide, so 4 bytes a row over 15 rows, to save, restore
+and draw. So:
+
+- **In place of the bomb, at 50, he fits,** like Trigon's level 3 now:
+  no frame lost, a few steps late that catch up. A section of a level
+  where the bombs stop and a diver comes for the player is the shape
+  that fits.
+- **With the bomb, at 50, he does not:** 19 frames lost in 512 steps.
+- **With the bomb, at 25, he nearly does:** 8 frames lost in 1,024.
+  A narrower diver (16 pixels: 3 bytes a row), fewer rows, or leaving
+  out the fish's colours while he is up could make the room.
 
 ## Checks
 

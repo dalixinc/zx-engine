@@ -24,6 +24,8 @@
 ;
 ; Build:  make trigon     (build/trigon.tap and build/trigon.sna)
 ;         make trigon-seas (build/trigon-sea-black.sna, -dark.sna)
+;         make trigon-ediver (build/trigon-ediver.sna: the enemy diver
+;                         experiment, -DENEMY_DIVER, src/trigon/ediver.asm)
 ; The same -D test flags as Atlantis (SOAK, MEASURE, SHOT_FRAME ...) give
 ; build/trigon-*.sna.
 ;==============================================================================
@@ -45,6 +47,10 @@
 loading_screen:
         INCBIN "../../gfx/trigon/loading.scr"
         ASSERT $ - loading_screen == 6912, "a Spectrum screen is 6912 bytes"
+    IFDEF ENEMY_DIVER
+        ; The enemy diver experiment (ediver.asm): a snapshot only.
+        SAVESNA  "build/trigon-ediver.sna", entry
+    ELSE
     IFDEF SEA_SNA
         IF CFG_SEA == BLACK
         SAVESNA  "build/trigon-sea-black.sna", entry
@@ -71,6 +77,7 @@ loading_screen:
         EXPORT udg_end
         EXPORT entry
         SAVESNA  "build/trigon.sna", entry
+    ENDIF
     ENDIF
     ENDIF
     ENDIF

@@ -220,6 +220,7 @@ src/trigon/main.asm      Trigon: the game again with TRIGON defined, and its out
 src/trigon/config.asm    Trigon's numbers: levels, colours, the sea (CFG_SEA)
 src/trigon/theme.asm     the fish's and the missile's colours, painted each step
 src/trigon/gate.asm      the code on Trigon's menu, and its buzz
+src/trigon/ediver.asm    an enemy diver, an experiment (-DENEMY_DIVER only)
 src/main.asm             Engine Demo 1 entry and loop
 src/layout.asm           the demo's rows and buffer addresses
 src/constants.asm        memory map, colours, tuning constants
