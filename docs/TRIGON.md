@@ -41,11 +41,17 @@ each new level Trigon's colours over the level's own (`src/trigon/theme.asm`,
 - **The death flash** is white and black, not red: red would hardly
   show against a red or black border. The new level's flash (white) and
   the special bombs' (cyan, yellow) show against them all.
-- **The diver stays white.** So do the fish and the missiles: on the
-  Spectrum a sprite has no colour of its own, it takes its cell's, and
-  only the bomb paints its cells. Colouring the fish and the missile too
-  would mean painting their cells every frame, as the bomb does, which
-  the timing below says there is no room for at 50.
+- **The diver stays white.**
+- **The fish and the missiles in colour.** On the Spectrum a sprite has
+  no colour of its own: it takes its cells'. So in Trigon, each step,
+  `trigon_paint` paints the fish's cells (three by two) cyan for the
+  angler or red for the piranha, and a missile's black while it flies up
+  through the water (not in its hatch, and not a power-up), and puts the
+  water colour back on last step's cells. It runs in the fish's draw
+  place, switched in at the city and out at the menu, so Atlantis does
+  not pay for it. Anything else in a painted cell takes its colour for a
+  moment: the Spectrum's colour clash. Nothing is painted while the
+  "LEVEL n" banner is up. `CFG_TRIGON_ANGLER`, `_PIRANHA`, `_MISSILE`.
 
 **The sea.** Black ink on a black sea would vanish, so three seas were
 tried (`images/trigon-seas.png`):
@@ -80,3 +86,9 @@ would slow for a moment, and the seabed copy, which must finish ahead
 of the beam, would be pushed into it, so the seabed could tear. At 25
 two bombs fit, with about 6 scanlines to spare. Nothing was changed in
 the game for this.
+
+The fish's and the missile's colours, measured the same way (one bomb,
+the heavy seabed frame): without them 9 spare scanlines at 50 and 44
+at 25; with them 1 and 40, and no late step. They fit, but they use
+nearly all of the room left at 50, so a second bomb would have to come
+with a move to 25 frames a second.
