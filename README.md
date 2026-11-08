@@ -128,7 +128,8 @@ each time. On level 10 the silos' missiles home in on him too
 (`docs/LEVELS-3-AND-4.md`). Finishing level 20, the last of Atlantis,
 shows a picture of the city, **drawn by Erin**, its colours coming on
 in a growing circle, with a chime, before
-the game goes on (`docs/CITY-INTERLUDE.md`).
+the game goes on (`docs/CITY-INTERLUDE.md`), into Trigon: Erin's
+enemies and darker colours (`docs/TRIGON.md`).
 
 Level 2 and level 3 each open with a message and the level's code, up
 until a key is pressed; from level 4 the code is under the banner. The
@@ -176,7 +177,8 @@ The demo still prints its digits on rows 22 and 23. It has no overlay.
 ## Credits
 
 The picture of the city between Atlantis and Trigon is by **Erin**
-(`gfx/city_*.bin`, from her Atlantis Spectrum pack).
+(`gfx/city_*.bin`, from her Atlantis Spectrum pack), and so are
+Trigon's enemies (`gfx/trigon/`, `docs/TRIGON.md`).
 
 ## Layout
 
