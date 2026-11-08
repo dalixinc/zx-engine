@@ -121,6 +121,11 @@
     IFDEF MEAS_DOUBLE
         DEFINE DOUBLE_SHOT
     ENDIF
+    IFDEF TRIGON
+    IFNDEF SOAK                 ; whose script presses 1 to start
+        DEFINE CODE_GATE        ; Trigon's menu asks for its code first (gate.asm)
+    ENDIF
+    ENDIF
 
     IFDEF MEASURE
         IFNDEF MEAS_STATS
@@ -1065,6 +1070,11 @@ wheel_first:    db 0
     ENDIF
         INCLUDE "demo.asm"       ; the attract demo: hot input, cold the rest
         INCLUDE "interlude.asm"  ; the city, after the last Atlantis level
+    IFDEF CODE_GATE
+        COLD
+        INCLUDE "../trigon/gate.asm"  ; the Trigon code on the menu
+        HOT
+    ENDIF
 
     IFDEF SLACK_LINES
 slack_loops:    dw 0            ; loops since entry, including the warmup

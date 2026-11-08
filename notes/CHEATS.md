@@ -42,3 +42,10 @@ five seconds, brings the menu back; no game is started. It has an N,
 which no level's code can have, so it never clashes with one. It is
 `il_menu_code` in `src/atlantis/interlude.asm`, called by `menu_code`.
 
+
+## Trigon
+
+The testers' switch (Symbol Shift + M on the menu) works in Trigon as
+in Atlantis. Trigon's menu wants a code before anything starts: the
+Trigon code (KRAKEN, from the Atlantis ending) for level 1, or a Trigon
+level code (LEVEL-CODES-LIST.md) for a later level.

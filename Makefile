@@ -44,7 +44,8 @@ ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
              src/atlantis/fastsprite.asm src/atlantis/boom.asm src/atlantis/sound.asm \
              src/atlantis/silo.asm src/atlantis/missile.asm src/atlantis/score.asm src/atlantis/codes.asm src/atlantis/preshift.asm src/atlantis/bss.asm \
              src/atlantis/soak.asm src/atlantis/udg.asm src/atlantis/demo.asm src/atlantis/interlude.asm $(SHARED)
-TRI_SRC   := $(ATL_SRC) src/trigon/main.asm src/trigon/config.asm
+TRI_SRC   := $(ATL_SRC) src/trigon/main.asm src/trigon/config.asm \
+             src/trigon/gate.asm
 TRI_GFX   := gfx/diver_raw.asm gfx/torpedo.asm gfx/trigon/piranha_raw.asm \
              gfx/trigon/round-fish_raw.asm gfx/trigon/pulsar_raw.asm \
              gfx/trigon/spinning-wheel_raw.asm gfx/trigon/missile.asm
