@@ -180,8 +180,29 @@ trigon_paint:
         ld a,(wheel_attr_n)
         ld hl,tp_wn
         cp (hl)
+    IFDEF TWO_BOMBS
+        jr z,.bomb2
+.bdiff: set 2,e
+        ; The second bomb's box the same way (src/trigon/twobomb.asm).
+.bomb2: ld hl,(b2.wheel_pc0)
+        ld bc,(tp_w2pc)
+        or a
+        sbc hl,bc
+        jr nz,.b2diff
+        ld hl,(b2.wheel_pr0)
+        ld bc,(tp_w2pr)
+        sbc hl,bc
+        jr nz,.b2diff
+        ld a,(b2.wheel_attr_n)
+        ld hl,tp_w2n
+        cp (hl)
+        jr z,.decide
+.b2diff:
+        set 3,e
+    ELSE
         jr z,.decide
 .bdiff: set 2,e
+    ENDIF
 .decide:
         ld a,e
         or a
@@ -202,6 +223,14 @@ trigon_paint:
         ld (tp_wpr),hl
         ld a,(wheel_attr_n)
         ld (tp_wn),a
+    IFDEF TWO_BOMBS
+        ld hl,(b2.wheel_pc0)
+        ld (tp_w2pc),hl
+        ld hl,(b2.wheel_pr0)
+        ld (tp_w2pr),hl
+        ld a,(b2.wheel_attr_n)
+        ld (tp_w2n),a
+    ENDIF
         xor a
         ld (tp_force),a
 .draw:  ld hl,(tp_real)
@@ -259,25 +288,49 @@ tp_msl_new:
 tp_box: ld e,a
         ld a,(wheel_attr_n)
         or a
-        jr z,.all
+        jr z,.box2
         ld a,(wheel_pr1)
         cp h
-        jr c,.all               ; the bomb's box ends above this one
+        jr c,.box2              ; the bomb's box ends above this one
         ld a,h
         add a,b
         ld d,a                  ; one past this box's last row
         ld a,(wheel_pr0)
         cp d
-        jr nc,.all              ; it starts below
+        jr nc,.box2             ; it starts below
         ld a,(wheel_pc1)
         cp l
-        jr c,.all               ; it ends to the left
+        jr c,.box2              ; it ends to the left
         ld a,l
         add a,c
         ld d,a
         ld a,(wheel_pc0)
         cp d
         jr c,tp_cells           ; they overlap
+.box2:
+    IFDEF TWO_BOMBS
+        ld a,(b2.wheel_attr_n)  ; and the second bomb's
+        or a
+        jr z,.all
+        ld a,(b2.wheel_pr1)
+        cp h
+        jr c,.all
+        ld a,h
+        add a,b
+        ld d,a
+        ld a,(b2.wheel_pr0)
+        cp d
+        jr nc,.all
+        ld a,(b2.wheel_pc1)
+        cp l
+        jr c,.all
+        ld a,l
+        add a,c
+        ld d,a
+        ld a,(b2.wheel_pc0)
+        cp d
+        jr c,tp_cells
+    ENDIF
 .all:   ld a,h
         rrca
         rrca
@@ -304,26 +357,51 @@ tp_box: ld e,a
         ret
 
 ; tp_box's cell by cell: H = row, L = column, B rows, C columns, E = the
-; colour; a cell inside the bomb's box is passed over.
+; colour; a cell inside a bomb's box is passed over.
 tp_cells:
 .row:   push bc
         push hl
-.cell:  ld a,(wheel_pr0)
+.cell:  ld a,(wheel_attr_n)
+        or a
+        jr z,.cell2
+        ld a,(wheel_pr0)
         ld d,a
         ld a,h
         cp d
-        jr c,.put               ; above the bomb's box
+        jr c,.cell2             ; above the bomb's box
         ld a,(wheel_pr1)
         cp h
-        jr c,.put               ; below it
+        jr c,.cell2             ; below it
         ld a,(wheel_pc0)
         ld d,a
         ld a,l
         cp d
-        jr c,.put               ; left of it
+        jr c,.cell2             ; left of it
         ld a,(wheel_pc1)
         cp l
         jr nc,.next             ; inside: the bomb's
+.cell2:
+    IFDEF TWO_BOMBS
+        ld a,(b2.wheel_attr_n)
+        or a
+        jr z,.put
+        ld a,(b2.wheel_pr0)
+        ld d,a
+        ld a,h
+        cp d
+        jr c,.put
+        ld a,(b2.wheel_pr1)
+        cp h
+        jr c,.put
+        ld a,(b2.wheel_pc0)
+        ld d,a
+        ld a,l
+        cp d
+        jr c,.put
+        ld a,(b2.wheel_pc1)
+        cp l
+        jr nc,.next             ; inside: the second bomb's
+    ENDIF
 .put:   push hl
         ld a,h
         rrca
@@ -359,6 +437,11 @@ tp_msl_size:    dw 0                    ; C columns, B rows
 tp_wpc:         dw 0                    ; the bomb's box when they were painted
 tp_wpr:         dw 0
 tp_wn:          db 0
+    IFDEF TWO_BOMBS
+tp_w2pc:        dw 0                    ; the second bomb's, the same
+tp_w2pr:        dw 0
+tp_w2n:         db 0
+    ENDIF
 tp_force:       db 1                    ; paint on the next step whatever
 ; What this step wants.
 tp_new_fat:     dw 0

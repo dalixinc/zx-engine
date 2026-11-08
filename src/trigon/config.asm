@@ -372,6 +372,28 @@ CFG_L3_INK          equ MAGENTA | SEA
         LEVEL_ROW  600,    40,      110,     120,   BOMB_W, CFG_L3_INK,    MOVE_HOME, 112, MOVE_WAVE,     64,    MAGENTA,      1,   3,   10
         ENDM
 
+; --- Two bombs (src/trigon/twobomb.asm) -------------------------------------------
+; A wave is a bomb and a fish, or two bombs of the level's type. Each
+; time a new fish is due, a second bomb comes instead this many times in
+; 256 (0: never), and the fish waits until it has gone. The second bomb
+; has its own colour and movement (the first keeps the level's, above),
+; so the two cross the water differently: one bobbing straight across
+; while the other swoops on the wave, or hunts. One row a level, in
+; order; past the last row, the last row again.
+;   share    two-bomb waves in 256
+;   ink      the second bomb's cell colour, an ink on the sea
+;   bmove    its movement: MOVE_BOB, MOVE_WAVE or MOVE_HOME
+;   hunt     how hard MOVE_HOME hunts (1 to 128), 0 for the others
+        MACRO TB_TABLE
+    IFDEF SOAK
+        TB_ROW  0,      CFG_WHEEL_INK,  MOVE_BOB,  0    ; the soak's level 1: no second bomb
+    ENDIF
+        ;       share   ink             bmove      hunt
+        TB_ROW  64,     RED | SEA,      MOVE_BOB,  0    ; level 1: one wave in 4
+        TB_ROW  96,     MAGENTA | SEA,  MOVE_WAVE, 0    ; level 2: about 3 in 8
+        TB_ROW  128,    RED | SEA,      MOVE_WAVE, 0    ; level 3: one in 2
+        ENDM
+
 ; The waves (MOVE_WAVE). A wave is a sine, AMP pixels above the middle
 ; and AMP below. SPEED is how far along it each 1/50 second goes: one
 ; whole wave takes 256 / SPEED 1/50 seconds, so 2 is about 2.6 seconds

@@ -72,10 +72,17 @@ LIVES_SCREEN    equ SCREEN + LIVES_ROW * 32 + LIVES_COL
 ;      routines (ground_hit, fish_hit, missile_hit) say the same.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
+    IFDEF TWO_BOMBS
+HIT_NO_BOMB     equ tb_hit_none ; Trigon: the second bomb, then the fish
+HIT_MISSED      equ tb_hit_miss
+    ELSE
+HIT_NO_BOMB     equ fish_hit
+HIT_MISSED      equ fish_cheap
+    ENDIF
 hit_check:
         ld a,(wheel_phase)
         or a
-        jp z,fish_hit           ; no bomb: the fish, on this cheap frame
+        jp z,HIT_NO_BOMB        ; no bomb: the fish, on this cheap frame
 
         ; x is 16 bits: the bomb can hang off either edge.
         ld hl,(wheel_x)
@@ -88,10 +95,10 @@ hit_check:
         add hl,de
         ld a,h
         or a
-        jp nz,fish_cheap        ; missed the bomb; the fish is still fair game
+        jp nz,HIT_MISSED        ; missed the bomb; the fish is still fair game
         ld a,l
         cp HIT_X_SPAN
-        jp nc,fish_cheap
+        jp nc,HIT_MISSED
 
         ; y is 8 bits. Both are 0..191, so a difference that wraps is
         ; 73 or more after the add, never inside the span.
@@ -101,7 +108,7 @@ hit_check:
         sub b
         add a,-HIT_Y_LO
         cp HIT_Y_SPAN
-        jp nc,fish_cheap
+        jp nc,HIT_MISSED
 
         call wheel_remove
         call boom_at_bomb

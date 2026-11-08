@@ -125,6 +125,10 @@
     IFNDEF SOAK                 ; whose script presses 1 to start
         DEFINE CODE_GATE        ; Trigon's menu asks for its code first (gate.asm)
     ENDIF
+    IFNDEF NO_WHEEL
+        DEFINE TWO_BOMBS        ; a second bomb in the fish's place (twobomb.asm)
+    ENDIF
+        DEFINE SHARED_BOMB      ; one set of bomb copies for both kinds (twobomb.asm)
     ENDIF
 
     IFDEF MEASURE
@@ -436,6 +440,9 @@ main_loop:
     IFDEF ENEMY_DIVER
         call ed_restore         ; drawn after the fish (src/trigon/ediver.asm)
     ENDIF
+    IFDEF TWO_BOMBS
+        call tb_restore         ; drawn after the fish (src/trigon/twobomb.asm)
+    ENDIF
 fish_rest_call:
         call fish_restore_fast
     IFNDEF NO_WHEEL
@@ -551,6 +558,9 @@ fish_draw_call:
     ENDIF
     IFDEF ENEMY_DIVER
         call ed_draw            ; Trigon's enemy diver, an experiment
+    ENDIF
+    IFDEF TWO_BOMBS
+        call tb_draw            ; the second bomb, in the fish's place
     ENDIF
         ; If a sprite is on row 0, the digits go back on top now,
         ; after the photograph and before we spend the frame on the seabed.
@@ -673,6 +683,9 @@ fish_mv:
         call missile_update
     IFNDEF NO_WHEEL
         call update_wheel
+    IFDEF TWO_BOMBS
+        call tb_move            ; the second bomb (src/trigon/twobomb.asm)
+    ENDIF
     IFNDEF SOAK
         ; Before hit_check: a bomb that was shot first is already gone.
         ld a,(torp_on)
@@ -960,6 +973,9 @@ fish_mv2:
         call missile_update
     IFNDEF NO_WHEEL
         call update_wheel
+    IFDEF TWO_BOMBS
+        call tb_move            ; the second bomb (src/trigon/twobomb.asm)
+    ENDIF
     IFNDEF SOAK
         ld a,(torp_on)
         or a
@@ -1192,6 +1208,12 @@ data_start:
     ENDIF
     IFDEF ENEMY_DIVER
         ED_DATA                 ; the enemy diver's tables (src/trigon/ediver.asm)
+    ENDIF
+    IFDEF TRIGON
+        ; The second bomb's code, in the data block: uncontended, as the
+        ; code is, and where Trigon has the room; and the shared bomb
+        ; copies' rebuild.
+        INCLUDE "../trigon/twobomb.asm"
     ENDIF
     IFDEF CITY_SHOW
 city_pix_zx0:                   ; Erin's city, a whole screen, packed:

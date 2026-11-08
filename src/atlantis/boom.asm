@@ -195,9 +195,22 @@ fish_begin_wait:
         jp fish_hold
 
 fish_wait_step:
+    IFDEF TWO_BOMBS
+        ld a,(b2.wheel_phase)
+        or a
+        ret nz                  ; the second bomb has the fish's place
+    ENDIF
         ld hl,fish_wait
         dec (hl)
         ret nz
+    IFDEF TWO_BOMBS
+        call tb_launch          ; two bombs this wave, not a fish?
+        jr nc,.fish
+        ld a,FISH_GAP
+        ld (fish_wait),a        ; then a wait again, once it has gone
+        ret
+.fish:
+    ENDIF
         ld a,FISH_MAX_X
         ld (fish_x),a
         ld a,FACE_LEFT

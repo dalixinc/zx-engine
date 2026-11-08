@@ -50,6 +50,9 @@ bss_ptr = bss_ptr + (size?)
 
 ; --- the sprites' background records, and the wheel's shifter
         BSS wheel_bg, BG_DATA + WHEEL_BYTES * WHEEL_HEIGHT
+    IFDEF TWO_BOMBS
+        BSS tb_bg, BG_DATA + WHEEL_BYTES * WHEEL_HEIGHT    ; Trigon's second bomb
+    ENDIF
         BSS preshift_row, 8             ; preshift.asm: 4 mask,ink pairs, left byte first
         BSS preshift_ptr, 2 * 8         ; preshift.asm: where each shift's copy has got to
 

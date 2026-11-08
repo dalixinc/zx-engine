@@ -149,7 +149,11 @@ sp_tick:
         ld (fish_x),a
         jp sp_fish_kill_on
 .fx:    ld (fish_x),a
-.on:    ld a,(double_on)
+.on:
+    IFDEF TWO_BOMBS
+        call tb_sp_tick         ; the second bomb pulled or thrown too
+    ENDIF
+        ld a,(double_on)
         or a
         jp nz,double_tick
         jp missile_update
@@ -189,6 +193,9 @@ sp_end:
         cp MSL_KIND_SHOVE
         ret nz                  ; suction: nothing dies
         call sp_bomb_kill
+    IFDEF TWO_BOMBS
+        call tb_kill            ; and the second bomb
+    ENDIF
         jr sp_fish_kill
 
 sp_bomb_down:
@@ -329,6 +336,9 @@ special_fire:
     ENDIF
         xor a
         ld (wheel_hunting),a    ; pulled or thrown, it hunts no more
+    IFDEF TWO_BOMBS
+        ld (b2.wheel_hunting),a
+    ENDIF
         ld a,CFG_SPECIAL_TIME
         ld (sp_left),a
         jp msl_calls_set
@@ -337,6 +347,9 @@ special_fire:
 ; The nuke: the bomb and the fish go up as a torpedo would take them,
 ; with no points. The bomb's burst first, then the fish's flash.
 special_nuke:
+    IFDEF TWO_BOMBS
+        call tb_nuke            ; the second bomb goes too
+    ENDIF
         ld a,(wheel_phase)
         or a
         jr z,.fish

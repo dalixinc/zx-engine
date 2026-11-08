@@ -95,6 +95,9 @@ enter_menu:
         ld (fish_bg),a
         ld (wheel_bg),a
         ld (wheel_attr_n),a
+    IFDEF TWO_BOMBS
+        call tb_reset           ; no second bomb (src/trigon/twobomb.asm)
+    ENDIF
     IFDEF STATS
         ld (stats_dirty),a
         ld (stats_template_up),a
@@ -676,6 +679,9 @@ game_reset:
         ld (fish_facing),a
 
         call wheel_reset
+    IFDEF TWO_BOMBS
+        call tb_reset           ; no second bomb (src/trigon/twobomb.asm)
+    ENDIF
         call torpedo_reset
         call missile_reset
         call boom_reset
