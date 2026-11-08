@@ -247,7 +247,7 @@ gfx/missile.asm          GENERATED from missile.txt: 8 shifts x 1 frame
 gfx/loading.scr          GENERATED loading screen, 6912 bytes (tools/mkloadscreen.py)
 gfx/city_*.bin           Erin's Atlantis city, 192 x 128: pixels and colours
 gfx/city.scr, city_*.zx0 GENERATED: the city as a screen (tools/mkcity.py); pixels, colours packed
-VERSION                  the version printed on the loading screen (0.9.7)
+VERSION                  the version printed on the loading screen (0.9.8)
 gfx/trigon/              Erin's Trigon sprites (.txt) and what is GENERATED from them
 gfx/trigon/loading.scr   GENERATED Trigon loading screen (mkloadscreen.py --trigon)
 src/trigon/VERSION       Trigon's version, on its loading screen (0.1.0)
