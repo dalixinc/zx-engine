@@ -260,8 +260,8 @@ Trigon has the whole 48K to itself, laid out as Atlantis is
 |---|---|---|
 | Hot code (to `RFISH_BUF`) | 339 | 682 |
 | Cold block (to the unpacker) | 21 | 8 |
-| Data (to `PRESHIFT_START`) | 1,093 | 10 |
-| Tape room (below the packed game) | 412 | 19 |
+| Data (to `PRESHIFT_START`) | 1,093 | 38 |
+| Tape room (below the packed game) | 412 | 9 |
 | The tape | 18,845 bytes | 19,482 bytes |
 
 Trigon 0.2.0's second bomb takes about 2,040 bytes of the data block
@@ -292,7 +292,9 @@ From level 4 the diver has a second weapon on the fire key
   charge, so the whole width after two seconds. It stays a moment
   (`CFG_LANCE_TIME`), blows up the bombs, the fish and a silo's missile
   it touches, `CFG_PTS_LANCE` (15) points each, shown as "+15" where
-  they were, then rests (`CFG_LANCE_REST`) before the next. It goes
+  they were. Anything in the beam's red row while it is up goes, tested
+  every 1/50 second it is out. Then it cannot charge again for 10
+  seconds (`CFG_LANCE_REST`); a press meanwhile fires a torpedo only. It goes
   with a quick falling "pew" (`CFG_LANCE_PEW`, about 980 Hz down to
   390 Hz in 0.16 seconds; lower notes come out as clicks, as the beeper
   only plays in each step's spare time).
