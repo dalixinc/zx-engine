@@ -463,16 +463,18 @@ lance_pts:
 
 ; lance_box - HL = a thing's left pixel (may be off the left), A = its
 ; top row, B = its height, C = its width. Out: carry = the beam touches
-; it. Corrupts: AF, DE, HL
+; it. "Touches" is the beam's whole row of cells, the 8 pixel rows its
+; red colours: anything it turns red goes. Corrupts: AF, DE, HL
 lance_box:
         ld d,a
         ld a,(ln_y)
-        inc a                   ; the beam's bottom row
+        or 7                    ; the bottom pixel row of the beam's cells
         sub d
-        jr c,.no                ; it starts below the beam
+        jr c,.no                ; it starts below them
+        sub 7
+        jr c,.rows              ; it starts inside them
         cp b
-        jr z,.rows              ; its bottom row is the beam's top
-        jr nc,.no               ; it ends above the beam
+        jr nc,.no               ; it ends above them
 .rows:  ex de,hl                ; DE = its left
         ld hl,(ln_x1)
         or a
@@ -624,15 +626,15 @@ lance_cell_draw:
         inc de
         inc h
         djnz .pic
-        ld a,(ln_shown)
-        ld e,a
-        ld d,0
-        push hl
-        ld hl,lance_bar
-        add hl,de
-        ld a,(hl)
-        pop hl
-        ld (hl),a               ; the bar's two rows
+        ld a,(ln_shown)         ; eighths: that many pixels from the left
+        or a
+        jr z,.got
+        ld b,a
+        xor a
+.fill:  scf
+        rra
+        djnz .fill
+.got:   ld (hl),a               ; the bar's two rows
         inc h
         or a
         jr nz,.bar
@@ -653,6 +655,5 @@ lance_pic:      db %00000000
                 db %00000100
                 db %00000000
                 db %00000000
-lance_bar:      db $00, $80, $C0, $E0, $F0, $F8, $FC, $FE, $FF
 
     ENDIF
