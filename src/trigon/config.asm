@@ -488,6 +488,21 @@ CFG_CODE_LEVELS      equ 10
 ; The last level (10): finishing it ends the game with the Finale code
 ; (src/trigon/ending.asm). Levels past the table repeat its last row.
 CFG_ENDING_LEVEL     equ 10
+; The diver's belt, a level at a time, 1 to CFG_ENDING_LEVEL: the ink his
+; cells are painted (src/trigon/theme.asm). WHITE is the sea's own, so
+; nothing is painted.
+        MACRO CFG_BELTS
+        BELT WHITE
+        BELT WHITE
+        BELT YELLOW
+        BELT YELLOW
+        BELT CYAN
+        BELT CYAN
+        BELT GREEN
+        BELT GREEN
+        BELT MAGENTA
+        BELT MAGENTA
+        ENDM
 
 ; The beeper (sound.asm). Each explosion is white noise, played in
 ; short bursts in the spare time at the end of each step, so it never

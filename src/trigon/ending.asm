@@ -53,7 +53,7 @@ TG_CODE_ATTR    equ BRIGHT | YELLOW | (BLACK << 3)
 ; Each line: row, column, colour, the words, 0. A row of 0 ends them.
 tg_end_text:
         db 7, 7, TG_END_ATTR, "TRIGON HAS FALLEN", 0
-        db 10, 6, TG_END_ATTR, "YOUR FINALE CODE IS", 0
+        db 10, 10, TG_END_ATTR, "FINALE CODE", 0
         db 12, (32 - CODE_LEN) / 2, TG_CODE_ATTR
         FINALE_WORD
         db 0

@@ -410,6 +410,7 @@ tb_level:
         ld de,tb_share
         ld bc,4
         ldir
+        call tp_belt_level      ; his belt's colour (theme.asm, TP_DATA)
     IFDEF LANCEGUN
         jp lance_level          ; is the Lance his now? (lance.asm)
     ELSE
