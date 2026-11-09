@@ -131,7 +131,9 @@ green for 7 and 8, magenta for 9 and 10 (`CFG_BELTS`). White is the
 sea's own ink; from yellow his cells are painted as the fish's are
 (`tp_diver`, `src/trigon/theme.asm`), his own box only, as he moves, on
 the steps the paint already uses. It costs a few late steps at 50 (level
-3: 22 in 512 against 8, level 10: 12 against 7), none at 25.
+3: 22 in 512 against 8, level 10: 12 against 7), none at 25. The
+"LEVEL n" banner is painted in the new belt's colour, so each level
+change announces the belt too.
 
 **The end.** Finishing level 10 (`CFG_ENDING_LEVEL`) stops the game:
 black, "TRIGON HAS FALLEN", and the code for the third game, Finale,
@@ -257,9 +259,9 @@ Trigon has the whole 48K to itself, laid out as Atlantis is
 | Free bytes | Atlantis | Trigon |
 |---|---|---|
 | Hot code (to `RFISH_BUF`) | 339 | 682 |
-| Cold block (to the unpacker) | 21 | 20 |
+| Cold block (to the unpacker) | 21 | 8 |
 | Data (to `PRESHIFT_START`) | 1,093 | 10 |
-| Tape room (below the packed game) | 412 | 27 |
+| Tape room (below the packed game) | 412 | 19 |
 | The tape | 18,845 bytes | 19,482 bytes |
 
 Trigon 0.2.0's second bomb takes about 2,040 bytes of the data block

@@ -599,7 +599,20 @@ banner_show:
         sub b
         srl a
         ld (banner_col),a
+    IFDEF TRIGON
+        ; Trigon: the blocks in his belt's colour (tp_belt, theme.asm,
+        ; set by level_style just before), white for a white belt.
+        ld a,(tp_belt)
+        and 7
+        jr nz,.belt
+        ld a,WHITE
+.belt:  rlca
+        rlca
+        rlca                    ; the paper
+        or BRIGHT | BLUE
+    ELSE
         ld a,BANNER_ATTR
+    ENDIF
         call banner_paint
         ld hl,(frame_count)
         ld de,CFG_BANNER_TIME
