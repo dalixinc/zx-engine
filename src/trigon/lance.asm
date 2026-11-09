@@ -624,15 +624,15 @@ lance_cell_draw:
         inc de
         inc h
         djnz .pic
-        ld a,(ln_shown)
-        ld e,a
-        ld d,0
-        push hl
-        ld hl,lance_bar
-        add hl,de
-        ld a,(hl)
-        pop hl
-        ld (hl),a               ; the bar's two rows
+        ld a,(ln_shown)         ; eighths: that many pixels from the left
+        or a
+        jr z,.got
+        ld b,a
+        xor a
+.fill:  scf
+        rra
+        djnz .fill
+.got:   ld (hl),a               ; the bar's two rows
         inc h
         or a
         jr nz,.bar
@@ -653,6 +653,5 @@ lance_pic:      db %00000000
                 db %00000100
                 db %00000000
                 db %00000000
-lance_bar:      db $00, $80, $C0, $E0, $F0, $F8, $FC, $FE, $FF
 
     ENDIF

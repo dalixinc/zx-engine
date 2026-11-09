@@ -630,6 +630,9 @@ banner_show:
 ; Each step while it is up: time to take it down? After level 2's,
 ; the message, at the end of this step.
 banner_tick:
+    IFDEF TRIGON
+        call tp_banner_heal     ; its holes painted again (src/trigon/theme.asm)
+    ENDIF
         ld hl,(frame_count)
         ld de,(banner_until)
         or a

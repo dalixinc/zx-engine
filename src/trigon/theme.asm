@@ -296,6 +296,21 @@ tp_belts:
         HOT
 
         MACRO TP_DATA
+;------------------------------------------------------------------------------
+; tp_banner_heal - banner_tick, each step the "LEVEL n" banner is up: every
+; 16 television frames, its blocks painted again. The bomb's colours and
+; the fish's flash write cells under it, and leave holes as they pass;
+; this fills them within a third of a second. banner_paint also has the
+; bomb paint its own cells again, so one still on the banner keeps them.
+; About 25 scanlines, then. Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+tp_banner_heal:
+        ld a,(frame_count)
+        and 15
+        ret nz
+        ld a,(banner_ink)
+        jp banner_paint
+
 ; The missile's cells (as the fish's, above).
 tp_msl_water:
         ld a,WATER_ATTR
