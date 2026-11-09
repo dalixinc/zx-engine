@@ -52,6 +52,12 @@ in Atlantis. Trigon's menu wants a code before anything starts: the
 Trigon code (KRAKEN, from the Atlantis ending) for level 1, or a Trigon
 level code (LEVEL-CODES-LIST.md) for a later level.
 
+In Trigon the testers' switch also makes the diver unhurt: bombs,
+the fish, missiles and the black ground cost no life (a bomb that
+touches him still blows up), so the levels can be played through.
+`CFG_GOD_MODE` in `src/trigon/config.asm`: 0 leaves it out of the
+build altogether (it is in `diver_hurt`, `hit.asm`).
+
 The testers' switch also gives the Lance laser from level 1 (it is
 Trigon's from `CFG_LANCE_LEVEL`, 4), with its picture on the score line
 at once and no level 4 message.

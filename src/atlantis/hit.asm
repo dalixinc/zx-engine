@@ -141,6 +141,15 @@ DIVER_START_Y   equ 110             ; game_reset puts him here too
 diver_hurt:
         xor a
         ld (diver_touch),a
+    IFDEF TRIGON
+    IFDEF POWERUPS
+    IF CFG_GOD_MODE
+        ld a,(cheat_on)
+        or a
+        ret nz                  ; Trigon, the testers' switch: no hit (carry clear)
+    ENDIF
+    ENDIF
+    ENDIF
         ld a,CFG_HIT_FLASH
         ld (hit_flash),a
         scf
