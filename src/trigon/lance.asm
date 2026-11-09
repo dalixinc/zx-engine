@@ -10,7 +10,8 @@
 ; for CFG_LANCE_TIME 1/50 seconds and blows up what it touches: the
 ; bomb, the second bomb, the fish, a silo's missile (not a power-up),
 ; each for CFG_PTS_LANCE, shown as a power's points are (pop_add).
-; Then it rests CFG_LANCE_REST before the next.
+; Then it waits CFG_LANCE_REST 1/25 seconds (10 seconds) before it can
+; charge again; a press meanwhile is a torpedo only.
 ;
 ; How it costs nothing before then: main_loop's two "CALL NZ,
 ; torpedo_fire" (fish_mv.lf1, fish_mv2.lf2) become "CALL NZ,lance_input"
@@ -49,6 +50,7 @@ LANCE_LOW       equ BACK_ROW * 8 - 2        ; its top row, above the seabed
         ASSERT CFG_LANCE_FULL % 32 == 0 && CFG_LANCE_FULL >= 32 && CFG_LANCE_FULL <= 255
         ASSERT CFG_LANCE_MIN >= 1 && CFG_LANCE_MIN < CFG_LANCE_FULL
         ASSERT CFG_LANCE_TIME >= 2 && CFG_PTS_LANCE <= 99
+        ASSERT CFG_LANCE_REST >= 4 && CFG_LANCE_REST <= 255, "the wait: 4 to 255 1/25 seconds (its wipe is done by then)"
         ASSERT ({fish_mv.lf1} & $FF) == $C4 && {fish_mv.lf1 + 1} == torpedo_fire, ".lf1 is not CALL NZ,torpedo_fire"
         ASSERT ({fish_mv2.lf2} & $FF) == $C4 && {fish_mv2.lf2 + 1} == torpedo_fire, ".lf2 is not CALL NZ,torpedo_fire"
 
@@ -67,6 +69,7 @@ ln_a0:          dw 0            ; screen byte of its first column, top row
 ln_x0:          dw 0            ; its first pixel column
 ln_x1:          dw 0            ; its last
 ln_start:       dw 0            ; frame_count when fire went down
+ln_tog:         db 0            ; the wait's tick: every other call
 ln_at:          dw 0            ; the colour byte of its first cell
 LANCE_ATTR      equ CFG_LANCE_INK | SEA
         ASSERT ln_n == ln_c0 + 1
@@ -153,23 +156,28 @@ lance_input:
         jr nz,.down
         ld a,(ln_charge)
         or a
-        jr nz,.release
-.clock: ld a,(ln_clock)
+        jp nz,.release
+.clock: ld hl,ln_clock
+        ld a,(hl)
         or a
         jr z,.idle
-        dec a
-        ld (ln_clock),a
-        ld b,a
         ld a,(ln_beam)
         or a
-        ret z                   ; resting
-        ld a,b
-        or a
-        jp nz,lance_hits
-        ; the beam's time is up: wiped at the next lance_hud, then a rest
+        jr nz,.beam
+        ld a,(ln_tog)           ; resting: a tick every other call (1/25 s)
+        xor 1
+        ld (ln_tog),a
+        ret z
+        dec (hl)
+        ret
+.beam:  call lance_hits         ; every 1/50 second it is out, the last too
+        ld hl,ln_clock
+        dec (hl)
+        ret nz
+        ; the beam's time is up: wiped at the next lance_hud, then the wait
+        xor a
         ld (ln_beam),a
-        ld a,CFG_LANCE_REST
-        ld (ln_clock),a
+        ld (hl),CFG_LANCE_REST
         ld a,1
         ld (ln_wipe),a
         ld hl,hud_dirty
@@ -184,24 +192,21 @@ lance_input:
 .down:  ld a,(ln_charge)
         or a
         jr nz,.held
+        ld a,(ln_clock)
+        or a
+        jr nz,.busy             ; a beam out, or the wait: a torpedo only
         inc a
         ld (ln_charge),a        ; the press: a tap's torpedo, at once
         ld hl,(frame_count)
         ld (ln_start),hl
         ld a,$CD                ; and every 1/50 second until it is over
         call lance_calls
-        call torpedo_fire
+.busy:  call torpedo_fire
         jr .clock
 .held:  ld a,(frame_count)
-        and 6
-        jr nz,.clock            ; the gauge: two 1/50 seconds in 8
-        ld a,(step_ticks)
-        dec a
-        jr nz,.gauge            ; at 25 there is time
-        ld a,(slow_phase)
-        or a
-        jr nz,.clock            ; at 50, not after the heaviest step's rotate
-.gauge: call lance_held
+        and 7
+        jr nz,.clock            ; the gauge: every 8th 1/50 second
+        call lance_held
         ld b,-1
 .e:     inc b
         sub LANCE_EIGHTH
@@ -212,7 +217,7 @@ lance_input:
         jr z,.clock
         ld (hl),a
         call lance_dirty
-        jr .clock
+        jp .clock
 
 .release:
         xor a
@@ -225,14 +230,8 @@ lance_input:
         ld a,b
         cp CFG_LANCE_MIN
         jp c,.clock             ; a tap
-        ld a,(ln_clock)
-        or a
-        jp nz,.clock            ; one out, or resting: nothing
-        ld a,(ln_wipe)
-        or a
-        ret nz                  ; the last one still to wipe (next step)
-        ld a,b
-        jr lance_fire
+        ld a,b                  ; (no charge starts in the wait, so none is
+        jr lance_fire           ; out, and the last beam is long wiped)
 
 ; A = the opcode for both fire calls: $CD CALL, $C4 CALL NZ.
 ; Corrupts: nothing else
@@ -387,16 +386,6 @@ lance_hits:
         ld a,(ln_draw)
         or a
         ret nz
-        ; At 50, not on the step that rotated the slow buffer (slow_phase
-        ; is 1 after it), the heaviest: every other 1/50 second is enough,
-        ; as nothing moves 2 rows past a 2-row beam in one.
-        ld a,(step_ticks)
-        dec a
-        jr nz,.go
-        ld a,(slow_phase)
-        or a
-        ret nz
-.go:
         ld a,(wheel_phase)
         or a
         jr z,.b2
@@ -500,15 +489,7 @@ lance_box:
 ; on the screen. The gauge, a wipe, a draw. Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 lance_hud:
-        ; At 50, never on the heaviest step (slow_phase 0 here, before
-        ; the copy): the next one, with HUD_LANCE still set.
-        ld a,(step_ticks)
-        dec a
-        jr nz,.go
-        ld a,(slow_phase)
-        or a
-        ret z
-.go:    res HUD_LANCE,(hl)
+        res HUD_LANCE,(hl)
         ld a,(ln_cell)
         or a
         call nz,lance_cell_draw
@@ -636,10 +617,7 @@ lance_cell_draw:
         djnz .fill
 .got:   ld (hl),a               ; the bar's two rows
         inc h
-        or a
-        jr nz,.bar
-        ld a,%10000001          ; empty: its two ends
-.bar:   ld (hl),a
+        ld (hl),a
         ret
 
     IFNDEF NO_SOUND
