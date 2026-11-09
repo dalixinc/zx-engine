@@ -488,6 +488,9 @@ CFG_CODE_LEVELS      equ 10
 ; The last level (10): finishing it ends the game with the Finale code
 ; (src/trigon/ending.asm). Levels past the table repeat its last row.
 CFG_ENDING_LEVEL     equ 10
+; 1: the testers' switch (notes/CHEATS.md) also makes the diver unhurt,
+; to play the levels through. 0 leaves it out of the build altogether.
+CFG_GOD_MODE         equ 1
 ; The diver's belt, a level at a time, 1 to CFG_ENDING_LEVEL: the ink his
 ; cells are painted (src/trigon/theme.asm). WHITE is the sea's own, so
 ; nothing is painted.
