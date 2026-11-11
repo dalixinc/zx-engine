@@ -209,6 +209,7 @@ CFG_POWER_SPEED      equ 160     ; it sinks this many 256ths of a pixel a 1/50
                                  ; second: 160 is 31 pixels a second, slower than
                                  ; the diver's 50, so he can catch one up (1-255)
 CFG_LIVES_MAX        equ 5       ; hearts on row 1 at most (up to 9)
+CFG_HEART_INK        equ RED     ; a falling heart's ink (row 1's stay white)
 CFG_DOUBLE_TIME      equ 30      ; seconds of the double shot
 ; The wait between launches while the double shot lasts, in 1/50
 ; seconds (CFG_FIRE_COOLDOWN's, which is longer than most torpedoes
