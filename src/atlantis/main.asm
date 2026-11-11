@@ -1219,7 +1219,7 @@ data_start:
     ENDIF
     IFDEF POWERUPS
     IFNDEF TRIGON
-        HEART_CODE              ; the falling heart's red cells (missile.asm)
+        INK_CODE                ; the falling power-ups' colours (missile.asm)
     ENDIF
     ENDIF
     IFDEF ENEMY_DIVER
