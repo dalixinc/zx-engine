@@ -79,8 +79,13 @@ $(SNA) $(ATL_BLOCKS) build/atlantis.exp build/atlantis-plain.tap &: $(ATL_SRC) $
 $(ZX0): tools/zx0/zx0.c tools/zx0/optimize.c tools/zx0/compress.c tools/zx0/memory.c tools/zx0/zx0.h | build
 	$(CC) -O2 -o $@ tools/zx0/zx0.c tools/zx0/optimize.c tools/zx0/compress.c tools/zx0/memory.c
 
-build/%.zx0: build/%.bin $(ZX0)
-	$(ZX0) -f $< $@ >/dev/null
+# The .delta file is ZX0's in-place margin for the block: how far past
+# the unpacked bytes' end the packed ones must end for an unpack over
+# itself. tape.asm checks the code's (CODE_DELTA).
+build/%.zx0 build/%.delta: build/%.bin $(ZX0)
+	$(ZX0) -f $< build/$*.zx0 > build/$*.zx0.log
+	sed -n 's/.*(delta \([0-9]*\)).*/\1/p' build/$*.zx0.log > build/$*.delta
+	test -s build/$*.delta
 
 # Erin's city for the interlude: a whole screen, packed. Both committed,
 # so the game builds without Python or zx0 (build.bat).
@@ -98,13 +103,13 @@ gfx/city_atr.zx0: gfx/city.scr $(ZX0) | build
 build/loading.zx0: gfx/loading.scr $(ZX0)
 	$(ZX0) -f $< $@ >/dev/null
 
-$(TAP): src/atlantis/tape.asm src/atlantis/tapecheck.asm tools/dzx0_standard.asm build/atlantis.exp build/loading.zx0 $(ATL_BLOCKS:.bin=.zx0)
-	$(ASM) --nologo --fullpath=off src/atlantis/tape.asm
+$(TAP): src/atlantis/tape.asm src/atlantis/tapecheck.asm tools/dzx0_standard.asm build/atlantis.exp build/loading.zx0 $(ATL_BLOCKS:.bin=.zx0) build/atlantis-code.delta
+	$(ASM) --nologo --fullpath=off -DCODE_DELTA=$$(cat build/atlantis-code.delta) src/atlantis/tape.asm
 
 # A test tape: it unpacks, then prints the sums of what it unpacked and
 # how long that took, instead of starting the game.
 unpack-check: $(TAP)
-	$(ASM) --nologo --fullpath=off -DUNPACK_CHECK src/atlantis/tape.asm
+	$(ASM) --nologo --fullpath=off -DCODE_DELTA=$$(cat build/atlantis-code.delta) -DUNPACK_CHECK src/atlantis/tape.asm
 
 # Trigon: the same game with TRIGON defined (src/trigon/main.asm), its
 # own blocks, its own packed tape (tape.asm with -DTRIGON).
@@ -117,11 +122,11 @@ $(TRI_SNA) $(TRI_BLOCKS) build/trigon.exp build/trigon-plain.tap &: $(TRI_SRC) $
 build/trigon-loading.zx0: gfx/trigon/loading.scr $(ZX0)
 	$(ZX0) -f $< $@ >/dev/null
 
-$(TRI_TAP): src/atlantis/tape.asm src/atlantis/tapecheck.asm tools/dzx0_standard.asm build/trigon.exp build/trigon-loading.zx0 $(TRI_BLOCKS:.bin=.zx0)
-	$(ASM) --nologo --fullpath=off -DTRIGON src/atlantis/tape.asm
+$(TRI_TAP): src/atlantis/tape.asm src/atlantis/tapecheck.asm tools/dzx0_standard.asm build/trigon.exp build/trigon-loading.zx0 $(TRI_BLOCKS:.bin=.zx0) build/trigon-code.delta
+	$(ASM) --nologo --fullpath=off -DTRIGON -DCODE_DELTA=$$(cat build/trigon-code.delta) src/atlantis/tape.asm
 
 unpack-check-trigon: $(TRI_TAP)
-	$(ASM) --nologo --fullpath=off -DTRIGON -DUNPACK_CHECK src/atlantis/tape.asm
+	$(ASM) --nologo --fullpath=off -DTRIGON -DCODE_DELTA=$$(cat build/trigon-code.delta) -DUNPACK_CHECK src/atlantis/tape.asm
 
 run-trigon: $(TRI_TAP)
 	$(EMU) --machine 48 --auto-load --traps --fastload $(TRI_TAP)

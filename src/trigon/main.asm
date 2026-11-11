@@ -70,6 +70,9 @@ loading_screen:
         SAVEBIN  "build/trigon-data.bin", data_start, DATA_LENGTH
         SAVEBIN  "build/trigon-udg.bin", udg_start, UDG_LENGTH
         ; What tape.asm needs to know: --exp=build/trigon.exp
+        EXPORT hot_top
+        EXPORT data_top
+        EXPORT cold_top
         EXPORT cold_end
         EXPORT code_end
         EXPORT data_end

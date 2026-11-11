@@ -1344,6 +1344,27 @@ UDG_LENGTH      equ udg_end - udg_start
 
         INCLUDE "../loader.asm"
 
+        ; Where each part must stop (the ASSERTs above), exported with
+        ; the ends for the room tape.asm DISPLAYs.
+hot_top = DATA_START
+    IFDEF DIVER_JET
+        IF JET_BUF < hot_top
+hot_top = JET_BUF
+        ENDIF
+    ENDIF
+    IFDEF TWO_FISH
+        IF RFISH_BUF < hot_top
+hot_top = RFISH_BUF
+        ENDIF
+    ENDIF
+data_top = PRESHIFT_START
+    IFDEF ENEMY_DIVER
+        IF ED_BUF < data_top
+data_top = ED_BUF
+        ENDIF
+    ENDIF
+cold_top        equ WSPIN_BUF
+
         ; Trigon writes its own files (src/trigon/main.asm).
     IFNDEF TRIGON
     IFNDEF TIMING_BARS
@@ -1374,6 +1395,9 @@ loading_screen:
         SAVEBIN  "build/atlantis-data.bin", data_start, DATA_LENGTH
         SAVEBIN  "build/atlantis-udg.bin", udg_start, UDG_LENGTH
         ; What tape.asm needs to know: --exp=build/atlantis.exp
+        EXPORT hot_top
+        EXPORT data_top
+        EXPORT cold_top
         EXPORT cold_end
         EXPORT code_end
         EXPORT data_end
