@@ -373,6 +373,13 @@ CFG_BOMB_WAVE_SPEED  equ 2
 ; about a fifth faster across.
 CFG_FISH_WAVE_AMP    equ 12
 CFG_FISH_WAVE_SPEED  equ 3
+; A straight fish swims at pixel row 76 up to the level before this one.
+; From it, each new straight fish starts on one of _SLOTS lines, 10
+; pixels apart from row 88 up, never the last fish's line, so no one
+; torpedo line hits two fish in a row (boom.asm, fish_pick_y). Atlantis
+; has straight fish on levels 1, 3, 5 and 7, so 5 varies 5 and 7.
+CFG_FISH_VARY_LEVEL  equ 5
+CFG_FISH_VARY_SLOTS  equ 7       ; 2 to 8; 7 reaches up to row 28
 
 ; How long the "LEVEL n" banner stays up, in 1/50 seconds. 100 is two
 ; seconds. From level 4 the level's code is under it, and it stays up

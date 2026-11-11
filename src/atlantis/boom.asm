@@ -224,6 +224,9 @@ fish_wait_step:
         ld (fish_facing),a
         ld a,FISH_SWIM_Y        ; at its own depth, whatever the last did:
         ld (fish_wave.in + 1),a ; a wave's middle (suction moves it), and
+    IFNDEF TRIGON
+        call fish_pick_y        ; (from CFG_FISH_VARY_LEVEL, a new line)
+    ENDIF
         call fish_set_y         ; a straight fish's height and hit tests
         xor a
         ld (fish_busy),a
@@ -232,6 +235,53 @@ fish_wait_step:
         ld (FISH_DRAW_TO),hl
         call fish_kind_pick
         jp fish_unhold
+
+    IFNDEF TRIGON
+; The lines a straight fish starts on from CFG_FISH_VARY_LEVEL: the
+; lowest is the wave fish's lowest, so the heavy step (the diver on the
+; seabed, below the fish) is the one already measured. A torpedo line
+; hits a fish FISH_HEIGHT + TORPEDO_HEIGHT - 1 rows apart, so lines that
+; far apart share no torpedo line.
+FISH_VARY_LOW   equ FISH_SWIM_Y + CFG_FISH_WAVE_AMP
+FISH_VARY_STEP  equ FISH_HEIGHT + TORPEDO_HEIGHT - 1
+        ASSERT CFG_FISH_VARY_SLOTS >= 2 && CFG_FISH_VARY_SLOTS <= 8
+        ASSERT CFG_FISH_VARY_LEVEL >= 1 && CFG_FISH_VARY_LEVEL <= 255
+        ASSERT FISH_VARY_LOW - (CFG_FISH_VARY_SLOTS - 1) * FISH_VARY_STEP >= WHEEL_TOP_Y + 8, "the top fish line is on the score row"
+
+;------------------------------------------------------------------------------
+; fish_pick_y - the height a new fish starts at. Out: A = FISH_SWIM_Y,
+; or, for a straight fish from CFG_FISH_VARY_LEVEL, one of
+; CFG_FISH_VARY_SLOTS lines, never the line the last fish was on. R's
+; low bits (spare_count's wait varies), mixed with frame_count's, go
+; round all eight values in the loop, so it ends. Once per fish.
+; Corrupts: AF, BC, HL
+;------------------------------------------------------------------------------
+fish_pick_y:
+        ld a,(level_fmove)
+        or a                    ; MOVE_STRAIGHT is 0
+        jr nz,.keep
+        ld a,(level_n)
+        cp CFG_FISH_VARY_LEVEL
+        jr c,.keep
+        ld hl,fish_y            ; the last fish's height
+        ld a,(frame_count)
+        ld c,a                  ; R alone favours some lines
+.roll:  ld a,r
+        xor c
+        and 7
+        cp CFG_FISH_VARY_SLOTS
+        jr nc,.roll
+        inc a
+        ld b,a
+        ld a,FISH_VARY_LOW + FISH_VARY_STEP
+.up:    sub FISH_VARY_STEP
+        djnz .up
+        cp (hl)
+        jr z,.roll              ; the same line: another
+        ret
+.keep:  ld a,FISH_SWIM_Y
+        ret
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; fish_kind_pick - which fish this one is: from CFG_PIRANHA_LEVEL the
