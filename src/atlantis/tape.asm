@@ -21,7 +21,13 @@
 ; packed may be overwritten before it has been read. go unpacks in the
 ; order the second block holds them, so each write lands only on bytes
 ; already read:
-;   - the code, to $8000: between the two blocks.
+;   - the code, first, to $8000: up over the bottom of the second block,
+;     where its own packed bytes are. ZX0 unpacks a block over itself
+;     safely when its packed bytes end at least "delta" bytes past where
+;     the unpacked ones end (ZX0's figure for the block, CODE_DELTA,
+;     from the Makefile). So the packed code must end CODE_DELTA past
+;     code_end, and everything after it in the block lies past that.
+;     Asserted: the code is first in the block and the first unpacked.
 ;   - the cold block, to $6000: over the first block's packed screen,
 ;     which show has already unpacked, but below the unpacker itself,
 ;     which sits at the first block's top (asserted above cold_end, and
@@ -29,13 +35,12 @@
 ;   - the data, to DATA_START: over the second block's packed code and
 ;     cold block, already read. Its own packed bytes are further up
 ;     (asserted past data_end).
-; The second block is loaded as high as it goes, ending at $FF48, so the
-; only things below it are the code's destination (asserted: it starts
-; at or above code_end) and nothing else that matters while the tape
-; loads. Its room is from code_end to $FF48, not from DATA_START: the
-; round fish's and the jet's pictures, between the code and the data,
-; are built at start-up, after it has been read. (Until 0.9.4 it loaded
-; at DATA_START, about 3,280 bytes higher, which was all the room lost.)
+; The second block is loaded as high as it goes, ending at $FF48, and
+; must stay above the first (asserted). Its start may be below code_end:
+; the limit on the code is then its run-time room (hot_top), not the
+; tape. The DISPLAY below shows both. (Until 0.9.4 it loaded at
+; DATA_START; until 0.9.87 it had to start at or above code_end, which
+; counted the code twice, once as code and once packed.)
 ;   - the UDG block, last, above everything else.
 ; At start-up the spinning wheel's pictures are built over the first
 ; block, and the diver's copies and the scroll buffers over the second.
@@ -62,8 +67,15 @@
         INCLUDE "../../build/atlantis.exp"
     ENDIF
 
+; ZX0's in-place margin for the code block: the Makefile passes the
+; figure zx0 printed (build/*-code.delta). build.bat does not, so it
+; gets this, more than ZX0 needs for 16K of random bytes (about 40).
+    IFNDEF CODE_DELTA
+        DEFINE CODE_DELTA 64
+    ENDIF
+
 COLD_START      equ $6000
-UDG_START       equ $FF48       ; the ROM's user-defined graphics, and 16 bytes below
+UDG_START      equ $FF48       ; the ROM's user-defined graphics, and 16 bytes below
 FRAMES          equ 23672       ; the ROM counts interrupts here
 
 ; The first block ends at $8000: its length is fixed by the INCBIN and
@@ -112,7 +124,9 @@ go:
         ld hl,(FRAMES)
         ld (t_game),hl
     ENDIF
-        ; In the order the second block holds them (WHERE, above).
+        ; In the order the second block holds them (WHERE, above). The
+        ; code must come first: asserted below.
+go_first:
         ld hl,packed_code
         ld de,entry
         call dzx0_standard
@@ -175,14 +189,31 @@ packed_udg:
         INCBIN "../../build/atlantis-udg.zx0"
     ENDIF
 packed_end:
-        ASSERT PACKED_ORG >= code_end, "the packed game would sit on the code"
+        ; The code is unpacked first, over the bottom of this block
+        ; (WHERE, above): go's first unpack is the code's, the code is
+        ; first here, and its packed bytes end CODE_DELTA past code_end.
+    IFDEF UNPACK_CHECK
+        ASSERT go_first == go + 8, "go unpacks something before the code"
+    ELSE
+        ASSERT go_first == go + 1, "go unpacks something before the code"
+    ENDIF
+        ASSERT low {go_first} == $21 && {go_first + 1} == packed_code, "go's first unpack is not the code's (LD HL,packed_code)"
+        ASSERT low {go_first + 3} == $11 && {go_first + 4} == entry, "go's first unpack is not the code's (LD DE,entry)"
+        ASSERT low {go_first + 6} == $CD && {go_first + 7} == dzx0_standard, "go's first unpack is not the code's (CALL dzx0_standard)"
+        ASSERT packed_code == packed_start, "the code is not first in the second block"
+        ASSERT packed_cold - code_end >= CODE_DELTA, "the code would be unpacked over its own packed bytes before they are read"
+        ASSERT PACKED_ORG >= unpack_end, "the packed game would load over the unpacker"
         ASSERT packed_data >= data_end, "the data would be unpacked over its own packed bytes"
         ASSERT packed_end <= UDG_START, "the packed game runs into the ROM's UDGs"
         ASSERT udg_start == UDG_START, "the UDG block is not at the ROM's UDGs"
 
         DISPLAY "tape unpacker ", unpack_start, " to ", unpack_end
         DISPLAY "tape packed game ", packed_start, " to ", packed_end
-        DISPLAY "tape room below the packed game ", /D, packed_start - code_end
+        ; The room each part has left. The code's limit is its run-time
+        ; room (hot); the tape's margin is far larger, and its check is
+        ; the margin against ZX0's delta.
+        DISPLAY "room: hot ", /D, hot_top - code_end, ", cold ", /D, cold_top - cold_end, ", data ", /D, data_top - data_end
+        DISPLAY "tape margin: packed code ends ", /D, packed_cold - code_end, " past code_end (ZX0 needs ", /D, CODE_DELTA, ")"
 
 ;------------------------------------------------------------------------------
 ; The BASIC. Scratch: SAVETAP copies these bytes into the BASIC block.

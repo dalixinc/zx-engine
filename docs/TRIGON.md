@@ -258,11 +258,11 @@ Trigon has the whole 48K to itself, laid out as Atlantis is
 
 | Free bytes | Atlantis | Trigon |
 |---|---|---|
-| Hot code (to `RFISH_BUF`) | 339 | 682 |
-| Cold block (to the unpacker) | 21 | 8 |
-| Data (to `PRESHIFT_START`) | 1,093 | 38 |
-| Tape room (below the packed game) | 412 | 9 |
-| The tape | 18,845 bytes | 19,482 bytes |
+| Hot code (to `RFISH_BUF`) | 253 | 674 |
+| Cold block (to the unpacker) | 15 | 8 |
+| Data (to `PRESHIFT_START`) | 1,012 | 38 |
+| Tape margin (packed code's end past `code_end`; ZX0 needs 2-3) | 8,921 | 8,368 |
+| The tape | 19,010 bytes | 19,495 bytes |
 
 Trigon 0.2.0's second bomb takes about 2,040 bytes of the data block
 (the bomb code again), 164 of hot code (the main loop's calls, the
@@ -276,7 +276,13 @@ ending about 100. To pay for them, the paint's box helpers (`tp_box`,
 two, as the code's end and the packed game both move. The belts took
 about 140 more; the missile's paint helpers moved to the data block too,
 and the Lance's level 4 message and the belt table to the cold block.
-Trigon is now full: what comes next goes into Finale.
+Trigon was then full by the tape's old check, which made the packed
+game start above `code_end` and so counted the code twice: 9 bytes
+were left. That check was stricter than the unpacker needs (ZX0
+unpacks the code safely over its own packed bytes if they end a few
+bytes past `code_end`), so it was relaxed after Atlantis 0.9.87
+(`tape.asm`, WHERE). The tape no longer limits either game: the
+run-time room in the table is what is left, and each build DISPLAYs it.
 
 ## The Lance laser
 
