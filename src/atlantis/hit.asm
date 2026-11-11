@@ -197,6 +197,18 @@ lives_draw:
     IFDEF LANCEGUN
         call lance_cell_draw    ; Trigon: the Lance's gauge (lance.asm)
     ENDIF
+    IFNDEF TRIGON
+    IF CFG_LIVES_INK != WHITE
+        ; The hearts' cells in their ink, each time: anything that
+        ; repainted row 1's colours is put right here. A lost life is
+        ; a blank cell, which shows only its blue paper.
+        ld hl,ATTRS + LIVES_ROW * 32 + LIVES_COL
+        ld b,LIVES_CELLS
+.ink:   ld (hl),CFG_LIVES_INK | SEA
+        inc l
+        djnz .ink
+    ENDIF
+    ENDIF
         ; The double shot's bubble, a cell of water away from the hearts,
         ; while it lasts, and the special bomb he carries two cells left
         ; of that; water when not. A cell is udg_water + 8 * its kind.
