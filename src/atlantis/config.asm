@@ -183,7 +183,8 @@ CFG_MSL_HOME_PTS     equ 15
 
 ; --- Power-ups (missile.asm, torpedo.asm) --------------------------------------
 ; Now and then the missile's turn brings a power-up instead: it sinks
-; from below the hearts, in a column near the diver, and he takes it by
+; from below the hearts, in a column near the diver (from
+; CFG_POWER_WIDE_LEVEL, anywhere he can reach), and he takes it by
 ; touching it. Torpedoes pass through it. It is gone at the weed.
 ;   the heart     one more life, up to CFG_LIVES_MAX
 ;   the bubble    the double shot: for CFG_DOUBLE_TIME seconds he can
@@ -194,6 +195,10 @@ CFG_MSL_HOME_PTS     equ 15
 ; CFG_POWER_LEVEL) and a bubble CFG_DOUBLE_ODDS times in 256 (from
 ; CFG_DOUBLE_LEVEL); otherwise a missile.
 CFG_POWER_LEVEL      equ 2       ; hearts from this level
+; Up to the level before this one a power-up falls near the diver (his
+; middle, give or take 32 pixels). From it, it falls in any column he
+; can reach, so some come down far from him (missile.asm, missile_or_power).
+CFG_POWER_WIDE_LEVEL equ 6
 CFG_DOUBLE_LEVEL     equ 4       ; the double shot's bubble from this level
 ; The fish: before this level every fish is the round one; from it, one
 ; fish in four is the piranha (boom.asm, fish_kind_pick).

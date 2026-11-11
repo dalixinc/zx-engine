@@ -54,6 +54,11 @@ POWER_KINDS     equ 4
 ; is a multiple of 8, and the water does not scroll.
 POWER_TOP       equ MSL_TOP
 POWER_LOW       equ BACK_ROW * 8 - MISSILE_HEIGHT
+; From CFG_POWER_WIDE_LEVEL it falls in any of the columns 0 to
+; POWER_WIDE_COLS - 1, the ones the diver can touch with a few pixels to
+; spare: he stops at CFG_DIVER_MAX_X, and missile_hit takes one whose x
+; is up to HIT_DIVER_R right of his. Checked in the ASSERTs below.
+POWER_WIDE_COLS equ (CFG_DIVER_MAX_X + HIT_DIVER_R - 8) / 8 + 1
 MSL_LOW         equ $80         ; msl_vn: drawn after the seabed copy
 
 ; In the hatch: the nose stands six pixels out of the dome's top row.
@@ -387,6 +392,13 @@ missile_or_power:
         ; A column near him: his middle, give or take 32 pixels, on a
         ; byte, and the whole picture on the screen.
         call msl_rng
+    IFNDEF TRIGON
+        ld b,a
+        ld a,(level_n)
+        cp CFG_POWER_WIDE_LEVEL
+        jr nc,.wide             ; from that level: anywhere he can reach
+        ld a,b
+    ENDIF
         and 63
         ld l,a
         ld h,0
@@ -414,6 +426,22 @@ missile_or_power:
         ld a,MSL_SINK
         ld (msl_phase),a
         ret
+    IFNDEF TRIGON
+        ; Any of the columns he can touch, so some fall far from him. A
+        ; roll past them is rolled again. Each next value of the shift
+        ; register is the last one shifted, and alone it never landed
+        ; on some columns; the clock mixed in reaches them all.
+.wide:  call msl_rng
+        ld hl,frame_count
+        xor (hl)
+        and 31
+        cp POWER_WIDE_COLS
+        jr nc,.wide
+        add a,a
+        add a,a
+        add a,a
+        jr .col
+    ENDIF
 
 power_sink:
         ld a,(msl_pfrac)
@@ -540,6 +568,10 @@ double_end:
         ASSERT CFG_DOUBLE_TIME >= 1 && CFG_DOUBLE_TIME <= 600, "CFG_DOUBLE_TIME is seconds, up to 10 minutes"
         ASSERT CFG_DOUBLE_COOLDOWN >= 1 && CFG_DOUBLE_COOLDOWN <= CFG_FIRE_COOLDOWN
         ASSERT CFG_POWER_LEVEL >= 1 && CFG_POWER_LEVEL <= 99 && CFG_DOUBLE_LEVEL >= 1 && CFG_DOUBLE_LEVEL <= 99 && CFG_PIRANHA_LEVEL >= 1 && CFG_PIRANHA_LEVEL <= 99
+    IFNDEF TRIGON
+        ASSERT CFG_POWER_WIDE_LEVEL >= 1 && CFG_POWER_WIDE_LEVEL <= 255, "CFG_POWER_WIDE_LEVEL: 1 to 255 (past the last level: never)"
+        ASSERT POWER_WIDE_COLS >= 1 && POWER_WIDE_COLS <= 32 && (POWER_WIDE_COLS - 1) * 8 <= CFG_DIVER_MAX_X + HIT_DIVER_R, "a power-up in the last wide column would be out of the diver's reach"
+    ENDIF
     ENDIF
 
         ; Once a missile, as it ends: in the cold block.
