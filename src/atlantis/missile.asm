@@ -171,7 +171,7 @@ missile_reset:
     IFDEF POWERUPS
         ld (msl_kind),a
       IFNDEF TRIGON
-        ld (heart_cells + 1),a  ; no red cells to put back (the screen is new)
+        ld (ink_cells + 1),a  ; no coloured cells to put back (the screen is new)
       ENDIF
         ld (msl_next),a
     ENDIF
@@ -429,7 +429,7 @@ missile_or_power:
         ld a,MSL_SINK
         ld (msl_phase),a
     IFNDEF TRIGON
-        jp heart_if             ; a heart: its cells red
+        jp ink_if               ; a power-up: its cells in its colour
     ELSE
         ret
     ENDIF
@@ -462,7 +462,7 @@ power_sink:
         ld (msl_y),a
     IFNDEF TRIGON
         and 6                   ; y & 7 now 0 or 1: it covers other cells,
-        jp z,heart_if           ; so a heart's red moves down
+        jp z,ink_if             ; so its colour moves down
     ENDIF
         ret
 
@@ -610,7 +610,7 @@ msl_points:
 missile_gone:
     IFDEF POWERUPS
     IFNDEF TRIGON
-        call heart_unpaint      ; a heart's red cells back to water
+        call ink_unpaint        ; a power-up's coloured cells back to water
     ENDIF
     ENDIF
         xor a
@@ -917,36 +917,56 @@ POWER_PICS_BASE equ POWER_PICS - 16
     ENDIF
 
 ;------------------------------------------------------------------------------
-; The falling heart is red (CFG_HEART_INK), Atlantis only. Its picture is
-; ink, so the red is its cells' colour: the one it is in, and the one
-; below while it is not on a character row. They change only when its
-; top crosses y & 7 = 0 or 1, so power_sink (and missile_or_power, when
-; one appears) calls heart_if then, not every step.
+; A falling power-up's colour, Atlantis only: the heart CFG_HEART_INK,
+; the special bombs CFG_FALL_SUCTION_INK, _SHOVE_INK and _NUKE_INK (the
+; bubble stays white). Its picture is ink, so the colour is its cells':
+; the one it is in, and the one below while it is not on a character
+; row. They change only when its top crosses y & 7 = 0 or 1, so
+; power_sink (and missile_or_power, when one appears) calls ink_if
+; then, not every step.
 ;
-; Only cells that are the water's colour are painted, and only cells
-; that are still red are given back: the bomb's ink, the banner, the
-; weed row and the fish's flash are left as they are, and the heart is
-; drawn in their colour while it is in them. One that sits in the
-; heart's cells when they change can be turned back to water: the red
-; spinning wheel or a red flash, until its own next paint. A bomb that
-; leaves a red cell paints it water; the heart is white there until its
-; next change (at most 8 pixels). Nothing is left red: missile_gone
-; gives its cells back, and missile_reset forgets them.
-; Only read and run while one falls, so in the data block. Expanded
-; there by main.asm. Corrupts: AF, BC, HL
+; Only cells that are the water's colour are painted, and only cells it
+; painted (ink_done) and that still have its colour are given back: the
+; bomb's ink, the banner, the weed row and the fish's flash are never
+; painted over, and the power-up is drawn in their colour while it is
+; in them. A bomb or flash of the same colour that sits in a painted
+; cell when the power-up moves on can be turned back to water there,
+; until its own next paint. A bomb that leaves a painted cell paints it
+; water; the power-up is white there until its next change (at most 8
+; pixels). Nothing is left coloured: missile_gone gives its cells back,
+; and missile_reset forgets them.
+; With CFG_HELD_INK, lives_draw colours the carried bomb's cell on row 1
+; the same way (ink_held).
+; Only read and run while one falls or row 1 changes, so in the data
+; block. Expanded there by main.asm. Corrupts: AF, BC, D, HL (E kept:
+; missile_gone's callers keep it)
 ;------------------------------------------------------------------------------
-        MACRO HEART_CODE
-heart_cells:    dw 0            ; colour address of its top cell; high byte 0 = none
-heart_two:      db 0            ; not 0: the cell below it as well
-heart_if:
+        MACRO INK_CODE
+ink_tab:        db 0, HEART_ATTR, 0, SUCTION_ATTR, SHOVE_ATTR, NUKE_ATTR ; by MSL_KIND_*, 0 = white
+        ASSERT (ink_tab & $FF) + MSL_KIND_NUKE < 256, "ink_look adds the kind to the low byte"
+ink_cells:      dw 0            ; colour address of its top cell; high byte 0 = none
+ink_now:        db 0            ; the colour it painted
+ink_done:       db 0            ; the cells it painted: bit 0 the top, bit 1 the one below
+; A = a kind. Out: A = its colour, Z if it has none. Corrupts: F, HL
+ink_look:
+        add a,ink_tab & $FF
+        ld l,a
+        ld h,ink_tab >> 8
+        ld a,(hl)
+        or a
+        ret
+ink_if:
         ld a,(msl_kind)
-        cp MSL_KIND_HEART
-        ret nz
-heart_paint:
-        call heart_unpaint
+        call ink_look
+        ret z                   ; a missile or the bubble: white
+        ld (ink_now),a
+        call ink_unpaint
         ld a,(msl_y)
         and 7
-        ld (heart_two),a
+        ld d,1                  ; on a character row: one cell
+        jr z,ink_one
+        ld d,3                  ; else that one and the one below
+ink_one:
         ld a,(msl_y)
         and $F8                 ; the character row, times 8
         ld l,a
@@ -959,42 +979,74 @@ heart_paint:
         rrca
         or l
         ld l,a
-        ld (heart_cells),hl
-        ld bc,(HEART_ATTR << 8) | WATER_ATTR
-        jr heart_swap
-heart_unpaint:
-        ld hl,(heart_cells)
+        ld (ink_cells),hl
+        ld a,(ink_now)
+        ld b,a
+        ld c,WATER_ATTR         ; water becomes its colour
+        jr ink_swap
+ink_unpaint:
+        ld hl,(ink_cells)
         ld a,h
         or a
         ret z
         xor a
-        ld (heart_cells + 1),a
-        ld bc,(WATER_ATTR << 8) | HEART_ATTR
-; HL = the top cell: each of its cells that is C becomes B.
-heart_swap:
+        ld (ink_cells + 1),a
+        ld a,(ink_done)
+        ld d,a                  ; only the cells it painted
+        ld a,(ink_now)
+        ld c,a
+        ld b,WATER_ATTR         ; its colour becomes water
+; HL = the top cell, D = which may change (bit 0 it, bit 1 the one
+; below): each of those that is C becomes B. Out: ink_done = those that did.
+ink_swap:
+        xor a
+        ld (ink_done),a
+        rr d
+        jr nc,ink_low
         ld a,(hl)
         cp c
-        jr nz,heart_low
+        jr nz,ink_low
         ld (hl),b
-heart_low:
-        ld a,(heart_two)
-        or a
-        ret z
-        ld a,l                  ; one row down, leaving DE alone
-        add a,32                ; (missile_gone's callers keep E)
+        ld a,1
+        ld (ink_done),a
+ink_low:
+        rr d
+        ret nc
+        ld a,l                  ; one row down, leaving E alone
+        add a,32
         ld l,a
-        jr nc,heart_down
+        jr nc,ink_down
         inc h
-heart_down:
+ink_down:
         ld a,(hl)
         cp c
         ret nz
         ld (hl),b
+        ld hl,ink_done
+        set 1,(hl)
         ret
+    IF CFG_HELD_INK
+; ink_held - A = the carried bomb's kind (0 = none): its cell on row 1
+; in its colour, or the water's. lives_draw calls it. Keeps A.
+; Corrupts: F, HL
+ink_held:
+        push af
+        call ink_look
+        jr nz,ink_held_set
+        ld a,WATER_ATTR
+ink_held_set:
+        ld (ATTRS + LIVES_ROW * 32 + LIVES_COL - 4),a
+        pop af
+        ret
+    ENDIF
         ENDM
     IFNDEF TRIGON
 HEART_ATTR      equ CFG_HEART_INK | SEA
-        ASSERT HEART_ATTR != WATER_ATTR, "CFG_HEART_INK: the heart would be the water's colour"
-        ASSERT (ATTRS & $3FF) == 0, "heart_paint builds the colour address from ATTRS >> 10"
-        ASSERT (POWER_LOW & 7) == 0 && POWER_LOW / 8 < BACK_ROW, "the heart's lower cell could be the weed row"
+SUCTION_ATTR    equ CFG_FALL_SUCTION_INK | SEA
+SHOVE_ATTR      equ CFG_FALL_SHOVE_INK | SEA
+NUKE_ATTR       equ CFG_FALL_NUKE_INK | SEA
+        ASSERT HEART_ATTR != WATER_ATTR && SUCTION_ATTR != WATER_ATTR && SHOVE_ATTR != WATER_ATTR && NUKE_ATTR != WATER_ATTR, "a power-up's ink is the water's (white)"
+        ASSERT MSL_KIND_HEART == 1 && MSL_KIND_DOUBLE == 2 && MSL_KIND_SUCTION == 3 && MSL_KIND_SHOVE == 4 && MSL_KIND_NUKE == 5, "ink_tab is in kind order"
+        ASSERT (ATTRS & $3FF) == 0, "ink_if builds the colour address from ATTRS >> 10"
+        ASSERT (POWER_LOW & 7) == 0 && POWER_LOW / 8 < BACK_ROW, "a power-up's lower cell could be the weed row"
     ENDIF

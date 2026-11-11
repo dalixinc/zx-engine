@@ -209,7 +209,13 @@ CFG_POWER_SPEED      equ 160     ; it sinks this many 256ths of a pixel a 1/50
                                  ; second: 160 is 31 pixels a second, slower than
                                  ; the diver's 50, so he can catch one up (1-255)
 CFG_LIVES_MAX        equ 5       ; hearts on row 1 at most (up to 9)
-CFG_HEART_INK        equ RED     ; a falling heart's ink (row 1's stay white)
+; A falling power-up's ink on the blue (the bubble stays white). Each
+; is the same colour as some level's bomb (missile.asm, INK_CODE).
+CFG_HEART_INK        equ RED     ; a heart (row 1's stay white)
+CFG_FALL_SUCTION_INK equ CYAN    ; (the border flashes CFG_SUCTION_INK, below)
+CFG_FALL_SHOVE_INK   equ GREEN   ; (and CFG_SHOVE_INK)
+CFG_FALL_NUKE_INK    equ YELLOW
+CFG_HELD_INK         equ 1       ; 1: the carried bomb on row 1 in its ink too; 0: white
 CFG_DOUBLE_TIME      equ 30      ; seconds of the double shot
 ; The wait between launches while the double shot lasts, in 1/50
 ; seconds (CFG_FIRE_COOLDOWN's, which is longer than most torpedoes

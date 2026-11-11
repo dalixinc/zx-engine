@@ -205,6 +205,11 @@ lives_draw:
         ld hl,LIVES_SCREEN - 2
         call hud_cell
         ld a,(sp_held)          ; 0, or a special bomb's kind
+    IFNDEF TRIGON
+    IF CFG_HELD_INK
+        call ink_held           ; its cell in its colour (missile.asm)
+    ENDIF
+    ENDIF
         ld hl,LIVES_SCREEN - 4
         ; fall through
 ; A = a power-up's kind (0 = water), HL = its cell on row 1.
