@@ -633,6 +633,13 @@ banner_tick:
     IFDEF TRIGON
         call tp_banner_heal     ; its holes painted again (src/trigon/theme.asm)
     ENDIF
+    IFDEF POWERUPS
+    IFNDEF TRIGON
+    IF CFG_NUKE_LEVEL
+        call nuke_heal          ; the nuke's word: its holes (special.asm)
+    ENDIF
+    ENDIF
+    ENDIF
         ld hl,(frame_count)
         ld de,(banner_until)
         or a

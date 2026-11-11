@@ -286,6 +286,11 @@ special_fire:
         ld (step_skip.flash_ink + 1),a ; the rest of the flash's colour
         ld a,CFG_SPECIAL_FLASH
         ld (chord_flash),a      ; the border flashes, as for a chord
+    IFNDEF TRIGON
+    IF CFG_NUKE_LEVEL
+        call nuke_word          ; the nuke: its word, before the quake
+    ENDIF
+    ENDIF
         ; Shove and the nuke stop the action for a moment and shake the
         ; screen first; suction, the escape, stays quiet.
         ld a,(sp_kind)
@@ -619,4 +624,70 @@ sp_score:
         ASSERT CFG_PTS_SUCTION <= 99 && CFG_PTS_SHOVE <= 99 && CFG_PTS_NUKE <= 99, "a power's points are 0 to 99"
 
 
+    ENDIF
+
+;------------------------------------------------------------------------------
+; nuke_word - the nuke's word across the middle, Atlantis only: the
+; banner's block letters (score.asm) in CFG_NUKE_WORD_PAPER, for
+; CFG_NUKE_WORD_TIME. special_fire calls it before the quake, which
+; pushes the banner's clock on by its own time, so the word outlasts the
+; shake (the shake moves only the pixels; the word stays still). A
+; banner already up (a level's, and its code) comes down first. Once
+; per nuke, so in the data block; nuke_heal, below, fills its holes.
+; Out: HL and B kept (special_fire's sound and colour). Corrupts: AF, C, DE
+;------------------------------------------------------------------------------
+        MACRO NUKE_WORD
+nuke_word:
+        ld a,(sp_kind)
+        cp MSL_KIND_NUKE
+        ret nz
+        push bc
+        push hl
+        ld a,(hud_dirty)
+        bit HUD_BANNER,a
+        call nz,banner_erase    ; a level's banner comes down first
+        ld hl,nuke_letters
+        ld de,banner_chars
+        ld bc,NUKE_LEN
+        ldir
+        ld a,NUKE_LEN
+        ld (banner_len),a
+        ld a,(32 - (NUKE_LEN * 4 - 1)) / 2
+        ld (banner_col),a       ; centred, as banner_show does
+        xor a
+        ld (banner_code),a      ; no code under it
+        ld a,BRIGHT | BLUE | (CFG_NUKE_WORD_PAPER << 3)
+        call banner_paint
+        ld hl,(frame_count)
+        ld de,CFG_NUKE_WORD_TIME
+        add hl,de
+        ld (banner_until),hl
+        ld hl,hud_dirty
+        set HUD_BANNER,(hl)     ; banner_tick takes it down
+        pop hl
+        pop bc
+        ret
+nuke_letters:   db "NUKE"
+NUKE_LEN        equ $ - nuke_letters
+; nuke_heal - banner_tick, each step a banner is up: if it is the
+; nuke's word (four letters; "LEVEL n" has seven or eight), every 16
+; television frames (as Trigon's tp_banner_heal) its blocks are painted
+; again, about 14 scanlines. The things the nuke
+; blows up, and the next bomb and fish, give their colour cells back to
+; water as they go and leave holes in it. The screen has just been
+; cleared, so these steps are light: measured, no frame lost, a few
+; more late steps that catch up. Corrupts: AF, BC, DE, HL
+nuke_heal:
+        ld a,(banner_len)
+        cp NUKE_LEN
+        ret nz
+        ld a,(frame_count)
+        and 15
+        ret nz
+        ld a,(banner_ink)
+        jp banner_paint
+        ENDM
+    IFNDEF TRIGON
+        ASSERT CFG_NUKE_WORD_PAPER >= 0 && CFG_NUKE_WORD_PAPER <= 7 && CFG_NUKE_WORD_PAPER != BLUE, "CFG_NUKE_WORD_PAPER: a colour 0-7, not the sea's blue"
+        ASSERT CFG_NUKE_WORD_TIME >= 1 && CFG_NUKE_WORD_TIME <= 1000
     ENDIF

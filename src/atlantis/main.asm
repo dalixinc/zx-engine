@@ -1220,6 +1220,9 @@ data_start:
     IFDEF POWERUPS
     IFNDEF TRIGON
         INK_CODE                ; the falling power-ups' colours (missile.asm)
+      IF CFG_NUKE_LEVEL
+        NUKE_WORD               ; its word across the middle (special.asm)
+      ENDIF
     ENDIF
     ENDIF
     IFDEF ENEMY_DIVER
