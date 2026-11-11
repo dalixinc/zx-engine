@@ -293,7 +293,7 @@ From level 4 the diver has a second weapon on the fire key
   (`CFG_LANCE_TIME`), blows up the bombs, the fish and a silo's missile
   it touches, `CFG_PTS_LANCE` (15) points each, shown as "+15" where
   they were. Anything in the beam's red row while it is up goes, tested
-  every 1/50 second it is out. Then it cannot charge again for 10
+  every 1/50 second it is out. Then it cannot charge again for 3
   seconds (`CFG_LANCE_REST`); a press meanwhile fires a torpedo only. It goes
   with a quick falling "pew" (`CFG_LANCE_PEW`, about 980 Hz down to
   390 Hz in 0.16 seconds; lower notes come out as clicks, as the beeper

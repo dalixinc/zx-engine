@@ -299,7 +299,7 @@ CFG_LANCE_LEVEL      equ 4
 CFG_LANCE_FULL       equ 96      ; about 2 seconds for the whole width
 CFG_LANCE_MIN        equ 24      ; about half a second: 8 bytes, 64 pixels
 CFG_LANCE_TIME       equ 8
-CFG_LANCE_REST       equ 250     ; the wait after a beam, in 1/25 seconds: 10 s
+CFG_LANCE_REST       equ 75      ; the wait after a beam, in 1/25 seconds: 3 s
 CFG_PTS_LANCE        equ 15
 CFG_LANCE_INK        equ RED     ; the beam's colour, on the sea's cells it crosses
 ; Its sound, a low quick "pew": falling notes, as CFG_LASER's are written

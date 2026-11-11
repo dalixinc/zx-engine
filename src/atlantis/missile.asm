@@ -54,6 +54,11 @@ POWER_KINDS     equ 4
 ; is a multiple of 8, and the water does not scroll.
 POWER_TOP       equ MSL_TOP
 POWER_LOW       equ BACK_ROW * 8 - MISSILE_HEIGHT
+; From CFG_POWER_WIDE_LEVEL it falls in any of the columns 0 to
+; POWER_WIDE_COLS - 1, the ones the diver can touch with a few pixels to
+; spare: he stops at CFG_DIVER_MAX_X, and missile_hit takes one whose x
+; is up to HIT_DIVER_R right of his. Checked in the ASSERTs below.
+POWER_WIDE_COLS equ (CFG_DIVER_MAX_X + HIT_DIVER_R - 8) / 8 + 1
 MSL_LOW         equ $80         ; msl_vn: drawn after the seabed copy
 
 ; In the hatch: the nose stands six pixels out of the dome's top row.
@@ -165,6 +170,9 @@ missile_reset:
         ld (msl_vn),a
     IFDEF POWERUPS
         ld (msl_kind),a
+      IFNDEF TRIGON
+        ld (heart_cells + 1),a  ; no red cells to put back (the screen is new)
+      ENDIF
         ld (msl_next),a
     ENDIF
     IFDEF MEAS_MISSILE
@@ -387,6 +395,13 @@ missile_or_power:
         ; A column near him: his middle, give or take 32 pixels, on a
         ; byte, and the whole picture on the screen.
         call msl_rng
+    IFNDEF TRIGON
+        ld b,a
+        ld a,(level_n)
+        cp CFG_POWER_WIDE_LEVEL
+        jr nc,.wide             ; from that level: anywhere he can reach
+        ld a,b
+    ENDIF
         and 63
         ld l,a
         ld h,0
@@ -413,7 +428,27 @@ missile_or_power:
         ld (msl_y),a
         ld a,MSL_SINK
         ld (msl_phase),a
+    IFNDEF TRIGON
+        jp heart_if             ; a heart: its cells red
+    ELSE
         ret
+    ENDIF
+    IFNDEF TRIGON
+        ; Any of the columns he can touch, so some fall far from him. A
+        ; roll past them is rolled again. Each next value of the shift
+        ; register is the last one shifted, and alone it never landed
+        ; on some columns; the clock mixed in reaches them all.
+.wide:  call msl_rng
+        ld hl,frame_count
+        xor (hl)
+        and 31
+        cp POWER_WIDE_COLS
+        jr nc,.wide
+        add a,a
+        add a,a
+        add a,a
+        jr .col
+    ENDIF
 
 power_sink:
         ld a,(msl_pfrac)
@@ -425,6 +460,10 @@ power_sink:
         cp POWER_LOW + 1
         jp nc,missile_gone      ; at the weed: gone
         ld (msl_y),a
+    IFNDEF TRIGON
+        and 6                   ; y & 7 now 0 or 1: it covers other cells,
+        jp z,heart_if           ; so a heart's red moves down
+    ENDIF
         ret
 
 ; A = msl_kind (not 0). Out: carry clear: not a hit.
@@ -540,6 +579,10 @@ double_end:
         ASSERT CFG_DOUBLE_TIME >= 1 && CFG_DOUBLE_TIME <= 600, "CFG_DOUBLE_TIME is seconds, up to 10 minutes"
         ASSERT CFG_DOUBLE_COOLDOWN >= 1 && CFG_DOUBLE_COOLDOWN <= CFG_FIRE_COOLDOWN
         ASSERT CFG_POWER_LEVEL >= 1 && CFG_POWER_LEVEL <= 99 && CFG_DOUBLE_LEVEL >= 1 && CFG_DOUBLE_LEVEL <= 99 && CFG_PIRANHA_LEVEL >= 1 && CFG_PIRANHA_LEVEL <= 99
+    IFNDEF TRIGON
+        ASSERT CFG_POWER_WIDE_LEVEL >= 1 && CFG_POWER_WIDE_LEVEL <= 255, "CFG_POWER_WIDE_LEVEL: 1 to 255 (past the last level: never)"
+        ASSERT POWER_WIDE_COLS >= 1 && POWER_WIDE_COLS <= 32 && (POWER_WIDE_COLS - 1) * 8 <= CFG_DIVER_MAX_X + HIT_DIVER_R, "a power-up in the last wide column would be out of the diver's reach"
+    ENDIF
     ENDIF
 
         ; Once a missile, as it ends: in the cold block.
@@ -565,6 +608,11 @@ msl_points:
 ; Corrupts: AF, BC, D, HL
 ;------------------------------------------------------------------------------
 missile_gone:
+    IFDEF POWERUPS
+    IFNDEF TRIGON
+        call heart_unpaint      ; a heart's red cells back to water
+    ENDIF
+    ENDIF
         xor a
         ld (msl_phase),a
     IFDEF MEAS_MISSILE
@@ -866,4 +914,87 @@ missile_restore:
 POWER_PICS_BASE equ POWER_PICS - 16
     IFDEF POWERUPS
         ASSERT (POWER_PICS & $FF) >= 16 && (POWER_PICS & $FF) + 16 * POWER_KINDS <= 256, "POWER_PICS_BASE to its end crosses a page: missile_draw adds to the low byte"
+    ENDIF
+
+;------------------------------------------------------------------------------
+; The falling heart is red (CFG_HEART_INK), Atlantis only. Its picture is
+; ink, so the red is its cells' colour: the one it is in, and the one
+; below while it is not on a character row. They change only when its
+; top crosses y & 7 = 0 or 1, so power_sink (and missile_or_power, when
+; one appears) calls heart_if then, not every step.
+;
+; Only cells that are the water's colour are painted, and only cells
+; that are still red are given back: the bomb's ink, the banner, the
+; weed row and the fish's flash are left as they are, and the heart is
+; drawn in their colour while it is in them. One that sits in the
+; heart's cells when they change can be turned back to water: the red
+; spinning wheel or a red flash, until its own next paint. A bomb that
+; leaves a red cell paints it water; the heart is white there until its
+; next change (at most 8 pixels). Nothing is left red: missile_gone
+; gives its cells back, and missile_reset forgets them.
+; Only read and run while one falls, so in the data block. Expanded
+; there by main.asm. Corrupts: AF, BC, HL
+;------------------------------------------------------------------------------
+        MACRO HEART_CODE
+heart_cells:    dw 0            ; colour address of its top cell; high byte 0 = none
+heart_two:      db 0            ; not 0: the cell below it as well
+heart_if:
+        ld a,(msl_kind)
+        cp MSL_KIND_HEART
+        ret nz
+heart_paint:
+        call heart_unpaint
+        ld a,(msl_y)
+        and 7
+        ld (heart_two),a
+        ld a,(msl_y)
+        and $F8                 ; the character row, times 8
+        ld l,a
+        ld h,ATTRS >> 10
+        add hl,hl
+        add hl,hl               ; ATTRS + row * 32
+        ld a,(msl_x)            ; on a byte: the column in its top 5 bits
+        rrca
+        rrca
+        rrca
+        or l
+        ld l,a
+        ld (heart_cells),hl
+        ld bc,(HEART_ATTR << 8) | WATER_ATTR
+        jr heart_swap
+heart_unpaint:
+        ld hl,(heart_cells)
+        ld a,h
+        or a
+        ret z
+        xor a
+        ld (heart_cells + 1),a
+        ld bc,(WATER_ATTR << 8) | HEART_ATTR
+; HL = the top cell: each of its cells that is C becomes B.
+heart_swap:
+        ld a,(hl)
+        cp c
+        jr nz,heart_low
+        ld (hl),b
+heart_low:
+        ld a,(heart_two)
+        or a
+        ret z
+        ld a,l                  ; one row down, leaving DE alone
+        add a,32                ; (missile_gone's callers keep E)
+        ld l,a
+        jr nc,heart_down
+        inc h
+heart_down:
+        ld a,(hl)
+        cp c
+        ret nz
+        ld (hl),b
+        ret
+        ENDM
+    IFNDEF TRIGON
+HEART_ATTR      equ CFG_HEART_INK | SEA
+        ASSERT HEART_ATTR != WATER_ATTR, "CFG_HEART_INK: the heart would be the water's colour"
+        ASSERT (ATTRS & $3FF) == 0, "heart_paint builds the colour address from ATTRS >> 10"
+        ASSERT (POWER_LOW & 7) == 0 && POWER_LOW / 8 < BACK_ROW, "the heart's lower cell could be the weed row"
     ENDIF

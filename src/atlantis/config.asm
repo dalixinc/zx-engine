@@ -183,7 +183,8 @@ CFG_MSL_HOME_PTS     equ 15
 
 ; --- Power-ups (missile.asm, torpedo.asm) --------------------------------------
 ; Now and then the missile's turn brings a power-up instead: it sinks
-; from below the hearts, in a column near the diver, and he takes it by
+; from below the hearts, in a column near the diver (from
+; CFG_POWER_WIDE_LEVEL, anywhere he can reach), and he takes it by
 ; touching it. Torpedoes pass through it. It is gone at the weed.
 ;   the heart     one more life, up to CFG_LIVES_MAX
 ;   the bubble    the double shot: for CFG_DOUBLE_TIME seconds he can
@@ -194,6 +195,10 @@ CFG_MSL_HOME_PTS     equ 15
 ; CFG_POWER_LEVEL) and a bubble CFG_DOUBLE_ODDS times in 256 (from
 ; CFG_DOUBLE_LEVEL); otherwise a missile.
 CFG_POWER_LEVEL      equ 2       ; hearts from this level
+; Up to the level before this one a power-up falls near the diver (his
+; middle, give or take 32 pixels). From it, it falls in any column he
+; can reach, so some come down far from him (missile.asm, missile_or_power).
+CFG_POWER_WIDE_LEVEL equ 6
 CFG_DOUBLE_LEVEL     equ 4       ; the double shot's bubble from this level
 ; The fish: before this level every fish is the round one; from it, one
 ; fish in four is the piranha (boom.asm, fish_kind_pick).
@@ -204,6 +209,7 @@ CFG_POWER_SPEED      equ 160     ; it sinks this many 256ths of a pixel a 1/50
                                  ; second: 160 is 31 pixels a second, slower than
                                  ; the diver's 50, so he can catch one up (1-255)
 CFG_LIVES_MAX        equ 5       ; hearts on row 1 at most (up to 9)
+CFG_HEART_INK        equ RED     ; a falling heart's ink (row 1's stay white)
 CFG_DOUBLE_TIME      equ 30      ; seconds of the double shot
 ; The wait between launches while the double shot lasts, in 1/50
 ; seconds (CFG_FIRE_COOLDOWN's, which is longer than most torpedoes
@@ -367,6 +373,13 @@ CFG_BOMB_WAVE_SPEED  equ 2
 ; about a fifth faster across.
 CFG_FISH_WAVE_AMP    equ 12
 CFG_FISH_WAVE_SPEED  equ 3
+; A straight fish swims at pixel row 76 up to the level before this one.
+; From it, each new straight fish starts on one of _SLOTS lines, 10
+; pixels apart from row 88 up, never the last fish's line, so no one
+; torpedo line hits two fish in a row (boom.asm, fish_pick_y). Atlantis
+; has straight fish on levels 1, 3, 5 and 7, so 5 varies 5 and 7.
+CFG_FISH_VARY_LEVEL  equ 5
+CFG_FISH_VARY_SLOTS  equ 7       ; 2 to 8; 7 reaches up to row 28
 
 ; How long the "LEVEL n" banner stays up, in 1/50 seconds. 100 is two
 ; seconds. From level 4 the level's code is under it, and it stays up

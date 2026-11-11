@@ -1217,6 +1217,11 @@ data_start:
     IFDEF DOUBLE_SHOT
         DOUBLE_DATA             ; the double shot's patch tables (torpedo.asm)
     ENDIF
+    IFDEF POWERUPS
+    IFNDEF TRIGON
+        HEART_CODE              ; the falling heart's red cells (missile.asm)
+    ENDIF
+    ENDIF
     IFDEF ENEMY_DIVER
         ED_DATA                 ; the enemy diver's tables (src/trigon/ediver.asm)
     ENDIF
