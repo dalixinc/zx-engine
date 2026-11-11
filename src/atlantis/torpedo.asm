@@ -114,7 +114,6 @@ torpedo_fire:
         call nz,double_hand     ; Z: the running one went to the second slot
     ENDIF
         ret nz
-    IFNDEF TRIGON
         ; The last one left (or hit) this step and is still drawn: its
         ; restore, next step, reads torp_r0/r1. A launch now would
         ; write the new rows there, and its bytes at the edge were left
@@ -122,7 +121,6 @@ torpedo_fire:
         ld a,(torp_vn)
         or a
         ret nz
-    ENDIF
 
         ld a,(diver_facing)
         ld (torp_dir),a
