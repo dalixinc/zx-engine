@@ -241,10 +241,10 @@ CFG_SUCTION_ODDS     equ 11      ; about one turn in 23: the escape, twice as
 CFG_SHOVE_ODDS       equ 5       ; common as the throw (one in 51), which kills
 CFG_NUKE_ODDS        equ 8
 ; Setting off the nuke shows NUKE across the middle in the level
-; banner's block letters (special.asm, nuke_word): their colour (YELLOW
-; is the level banner's, RED the alternative), and for how long in
+; banner's block letters (special.asm, nuke_word): their colour (RED, which
+; stands out; YELLOW is the level banner's), and for how long in
 ; 1/50 seconds (75 is 1.5 seconds; the quake's time is added).
-CFG_NUKE_WORD_PAPER  equ YELLOW
+CFG_NUKE_WORD_PAPER  equ RED
 CFG_NUKE_WORD_TIME   equ 75
 ; How long the pull or the throw lasts, in 1/50 seconds, and how far
 ; they move each 1/50 second, in pixels.
