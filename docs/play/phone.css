@@ -1,0 +1,270 @@
+/* On-screen touch controls for the GitHub Pages player.
+   All rules are under html.phone-touch, which phone.js adds only on a
+   coarse-pointer / touch device. A desktop mouse sees none of this. */
+
+html.phone-touch {
+  --phone-bg: #0b0e14;
+  --phone-fg: #e8e8e8;
+  --phone-dim: #8b93a2;
+  --phone-accent: #ffd800;
+  --phone-btn: #1c2230;
+  --phone-btn-hi: #2a3348;
+  --phone-btn-on: #3d5a9a;
+  --phone-fire: #b42318;
+  --phone-fire-on: #e03728;
+  --phone-pad: #1a2030;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.phone-touch body[data-game="trigon"] {
+  --phone-accent: #ff3030;
+  --phone-btn-on: #8a2020;
+}
+
+html.phone-touch,
+html.phone-touch body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  height: 100dvh;
+  background: var(--phone-bg);
+  color: var(--phone-fg);
+  font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html.phone-touch body {
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+}
+
+html.phone-touch main {
+  display: none;
+}
+
+html.phone-touch a {
+  color: var(--phone-accent);
+}
+
+#phone-app {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 1fr;
+}
+
+#phone-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  min-height: 40px;
+}
+
+#phone-bar h1 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0.18em;
+  color: var(--phone-accent);
+  text-align: left;
+}
+
+#phone-bar .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+#phone-bar a {
+  color: var(--phone-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
+#playfield {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr auto;
+  min-height: 0;
+  padding: 0 8px;
+  gap: 8px;
+}
+
+#frame {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  border-radius: 4px;
+  overflow: hidden;
+  touch-action: none;
+}
+
+html.phone-touch #stage {
+  position: relative;
+  margin: 0;
+  width: 320px;
+  height: 240px;
+  transform-origin: center center;
+  background: #000;
+}
+
+html.phone-touch #play {
+  z-index: 3;
+  touch-action: manipulation;
+}
+
+#controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 6px;
+}
+
+.pad-wrap,
+.fire-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#dpad {
+  position: relative;
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #222838 0%, var(--phone-pad) 70%);
+  border: 2px solid #323a4d;
+  touch-action: none;
+}
+
+#stick {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  background: #3a4560;
+  border: 2px solid #6a758c;
+  pointer-events: none;
+  transition: background 0.05s;
+}
+
+#dpad.on #stick {
+  background: var(--phone-btn-on);
+  border-color: #9eb0d8;
+}
+
+#fire {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 3px solid #ff8a80;
+  background: var(--phone-fire);
+  color: #fff;
+  font: 700 16px/1 system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  touch-action: none;
+}
+
+#fire.on {
+  background: var(--phone-fire-on);
+  transform: scale(0.96);
+}
+
+#phone-bar .actions button,
+#keys-panel button {
+  appearance: none;
+  border: 1px solid #3a4254;
+  background: var(--phone-btn);
+  color: var(--phone-fg);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: 13px/1 system-ui, sans-serif;
+  min-height: 36px;
+}
+
+#phone-bar .actions button.on,
+#keys-panel button.on {
+  background: var(--phone-btn-on);
+}
+
+#phone-bar .actions button:active,
+#keys-panel button:active {
+  background: var(--phone-btn-hi);
+}
+
+#keys-panel {
+  display: none;
+  padding: 8px 8px 10px;
+  background: #0e121a;
+  border-top: 1px solid #262c38;
+  touch-action: manipulation;
+}
+
+#keys-panel.open {
+  display: block;
+}
+
+#keys-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+#keys-grid button {
+  min-height: 36px;
+  padding: 6px 0;
+}
+
+#keys-grid .wide {
+  grid-column: span 2;
+}
+
+.phone-hint {
+  display: none;
+  text-align: center;
+  color: var(--phone-dim);
+  font-size: 12px;
+  padding: 0 8px 4px;
+}
+
+/* Landscape: D-pad and Fire flank the picture. */
+@media (orientation: landscape) and (max-height: 560px) {
+  #phone-bar { min-height: 32px; padding: 2px 8px; }
+  #phone-bar h1 { font-size: 14px; }
+  #playfield {
+    grid-template-columns: 168px 1fr 168px;
+    grid-template-rows: 1fr;
+    align-items: center;
+    padding: 0 4px;
+  }
+  #controls { display: contents; }
+  .pad-wrap { grid-column: 1; grid-row: 1; }
+  #frame { grid-column: 2; grid-row: 1; }
+  .fire-wrap { grid-column: 3; grid-row: 1; }
+  #dpad { width: 140px; height: 140px; }
+  #fire { width: 96px; height: 96px; }
+  #phone-bar .actions button { min-height: 32px; padding: 6px 8px; font-size: 12px; }
+}
+
+@media (orientation: portrait) {
+  html.phone-touch .phone-hint { display: block; }
+}

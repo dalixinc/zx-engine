@@ -146,11 +146,13 @@ Windows PowerShell); both rewrite only those two addresses, so running
   installing a test browser was blocked in this session. JSSpeccy 3 is
   written for current browsers, so it should work. Please open the page
   in Firefox once it's live and check that the click gives sound.
-- **Phones:** **not playable.** At 1x the page fits a phone and the
-  menu runs. But JSSpeccy 3 has no on-screen keyboard, and the game
-  needs keys, so all a phone can do is watch the menu. A tablet with a
-  Bluetooth keyboard should work. Touch controls would be a separate
-  job.
+- **Phones:** on a coarse-pointer or touch device the page shows an
+  on-screen D-pad, a holdable Fire button, Start (sends `1`), Skip,
+  and a letters pad for typing a code. You can also drag on the
+  picture to swim. Desktop and keyboard play are unchanged: the
+  controls are not shown when the primary pointer is a mouse. Add the
+  page to the Home Screen for a full-screen shortcut. Tested in a
+  mobile viewport on a desktop browser, not yet on a real phone.
 
 ## 5. Nothing in the game changed
 
@@ -191,9 +193,11 @@ A few things to know about the site:
 | File | What |
 |---|---|
 | `docs/play/index.html` | the page |
+| `docs/play/phone.js`, `docs/play/phone.css` | on-screen touch controls, only on a phone |
+| `docs/play/manifest.webmanifest`, `docs/play/icons/` | Add to Home Screen, and the I7 icon |
 | `docs/play/atlantis.sna` | what the page plays (`make web`) |
 | `docs/play/atlantis.tap` | the tape, to download (`make web`) |
-| `docs/play/trigon/` | Trigon's page, `trigon.sna` and `trigon.tap` (`make web`) |
+| `docs/play/trigon/` | Trigon's page, `trigon.sna`, `trigon.tap` and its own manifest (`make web`) |
 | `tools/webstamp.sh`, `tools/webstamp.ps1` | stamp each file's hash into the page's addresses (`make web`, `build.bat web`) |
 | `docs/play/jsspeccy/` | JSSpeccy 3.2, with `COPYING` and `SOURCE.md` |
 | `docs/index.html` | sends the site's root to `play/` |
