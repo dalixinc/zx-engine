@@ -50,9 +50,6 @@ WHEEL_KIND_WAVE  equ 1          ; straight left, on a wave (level.asm)
 WHEEL_KIND_HOME  equ 2          ; the drift, hunting the diver's depth (level.asm)
         ASSERT WHEEL_KIND_DRIFT == MOVE_BOB && WHEEL_KIND_WAVE == MOVE_WAVE
         ASSERT WHEEL_KIND_HOME == MOVE_HOME
-    IFDEF TRIGON
-        ASSERT MOVE_ZIG == 3 && MOVE_STOP == 4 && MOVE_ZING == 5, "update_wheel's kinds 3 to 5"
-    ENDIF
 
 ; --- Tuning. Names are the knobs. -------------------------------------------
 ; One pixel a frame, the same speed as the diver, so this first bomb is
@@ -128,16 +125,6 @@ update_wheel:
         jp z,wheel_wave
         dec a
         jp z,wheel_home
-    IFDEF TRIGON
-      IFNDEF B2_PASS            ; the first bomb's only (src/trigon/moves.asm)
-        dec a
-        jp z,wheel_zig          ; level.asm
-        dec a
-        jp z,wheel_ss
-        dec a
-        jp z,wheel_zing
-      ENDIF
-    ENDIF
         ; No other kind: LEVEL_ROW asserts the column, so this is never
         ; reached, and a stray value cannot land in other code.
         ret
@@ -553,9 +540,6 @@ wheel_type:
         ld (wheel_kind),a
         ld a,(level_hunt)       ; MOVE_HOME's strength (0 for the others)
         ld (wheel_hunt),a
-    IFDEF TRIGON
-        call mv_pick            ; or, at random, the level's second (moves.asm)
-    ENDIF
         ld a,1
         ld (wheel_hunting),a    ; a new bomb starts right of the diver
         xor a

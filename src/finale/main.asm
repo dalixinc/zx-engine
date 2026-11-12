@@ -125,20 +125,11 @@
     IFNDEF SOAK                 ; whose script presses 1 to start
         DEFINE CODE_GATE        ; Trigon's menu asks for its code first (gate.asm)
     ENDIF
-    IFNDEF NO_WHEEL
-        DEFINE TWO_BOMBS        ; a second bomb in the fish's place (twobomb.asm)
-    ENDIF
-        DEFINE SHARED_BOMB      ; one set of bomb copies for both kinds (twobomb.asm)
     IFDEF POWERUPS
         DEFINE LANCEGUN         ; the Lance laser, from CFG_LANCE_LEVEL (lance.asm)
     ENDIF
     IFDEF TYPEWRITER
         DEFINE TRIGON_END       ; the end: the Finale code (ending.asm)
-    ENDIF
-    IFNDEF SOAK
-    IFNDEF MEASURE              ; which measures a fish that always swims
-        DEFINE FISH_LEAVES      ; the fish crosses once, then goes (twobomb.asm)
-    ENDIF
     ENDIF
     ENDIF
 
@@ -1233,8 +1224,6 @@ data_start:
         ; code is; and the shared bomb copies' rebuild. The ending and
         ; the level tables are in the hot code (src/trigon/theme.asm).
         TP_DATA                 ; the paint's box helpers (src/trigon/theme.asm)
-        INCLUDE "moves.asm"  ; the bomb's new movements
-        INCLUDE "twobomb.asm"
         INCLUDE "lance.asm"
     ENDIF
     IFDEF CITY_SHOW

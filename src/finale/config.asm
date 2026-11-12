@@ -305,7 +305,7 @@ CFG_FALL_NUKE_INK    equ YELLOW
 CFG_LIVES_INK        equ RED
 CFG_HELD_INK         equ 1
 
-CFG_LANCE_LEVEL      equ 4
+CFG_LANCE_LEVEL      equ 3
 CFG_LANCE_FULL       equ 96      ; about 2 seconds for the whole width
 CFG_LANCE_MIN        equ 24      ; about half a second: 8 bytes, 64 pixels
 CFG_LANCE_TIME       equ 8
@@ -393,74 +393,19 @@ MOVE_BOB            equ 0       ; bomb: the small bob
 MOVE_STRAIGHT       equ 0       ; fish: straight across
 MOVE_WAVE           equ 1       ; either: the wave
 MOVE_HOME           equ 2       ; bomb: the bob, drifting to the diver's depth
-MOVE_ZIG            equ 3       ; bomb: straight diagonals between two lines (moves.asm)
-MOVE_STOP           equ 4       ; bomb: stop-start, dashing and stopping dead
-MOVE_ZING           equ 5       ; bomb: the zinger, cruising, then darting at him
-
-; The new movements (src/trigon/moves.asm), the first bomb's only. The
-; zigzag runs along the level's wave at _ZIG_SPEED (the wave's own is 2),
-; too fast to follow, so it goes in straight diagonals. Stop-start, in
-; time with the clock, dashes for _SS_BEAT 1/50 seconds at twice its
-; pace, then stops dead for as long (a power of two). The zinger darts
-; once it is _ZING_DIST pixels right of the diver. A bomb that takes
-; MOVE_HOME as its level's second movement (CFG_MOVES) without a hunt
-; of its own hunts at CFG_ALT_HUNT (1 to 128).
-CFG_ZIG_SPEED       equ 6
-CFG_SS_BEAT         equ 64
-CFG_ZING_DIST       equ 64
-CFG_ALT_HUNT        equ 96
-        ASSERT CFG_ZIG_SPEED >= 1 && CFG_ZIG_SPEED <= 32
-        ASSERT CFG_SS_BEAT >= 4 && CFG_SS_BEAT <= 128 && (CFG_SS_BEAT & (CFG_SS_BEAT - 1)) == 0
-        ASSERT CFG_ZING_DIST >= 8 && CFG_ALT_HUNT >= 1 && CFG_ALT_HUNT <= 128
-
-; A level's movements, a row a level from CFG_MV_FIRST, in order; the
-; levels before it play as the old game; past the last row, the last
-; row again (moves.asm, mv_level).
-;   alt      a second movement, which each bomb takes instead of its own
-;            half the time, at random; MV_NONE: always its own (the
-;            second bomb takes only MOVE_BOB, MOVE_WAVE or MOVE_HOME)
-;   amp      the wave's height, and the zigzag's (4 to 70, MV_AMP_MAX: 70 swings
-;            from the score line to the seabed; the old 16)
-;   speed    how far along the wave each 1/50 second (the old 2)
-;   flags    MV_RANDOM: a waving bomb starts anywhere on its wave
-;            MV_HALF: the wave at half its speed (speed 1 becomes a
-;            half), so a tall wave stays smooth: height x speed (halved)
-;            40 or less is a smooth curve, more runs straight
-; Up or down, a bomb never moves more than a pixel a 1/50 second.
-CFG_MV_FIRST        equ 11
-MV_NONE             equ 255
-MV_RANDOM           equ 1
-MV_HALF             equ 2       ; the wave at half its speed: tall and smooth
-        MACRO CFG_MOVES
-        ;       alt        amp speed flags
-        MV_ROW  MOVE_WAVE, 24, 1,    MV_RANDOM           ; 11: zigzag or wave
-        MV_ROW  MOVE_HOME, 16, 2,    0                   ; 12: stop-start or hunting
-        MV_ROW  MOVE_ZIG,  40, 1,    MV_RANDOM           ; 13: the swell or zigzag
-        MV_ROW  MOVE_STOP, 20, 2,    MV_RANDOM           ; 14: hunting or stop-start
-        MV_ROW  MOVE_WAVE, 32, 1,    MV_RANDOM           ; 15: zinger or wave
-        MV_ROW  MOVE_ZING, 32, 1,    0                   ; 16: zigzag or zinger
-        MV_ROW  MOVE_ZIG,  40, 1,    MV_RANDOM           ; 17: the swell or zigzag
-        MV_ROW  MOVE_ZING, 20, 2,    0                   ; 18: stop-start or zinger
-        MV_ROW  MOVE_ZIG,  32, 1,    0                   ; 19: zinger or zigzag
-        MV_ROW  MOVE_WAVE, 68, 1,    MV_RANDOM | MV_HALF ; 20: zinger or the full-height swing
-        ENDM
 BORDER_BEAT         equ $FF     ; the heartbeat's round of colours
 CFG_L2_INK          equ RED | SEA
 CFG_L3_INK          equ MAGENTA | SEA
 CFG_GREEN_INK       equ GREEN | SEA
 CFG_WHITE_INK       equ WHITE | SEA
 
-; Three levels for now, each a step past Atlantis's level 1, and each
-; its own kind of fight (with TB_TABLE below): level 1 is the fish's,
-; the pulsar on a wave with a waving fish and a pair of bombs now and
-; then; level 2 is the pairs', spinning wheels that come two at a time
-; more often than not, one hunting and one on the wave; level 3 is the
-; hunters', faster wheels hunting harder, a pair less often but both
-; hunting, and the homing missiles (CFG_MSL_HOME_LEVEL). The fish
-; crosses once and goes (FISH_LEAVES), so the waves keep coming.
+; Finale's levels: one bomb, the pulsar, on the bob, the wave or
+; hunting, a little faster each level. Placeholders: chunk 4 of the
+; brief tunes them with the enemy divers. The ending follows the last
+; (CFG_ENDING_LEVEL). The fish's columns stay for now; Finale has no
+; fish, so nothing reads them.
 ; The soak plays level 1 and its frame numbers expect Atlantis's level 1
-; (score.asm asserts it), so a soak build has that row first, in Trigon's
-; colours; the game's own level 1 is a harder one.
+; (score.asm asserts it), so a soak build has that row first.
     IFNDEF SOAK
         DEFINE LEVEL1_FREE
     ENDIF
@@ -469,92 +414,16 @@ CFG_WHITE_INK       equ WHITE | SEA
         LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P, CFG_WHEEL_INK, MOVE_BOB, 0, MOVE_STRAIGHT, 0, BLUE, 1, 2, 10
     ENDIF
         ;          points  gap min  gap max  haste  bomb    ink            bmove      hunt fmove          fspeed border        fish bomb missile
-        LEVEL_ROW  300,    60,      150,     32,    BOMB_P, CFG_WHEEL_INK, MOVE_WAVE, 0,   MOVE_WAVE,     48,    BLUE,         1,   2,   10
-        LEVEL_ROW  450,    50,      130,     72,    BOMB_W, CFG_L2_INK,    MOVE_HOME, 64,  MOVE_STRAIGHT, 0,     RED,          1,   3,   10
-        LEVEL_ROW  600,    40,      110,     120,   BOMB_W, CFG_L3_INK,    MOVE_HOME, 112, MOVE_WAVE,     64,    MAGENTA,      1,   3,   10
-        ; 4, the Lance's: the pulsar back, quick, on the wave, and pairs
-        ; most of the time, to line up on the beam
-        LEVEL_ROW  700,    45,      120,     96,    BOMB_P, CFG_GREEN_INK, MOVE_WAVE, 0,   MOVE_WAVE,     56,    GREEN,        1,   2,   10
-        ; 5, the hunters back: wheels hunting, faster, a straight fish
-        LEVEL_ROW  800,    40,      110,     128,   BOMB_W, CFG_L2_INK,    MOVE_HOME, 96,  MOVE_STRAIGHT, 0,     CYAN,         1,   3,   10
-        ; 6, the swarm: nearly always pairs, the wheel on the wave
-        LEVEL_ROW  900,    35,      100,     144,   BOMB_W, CFG_L3_INK,    MOVE_WAVE, 0,   MOVE_WAVE,     64,    YELLOW,       1,   3,   10
-        ; 7, the fish's revenge: few pairs, but a fast fish worth 2
-        LEVEL_ROW  1000,   40,      100,     104,   BOMB_P, CFG_WHITE_INK, MOVE_HOME, 80,  MOVE_WAVE,     80,    WHITE,        2,   2,   10
-        ; 8, double hunters: both bombs of a pair hunt, harder
-        LEVEL_ROW  1100,   35,      90,      160,   BOMB_W, CFG_GREEN_INK, MOVE_HOME, 128, MOVE_STRAIGHT, 0,     RED,          1,   3,   10
-        ; 9, the storm: pairs almost always, missiles close together
-        LEVEL_ROW  1200,   30,      80,      176,   BOMB_W, CFG_L2_INK,    MOVE_WAVE, 0,   MOVE_WAVE,     72,    MAGENTA,      1,   3,   10
-        ; 10, Trigon's guard, the last (CFG_ENDING_LEVEL): the
-        ; fastest wheels, hunting hardest, pairs nearly always
-        LEVEL_ROW  1400,   30,      75,      192,   BOMB_W, CFG_WHITE_INK, MOVE_HOME, 128, MOVE_WAVE,     80,    BLUE,         1,   3,   10
-        ; 11 to 20: the new movements (each with a second, CFG_MOVES),
-        ; faster, closer missiles, more pairs. The zinger from 15. Not
-        ; in the soak, which plays the first levels only: its own code
-        ; follows the hot code, and has no room for them.
-    IFNDEF SOAK
-        ; 11, the zigzag (or the wave)
-        LEVEL_ROW  1500,   30,      75,      196,   BOMB_W, CFG_GREEN_INK, MOVE_ZIG,  0,   MOVE_WAVE,     80,    GREEN,        2,   3,   10
-        ; 12, stop-start (or hunting)
-        LEVEL_ROW  1600,   30,      70,      200,   BOMB_W, CFG_L2_INK,    MOVE_STOP, 0,   MOVE_STRAIGHT, 0,     CYAN,         1,   3,   10
-        ; 13, the pulsar's tall swell (or the zigzag)
-        LEVEL_ROW  1700,   28,      70,      204,   BOMB_P, CFG_WHITE_INK, MOVE_WAVE, 0,   MOVE_WAVE,     80,    YELLOW,       2,   2,   10
-        ; 14, hunting (or stop-start)
-        LEVEL_ROW  1800,   28,      65,      208,   BOMB_W, CFG_L3_INK,    MOVE_HOME, 112, MOVE_STRAIGHT, 0,     WHITE,        1,   3,   10
-        ; 15, the zinger (or the wave)
-        LEVEL_ROW  1900,   26,      65,      212,   BOMB_W, CFG_GREEN_INK, MOVE_ZING, 0,   MOVE_WAVE,     80,    RED,          2,   3,   10
-        ; 16, the zigzag (or the zinger)
-        LEVEL_ROW  2000,   26,      60,      216,   BOMB_W, CFG_L2_INK,    MOVE_ZIG,  0,   MOVE_STRAIGHT, 0,     MAGENTA,      1,   3,   10
-        ; 17, the tall swell (or the zigzag)
-        LEVEL_ROW  2100,   24,      60,      220,   BOMB_W, CFG_WHITE_INK, MOVE_WAVE, 0,   MOVE_WAVE,     80,    BLUE,         2,   3,   10
-        ; 18, stop-start (or the zinger)
-        LEVEL_ROW  2200,   24,      55,      224,   BOMB_W, CFG_L3_INK,    MOVE_STOP, 0,   MOVE_STRAIGHT, 0,     GREEN,        1,   3,   10
-        ; 19, the zinger (or the zigzag)
-        LEVEL_ROW  2300,   22,      50,      232,   BOMB_W, CFG_GREEN_INK, MOVE_ZING, 0,   MOVE_WAVE,     80,    CYAN,         2,   3,   10
-        ; 20, Trigon's last guard (CFG_ENDING_LEVEL): the zinger, or the
-        ; full-height swing, slow and smooth; pairs nearly always
-        LEVEL_ROW  2400,   20,      50,      240,   BOMB_W, CFG_WHITE_INK, MOVE_ZING, 0,   MOVE_STRAIGHT, 0,     RED,          1,   3,   10
-    ENDIF
+        LEVEL_ROW  300,    60,      150,     32,    BOMB_P, CFG_WHEEL_INK, MOVE_BOB,  0,   MOVE_STRAIGHT, 0,     BLUE,         1,   2,   10
+        LEVEL_ROW  450,    55,      140,     64,    BOMB_P, CFG_L2_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     RED,          1,   2,   10
+        LEVEL_ROW  600,    50,      130,     96,    BOMB_P, CFG_L3_INK,    MOVE_HOME, 64,  MOVE_STRAIGHT, 0,     MAGENTA,      1,   2,   10
+        LEVEL_ROW  750,    45,      120,     112,   BOMB_P, CFG_GREEN_INK, MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     GREEN,        1,   2,   10
+        LEVEL_ROW  900,    40,      110,     128,   BOMB_P, CFG_L2_INK,    MOVE_HOME, 96,  MOVE_STRAIGHT, 0,     CYAN,         1,   2,   10
+        LEVEL_ROW  1050,   35,      100,     144,   BOMB_P, CFG_WHITE_INK, MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     YELLOW,       1,   2,   10
+        LEVEL_ROW  1200,   30,      90,      160,   BOMB_P, CFG_L3_INK,    MOVE_HOME, 128, MOVE_STRAIGHT, 0,     WHITE,        1,   2,   10
+        LEVEL_ROW  1300,   30,      80,      176,   BOMB_P, CFG_L2_INK,    MOVE_HOME, 128, MOVE_STRAIGHT, 0,     RED,          1,   2,   10
         ENDM
 
-; --- Two bombs (src/trigon/twobomb.asm) -------------------------------------------
-; A wave is a bomb and a fish, or two bombs of the level's type. Each
-; time a new fish is due, a second bomb comes instead this many times in
-; 256 (0: never), and the fish waits until it has gone. The second bomb
-; has its own colour and movement (the first keeps the level's, above),
-; so the two cross the water differently: one bobbing straight across
-; while the other swoops on the wave, or hunts. One row a level, in
-; order; past the last row, the last row again.
-;   share    two-bomb waves in 256
-;   ink      the second bomb's cell colour, an ink on the sea
-;   bmove    its movement: MOVE_BOB, MOVE_WAVE or MOVE_HOME
-;   hunt     how hard MOVE_HOME hunts (1 to 128), 0 for the others
-        MACRO TB_TABLE
-    IFDEF SOAK
-        TB_ROW  0,      CFG_WHEEL_INK,  MOVE_BOB,  0    ; the soak's level 1: no second bomb
-    ENDIF
-        ;       share   ink             bmove      hunt
-        TB_ROW  40,     RED | SEA,      MOVE_BOB,  0    ; level 1: the fish's; a pair now and then (1 in 6)
-        TB_ROW  176,    MAGENTA | SEA,  MOVE_WAVE, 0    ; level 2: pairs (about 2 in 3), one hunts, one waves
-        TB_ROW  112,    RED | SEA,      MOVE_HOME, 64   ; level 3: fewer pairs (about 3 in 7), both hunting
-        TB_ROW  176,    MAGENTA | SEA,  MOVE_BOB,  0    ; 4: pairs (2 in 3), one bobbing straight: the Lance's line
-        TB_ROW  96,     GREEN | SEA,    MOVE_WAVE, 0    ; 5: some pairs, one waving among the hunters
-        TB_ROW  224,    RED | SEA,      MOVE_HOME, 64   ; 6: nearly always pairs, one hunting
-        TB_ROW  48,     MAGENTA | SEA,  MOVE_BOB,  0    ; 7: few pairs: the fish's level
-        TB_ROW  160,    RED | SEA,      MOVE_HOME, 112  ; 8: pairs, both hunting hard
-        TB_ROW  208,    WHITE | SEA,    MOVE_HOME, 96   ; 9: pairs almost always
-        TB_ROW  224,    MAGENTA | SEA,  MOVE_HOME, 128  ; 10: pairs nearly always, both hunting hardest
-        TB_ROW  160,    RED | SEA,      MOVE_WAVE, 0    ; 11
-        TB_ROW  176,    MAGENTA | SEA,  MOVE_BOB,  0    ; 12
-        TB_ROW  192,    RED | SEA,      MOVE_HOME, 112  ; 13
-        TB_ROW  200,    MAGENTA | SEA,  MOVE_WAVE, 0    ; 14
-        TB_ROW  176,    WHITE | SEA,    MOVE_BOB,  0    ; 15
-        TB_ROW  208,    RED | SEA,      MOVE_HOME, 112  ; 16
-        TB_ROW  208,    MAGENTA | SEA,  MOVE_WAVE, 0    ; 17
-        TB_ROW  224,    RED | SEA,      MOVE_HOME, 120  ; 18
-        TB_ROW  232,    WHITE | SEA,    MOVE_HOME, 128  ; 19
-        TB_ROW  240,    MAGENTA | SEA,  MOVE_HOME, 128  ; 20 and on
-        ENDM
 
 ; The waves (MOVE_WAVE). A wave is a sine, AMP pixels above the middle
 ; and AMP below. SPEED is how far along it each 1/50 second goes: one
@@ -583,40 +452,13 @@ CFG_BANNER_CODE_TIME equ 200
 ; Levels with a code (codes.asm): 2 to this. Trigon's codes have their
 ; own keys, so no Atlantis code opens a Trigon level. Level 1's is the
 ; Trigon code (GATE_WORD). Up to 31.
-CFG_CODE_LEVELS      equ 20
-; The last level (20): finishing it ends the game with the Finale code
+CFG_CODE_LEVELS      equ 8
+; The last level (8): finishing it ends the game with the Finale code
 ; (src/trigon/ending.asm). Levels past the table repeat its last row.
-CFG_ENDING_LEVEL     equ 20
+CFG_ENDING_LEVEL     equ 8
 ; 1: the testers' switch (notes/CHEATS.md) also makes the diver unhurt,
 ; to play the levels through. 0 leaves it out of the build altogether.
 CFG_GOD_MODE         equ 1
-; The diver's belt, a level at a time, 1 to CFG_ENDING_LEVEL: the ink his
-; cells are painted (src/trigon/theme.asm). WHITE is the sea's own, so
-; nothing is painted. BELT_DIM is the ink without BRIGHT; WHITE | FLASH
-; flashes. A belt only ever goes up: a new one pops up "BELT" beside him
-; in its colour (tp_belt_pop).
-        MACRO CFG_BELTS
-        BELT WHITE
-        BELT WHITE
-        BELT YELLOW
-        BELT YELLOW
-        BELT CYAN
-        BELT CYAN
-        BELT GREEN
-        BELT GREEN
-        BELT MAGENTA            ; purple
-        BELT MAGENTA
-        BELT BLUE               ; 11, 12
-        BELT BLUE
-        BELT RED                ; 13, 14
-        BELT RED
-        BELT_DIM YELLOW         ; 15 to 18: brown, the Spectrum's dark yellow
-        BELT_DIM YELLOW
-        BELT_DIM YELLOW
-        BELT_DIM YELLOW
-        BELT WHITE | FLASH      ; 19, 20: black, white flashing
-        BELT WHITE | FLASH
-        ENDM
 
 ; The beeper (sound.asm). Each explosion is white noise, played in
 ; short bursts in the spare time at the end of each step, so it never

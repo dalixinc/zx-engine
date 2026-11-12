@@ -55,11 +55,7 @@ level_rows = 0
         ASSERT haste >= 0 && haste <= 255
         ASSERT bomb == BOMB_P || bomb == BOMB_W
         ASSERT ink >= 0 && ink <= 255
-    IFDEF TRIGON
-        ASSERT bmove == MOVE_BOB || bmove == MOVE_WAVE || bmove == MOVE_HOME || bmove == MOVE_ZIG || bmove == MOVE_STOP || bmove == MOVE_ZING
-    ELSE
         ASSERT bmove == MOVE_BOB || bmove == MOVE_WAVE || bmove == MOVE_HOME
-    ENDIF
         ; At most a pixel a 1/50 second, half the diver's speed: he can
         ; always swim clear, and the bomb's colour keeps its cheap path.
         ASSERT bmove != MOVE_HOME || (hunt >= 1 && hunt <= 128), "a hunter's hunt is 1 to 128"
@@ -342,8 +338,7 @@ level_up:
     ENDIF
     IFDEF TRIGON
     IFDEF POWERUPS
-        call tp_level_new       ; the action frozen under the banner, and a
-                                ; new belt's "+BELT" for when it goes (theme.asm)
+        call tp_level_new       ; the action frozen under the banner (theme.asm)
     ENDIF
     ENDIF
     IFDEF LANCEGUN
@@ -610,16 +605,7 @@ banner_show:
         srl a
         ld (banner_col),a
     IFDEF TRIGON
-        ; Trigon: the blocks in his belt's colour (tp_belt, theme.asm,
-        ; set by level_style just before), white for a white belt.
-        ld a,(tp_belt)
-        and 7
-        jr nz,.belt
-        ld a,WHITE
-.belt:  rlca
-        rlca
-        rlca                    ; the paper
-        or BRIGHT | BLUE
+        ld a,(WHITE << 3) | BRIGHT | BLUE ; Finale: white blocks
     ELSE
         ld a,BANNER_ATTR
     ENDIF
@@ -657,7 +643,7 @@ banner_tick:
         ret c
     IFDEF TRIGON
     IFDEF POWERUPS
-        call tp_banner_end      ; the action again, and a new belt's "+BELT" (theme.asm)
+        call tp_banner_end      ; the action again (theme.asm)
     ENDIF
     ENDIF
     IFDEF TEASER

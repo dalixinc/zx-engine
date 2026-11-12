@@ -73,14 +73,6 @@ bss_ptr = bss_ptr + (size?)
         BSS diver_bg, BG_DATA + DIVER_BYTES * DIVER_HEIGHT
         BSS boom_bg, BOOM_ROWS * 2
     IFDEF TRIGON
-        ; the diver's belt (src/trigon/theme.asm)
-        BSS tp_belt, 1                  ; his belt's colour, 0 = white (nothing painted)
-        BSS tp_d_on, 1                  ; not 0 = tp_d_at's cells are painted
-        BSS tp_d_at, 2                  ; L column, H row
-        BSS tp_d_size, 2                ; C columns, B rows
-        BSS tp_new_don, 1
-        BSS tp_new_dat, 2
-        BSS tp_new_dsize, 2
         ; the fish's, the missile's and the bombs' paint (src/trigon/theme.asm).
         ; What is painted now (the soak reads tp_fish_on and tp_fish_at):
         BSS tp_fish_on, 1               ; not 0 = tp_fish_at's cells are painted
@@ -103,13 +95,6 @@ bss_ptr = bss_ptr + (size?)
         BSS tp_new_mon, 1
         BSS tp_new_mat, 2
         BSS tp_new_msize, 2
-      IFDEF POWERUPS
-        ; the belt's pop-up (tp_belt_pop, theme.asm)
-        BSS tp_bdue, 1                  ; a new belt's colour, to pop up when the banner goes
-        BSS tp_pbelt, 1                 ; not 0: the next pop-up is "BELT", in this colour
-        BSS tp_pcol, 1                  ; the colour its cells were painted
-        BSS tp_pcell, 2                 ; their first cell's attribute, high byte 0 = none
-      ENDIF
     ENDIF
     IFDEF POWERUPS
         BSS pop_glyph, 4                ; a power's points: the pop-up's four glyphs (boom.asm)

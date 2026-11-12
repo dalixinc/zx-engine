@@ -249,10 +249,8 @@ wheel_bob:
         WAVE_8 amp, -90, -85, -81, -76, -71, -65, -60, -54
         WAVE_8 amp, -49, -43, -37, -31, -25, -19, -12, -6
         ENDM
-    IFNDEF TRIGON
 bomb_wave_tab:  WAVE_TABLE CFG_BOMB_WAVE_AMP
 fish_wave_tab:  WAVE_TABLE CFG_FISH_WAVE_AMP
-    ENDIF                       ; Trigon makes its own (src/trigon/moves.asm)
 
 ; Eight heights for the middle of the bob. Entry 0 is the first bomb,
 ; before any random number: deep enough to meet the diver on the way

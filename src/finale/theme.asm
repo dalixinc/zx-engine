@@ -204,8 +204,7 @@ trigon_paint:
 .mdiff: set 1,e
         ; The bomb's painted box: when it moves, it may have put water
         ; on a cell of ours, or left one we passed over.
-.bomb:  call tp_diver            ; his belt's cells, on their own (TP_DATA)
-        ld hl,(wheel_pc0)       ; and wheel_pc1
+.bomb:  ld hl,(wheel_pc0)       ; and wheel_pc1
         ld bc,(tp_wpc)
         or a
         sbc hl,bc
@@ -299,128 +298,17 @@ tp_fish_new:
 ; tp_box and tp_cells are in the data block (TP_DATA, main.asm), where
 ; Trigon has room and the code is as fast: a byte there costs the tape
 ; one byte, a byte of hot code two.
-; A belt's byte: its ink on the sea, or 0 for white (CFG_BELTS).
-        MACRO BELT ink?
-    IF ink? == WHITE
-        db 0                    ; the sea's own ink: nothing painted
-    ELSE
-        db ink? | SEA
-    ENDIF
-        ENDM
-; The same, its ink not bright (the sea's black is the same either way).
-        MACRO BELT_DIM ink?
-        db ink? | (SEA & ~BRIGHT)
-        ENDM
-
-        COLD                    ; once a level
-; tb_level, each level: his belt (CFG_BELTS), and everything painted
-; again, so a new ink shows at once. Corrupts: AF, DE, HL
-tp_belt_level:
-        ld a,(level_n)
-        cp CFG_ENDING_LEVEL + 1
-        jr c,.blvl
-        ld a,CFG_ENDING_LEVEL
-.blvl:  ld e,a
-        ld d,0
-        ld hl,tp_belts - 1
-        add hl,de
-        ld a,(hl)
-        ld (tp_belt),a
-        ld a,1
-        ld (tp_force),a
-        ret
-
     IFDEF POWERUPS
+        COLD                    ; once a level
 ;------------------------------------------------------------------------------
 ; tp_banner_end - banner_tick, as the "LEVEL n" banner comes down: the
 ; speed's jumps back (rate_apply: a death meanwhile keeps its freeze;
-; with nothing frozen it changes nothing), then a new belt's "+BELT".
-; Corrupts: AF, B, DE, HL
+; with nothing frozen it changes nothing). Corrupts: AF
 ;------------------------------------------------------------------------------
 tp_banner_end:
         ld a,(game_rate)
-        call rate_apply
-        jp tp_belt_due
-
-;------------------------------------------------------------------------------
-; tp_pop_unpaint - the "BELT" cells back to the water, those still in its
-; colour, then forgotten. In the cold block: it runs only when a
-; burst or a pop-up starts or ends. Keeps BC. Corrupts: AF, HL
-;------------------------------------------------------------------------------
-tp_pop_unpaint:
-        ld hl,(tp_pcell)
-        ld a,h
-        or a
-        ret z
-        ld a,(tp_pcol)
-        cp (hl)
-        jr nz,tpu_next
-        ld (hl),WATER_ATTR
-tpu_next:
-        inc l
-        cp (hl)
-        jr nz,tpu_done
-        ld (hl),WATER_ATTR
-tpu_done:
-        xor a
-        ld (tp_pcell + 1),a
-        ret
-    ENDIF
+        jp rate_apply
         HOT
-
-; The belts, a byte a level: in the hot code, where Trigon has room.
-tp_belts:
-        CFG_BELTS
-        ASSERT $ - tp_belts == CFG_ENDING_LEVEL, "CFG_BELTS: one belt a level"
-
-    IFDEF POWERUPS
-; tp_belt_pop - level_up: a new belt (white never is) is noted, and
-; tp_belt_due pops up "BELT" in its colour when the banner comes down,
-; so the banner never hides it. Corrupts: AF, DE, HL
-tp_belt_pop:
-        ld a,(level_n)
-        cp CFG_ENDING_LEVEL + 1
-        ret nc
-        ld e,a
-        ld d,0
-        ld hl,tp_belts - 2      ; the last level's belt
-        add hl,de
-        ld a,(hl)
-        inc hl
-        cp (hl)
-        ret z                   ; the same belt
-        ld a,(hl)
-        ld (tp_bdue),a          ; 0 (white): nothing to show
-        ret
-
-; tp_belt_due - banner_tick, as the banner comes down: a belt noted by
-; tp_belt_pop pops up "BELT" beside the diver, in the "+20" box. A burst
-; coming or up shows it when it ends; a "+20" up is cut short and
-; "BELT" takes its place (pop_step, pop_show). Its clock and clean-up
-; are the "+20"'s. Corrupts: AF, B, DE, HL
-tp_belt_due:
-        ld hl,tp_bdue
-        ld a,(hl)
-        or a
-        ret z
-        ld (hl),0
-        ld (tp_pbelt),a         ; not 0: pop_show shows "BELT"
-        ld (pop_pts),a          ; not 0: something to show
-        ld hl,(boom_hook + 1)
-        ld de,pop_step
-        or a
-        sbc hl,de
-        jr nz,tbp_new
-        ld hl,(frame_count)     ; a "+20" up: down at the next step
-        ld (pop_until),hl
-        ret
-tbp_new:
-        ld a,(diver_x)
-        add a,24                ; just right of him
-        ld l,a
-        ld h,0
-        ld a,(diver_y)
-        jp pop_here
     ENDIF
 
         MACRO TP_DATA
@@ -428,84 +316,15 @@ tbp_new:
 ;------------------------------------------------------------------------------
 ; tp_level_new - level_up, after the banner: nothing moves while it is up
 ; (the death's freeze: each step only draws, at 50, with the border,
-; sound, bursts and pop-ups going on; tp_banner_end thaws it), and a new
-; belt is noted. Corrupts: AF, DE, HL
+; sound, bursts and pop-ups going on; tp_banner_end thaws it).
+; Corrupts: AF, HL
 ;------------------------------------------------------------------------------
 tp_level_new:
         call death_freeze
         ld hl,step_moved        ; no death_step: only the drawing
         ld (step_jp_move+1),hl
-        jp tp_belt_pop
+        ret
 
-;------------------------------------------------------------------------------
-; tp_pop_word - pop_show, with tp_pbelt set: "+BELT" in place of the
-; points, three characters right of the diver (a burst's box is moved
-; there, and photographed again: nothing is drawn in it yet), and its two
-; cells in the belt's colour (tp_pop_unpaint gives them back). Five 3x5
-; glyphs need 19 pixels and the box is 16, so "+BELT" is one picture,
-; its E and L two pixels wide (tp_belt_bits). Corrupts: AF, BC, DE, HL
-;------------------------------------------------------------------------------
-tp_pop_word:
-        ld a,(diver_x)
-        add a,48 + 4            ; three characters right of him, the nearest byte
-        jr c,tpw_edge
-        rrca
-        rrca
-        rrca
-        and 31
-        cp 31
-        jr c,tpw_col
-tpw_edge:
-        ld a,30
-tpw_col:
-        ld (boom_col),a
-        ld a,(diver_y)
-        add a,4
-        and $F8                 ; a character row's top
-        ld (boom_y),a
-        call boom_photo
-        ld hl,(boom_addr)       ; a character row's top: its attributes
-        push hl
-        ld a,h
-        rrca
-        rrca
-        rrca
-        and 3
-        or high ATTRS
-        ld h,a
-        ld (tp_pcell),hl
-        ld a,(tp_pbelt)
-        ld (tp_pcol),a
-        ld (hl),a
-        inc l
-        ld (hl),a
-        xor a
-        ld (tp_pbelt),a
-        pop hl
-        ld a,h
-        add a,POP_ROW
-        ld h,a
-        ld de,tp_belt_bits
-        ld b,5
-tpw_row:
-        ld a,(de)
-        ld (hl),a
-        inc de
-        inc l
-        ld a,(de)
-        ld (hl),a
-        inc de
-        dec l
-        inc h
-        djnz tpw_row
-        jp pop_clock
-; "+BELT", 16 x 5.
-tp_belt_bits:
-        db %00001100,%11010111
-        db %01001010,%10010010
-        db %11101100,%11010010
-        db %01001010,%10010010
-        db %00001100,%11011010
 
     ENDIF
 ;------------------------------------------------------------------------------
@@ -576,111 +395,6 @@ tp_held_set:
       ENDIF
     ENDIF
 
-;------------------------------------------------------------------------------
-; The diver's belt (CFG_BELTS): from the level whose belt is not white,
-; his cells are painted its ink, as the fish's are its own. White is the
-; sea's own ink, so a white belt paints nothing. His box is 3 or 4
-; columns (by his x) and 2 or 3 rows (by his y), kept off the seabed's
-; rows, and not painted up by the score's. tp_diver works out this
-; step's box and, if it is not last step's (or E's bit 2 says paint
-; everything), gives last step's cells back to the water (tp_d_water)
-; and paints this step's (tp_d_new): his own box only, as he moves far
-; more often than the fish or the missile changes a cell, and they only
-; share his cells when they are killing him.
-; Corrupt: AF, BC, HL (and tp_box's)
-;------------------------------------------------------------------------------
-tp_diver:
-        xor a
-        ld (tp_new_don),a
-        ld a,(tp_belt)
-        or a
-        jr z,.dcmp              ; white: nothing to paint
-        ld a,(diver_y)
-        ld c,a
-        rrca
-        rrca
-        rrca
-        and 31
-        ld h,a                  ; his top row
-        ld a,c
-        and 7
-        cp 2                    ; 15 rows: 2 cell rows from a row's top 2
-        ld b,2
-        jr c,.drows
-        inc b
-.drows: ld a,h
-        cp 2
-        jr c,.dcmp              ; up by the score's rows: not painted there
-        ld a,BACK_ROW
-        sub h                   ; rows down to the seabed's
-        jr c,.dcmp
-        jr z,.dcmp
-        cp b
-        jr nc,.dfit
-        ld b,a
-.dfit:  ld a,(diver_x)
-        ld l,a
-        and 6                   ; drawn at even x
-        ld c,3
-        jr z,.dcols
-        inc c
-.dcols: ld a,l
-        rrca
-        rrca
-        rrca
-        and 31
-        ld l,a
-        ld a,32
-        sub l                   ; to the right edge
-        cp c
-        jr nc,.dok
-        ld c,a
-.dok:   ld (tp_new_dat),hl
-        ld (tp_new_dsize),bc
-        ld a,1
-        ld (tp_new_don),a
-        ; This step's record against last step's, 5 bytes each. Off, the
-        ; box is not written, so it stays as last painted (bss: 0 at first).
-.dcmp:  push de
-        bit 2,e
-        jr nz,.ddiff            ; everything painted again
-        ld hl,tp_new_don
-        ld de,tp_d_on
-        ld b,5
-.dc:    ld a,(de)
-        cp (hl)
-        inc hl
-        inc de
-        jr nz,.ddiff
-        djnz .dc
-        pop de
-        ret
-.ddiff: call tp_d_water
-        call tp_d_new
-        pop de
-        ret
-        ASSERT tp_d_at == tp_d_on + 1 && tp_d_size == tp_d_on + 3 && tp_new_dat == tp_new_don + 1 && tp_new_dsize == tp_new_don + 3
-
-tp_d_water:
-        ld a,(tp_d_on)
-        or a
-        ret z
-        ld a,WATER_ATTR
-        jr tp_d_box
-tp_d_new:
-        ld a,(tp_new_don)
-        ld (tp_d_on),a
-        or a
-        ret z
-        ld hl,(tp_new_dat)
-        ld (tp_d_at),hl
-        ld hl,(tp_new_dsize)
-        ld (tp_d_size),hl
-        ld a,(tp_belt)
-tp_d_box:
-        ld hl,(tp_d_at)
-        ld bc,(tp_d_size)
-        jp tp_box
 
 
 ; A box of cells in one colour: H = top row, L = left column, B = rows,
