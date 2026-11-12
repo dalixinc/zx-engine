@@ -76,6 +76,11 @@ boom_reset:
         ld (boom_hook+1),hl
     IFDEF POWERUPS
         ld (pop_pts),a          ; A = 0: no points waiting to show
+      IFDEF TRIGON
+        ld (tp_pbelt),a         ; and no "BELT"; its cells are forgotten
+        ld (tp_bdue),a
+        ld (tp_pcell + 1),a
+      ENDIF
     ENDIF
         call fish_kind_pick
         jp fish_unhold
@@ -388,6 +393,9 @@ boom_at_fish:
 ; boom_step, from where it was drawn, before the new one is painted.
 boom_arm:
     IFDEF POWERUPS
+      IFDEF TRIGON
+        call tp_pop_unpaint     ; a "BELT" put back: its cells too (theme.asm)
+      ENDIF
         call boom_place
         jr boom_armed
 
@@ -789,6 +797,12 @@ pop_show:
         push bc
         call boom_photo
         pop bc
+    IFDEF TRIGON
+        call tp_pop_unpaint     ; a "BELT" before this: its cells back
+        ld a,(tp_pbelt)
+        or a
+        jp nz,tp_pop_word       ; a new belt: "BELT" instead (theme.asm)
+    ENDIF
         ld a,c                  ; hundreds, tens, units
         ld d,-1
 .hun:   inc d
@@ -841,6 +855,7 @@ pop_show:
         ld a,b
         cp 5
         jr c,.row
+pop_clock:                      ; drawn: the clock and the hook
         ld hl,(frame_count)
         ld de,CFG_POP_TIME
         add hl,de
@@ -884,6 +899,9 @@ pop_step:
         or a
         sbc hl,de
         ret c
+    IFDEF TRIGON
+        call tp_pop_unpaint     ; a "BELT": its cells back to the water
+    ENDIF
         jp boom_end
     ENDIF
 

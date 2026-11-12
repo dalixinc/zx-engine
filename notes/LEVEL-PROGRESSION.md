@@ -58,3 +58,26 @@ gives the targets. If the table in `config.asm` changes, update this.
   changes at once. Each level's border is one steady light colour; it
   flashes only for a death, a new level (white), a special bomb or a
   chord.
+
+## Trigon, levels 11 to 20 (0.7.x, chunk 3)
+
+Each bomb takes one of two movements at random (`CFG_MOVES`); the
+second bomb of a pair keeps bob, wave or hunt (`TB_TABLE`). Wave h×s is
+the height and speed for the wave and the zigzag; 68×½ is level 20's
+full-height swing (`MV_HALF`).
+
+| Level | Target (start) | First bomb | Wave h×s | Second bomb (pairs /256) | Haste | Missile gap | Belt |
+|---|---|---|---|---|---|---|---|
+| 11 | 1,500 (8,450) | zigzag or wave | 24×1 | wave (160) | 196 | 30–75 | blue |
+| 12 | 1,600 (9,950) | stop-start or hunt | 16×2 | bob (176) | 200 | 30–70 | blue |
+| 13 | 1,700 (11,550) | pulsar: wave or zigzag | 40×1 | hunt (192) | 204 | 28–70 | red |
+| 14 | 1,800 (13,250) | hunt or stop-start | 20×2 | wave (200) | 208 | 28–65 | red |
+| 15 | 1,900 (15,050) | zinger or wave | 32×1 | bob (176) | 212 | 26–65 | brown |
+| 16 | 2,000 (16,950) | zigzag or zinger | 32×1 | hunt (208) | 216 | 26–60 | brown |
+| 17 | 2,100 (18,950) | wave or zigzag | 40×1 | wave (208) | 220 | 24–60 | brown |
+| 18 | 2,200 (21,050) | stop-start or zinger | 20×2 | hunt (224) | 224 | 24–55 | brown |
+| 19 | 2,300 (23,250) | zinger or zigzag | 32×1 | hunt (232) | 232 | 22–50 | black (flashing white) |
+| 20 | 2,400 (25,550) | zinger or wave | 68×½ | hunt (240) | 240 | 20–50 | black (flashing white) |
+
+Finishing level 20 (27,950) shows the ending and the Finale code. The
+fish waves on odd levels (worth 2) and swims straight on even ones.

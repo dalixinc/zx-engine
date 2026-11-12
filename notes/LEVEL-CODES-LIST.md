@@ -41,15 +41,27 @@ any code of either game.
 | 8 | HEHDTA |
 | 9 | JJLTFA |
 | 10 | BGEDDF |
+| 11 | PTAGAS |
+| 12 | RSLBJG |
+| 13 | EGDHRR |
+| 14 | DGTEFA |
+| 15 | EPLUBS |
+| 16 | SLLRLK |
+| 17 | GEURSD |
+| 18 | JKSJTT |
+| 19 | AHPPKS |
+| 20 | KGRSAC |
 
 Trigon's levels each start at (the score a code starts at): 1 at 0,
 2 at 300, 3 at 750, 4 at 1,350, 5 at 2,050, 6 at 2,850, 7 at 3,750,
-8 at 4,750, 9 at 5,850, 10 at 7,050. Finishing level 10 (8,450) ends
-the game.
+8 at 4,750, 9 at 5,850, 10 at 7,050, 11 at 8,450, 12 at 9,950,
+13 at 11,550, 14 at 13,250, 15 at 15,050, 16 at 16,950, 17 at 18,950,
+18 at 21,050, 19 at 23,250, 20 at 25,550. Finishing level 20 (27,950)
+ends the game (Trigon 0.7.0 and before: level 10, at 8,450).
 
 ## The Finale code
 
-**CINDER.** Trigon's ending shows it when level 10
+**CINDER.** Trigon's ending shows it when level 20
 (`CFG_ENDING_LEVEL`) is finished: the third game, Finale, will ask for
 it. It is `FINALE_WORD` in `src/trigon/ending.asm`. Like KRAKEN it has
 an N, so it never clashes with a level code; no two codes of either

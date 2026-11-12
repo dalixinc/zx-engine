@@ -13,7 +13,8 @@ it, the **housekeeping** brief (PR #23).
 | Address | What |
 |---|---|
 | `$4000-$5AFF` | screen |
-| `$5B00-$5FFF` | BASIC (`CLEAR 24575`) |
+| `$5B00-$5BFF` | **reserve**: the 48K printer buffer, 256 bytes. Only LPRINT, LLIST and COPY use it, and the games call no ROM routine, so it is free once the game runs. Nothing is there yet. The games target the 48K only: on a 128K in 128 BASIC its ROM keeps paging routines here, so anything put here must be written after the game has taken the interrupts (IM2). Contended RAM: not for code or tables read every frame. A candidate home for once-a-level tables or a Finale font |
+| `$5C00-$5FFF` | system variables and BASIC (`CLEAR 24575`) |
 | `$6000-$76F6` | **cold block** (5,879 bytes): the story, typed when 1 starts a game, and the loading screen's pause (`story.asm`), menu, the title (`title_draw`), the testers' switch (`cheat_poll`), level codes, start-up, resets, the level 2 and 3 messages, the death (`death.asm`), each level's look (`level_style`), menu words, the seabed's slope tables' builder (`slope_build`), the power-ups' picture builder (`power_build`), going up a level and its lives top-up (`level_up`, `level_advance`, `level_enter`, `banner_show`), a new bomb's settings (`wheel_type`), a missile's end and the power-up roll (`missile_gone`), taking and setting off a special bomb and blowing up what a throw moves (`special.asm`), `torpedo_reset`, and the raw art `preshift` reads (fish, round fish, pulsar, spinning wheel, diver), with the jet's bubbles it adds to the diver's (`diver_jet_build`) |
 | `$7892-$78DF` | free (78, all of it usable: the tape's unpacker sits above `$78E0`, asserted above `cold_end`) |
 | `$78E0-$7FFF` | the spinning wheel's shifted pictures (4 quarter turns, 1,824, built at start-up; while the tape loads, its first block is here, `$790D-$7FFF`) |

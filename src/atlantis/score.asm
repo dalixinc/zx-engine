@@ -340,6 +340,11 @@ level_up:
     IFDEF SHARED_BOMB
         call tb_art_now         ; Trigon: the bomb's pictures, under the banner
     ENDIF
+    IFDEF TRIGON
+    IFDEF POWERUPS
+        call tp_belt_pop        ; a new belt: "BELT" when the banner goes (theme.asm)
+    ENDIF
+    ENDIF
     IFDEF LANCEGUN
     IFDEF TEASER
         call lance_news         ; Trigon: the Lance's message, at its level
@@ -649,6 +654,11 @@ banner_tick:
         or a
         sbc hl,de
         ret c
+    IFDEF TRIGON
+    IFDEF POWERUPS
+        call tp_belt_due        ; a new belt's "BELT", now (theme.asm)
+    ENDIF
+    ENDIF
     IFDEF TEASER
         call banner_erase
         ld a,(teaser_due)

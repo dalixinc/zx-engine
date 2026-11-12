@@ -81,6 +81,35 @@ bss_ptr = bss_ptr + (size?)
         BSS tp_new_don, 1
         BSS tp_new_dat, 2
         BSS tp_new_dsize, 2
+        ; the fish's, the missile's and the bombs' paint (src/trigon/theme.asm).
+        ; What is painted now (the soak reads tp_fish_on and tp_fish_at):
+        BSS tp_fish_on, 1               ; not 0 = tp_fish_at's cells are painted
+        BSS tp_fish_at, 2               ; L column, H row
+        BSS tp_fish_ink, 1              ; their colour, 0 = none
+        BSS tp_msl_on, 1
+        BSS tp_msl_at, 2
+        BSS tp_msl_size, 2              ; C columns, B rows
+        BSS tp_wpc, 2                   ; the bomb's box when they were painted
+        BSS tp_wpr, 2
+        BSS tp_wn, 1
+      IFDEF TWO_BOMBS
+        BSS tp_w2pc, 2                  ; the second bomb's, the same
+        BSS tp_w2pr, 2
+        BSS tp_w2n, 1
+      ENDIF
+        ; What this step wants:
+        BSS tp_new_fat, 2
+        BSS tp_new_fink, 1
+        BSS tp_new_mon, 1
+        BSS tp_new_mat, 2
+        BSS tp_new_msize, 2
+      IFDEF POWERUPS
+        ; the belt's pop-up (tp_belt_pop, theme.asm)
+        BSS tp_bdue, 1                  ; a new belt's colour, to pop up when the banner goes
+        BSS tp_pbelt, 1                 ; not 0: the next pop-up is "BELT", in this colour
+        BSS tp_pcol, 1                  ; the colour its cells were painted
+        BSS tp_pcell, 2                 ; their first cell's attribute, high byte 0 = none
+      ENDIF
     ENDIF
     IFDEF POWERUPS
         BSS pop_glyph, 4                ; a power's points: the pop-up's four glyphs (boom.asm)

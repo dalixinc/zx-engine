@@ -419,15 +419,30 @@ CFG_ALT_HUNT        equ 96
 ;   alt      a second movement, which each bomb takes instead of its own
 ;            half the time, at random; MV_NONE: always its own (the
 ;            second bomb takes only MOVE_BOB, MOVE_WAVE or MOVE_HOME)
-;   amp      the wave's height, and the zigzag's (4 to 48; the old 16)
+;   amp      the wave's height, and the zigzag's (4 to 70, MV_AMP_MAX: 70 swings
+;            from the score line to the seabed; the old 16)
 ;   speed    how far along the wave each 1/50 second (the old 2)
 ;   flags    MV_RANDOM: a waving bomb starts anywhere on its wave
+;            MV_HALF: the wave at half its speed (speed 1 becomes a
+;            half), so a tall wave stays smooth: height x speed (halved)
+;            40 or less is a smooth curve, more runs straight
 ; Up or down, a bomb never moves more than a pixel a 1/50 second.
 CFG_MV_FIRST        equ 11
 MV_NONE             equ 255
 MV_RANDOM           equ 1
+MV_HALF             equ 2       ; the wave at half its speed: tall and smooth
         MACRO CFG_MOVES
-        ;       alt      amp speed flags
+        ;       alt        amp speed flags
+        MV_ROW  MOVE_WAVE, 24, 1,    MV_RANDOM           ; 11: zigzag or wave
+        MV_ROW  MOVE_HOME, 16, 2,    0                   ; 12: stop-start or hunting
+        MV_ROW  MOVE_ZIG,  40, 1,    MV_RANDOM           ; 13: the swell or zigzag
+        MV_ROW  MOVE_STOP, 20, 2,    MV_RANDOM           ; 14: hunting or stop-start
+        MV_ROW  MOVE_WAVE, 32, 1,    MV_RANDOM           ; 15: zinger or wave
+        MV_ROW  MOVE_ZING, 32, 1,    0                   ; 16: zigzag or zinger
+        MV_ROW  MOVE_ZIG,  40, 1,    MV_RANDOM           ; 17: the swell or zigzag
+        MV_ROW  MOVE_ZING, 20, 2,    0                   ; 18: stop-start or zinger
+        MV_ROW  MOVE_ZIG,  32, 1,    0                   ; 19: zinger or zigzag
+        MV_ROW  MOVE_WAVE, 68, 1,    MV_RANDOM | MV_HALF ; 20: zinger or the full-height swing
         ENDM
 BORDER_BEAT         equ $FF     ; the heartbeat's round of colours
 CFG_L2_INK          equ RED | SEA
@@ -473,6 +488,33 @@ CFG_WHITE_INK       equ WHITE | SEA
         ; 10, Trigon's guard, the last (CFG_ENDING_LEVEL): the
         ; fastest wheels, hunting hardest, pairs nearly always
         LEVEL_ROW  1400,   30,      75,      192,   BOMB_W, CFG_WHITE_INK, MOVE_HOME, 128, MOVE_WAVE,     80,    BLUE,         1,   3,   10
+        ; 11 to 20: the new movements (each with a second, CFG_MOVES),
+        ; faster, closer missiles, more pairs. The zinger from 15. Not
+        ; in the soak, which plays the first levels only: its own code
+        ; follows the hot code, and has no room for them.
+    IFNDEF SOAK
+        ; 11, the zigzag (or the wave)
+        LEVEL_ROW  1500,   30,      75,      196,   BOMB_W, CFG_GREEN_INK, MOVE_ZIG,  0,   MOVE_WAVE,     80,    GREEN,        2,   3,   10
+        ; 12, stop-start (or hunting)
+        LEVEL_ROW  1600,   30,      70,      200,   BOMB_W, CFG_L2_INK,    MOVE_STOP, 0,   MOVE_STRAIGHT, 0,     CYAN,         1,   3,   10
+        ; 13, the pulsar's tall swell (or the zigzag)
+        LEVEL_ROW  1700,   28,      70,      204,   BOMB_P, CFG_WHITE_INK, MOVE_WAVE, 0,   MOVE_WAVE,     80,    YELLOW,       2,   2,   10
+        ; 14, hunting (or stop-start)
+        LEVEL_ROW  1800,   28,      65,      208,   BOMB_W, CFG_L3_INK,    MOVE_HOME, 112, MOVE_STRAIGHT, 0,     WHITE,        1,   3,   10
+        ; 15, the zinger (or the wave)
+        LEVEL_ROW  1900,   26,      65,      212,   BOMB_W, CFG_GREEN_INK, MOVE_ZING, 0,   MOVE_WAVE,     80,    RED,          2,   3,   10
+        ; 16, the zigzag (or the zinger)
+        LEVEL_ROW  2000,   26,      60,      216,   BOMB_W, CFG_L2_INK,    MOVE_ZIG,  0,   MOVE_STRAIGHT, 0,     MAGENTA,      1,   3,   10
+        ; 17, the tall swell (or the zigzag)
+        LEVEL_ROW  2100,   24,      60,      220,   BOMB_W, CFG_WHITE_INK, MOVE_WAVE, 0,   MOVE_WAVE,     80,    BLUE,         2,   3,   10
+        ; 18, stop-start (or the zinger)
+        LEVEL_ROW  2200,   24,      55,      224,   BOMB_W, CFG_L3_INK,    MOVE_STOP, 0,   MOVE_STRAIGHT, 0,     GREEN,        1,   3,   10
+        ; 19, the zinger (or the zigzag)
+        LEVEL_ROW  2300,   22,      50,      232,   BOMB_W, CFG_GREEN_INK, MOVE_ZING, 0,   MOVE_WAVE,     80,    CYAN,         2,   3,   10
+        ; 20, Trigon's last guard (CFG_ENDING_LEVEL): the zinger, or the
+        ; full-height swing, slow and smooth; pairs nearly always
+        LEVEL_ROW  2400,   20,      50,      240,   BOMB_W, CFG_WHITE_INK, MOVE_ZING, 0,   MOVE_STRAIGHT, 0,     RED,          1,   3,   10
+    ENDIF
         ENDM
 
 ; --- Two bombs (src/trigon/twobomb.asm) -------------------------------------------
@@ -501,7 +543,17 @@ CFG_WHITE_INK       equ WHITE | SEA
         TB_ROW  48,     MAGENTA | SEA,  MOVE_BOB,  0    ; 7: few pairs: the fish's level
         TB_ROW  160,    RED | SEA,      MOVE_HOME, 112  ; 8: pairs, both hunting hard
         TB_ROW  208,    WHITE | SEA,    MOVE_HOME, 96   ; 9: pairs almost always
-        TB_ROW  224,    MAGENTA | SEA,  MOVE_HOME, 128  ; 10 to 20: pairs nearly always, both hunting hardest
+        TB_ROW  224,    MAGENTA | SEA,  MOVE_HOME, 128  ; 10: pairs nearly always, both hunting hardest
+        TB_ROW  160,    RED | SEA,      MOVE_WAVE, 0    ; 11
+        TB_ROW  176,    MAGENTA | SEA,  MOVE_BOB,  0    ; 12
+        TB_ROW  192,    RED | SEA,      MOVE_HOME, 112  ; 13
+        TB_ROW  200,    MAGENTA | SEA,  MOVE_WAVE, 0    ; 14
+        TB_ROW  176,    WHITE | SEA,    MOVE_BOB,  0    ; 15
+        TB_ROW  208,    RED | SEA,      MOVE_HOME, 112  ; 16
+        TB_ROW  208,    MAGENTA | SEA,  MOVE_WAVE, 0    ; 17
+        TB_ROW  224,    RED | SEA,      MOVE_HOME, 120  ; 18
+        TB_ROW  232,    WHITE | SEA,    MOVE_HOME, 128  ; 19
+        TB_ROW  240,    MAGENTA | SEA,  MOVE_HOME, 128  ; 20 and on
         ENDM
 
 ; The waves (MOVE_WAVE). A wave is a sine, AMP pixels above the middle
@@ -531,16 +583,18 @@ CFG_BANNER_CODE_TIME equ 200
 ; Levels with a code (codes.asm): 2 to this. Trigon's codes have their
 ; own keys, so no Atlantis code opens a Trigon level. Level 1's is the
 ; Trigon code (GATE_WORD). Up to 31.
-CFG_CODE_LEVELS      equ 10
-; The last level (10): finishing it ends the game with the Finale code
+CFG_CODE_LEVELS      equ 20
+; The last level (20): finishing it ends the game with the Finale code
 ; (src/trigon/ending.asm). Levels past the table repeat its last row.
-CFG_ENDING_LEVEL     equ 10
+CFG_ENDING_LEVEL     equ 20
 ; 1: the testers' switch (notes/CHEATS.md) also makes the diver unhurt,
 ; to play the levels through. 0 leaves it out of the build altogether.
 CFG_GOD_MODE         equ 1
 ; The diver's belt, a level at a time, 1 to CFG_ENDING_LEVEL: the ink his
 ; cells are painted (src/trigon/theme.asm). WHITE is the sea's own, so
-; nothing is painted.
+; nothing is painted. BELT_DIM is the ink without BRIGHT; WHITE | FLASH
+; flashes. A belt only ever goes up: a new one pops up "BELT" beside him
+; in its colour (tp_belt_pop).
         MACRO CFG_BELTS
         BELT WHITE
         BELT WHITE
@@ -550,8 +604,18 @@ CFG_GOD_MODE         equ 1
         BELT CYAN
         BELT GREEN
         BELT GREEN
+        BELT MAGENTA            ; purple
         BELT MAGENTA
-        BELT MAGENTA
+        BELT BLUE               ; 11, 12
+        BELT BLUE
+        BELT RED                ; 13, 14
+        BELT RED
+        BELT_DIM YELLOW         ; 15 to 18: brown, the Spectrum's dark yellow
+        BELT_DIM YELLOW
+        BELT_DIM YELLOW
+        BELT_DIM YELLOW
+        BELT WHITE | FLASH      ; 19, 20: black, white flashing
+        BELT WHITE | FLASH
         ENDM
 
 ; The beeper (sound.asm). Each explosion is white noise, played in

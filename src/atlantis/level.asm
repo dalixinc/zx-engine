@@ -78,6 +78,7 @@ WAVE_LOW_BASE   equ BACK_ROW * 8 - WHEEL_HEIGHT - CFG_BOMB_WAVE_AMP
 wheel_wave:
     IFDEF TRIGON
         ld a,(@mv_wspd)         ; the level's speed along it (moves.asm)
+.half:  ld hl,@mv_halve         ; mv_level: CALL on a half-speed level (MV_HALF)
       IFNDEF B2_PASS
         jr wheel_wgo
 ; wheel_zig - update_wheel's MOVE_ZIG (Trigon, the first bomb): the
