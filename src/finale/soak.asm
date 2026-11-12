@@ -663,7 +663,7 @@ soak_check_attrs:
         ld a,e
         cp WEED_ATTR
         jr z,.green
-        cp SILO_ATTR            ; Finale: a dome's cell, in the silos' colour
+        cp SILO_TOP_ATTR        ; Finale: a dome's cell, in its own colour
         jr z,.green
         cp WATER_ATTR
         jr nz,.bad              ; some third colour

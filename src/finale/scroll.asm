@@ -917,7 +917,7 @@ silo_cells_update:
         ldir
         ; fall through
 
-; Finale: the silo's colour on every cell in silo_cells, the dome's in
+; Finale: the silos' colours on every cell in silo_cells, the dome's in
 ; row 21 and the tower's below it. Corrupts: AF, B, DE, HL
 silo_paint_cells:
         ld a,(silo_cells_n)
@@ -929,7 +929,7 @@ silo_paint_cells:
 .cell:  ld a,(de)
         or low SILO_ATTR21
         ld l,a
-        ld (hl),SILO_ATTR
+        ld (hl),SILO_TOP_ATTR
         add a,32
         ld l,a
         ld (hl),SILO_ATTR

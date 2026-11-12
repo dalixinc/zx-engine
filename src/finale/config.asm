@@ -73,12 +73,14 @@ CFG_MISSILE_INK     equ CFG_DARK_INK | SEA
 ; The seabed, Finale's: green hills behind with yellow seaweed on them,
 ; and the silos in front in a darker red. Row 21 (the weed) and row 22
 ; (the far hills) are inks on the sea; the silos' dome and tower cells
-; are painted CFG_SILO_ATTR as they pass (scroll.asm, silo_paint_cells);
+; are painted as they pass (scroll.asm, silo_paint_cells): the domes, in
+; the seaweed's row, CFG_SILO_TOP_ATTR, the towers CFG_SILO_ATTR;
 ; the ground row is a whole cell colour, its rocks and the silos' bases
 ; in the ink, the rest in the paper. To tune in play.
 CFG_WEED_INK        equ YELLOW  ; the seaweed on the hills
 CFG_SAND_INK        equ GREEN   ; the hills behind
-CFG_SILO_ATTR       equ RED | (SEA & ~BRIGHT)                   ; dark red on the sea
+CFG_SILO_ATTR       equ RED | (SEA & ~BRIGHT)                   ; the towers: dark red on the sea
+CFG_SILO_TOP_ATTR   equ YELLOW | SEA                            ; the domes: the seaweed's yellow
     IFNDEF CFG_GROUND_ATTR
 CFG_GROUND_ATTR     equ RED | (YELLOW << 3)     ; dark red rocks and bases on dark yellow
     ENDIF
