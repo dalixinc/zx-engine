@@ -7,6 +7,12 @@
 <!-- No favicon file: an empty one stops the browser asking for
      /favicon.ico, which was the console's one error (a 404). -->
 <link rel="icon" href="data:,">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#10141c">
 <!--
   Atlantis, a ZX Spectrum 48K game, running in JSSpeccy 3 (GPL-3.0,
   https://github.com/gasman/jsspeccy3), whose files are in jsspeccy/.
@@ -16,7 +22,11 @@
   a half minutes, so atlantis.tap is here to download instead. `make web`
   copies both from build/. See docs/WEB.md.
 -->
+<!-- phone.js is a no-op on a desktop mouse; it must run before
+     jsspeccy.js so it can catch the worker on a phone. -->
+<script src="phone.js"></script>
 <script src="jsspeccy/jsspeccy.js"></script>
+<link rel="stylesheet" href="phone.css">
 <style>
   :root {
     --bg: #10141c;
@@ -85,7 +95,7 @@
   a { color: var(--dim); }
 </style>
 </head>
-<body>
+<body data-game="atlantis">
 <main>
   <h1>ATLANTIS</h1>
 
