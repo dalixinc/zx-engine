@@ -345,13 +345,17 @@ tp_banner_end:
 ;------------------------------------------------------------------------------
 ; tp_pop_unpaint - the "BELT" cells back to the water, those still in its
 ; colour, then forgotten. In the cold block: it runs only when a
-; burst or a pop-up starts or ends. Keeps BC. Corrupts: AF, HL
+; burst or a pop-up starts or ends. Keeps every register: boom_arm calls
+; it with the burst's place in HL and A (0.8.0 lost them, and every burst
+; went to the top left corner).
 ;------------------------------------------------------------------------------
 tp_pop_unpaint:
+        push af
+        push hl
         ld hl,(tp_pcell)
         ld a,h
         or a
-        ret z
+        jr z,tpu_out
         ld a,(tp_pcol)
         cp (hl)
         jr nz,tpu_next
@@ -364,6 +368,9 @@ tpu_next:
 tpu_done:
         xor a
         ld (tp_pcell + 1),a
+tpu_out:
+        pop hl
+        pop af
         ret
     ENDIF
         HOT
