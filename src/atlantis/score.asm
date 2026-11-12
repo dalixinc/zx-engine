@@ -843,11 +843,8 @@ teaser:
         call banner_bomb        ; the bomb's ink, if the panel covered it
         jp spare_count
     IFDEF LANCEGUN
-.lance: ld hl,str_lance_1       ; B is the second line's row
-        ld c,(32 - LANCE_1_LEN) / 2
-        call print_string
-        ld hl,str_lance_2
-        ld bc,((TEASE_ROW + 5) << 8) | ((32 - LANCE_2_LEN) / 2)
+.lance: ld hl,str_lance         ; B is the second line's row
+        ld c,(32 - LANCE_LEN) / 2
         call print_string
         ld hl,str_tease_key
         ld bc,((TEASE_ROW + 7) << 8) | 10
