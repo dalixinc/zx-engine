@@ -83,7 +83,7 @@ ED_FLASH_TIME   equ 12                  ; 1/50 seconds a hit blinks him
 ED_INK_BLUE     equ CFG_ED_BLUE_INK | SEA
 ED_INK_RED      equ CFG_ED_RED_INK | SEA
 
-ED_P_STRAIGHT   equ 0
+ED_P_STRAIGHT   equ 0           ; the weave: across on the bomb's wave
 ED_P_DRIFT      equ 1
 ED_P_STOP       equ 2
 ED_P_DIVE       equ 3
@@ -113,7 +113,16 @@ ED_KIND         equ 28          ; ED_BLUE or ED_RED
 ED_ANIM         equ 29          ; 1/50 seconds left of this kick picture
 ED_FIRE         equ 30          ; 1/50 seconds of the firing picture left
 ED_KSTEP        equ 31          ; the kick's step, 0 to 3 (ed_kick: its picture)
-ED_REC          equ 32
+ED_BASE         equ 32          ; a weaving diver's middle row
+ED_PHASE        equ 33          ; and how far along the wave he is
+ED_PSON         equ 34          ; 1 = his shot's cells are painted
+ED_PSAT         equ 35          ; 2 bytes: their first cell's colour byte
+ED_PSW          equ 37          ; their columns, 1 or 2
+ED_PSH          equ 38          ; their rows, 1 or 2
+ED_REC          equ 39
+ED_WEAVE        equ CFG_BOMB_WAVE_AMP   ; the weave's height: the bomb's wave (bomb_wave_tab)
+ED_WTOP         equ ED_TOP + ED_WEAVE
+ED_WLOW         equ ED_LOW - ED_WEAVE
 
 ;------------------------------------------------------------------------------
 ; ed_level - level_style, each level and a new game: the level's row of
@@ -168,6 +177,7 @@ ed_reset:
         ld (ix + ED_SHOT),a
         ld (ix + ED_SVN),a
         ld (ix + ED_PON),a
+        ld (ix + ED_PSON),a
         ld (ix + ED_FLASH),a
         ret
 
@@ -197,12 +207,14 @@ ed_rng:
 ed_move:
         ld ix,ed_rec0
         call ed_move1
+        call ed_shot_paint
         call ed_paint_if
         ld a,(ed_count)
         cp 2
         ret c
         ld ix,ed_rec1
         call ed_move1
+        call ed_shot_paint
         ; fall through
 ; His cells' colours, when they may have changed: here, with the moves,
 ; not in the draw, so at 25 they are in the idle frame and the picture
@@ -213,8 +225,167 @@ ed_paint_if:
         ret z
         ld a,(ix + ED_REPAINT)
         or a
+        jp nz,ed_paint
+        ; The same cells: every 8 frames, painted again anyway. The bomb, a
+        ; heart, the missile and the Lance give cells back to the water as
+        ; they pass, and one under him would show white.
+        ld a,(frame_count)
+        and 7
+        ret nz
+        ld a,(ix + ED_PON)
+        or a
         ret z
-        jp ed_paint
+        ld l,(ix + ED_PAT_AT)
+        ld h,(ix + ED_PAT_AT + 1)
+        ld c,(ix + ED_PSIZE)
+        ld b,(ix + ED_PSIZE + 1)
+        call ed_ink
+        jp tp_box
+
+; A = his kind's ink on the sea. Corrupts: F
+ed_ink:
+        bit 0,(ix + ED_KIND)
+        ld a,ED_INK_BLUE
+        ret z
+        ld a,ED_INK_RED
+        ret
+
+;------------------------------------------------------------------------------
+; ed_shot_paint - with the moves: his shot's cells in his ink, once it is
+; clear of his own cells (so giving them back never whitens him). Only
+; water cells are painted, and only cells still in his ink given back.
+; Corrupts: AF, BC, DE, HL
+;------------------------------------------------------------------------------
+ed_shot_paint:
+        ld a,(ix + ED_SHOT)
+        or a
+        jp z,ed_shot_unpaint
+        ld a,(ix + ED_SX)
+        ld e,a
+        add a,5
+        rrca
+        rrca
+        rrca
+        and 31
+        ld c,a                  ; its right column
+        ld a,(ix + ED_X + 1)
+        or a
+        jr nz,.clear            ; he is off an edge: it is clear of him
+        ld a,(ix + ED_X)
+        rrca
+        rrca
+        rrca
+        and 31
+        cp c
+        jr z,ed_shot_unpaint    ; in his own cells still
+        jr c,ed_shot_unpaint
+.clear: ld a,e
+        rrca
+        rrca
+        rrca
+        and 31
+        ld b,a                  ; its left column
+        ld a,c
+        sub b
+        inc a
+        ld c,a                  ; 1 or 2 columns
+        ld a,(ix + ED_SY)
+        ld d,a
+        and 7
+        cp 7
+        ld a,1
+        jr nz,.rows
+        inc a                   ; off a cell's bottom row: 2 rows
+.rows:  ld e,a                  ; E = rows
+        ld a,d
+        rrca
+        rrca
+        rrca
+        and 31                  ; its top row
+        ld l,a
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld a,l
+        or b
+        ld l,a
+        ld a,h
+        add a,high ATTRS
+        ld h,a                  ; HL = its first cell's colour byte
+        ; The same cells as painted: nothing to do.
+        ld a,(ix + ED_PSON)
+        or a
+        jr z,.new
+        ld a,(ix + ED_PSAT)
+        cp l
+        jr nz,.change
+        ld a,(ix + ED_PSAT + 1)
+        cp h
+        jr nz,.change
+        ld a,(ix + ED_PSW)
+        cp c
+        jr nz,.change
+        ld a,(ix + ED_PSH)
+        cp e
+        ret z
+.change:
+        push hl
+        push de
+        push bc
+        call ed_shot_unpaint
+        pop bc
+        pop de
+        pop hl
+.new:   ld (ix + ED_PSAT),l
+        ld (ix + ED_PSAT + 1),h
+        ld (ix + ED_PSW),c
+        ld (ix + ED_PSH),e
+        ld (ix + ED_PSON),1
+        ld b,e
+        call ed_ink
+        ld e,a                  ; to his ink
+        ld d,WATER_ATTR         ; from the water only
+        jr ed_cells
+
+; His shot's cells back to the water, those still in his ink.
+ed_shot_unpaint:
+        ld a,(ix + ED_PSON)
+        or a
+        ret z
+        ld (ix + ED_PSON),0
+        ld l,(ix + ED_PSAT)
+        ld h,(ix + ED_PSAT + 1)
+        ld c,(ix + ED_PSW)
+        ld b,(ix + ED_PSH)
+        call ed_ink
+        ld d,a
+        ld e,WATER_ATTR
+        ; fall through
+; HL = the first cell's colour byte, B rows, C columns: each cell that
+; is D becomes E. Corrupts: AF, B, HL
+ed_cells:
+.row:   push hl
+        ld a,c
+.cell:  push af
+        ld a,(hl)
+        cp d
+        jr nz,.keep
+        ld (hl),e
+.keep:  inc l
+        pop af
+        dec a
+        jr nz,.cell
+        pop hl
+        ld a,l
+        add a,32
+        ld l,a
+        jr nc,.next
+        inc h
+.next:  djnz .row
+        ret
 
 ed_move1:
         ; His shot first: it flies on whatever he does.
@@ -259,7 +430,18 @@ ed_move1:
         jr c,.depth
         sub 64
 .depth: add a,ED_TOP
+        ; The weave's middle: his depth, kept a wave's height clear of the
+        ; top and the weed; a random place along the wave.
+        cp ED_WTOP
+        jr nc,.wtop
+        ld a,ED_WTOP
+.wtop:  cp ED_WLOW + 1
+        jr c,.wlow
+        ld a,ED_WLOW
+.wlow:  ld (ix + ED_BASE),a
         ld (ix + ED_Y),a
+        call ed_rng
+        ld (ix + ED_PHASE),a
         ; His kind: with two, the first blue and the second red; alone,
         ; the level's.
         ld a,(ed_count)
@@ -333,10 +515,13 @@ ed_move1:
         ; Holding: no move, and the gun twice as quick.
         dec (ix + ED_TIMER)
         jr nz,.held
-        ld (ix + ED_PAT),ED_P_STRAIGHT ; the hold is over: on across
+        ld (ix + ED_PAT),ED_P_STRAIGHT ; the hold is over: weaving on, from here
+        ld a,(ix + ED_Y)
+        ld (ix + ED_BASE),a
+        ld (ix + ED_PHASE),0
 .held:  ld a,(ix + ED_COOL)
         or a
-        jr z,.fire
+        jp z,.fire
         dec (ix + ED_COOL)
         jr .fire
 .stopq: ld a,(ix + ED_X + 1)
@@ -372,6 +557,25 @@ ed_move1:
         ld (ix + ED_WAIT),CFG_ED_GAP
         jp ed_unpaint
 .vert:  ld a,(ix + ED_PAT)
+        or a                    ; ED_P_STRAIGHT: the weave
+        jr nz,.notweave
+        ld a,(ix + ED_PHASE)
+        add a,CFG_BOMB_WAVE_SPEED
+        ld (ix + ED_PHASE),a
+        srl a                   ; 0..127
+        add a,low bomb_wave_tab
+        ld l,a
+        adc a,high bomb_wave_tab
+        sub l
+        ld h,a
+        ld a,(ix + ED_BASE)
+        add a,(hl)
+        cp (ix + ED_Y)
+        jr z,.fire
+        ld (ix + ED_Y),a
+        ld (ix + ED_REPAINT),1
+        jr .fire
+.notweave:
         cp ED_P_DIVE
         jr z,.dive
         cp ED_P_DRIFT
@@ -678,10 +882,7 @@ ed_paint:
         ld (ix + ED_PSIZE),c
         ld (ix + ED_PSIZE + 1),b
         ld (ix + ED_PON),1
-        bit 0,(ix + ED_KIND)
-        ld a,ED_INK_BLUE
-        jp z,tp_box
-        ld a,ED_INK_RED
+        call ed_ink
         jp tp_box
 
 ed_unpaint:
@@ -951,7 +1152,8 @@ ed_missiles:    db 0
 ed_seed:        db 57           ; never 0
 
 ; The shot at each of the 8 shifts, two bytes: its top row (.####.),
-; then, 16 bytes on, its bottom row (######).
+; then, 16 bytes on, its bottom row (######). In one page: ALIGN.
+        ALIGN 32
 ed_shot_pat:
         db %01111000, %00000000
         db %00111100, %00000000

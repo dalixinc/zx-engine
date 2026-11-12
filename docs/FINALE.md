@@ -71,9 +71,10 @@ and the red, tougher one, 16 x 15, facing left, kicking through four
 pictures (apart, halfway, glide, halfway) and turning to a firing pose as
 they shoot. One at once on levels 1 to 3 (blue, then red on level 3),
 two from level 4, one of each. Each comes in one of the level's movements, picked at random:
-straight across, drifting to the player's depth, stopping a while to fire
-twice as often, or diving at his depth. They fire short dashes to the
-left (Erin's 6 x 2 shot). A shot, or touching one, costs a life. The
+weaving across on a wave (16 pixels up and down, from a random point on
+it), drifting to the player's depth, stopping a while to fire twice as
+often, or diving at his depth. They fire short dashes to the left
+(Erin's 6 x 2 shot), in their own colour once clear of the diver. A shot, or touching one, costs a life. The
 torpedo, the double shot and the Lance each take one of a diver's hits:
 a blue diver takes 2 or 3 by level, a red one 3 or 4. A hit makes him
 blink, and the last blows him up for 20 points. The bomb
@@ -86,15 +87,17 @@ Their shifted pictures (1,440 bytes a colour) are made at start-up: the
 blue's in the fish's old room, the red's at the top of the code's room,
 both in uncontended memory.
 
-**The frame budget.** From level 2 (`CFG_ED_25_LEVEL`), while two big
+Their colours are painted with their moves, not their draws, so at 25
+they fall in the idle frame, and painted again every 8 frames: the bomb,
+a heart, missiles and the Lance give cells back to the water as they
+pass, and a diver over one would show white.
+
+**The frame budget.** On every level (`CFG_ED_25_LEVEL` 1), while two big
 enemies are out (two divers, or a diver and the bomb), the game drops to
 25 frames a second, at the same game speed, and goes back to 50 half a
-second after one has gone. Level 1, without the double shot or the
-Lance, holds 50 with them. A diver's colours are painted with his move,
-not his draw, so at 25 they fall in the idle frame. Measured with the
-double shot and the Lance in use, 1,024 steps each, on the seabed and in
-mid-water: no level loses a frame; level 1 stays at 50; levels 2 to 8
-are at 25 for 58 to 97% of their steps.
+second after one has gone. Measured with the double shot and the Lance
+in use, 1,024 steps each, on the seabed and in mid-water: no level loses
+a frame; levels are at 25 for 55 to 97% of their steps.
 
 ## Still to come
 

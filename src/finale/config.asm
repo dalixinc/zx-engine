@@ -465,8 +465,9 @@ CFG_ED_RED_INK       equ RED
 ; From this level, two big enemies out at once (two divers, or a diver
 ; and the bomb) drop the game to 25 frames a second until half a second
 ; after one has gone (ediver.asm, ed_rate): the frame cannot hold them at
-; 50 with the double shot (from level 2) and the Lance. Below it, 50 holds.
-CFG_ED_25_LEVEL      equ 2
+; 50 with the weaving divers' colours, the double shot (from level 2) and
+; the Lance. Below it, 50 holds (none, now: level 1 lost 2 frames in 1,024).
+CFG_ED_25_LEVEL      equ 1
         ASSERT CFG_ED_FIRST >= 1 && CFG_ED_FIRST + CFG_ED_GAP <= 255 && CFG_ED_GAP >= 1
         ASSERT CFG_ED_PTS >= 1 && CFG_ED_PTS <= 99
 ; Their movements, for a level's row: any mix of these.
