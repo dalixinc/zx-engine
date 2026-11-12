@@ -21,6 +21,10 @@
 # make trigon-seas build/trigon-sea-black.sna and -dark.sna, to compare
 # make trigon-soak build/trigon-soak.sna, the soak with Trigon's art and colours
 # make trigon-ediver build/trigon-ediver.sna, the enemy diver experiment
+# make finale     FINALE, the third game: build/finale.tap and .sna
+#                 (src/finale/: a copy of the Atlantis and Trigon sources)
+# make run-finale launch its tape
+# make finale-soak, finale-measure, unpack-check-finale: as Trigon's
 # make clean
 
 ASM       ?= sjasmplus
@@ -53,6 +57,8 @@ TRI_SRC   := $(ATL_SRC) src/trigon/main.asm src/trigon/config.asm \
 TRI_GFX   := gfx/diver_raw.asm gfx/torpedo.asm gfx/trigon/piranha_raw.asm \
              gfx/trigon/round-fish_raw.asm gfx/trigon/pulsar_raw.asm \
              gfx/trigon/spinning-wheel_raw.asm gfx/trigon/missile.asm
+FIN_SRC   := $(wildcard src/finale/*.asm) $(SHARED)
+FIN_GFX   := gfx/diver_raw.asm gfx/torpedo.asm gfx/trigon/pulsar_raw.asm gfx/trigon/missile.asm
 ZX0       := build/zx0
 CC        ?= cc
 
@@ -60,13 +66,16 @@ TAP       := build/atlantis.tap
 SNA       := build/atlantis.sna
 TRI_TAP   := build/trigon.tap
 TRI_SNA   := build/trigon.sna
+FIN_TAP   := build/finale.tap
+FIN_SNA   := build/finale.sna
 DEMO_TAP  := build/diver.tap
 DEMO_SNA  := build/diver.sna
 
 .PHONY: all run run-sna shot timing demo run-demo input-test sprite-test soak web clean unpack-check \
-        trigon run-trigon trigon-seas trigon-soak trigon-ediver unpack-check-trigon
+        trigon run-trigon trigon-seas trigon-soak trigon-ediver unpack-check-trigon \
+        finale run-finale finale-soak finale-measure unpack-check-finale
 
-all: $(TAP) $(SNA) $(TRI_TAP) $(TRI_SNA)
+all: $(TAP) $(SNA) $(TRI_TAP) $(TRI_SNA) $(FIN_TAP) $(FIN_SNA)
 
 # main.asm writes the snapshot, the plain tape and the three blocks as
 # they are in memory, with their ends in build/atlantis.exp.
@@ -143,6 +152,32 @@ trigon-ediver: $(TRI_SRC) $(TRI_GFX) src/trigon/ediver.asm gfx/trigon/ediver_raw
 trigon-soak: $(TRI_SRC) $(TRI_GFX) | build
 	$(ASM) --nologo --fullpath=off -DSOAK --lst=build/trigon-soak.lst src/trigon/main.asm
 
+# Finale: its own copy of the sources (src/finale/), assembled with
+# TRIGON defined as Trigon's are; its own blocks and packed tape.
+finale: $(FIN_TAP) $(FIN_SNA)
+
+FIN_BLOCKS := build/finale-cold.bin build/finale-code.bin build/finale-data.bin build/finale-udg.bin
+$(FIN_SNA) $(FIN_BLOCKS) build/finale.exp build/finale-plain.tap &: $(FIN_SRC) $(FIN_GFX) gfx/finale/loading.scr | build
+	$(ASM) --nologo --fullpath=off --lst=build/finale.lst --sym=build/finale.sym --exp=build/finale.exp src/finale/finale.asm
+
+build/finale-loading.zx0: gfx/finale/loading.scr $(ZX0)
+	$(ZX0) -f $< $@ >/dev/null
+
+$(FIN_TAP): build/finale.exp build/finale-loading.zx0 $(FIN_BLOCKS:.bin=.zx0) build/finale-code.delta tools/dzx0_standard.asm
+	$(ASM) --nologo --fullpath=off -DTRIGON -DCODE_DELTA=$$(cat build/finale-code.delta) src/finale/tape.asm
+
+unpack-check-finale: $(FIN_TAP)
+	$(ASM) --nologo --fullpath=off -DTRIGON -DCODE_DELTA=$$(cat build/finale-code.delta) -DUNPACK_CHECK src/finale/tape.asm
+
+run-finale: $(FIN_TAP)
+	$(EMU) --machine 48 --auto-load --traps --fastload $(FIN_TAP)
+
+finale-soak: $(FIN_SRC) $(FIN_GFX) | build
+	$(ASM) --nologo --fullpath=off -DSOAK --lst=build/finale-soak.lst src/finale/finale.asm
+
+finale-measure: $(FIN_SRC) $(FIN_GFX) | build
+	$(ASM) --nologo --fullpath=off -DMEASURE src/finale/finale.asm
+
 demo: $(DEMO_TAP)
 
 $(DEMO_TAP) $(DEMO_SNA): $(DEMO_SRC) $(GFX) | build
@@ -192,6 +227,9 @@ gfx/loading.scr: VERSION tools/mkloadscreen.py gfx/diver-atlantis.txt gfx/fish-a
 gfx/trigon/loading.scr: src/trigon/VERSION tools/mkloadscreen.py gfx/diver-atlantis.txt gfx/torpedo.txt \
                         gfx/trigon/pulsar.txt gfx/trigon/piranha.txt gfx/trigon/round-fish.txt
 	$(PYTHON) tools/mkloadscreen.py --trigon $@
+gfx/finale/loading.scr: src/finale/VERSION tools/mkloadscreen.py gfx/diver-atlantis.txt gfx/torpedo.txt \
+                        gfx/trigon/pulsar.txt
+	$(PYTHON) tools/mkloadscreen.py --finale $@
 
 run: $(TAP)
 	$(EMU) --machine 48 --auto-load --traps --fastload $(TAP)
