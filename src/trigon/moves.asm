@@ -35,6 +35,25 @@ mv_flags:       db 0
 mv_wtop:        db WAVE_TOP_BASE ; a wave's middle stays between these,
 mv_wlow:        db WAVE_LOW_BASE ; so its whole height is in the water
         ASSERT mv_flags == mv_alt + 3 && mv_wlow == mv_wtop + 1
+; The tallest wave: its middle halfway down the water, so it swings
+; from just under the score line to the seabed.
+MV_AMP_MAX      equ (BACK_ROW * 8 - WHEEL_HEIGHT - WHEEL_TOP_Y) / 2
+mv_htog:        db 0            ; mv_halve's every other step
+
+;------------------------------------------------------------------------------
+; mv_halve - wheel_wave, on a level with MV_HALF (patched in by mv_level):
+; A = the speed: A = it, or 0 every other step, so the wave goes at half
+; its speed (a tall wave stays smooth at a pixel a 1/50 second). Both
+; bombs share the toggle, and each still sees it change every step.
+; Corrupts: F, HL
+;------------------------------------------------------------------------------
+mv_halve:
+        ld hl,mv_htog
+        inc (hl)
+        bit 0,(hl)
+        ret nz
+        xor a
+        ret
 
 ; The waves' 128 heights, made by wave_make: the bomb's for this level,
 ; and the fish's (CFG_FISH_WAVE_AMP), in the free room between the
@@ -70,6 +89,18 @@ mv_lin:
         ld de,mv_alt
         ld bc,4
         ldir
+        ld b,a                  ; the old height
+        ld a,(mv_flags)
+        and MV_HALF
+        ld a,$21                ; LD HL,nn: the wave at its own speed
+        jr z,mv_lhalf
+        ld a,$CD                ; CALL mv_halve: every other step
+mv_lhalf:
+        ld (wheel_wave.half),a
+    IFDEF TWO_BOMBS
+        ld (b2.wheel_wave.half),a
+    ENDIF
+        ld a,b
         ld hl,mv_amp
         cp (hl)
         ret z                   ; the same wave: its tables are made
@@ -88,7 +119,7 @@ mv_lin:
 
 ;------------------------------------------------------------------------------
 ; wave_make - HL = a table of 128 (its low byte 0 or 128), C = the height
-; (1 to 48): a whole sine, rounded to the nearest pixel exactly as
+; (1 to 70): a whole sine, rounded to the nearest pixel exactly as
 ; data.asm's WAVE_TABLE makes Atlantis's, from its first 33 sines
 ; (wave_q). The rest are those mirrored, then negated.
 ; Corrupts: AF, BC, DE, HL
@@ -150,9 +181,9 @@ wave_q: db 0, 6, 12, 19, 25, 31, 37, 43, 49, 54, 60, 65, 71, 76, 81, 85
 
         MACRO MV_ROW alt?, amp?, speed?, flags?
         ASSERT alt? == MV_NONE || alt? <= MOVE_ZING, "CFG_MOVES: alt is a movement, or MV_NONE"
-        ASSERT amp? >= 4 && amp? <= 48, "CFG_MOVES: a wave's height is 4 to 48"
+        ASSERT amp? >= 4 && amp? <= MV_AMP_MAX, "CFG_MOVES: a wave's height is 4 to MV_AMP_MAX"
         ASSERT speed? >= 1 && speed? <= 16
-        ASSERT flags? >= 0 && flags? <= MV_RANDOM
+        ASSERT flags? >= 0 && flags? <= (MV_RANDOM | MV_HALF)
         db alt?, amp?, speed?, flags?
         ENDM
         COLD                    ; read once a level
@@ -162,6 +193,22 @@ mv_table:
 MV_ROWS         equ ($ - mv_table) / 4
         HOT
         ASSERT CFG_BOMB_WAVE_AMP == 16 && CFG_MV_FIRST >= 1 && CFG_MV_FIRST <= 255
+
+    IFDEF TWO_BOMBS
+; The second bomb's share, colour and movement, a row a level (config.asm,
+; TB_TABLE; tb_level reads them).
+        MACRO TB_ROW share?, ink?, bmove?, hunt?
+        ASSERT share? >= 0 && share? <= 255
+        ASSERT bmove? == MOVE_BOB || bmove? == MOVE_WAVE || bmove? == MOVE_HOME
+        ASSERT bmove? != MOVE_HOME || (hunt? >= 1 && hunt? <= 128), "a hunter's hunt is 1 to 128"
+        ASSERT bmove? == MOVE_HOME || hunt? == 0, "only MOVE_HOME hunts: hunt 0"
+        db share?, ink?, bmove?, hunt?
+        ENDM
+tb_table:
+        TB_TABLE
+TB_ROWS         equ ($ - tb_table) / 4
+        ASSERT TB_ROWS >= 1
+    ENDIF
     ENDIF
 
 ;------------------------------------------------------------------------------

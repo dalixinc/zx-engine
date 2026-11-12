@@ -307,6 +307,10 @@ tp_fish_new:
         db ink? | SEA
     ENDIF
         ENDM
+; The same, its ink not bright (the sea's black is the same either way).
+        MACRO BELT_DIM ink?
+        db ink? | (SEA & ~BRIGHT)
+        ENDM
 
         COLD                    ; once a level
 ; tb_level, each level: his belt (CFG_BELTS), and everything painted
@@ -325,6 +329,32 @@ tp_belt_level:
         ld a,1
         ld (tp_force),a
         ret
+
+    IFDEF POWERUPS
+;------------------------------------------------------------------------------
+; tp_pop_unpaint - the "BELT" cells back to the water, those still in its
+; colour, then forgotten. In the cold block: it runs only when a
+; burst or a pop-up starts or ends. Keeps BC. Corrupts: AF, HL
+;------------------------------------------------------------------------------
+tp_pop_unpaint:
+        ld hl,(tp_pcell)
+        ld a,h
+        or a
+        ret z
+        ld a,(tp_pcol)
+        cp (hl)
+        jr nz,tpu_next
+        ld (hl),WATER_ATTR
+tpu_next:
+        inc l
+        cp (hl)
+        jr nz,tpu_done
+        ld (hl),WATER_ATTR
+tpu_done:
+        xor a
+        ld (tp_pcell + 1),a
+        ret
+    ENDIF
         HOT
 
 ; The belts, a byte a level: in the hot code, where Trigon has room.
@@ -332,7 +362,95 @@ tp_belts:
         CFG_BELTS
         ASSERT $ - tp_belts == CFG_ENDING_LEVEL, "CFG_BELTS: one belt a level"
 
+    IFDEF POWERUPS
+; tp_belt_pop - level_up, after the banner: a new belt (white never is)
+; pops up "BELT" in its colour, in the "+20" box, beside the diver. A
+; burst coming or up shows it when it ends, in its place; a "+20" up is
+; cut short and "BELT" takes its place (pop_step, pop_show). Its clock
+; and clean-up are the "+20"'s. Corrupts: AF, B, DE, HL
+tp_belt_pop:
+        ld a,(level_n)
+        cp CFG_ENDING_LEVEL + 1
+        ret nc
+        ld e,a
+        ld d,0
+        ld hl,tp_belts - 2      ; the last level's belt
+        add hl,de
+        ld a,(hl)
+        inc hl
+        cp (hl)
+        ret z                   ; the same belt
+        ld a,(hl)
+        or a
+        ret z                   ; white: nothing to show
+        ld (tp_pbelt),a         ; not 0: pop_show shows "BELT"
+        ld (pop_pts),a          ; not 0: something to show
+        ld hl,(boom_hook + 1)
+        ld de,pop_step
+        or a
+        sbc hl,de
+        jr nz,tbp_new
+        ld hl,(frame_count)     ; a "+20" up: down at the next step
+        ld (pop_until),hl
+        ret
+tbp_new:
+        ld a,(diver_x)
+        add a,24                ; just right of him
+        ld l,a
+        ld h,0
+        ld a,(diver_y)
+        jp pop_here
+    ENDIF
+
         MACRO TP_DATA
+    IFDEF POWERUPS
+;------------------------------------------------------------------------------
+; tp_pop_word - pop_show, with tp_pbelt set: "BELT" in place of the
+; points, just right of the diver (a burst's box is moved there, and
+; photographed again: nothing is drawn in it yet), and its two cells in
+; the belt's colour (tp_pop_unpaint gives them back). Corrupts: AF, BC,
+; DE, HL
+;------------------------------------------------------------------------------
+tp_pop_word:
+        ld a,(diver_x)
+        add a,24 + 4            ; just right of him, the nearest byte
+        rrca
+        rrca
+        rrca
+        and 31
+        cp 31
+        jr c,tpw_col
+        ld a,30
+tpw_col:
+        ld (boom_col),a
+        ld a,(diver_y)
+        add a,4
+        and $F8                 ; a character row's top
+        ld (boom_y),a
+        call boom_photo
+        ld hl,POP_B | (POP_E << 8)
+        ld (pop_glyph),hl
+        ld hl,POP_L | (POP_T << 8)
+        ld (pop_glyph + 2),hl
+        ld hl,(boom_addr)       ; a character row's top: its attributes
+        ld a,h
+        rrca
+        rrca
+        rrca
+        and 3
+        or high ATTRS
+        ld h,a
+        ld (tp_pcell),hl
+        ld a,(tp_pbelt)
+        ld (tp_pcol),a
+        ld (hl),a
+        inc l
+        ld (hl),a
+        xor a
+        ld (tp_pbelt),a
+        jp pop_draw
+
+    ENDIF
 ;------------------------------------------------------------------------------
 ; tp_banner_heal - banner_tick, each step the "LEVEL n" banner is up: every
 ; 16 television frames, its blocks painted again. The bomb's colours and
@@ -658,28 +776,9 @@ tp_cells:
         ENDM
 
 tp_real:        dw fish_draw_fast       ; the fish's own draw (FISH_DRAW_TO)
-; What is painted now (the soak reads tp_fish_on and tp_fish_at).
-tp_fish_on:     db 0                    ; not 0 = tp_fish_at's cells are painted
-tp_fish_at:     dw 0                    ; L column, H row
-tp_fish_ink:    db 0                    ; their colour, 0 = none
-tp_msl_on:      db 0
-tp_msl_at:      dw 0
-tp_msl_size:    dw 0                    ; C columns, B rows
-tp_wpc:         dw 0                    ; the bomb's box when they were painted
-tp_wpr:         dw 0
-tp_wn:          db 0
-    IFDEF TWO_BOMBS
-tp_w2pc:        dw 0                    ; the second bomb's, the same
-tp_w2pr:        dw 0
-tp_w2n:         db 0
-    ENDIF
 tp_force:       db 1                    ; paint on the next step whatever
-; What this step wants.
-tp_new_fat:     dw 0
-tp_new_fink:    db 0
-tp_new_mon:     db 0
-tp_new_mat:     dw 0
-tp_new_msize:   dw 0
+; The records of what is painted now and what this step wants
+; (tp_fish_on to tp_new_msize) are run-time buffers (bss.asm).
         ASSERT MISSILE_HEIGHT == 8 && MISSILE_WIDTH <= 8
         ASSERT FISH_MAX_X / 8 + 3 <= 32, "the fish's three columns would run off the screen"
         ASSERT FISH_HEIGHT == 9, "a 9-row fish covers two rows of cells"
@@ -700,21 +799,6 @@ LEVEL_COUNT_ROWS equ level_rows
 ; The level codes and the key map (codes.asm).
         LEVEL_CODES
 
-    IFDEF TWO_BOMBS
-; The second bomb's share, colour and movement, a row a level (config.asm,
-; TB_TABLE; tb_level reads them).
-        MACRO TB_ROW share?, ink?, bmove?, hunt?
-        ASSERT share? >= 0 && share? <= 255
-        ASSERT bmove? == MOVE_BOB || bmove? == MOVE_WAVE || bmove? == MOVE_HOME
-        ASSERT bmove? != MOVE_HOME || (hunt? >= 1 && hunt? <= 128), "a hunter's hunt is 1 to 128"
-        ASSERT bmove? == MOVE_HOME || hunt? == 0, "only MOVE_HOME hunts: hunt 0"
-        db share?, ink?, bmove?, hunt?
-        ENDM
-tb_table:
-        TB_TABLE
-TB_ROWS         equ ($ - tb_table) / 4
-        ASSERT TB_ROWS >= 1
-    ENDIF
 
 ; The end of the game (TRIGON_END).
         INCLUDE "ending.asm"

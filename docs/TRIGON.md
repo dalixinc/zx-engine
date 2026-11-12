@@ -99,8 +99,9 @@ everything dimmer, as the bright bit belongs to the whole cell).
 
 ## The levels
 
-Ten levels, each its own fight, then the end. Each is a step on from
-the last, from the movements already built (`CFG_LEVELS` and
+Twenty levels, each its own fight, then the end. Each is a step on from
+the last. Levels 1 to 10 use the movements Atlantis built; 11 to 20 add
+new ones (`CFG_LEVELS` and
 `TB_TABLE` in `src/trigon/config.asm`):
 
 | Level | Bomb | Its fight | Border |
@@ -115,6 +116,25 @@ the last, from the movements already built (`CFG_LEVELS` and
 | 8 | the wheel, hunting hardest | double hunters: both of a pair hunt | red |
 | 9 | the wheel on a wave | the storm: pairs almost always, missiles close | magenta |
 | 10 | the fastest wheel, hunting hardest | Trigon's guard: pairs nearly always, both hunting | blue |
+| 11 | the wheel, zigzag or wave | sharp diagonals | green |
+| 12 | the wheel, stop-start or hunting | dash and stop dead | cyan |
+| 13 | the pulsar, a tall swell or zigzag | the swell | yellow |
+| 14 | the wheel, hunting or stop-start | the hunters' return | white |
+| 15 | the wheel, the zinger or a wave | the zinger: cruises, then darts to his depth | red |
+| 16 | the wheel, zigzag or zinger | | magenta |
+| 17 | the wheel, a tall swell or zigzag | | blue |
+| 18 | the wheel, stop-start or zinger | | green |
+| 19 | the wheel, the zinger or zigzag | | cyan |
+| 20 | the wheel, the zinger or a full-height swing | Trigon's last guard: pairs nearly always | red |
+
+From level 11 each bomb takes one of its level's two movements at
+random, and a wave can start anywhere along itself (`CFG_MOVES`,
+`src/trigon/moves.asm`). The second bomb of a pair keeps the bob, the
+wave and the hunt. No bomb moves more than a pixel up or down each
+1/50 second, so a smooth curve needs height × speed at 40 or less; a
+steeper one runs in straight lines. Level 20's swing goes from just
+under the score line to the seabed at half speed (`MV_HALF`), one long
+slow curve each crossing.
 
 The fish crosses the water once, right to left, and goes; the next
 wave, a fish or two bombs, follows after the usual pause. It is not
@@ -122,12 +142,17 @@ shot for leaving, and scores nothing.
 
 They score as Atlantis does. Hearts come from level 1, the double shot
 and suction from level 2, shove from level 3, the Lance from level 4.
-Each level from 2 to 10 has a code (in the message for level 2, under
+Each level from 2 to 20 has a code (in the message for level 2, under
 the banner from level 3).
 
 **Belts.** The diver earns a belt every two levels, and swims in its
 colour: white for levels 1 and 2, yellow for 3 and 4, cyan for 5 and 6,
-green for 7 and 8, magenta for 9 and 10 (`CFG_BELTS`). White is the
+green for 7 and 8, purple for 9 and 10, blue for 11 and 12, red for 13
+and 14, brown (the Spectrum's dark yellow) for 15 to 18, and black for
+19 and 20, shown as flashing white (`CFG_BELTS`). A belt only ever goes
+up. Each new one pops up "BELT" beside him, in its colour, for three
+seconds, in the box the points use ("+20"), and replaces any points
+showing then (`tp_belt_pop`). White is the
 sea's own ink; from yellow his cells are painted as the fish's are
 (`tp_diver`, `src/trigon/theme.asm`), his own box only, as he moves, on
 the steps the paint already uses. It costs a few late steps at 50 (level
@@ -135,7 +160,7 @@ the steps the paint already uses. It costs a few late steps at 50 (level
 "LEVEL n" banner is painted in the new belt's colour, so each level
 change announces the belt too.
 
-**The end.** Finishing level 10 (`CFG_ENDING_LEVEL`) stops the game:
+**The end.** Finishing level 20 (`CFG_ENDING_LEVEL`) stops the game:
 black, "TRIGON HAS FALLEN", and the code for the third game, Finale,
 until a key (`src/trigon/ending.asm`). The score counts for the high
 score, and the menu does not say GAME OVER. Erin's picture of Trigon
