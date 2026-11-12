@@ -65,7 +65,7 @@ html.phone-touch a {
   justify-content: space-between;
   gap: 8px;
   padding: 6px 10px;
-  min-height: 40px;
+  min-height: 44px;
 }
 
 #phone-bar h1 {
@@ -87,8 +87,11 @@ html.phone-touch a {
 #phone-bar a {
   color: var(--phone-dim);
   text-decoration: none;
-  font-size: 13px;
-  padding: 8px 10px;
+  font-size: 14px;
+  padding: 10px 12px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 #playfield {
@@ -131,7 +134,7 @@ html.phone-touch #play {
   grid-template-columns: 1fr 1fr;
   align-items: center;
   gap: 8px;
-  padding: 0 4px 6px;
+  padding: 0 4px 8px;
 }
 
 .pad-wrap,
@@ -141,10 +144,48 @@ html.phone-touch #play {
   align-items: center;
 }
 
+/* Default: four large arrow buttons in a plus. The round stick is optional. */
+#arrow-pad {
+  display: grid;
+  grid-template-areas:
+    ".    up    ."
+    "left .     right"
+    ".    down  .";
+  grid-template-columns: 62px 62px 62px;
+  grid-template-rows: 62px 62px 62px;
+  gap: 8px;
+  touch-action: none;
+}
+
+html.phone-touch.pad-stick #arrow-pad { display: none; }
+html.phone-touch.pad-arrows #dpad { display: none; }
+
+#arrow-up { grid-area: up; }
+#arrow-left { grid-area: left; }
+#arrow-right { grid-area: right; }
+#arrow-down { grid-area: down; }
+
+#arrow-pad button {
+  appearance: none;
+  margin: 0;
+  border: 2px solid #4a556c;
+  background: var(--phone-btn);
+  color: var(--phone-fg);
+  border-radius: 14px;
+  font-size: 26px;
+  line-height: 1;
+  touch-action: none;
+}
+
+#arrow-pad button.on {
+  background: var(--phone-btn-on);
+  border-color: #9eb0d8;
+}
+
 #dpad {
   position: relative;
-  width: 148px;
-  height: 148px;
+  width: 168px;
+  height: 168px;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 50%, #222838 0%, var(--phone-pad) 70%);
   border: 2px solid #323a4d;
@@ -153,9 +194,9 @@ html.phone-touch #play {
 
 #stick {
   position: absolute;
-  width: 52px;
-  height: 52px;
-  margin: -26px 0 0 -26px;
+  width: 60px;
+  height: 60px;
+  margin: -30px 0 0 -30px;
   left: 50%;
   top: 50%;
   border-radius: 50%;
@@ -171,13 +212,13 @@ html.phone-touch #play {
 }
 
 #fire {
-  width: 92px;
-  height: 92px;
+  width: 112px;
+  height: 112px;
   border-radius: 50%;
   border: 3px solid #ff8a80;
   background: var(--phone-fire);
   color: #fff;
-  font: 700 16px/1 system-ui, sans-serif;
+  font: 700 18px/1 system-ui, sans-serif;
   letter-spacing: 0.08em;
   touch-action: none;
 }
@@ -193,10 +234,10 @@ html.phone-touch #play {
   border: 1px solid #3a4254;
   background: var(--phone-btn);
   color: var(--phone-fg);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font: 13px/1 system-ui, sans-serif;
-  min-height: 36px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: 14px/1 system-ui, sans-serif;
+  min-height: 44px;
 }
 
 #phone-bar .actions button.on,
@@ -205,7 +246,8 @@ html.phone-touch #play {
 }
 
 #phone-bar .actions button:active,
-#keys-panel button:active {
+#keys-panel button:active,
+#arrow-pad button:active {
   background: var(--phone-btn-hi);
 }
 
@@ -224,14 +266,14 @@ html.phone-touch #play {
 #keys-grid {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
-  gap: 4px;
+  gap: 6px;
   max-width: 720px;
   margin: 0 auto;
 }
 
 #keys-grid button {
-  min-height: 36px;
-  padding: 6px 0;
+  min-height: 44px;
+  padding: 8px 0;
 }
 
 #keys-grid .wide {
@@ -243,15 +285,15 @@ html.phone-touch #play {
   text-align: center;
   color: var(--phone-dim);
   font-size: 12px;
-  padding: 0 8px 4px;
+  padding: 0 8px 6px;
 }
 
-/* Landscape: D-pad and Fire flank the picture. */
+/* Landscape: arrows or stick on the left, Fire on the right. */
 @media (orientation: landscape) and (max-height: 560px) {
-  #phone-bar { min-height: 32px; padding: 2px 8px; }
+  #phone-bar { min-height: 40px; padding: 2px 8px; }
   #phone-bar h1 { font-size: 14px; }
   #playfield {
-    grid-template-columns: 168px 1fr 168px;
+    grid-template-columns: 196px 1fr 196px;
     grid-template-rows: 1fr;
     align-items: center;
     padding: 0 4px;
@@ -260,9 +302,16 @@ html.phone-touch #play {
   .pad-wrap { grid-column: 1; grid-row: 1; }
   #frame { grid-column: 2; grid-row: 1; }
   .fire-wrap { grid-column: 3; grid-row: 1; }
-  #dpad { width: 140px; height: 140px; }
-  #fire { width: 96px; height: 96px; }
-  #phone-bar .actions button { min-height: 32px; padding: 6px 8px; font-size: 12px; }
+  #arrow-pad {
+    grid-template-columns: 56px 56px 56px;
+    grid-template-rows: 56px 56px 56px;
+    gap: 6px;
+  }
+  #arrow-pad button { font-size: 22px; border-radius: 12px; }
+  #dpad { width: 160px; height: 160px; }
+  #fire { width: 108px; height: 108px; }
+  #phone-bar .actions button,
+  #phone-bar a { min-height: 40px; padding: 8px 10px; font-size: 13px; }
 }
 
 @media (orientation: portrait) {

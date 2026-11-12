@@ -132,13 +132,57 @@
     return next;
   }
 
+  /* Arrow buttons keep their own held state so two can be down at once
+     (a diagonal) and so a drag on the picture does not cancel them. */
+  var arrowHeld = { up: false, down: false, left: false, right: false };
+  var padMode = "arrows";
+  var PAD_STORE = "zx-play-pad";
+
+  function loadPadMode() {
+    try {
+      return localStorage.getItem(PAD_STORE) === "stick" ? "stick" : "arrows";
+    } catch (e) {
+      return "arrows";
+    }
+  }
+
+  function applyPadMode(mode, persist) {
+    padMode = mode === "stick" ? "stick" : "arrows";
+    document.documentElement.classList.toggle("pad-arrows", padMode === "arrows");
+    document.documentElement.classList.toggle("pad-stick", padMode === "stick");
+    var btn = document.getElementById("btn-pad");
+    if (btn) btn.textContent = padMode === "stick" ? "Pad: Stick" : "Pad: Arrows";
+    arrowHeld = { up: false, down: false, left: false, right: false };
+    var pad = document.getElementById("arrow-pad");
+    if (pad) {
+      [].forEach.call(pad.querySelectorAll("button"), function (b) {
+        b.classList.remove("on");
+      });
+    }
+    resetStick();
+    if (persist) {
+      try { localStorage.setItem(PAD_STORE, padMode); } catch (e) {}
+    }
+  }
+
+  function setArrow(dir, down) {
+    arrowHeld[dir] = !!down;
+    var btn = document.getElementById("arrow-" + dir);
+    if (btn) btn.classList.toggle("on", !!down);
+    setDirs(arrowHeld);
+  }
+
   function resetStick() {
     var stick = document.getElementById("stick");
     if (stick) {
       stick.style.left = "50%";
       stick.style.top = "50%";
     }
-    setDirs({ up: false, down: false, left: false, right: false });
+    if (padMode === "arrows" && (arrowHeld.up || arrowHeld.down || arrowHeld.left || arrowHeld.right)) {
+      setDirs(arrowHeld);
+    } else {
+      setDirs({ up: false, down: false, left: false, right: false });
+    }
   }
 
   function bindHold(el, onDown, onMove, onUp) {
@@ -231,9 +275,11 @@
         '<div class="actions">' +
           '<button id="btn-start" type="button">Start (1)</button>' +
           '<button id="btn-skip" type="button">Skip</button>' +
+          '<button id="btn-bomb" type="button">Bomb</button>' +
           '<button id="btn-speed" type="button">50/25</button>' +
           '<button id="btn-menu" type="button">Menu</button>' +
           '<button id="btn-keys" type="button">Letters</button>' +
+          '<button id="btn-pad" type="button">Pad: Arrows</button>' +
           '<button id="btn-full" type="button">Full</button>' +
           '<a id="btn-other" href="' + otherHref + '">' + otherName + "</a>" +
         "</div>" +
@@ -242,6 +288,12 @@
         '<div id="frame"></div>' +
         '<div id="controls">' +
           '<div class="pad-wrap">' +
+            '<div id="arrow-pad" aria-label="Direction buttons">' +
+              '<button type="button" id="arrow-up" aria-label="Up">▲</button>' +
+              '<button type="button" id="arrow-left" aria-label="Left">◀</button>' +
+              '<button type="button" id="arrow-right" aria-label="Right">▶</button>' +
+              '<button type="button" id="arrow-down" aria-label="Down">▼</button>' +
+            "</div>" +
             '<div id="dpad" aria-label="Direction pad"><div id="stick"></div></div>' +
           "</div>" +
           '<div class="fire-wrap">' +
@@ -249,7 +301,7 @@
           "</div>" +
         "</div>" +
       "</div>" +
-      '<p class="phone-hint">Turn the phone sideways for a bigger picture. Drag on the screen or use the pad to swim; hold Fire to shoot.</p>' +
+      '<p class="phone-hint">Turn the phone sideways for a bigger picture. Use the arrows to swim, or two at once for a diagonal; hold Fire to shoot. Pad: Stick brings back the round joystick.</p>' +
       '<div id="keys-panel"><div id="keys-grid"></div></div>';
 
     document.body.insertBefore(app, document.body.firstChild);
@@ -259,6 +311,7 @@
       var label = play.querySelector("span") || play;
       if (label.textContent === "Click to play") label.textContent = "Tap to play";
     }
+    applyPadMode(loadPadMode(), false);
     return game;
   }
 
@@ -342,6 +395,15 @@
       function () { resetStick(); }
     );
 
+    ["up", "down", "left", "right"].forEach(function (dir) {
+      var el = document.getElementById("arrow-" + dir);
+      bindHold(el,
+        function () { setArrow(dir, true); },
+        null,
+        function () { setArrow(dir, false); }
+      );
+    });
+
     var fire = document.getElementById("fire");
     bindHold(fire,
       function () { fire.classList.add("on"); press("SPACE"); },
@@ -351,12 +413,17 @@
 
     bindTap(document.getElementById("btn-start"), function () { pulse("1"); });
     bindTap(document.getElementById("btn-skip"), function () { pulse("SPACE"); });
+    bindTap(document.getElementById("btn-bomb"), function () { pulse("B"); });
     bindTap(document.getElementById("btn-speed"), function () {
       // Menu option 2, or Symbol Shift + F in play (both are useful).
       pulse("2");
       setTimeout(function () { chord("SYM", "F"); }, 160);
     });
     bindTap(document.getElementById("btn-menu"), function () { chord("SYM", "P"); });
+    bindTap(document.getElementById("btn-pad"), function () {
+      applyPadMode(padMode === "arrows" ? "stick" : "arrows", true);
+      fitStage();
+    });
 
     var keysBtn = document.getElementById("btn-keys");
     var panel = document.getElementById("keys-panel");

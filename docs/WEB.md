@@ -146,13 +146,15 @@ Windows PowerShell); both rewrite only those two addresses, so running
   installing a test browser was blocked in this session. JSSpeccy 3 is
   written for current browsers, so it should work. Please open the page
   in Firefox once it's live and check that the click gives sound.
-- **Phones:** on a coarse-pointer or touch device the page shows an
-  on-screen D-pad, a holdable Fire button, Start (sends `1`), Skip,
-  and a letters pad for typing a code. You can also drag on the
-  picture to swim. Desktop and keyboard play are unchanged: the
-  controls are not shown when the primary pointer is a mouse. Add the
-  page to the Home Screen for a full-screen shortcut. Tested in a
-  mobile viewport on a desktop browser, not yet on a real phone.
+- **Phones:** on a coarse-pointer or touch device the page shows four
+  large arrow buttons (two at once for a diagonal), a holdable Fire
+  button, Start (sends `1`), Skip, Bomb (sends `B`, which sets off a
+  carried special bomb in both games), and a letters pad. You can also
+  drag on the picture to swim. **Pad: Arrows / Pad: Stick** switches
+  to the earlier round joystick, and the choice is remembered.
+  Desktop and keyboard play are unchanged: the controls are not shown
+  when the primary pointer is a mouse. Add the page to the Home Screen
+  for a full-screen shortcut.
 
 ## 5. Nothing in the game changed
 
