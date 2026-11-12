@@ -258,11 +258,11 @@ Trigon has the whole 48K to itself, laid out as Atlantis is
 
 | Free bytes | Atlantis | Trigon |
 |---|---|---|
-| Hot code (to `RFISH_BUF`) | 253 | 674 |
-| Cold block (to the unpacker) | 15 | 8 |
-| Data (to `PRESHIFT_START`) | 1,012 | 38 |
-| Tape margin (packed code's end past `code_end`; ZX0 needs 2-3) | 8,921 | 8,368 |
-| The tape | 19,010 bytes | 19,495 bytes |
+| Hot code (to `RFISH_BUF`) | 237 | 269 |
+| Cold block (to the unpacker) | 12 | 101 |
+| Data (to `PRESHIFT_START`) | 865 | 345 |
+| Tape margin (packed code's end past `code_end`; ZX0 needs 2-3) | 8,763 | 8,309 |
+| The tape | 19,169 bytes | 19,501 bytes |
 
 Trigon 0.2.0's second bomb takes about 2,040 bytes of the data block
 (the bomb code again), 164 of hot code (the main loop's calls, the
@@ -283,6 +283,9 @@ unpacks the code safely over its own packed bytes if they end a few
 bytes past `code_end`), so it was relaxed after Atlantis 0.9.87
 (`tape.asm`, WHERE). The tape no longer limits either game: the
 run-time room in the table is what is left, and each build DISPLAYs it.
+Trigon's level tables, level codes, belts and ending then moved into its
+hot code (the end of `src/trigon/theme.asm`), giving its data and cold
+blocks room for more levels.
 
 ## The Lance laser
 

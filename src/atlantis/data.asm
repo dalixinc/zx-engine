@@ -106,15 +106,20 @@ banner_font_0:  db %111, %101, %101, %101, %111
                 db %111, %101, %111, %101, %111
                 db %111, %101, %111, %001, %111
 
-; The levels (config.asm, score.asm).
+; The levels (config.asm, score.asm). Trigon's are in its hot code
+; (src/trigon/theme.asm), with its codes.
+    IFNDEF TRIGON
 level_tab:
         CFG_LEVELS
 level_end:
 LEVEL_COUNT_ROWS equ level_rows
+    ENDIF
 
 ; The level codes and the key map (codes.asm).
         COLD
+    IFNDEF TRIGON
         LEVEL_CODES
+    ENDIF
 
 ; The speed line is one of these two. They are the same length, so
 ; reprinting one on top of the other does not leave a stray letter.

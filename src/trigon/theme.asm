@@ -289,11 +289,12 @@ tp_belt_level:
         ld a,1
         ld (tp_force),a
         ret
+        HOT
 
+; The belts, a byte a level: in the hot code, where Trigon has room.
 tp_belts:
         CFG_BELTS
         ASSERT $ - tp_belts == CFG_ENDING_LEVEL, "CFG_BELTS: one belt a level"
-        HOT
 
         MACRO TP_DATA
 ;------------------------------------------------------------------------------
@@ -614,3 +615,38 @@ tp_new_msize:   dw 0
         ASSERT MISSILE_HEIGHT == 8 && MISSILE_WIDTH <= 8
         ASSERT FISH_MAX_X / 8 + 3 <= 32, "the fish's three columns would run off the screen"
         ASSERT FISH_HEIGHT == 9, "a 9-row fish covers two rows of cells"
+
+;------------------------------------------------------------------------------
+; Trigon's tables and once-in-a-while code, in the hot code. They were
+; in the data and cold blocks while a byte of hot code cost the tape
+; two; since the tape check counts the code once (tape.asm, WHERE), the
+; hot code has the room, and the data and cold blocks keep theirs for
+; what only fits there. All only read, or run once a level or less.
+;------------------------------------------------------------------------------
+; The levels (config.asm, CFG_LEVELS; score.asm reads them).
+level_tab:
+        CFG_LEVELS
+level_end:
+LEVEL_COUNT_ROWS equ level_rows
+
+; The level codes and the key map (codes.asm).
+        LEVEL_CODES
+
+    IFDEF TWO_BOMBS
+; The second bomb's share, colour and movement, a row a level (config.asm,
+; TB_TABLE; tb_level reads them).
+        MACRO TB_ROW share?, ink?, bmove?, hunt?
+        ASSERT share? >= 0 && share? <= 255
+        ASSERT bmove? == MOVE_BOB || bmove? == MOVE_WAVE || bmove? == MOVE_HOME
+        ASSERT bmove? != MOVE_HOME || (hunt? >= 1 && hunt? <= 128), "a hunter's hunt is 1 to 128"
+        ASSERT bmove? == MOVE_HOME || hunt? == 0, "only MOVE_HOME hunts: hunt 0"
+        db share?, ink?, bmove?, hunt?
+        ENDM
+tb_table:
+        TB_TABLE
+TB_ROWS         equ ($ - tb_table) / 4
+        ASSERT TB_ROWS >= 1
+    ENDIF
+
+; The end of the game (TRIGON_END).
+        INCLUDE "ending.asm"

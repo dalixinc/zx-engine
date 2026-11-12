@@ -1230,12 +1230,11 @@ data_start:
     ENDIF
     IFDEF TRIGON
         ; The second bomb's code, in the data block: uncontended, as the
-        ; code is, and where Trigon has the room; and the shared bomb
-        ; copies' rebuild.
+        ; code is; and the shared bomb copies' rebuild. The ending and
+        ; the level tables are in the hot code (src/trigon/theme.asm).
         TP_DATA                 ; the paint's box helpers (src/trigon/theme.asm)
         INCLUDE "../trigon/twobomb.asm"
         INCLUDE "../trigon/lance.asm"
-        INCLUDE "../trigon/ending.asm"
     ENDIF
     IFDEF CITY_SHOW
 city_pix_zx0:                   ; Erin's city, a whole screen, packed:
