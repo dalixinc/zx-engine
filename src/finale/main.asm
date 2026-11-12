@@ -94,12 +94,13 @@
         ; double shot (two torpedoes out at once, torpedo.asm). Not in the soak, whose script counts its missiles,
         ; nor in a measurement, which holds its own cases steady.
         ; MEAS_DOUBLE measures the double shot: every shot may be a second.
-    IFNDEF SOAK
-    IFNDEF MEASURE
+    IFNDEF SOAK                 ; Finale: measurements have them too
         DEFINE POWERUPS
     ENDIF
-    ENDIF
-    IFDEF POWERUPS
+        ; Finale: the double shot from level 2 and the Lance from level 3
+        ; are given, not caught, so every build but the soak (level 1
+        ; only, which has neither) has them, measurements too.
+    IFNDEF SOAK
         DEFINE DOUBLE_SHOT
     ENDIF
         ; The story when 1 starts a game: only where boot goes to the menu.
@@ -125,7 +126,7 @@
     IFNDEF SOAK                 ; whose script presses 1 to start
         DEFINE CODE_GATE        ; Trigon's menu asks for its code first (gate.asm)
     ENDIF
-    IFDEF POWERUPS
+    IFNDEF SOAK
         DEFINE LANCEGUN         ; the Lance laser, from CFG_LANCE_LEVEL (lance.asm)
     ENDIF
     IFDEF TYPEWRITER
@@ -1084,7 +1085,6 @@ wheel_first:    db 0
         HOT
         INCLUDE "torpedo.asm"
         INCLUDE "missile.asm"
-        INCLUDE "special.asm"    ; the special bombs: suction, shove, the nuke
         INCLUDE "../fish.asm"
         INCLUDE "../diver.asm"
         ; After the fish and the diver, so the wrappers can call their

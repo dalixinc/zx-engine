@@ -675,11 +675,6 @@ torpedo_reset:
         ld (t2_on),a
         ld (t2_vn),a
         ld (double_on),a
-      IFDEF POWERUPS
-        call special_reset      ; no special bomb held or moving things
-        call msl_calls_set      ; and the double shot's clock off: missile_update
-        xor a
-      ENDIF
         jp torp_two_set         ; A = 0: the plain routines back
     ELSE
         ret

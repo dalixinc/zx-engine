@@ -274,7 +274,17 @@ level_style:
         ld de,level_look
         ld bc,LEVEL_LOOK
         ldir
+    IFDEF LANCEGUN
         call lance_level        ; is the Lance his yet? (lance.asm)
+    ENDIF
+    IFDEF DOUBLE_SHOT
+        ; The double shot from CFG_DOUBLE_LEVEL: given, not caught.
+        ld a,(level_n)
+        cp CFG_DOUBLE_LEVEL
+        sbc a,a                 ; $FF below it, 0 from it
+        inc a                   ; 0 below it, 1 from it
+        ld (double_on),a
+    ENDIF
         ; The fish's movement is the next fish's: the one swimming keeps
         ; its own, as it keeps its kind. fish_unhold hands fish_mover to
         ; the moves when a fish appears (fish_wait_step, and a new game).

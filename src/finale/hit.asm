@@ -207,38 +207,5 @@ lives_draw:
         inc l
         djnz .ink
     ENDIF
-        ; The double shot's bubble, a cell of water away from the hearts,
-        ; while it lasts, and the special bomb he carries two cells left
-        ; of that; water when not. A cell is udg_water + 8 * its kind.
-        ld a,(double_on)        ; 1: kind 2, the bubble
-        add a,a
-        ld hl,LIVES_SCREEN - 2
-        call hud_cell
-        ld a,(sp_held)          ; 0, or a special bomb's kind
-    IF CFG_HELD_INK
-    IFDEF TRIGON
-        call tp_held            ; its cell in its colour (theme.asm, TP_DATA)
-    ELSE
-        call ink_held           ; its cell in its colour (missile.asm)
-    ENDIF
-    ENDIF
-        ld hl,LIVES_SCREEN - 4
-        ; fall through
-; A = a power-up's kind (0 = water), HL = its cell on row 1.
-; Corrupts: AF, B, DE, H
-hud_cell:
-        add a,a
-        add a,a
-        add a,a
-        add a,udg_water & $FF
-        ld e,a
-        ld d,udg_water >> 8
-        ld b,8
-.line:  ld a,(de)
-        ld (hl),a
-        inc de
-        inc h
-        djnz .line
-        ASSERT LIVES_COL - 2 >= HUD_LEN, "the double shot's bubble would cover the score line"
     ENDIF
         ret

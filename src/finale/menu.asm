@@ -334,11 +334,6 @@ CTRL_ROW        equ 6           ; the tape has no stat line to switch on
         ld hl,str_ctrl_menu
         ld bc,((CTRL_ROW + 1) << 8) | 4
         call print_string
-    IFDEF POWERUPS
-        ld hl,str_ctrl_bomb     ; sets off a carried special bomb (special.asm)
-        ld bc,((CTRL_ROW + 2) << 8) | 4
-        call print_string
-    ENDIF
 
         ld hl,menu_tab
 .item:  ld a,(hl)

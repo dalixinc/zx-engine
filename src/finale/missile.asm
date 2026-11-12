@@ -44,11 +44,7 @@ MSL_KIND_SUCTION equ 3          ; the special bombs (special.asm): carried,
 MSL_KIND_SHOVE  equ 4           ; then set off
 MSL_KIND_NUKE   equ 5
 ; How many kinds the roll has: the nuke is left out when its level is 0.
-    IF CFG_NUKE_LEVEL
-POWER_KINDS     equ 5
-    ELSE
-POWER_KINDS     equ 4
-    ENDIF
+POWER_KINDS     equ 1           ; Finale: the heart only
 ; It sinks from below the hearts and is gone above the weed, so it is
 ; always drawn before the seabed copy, and always one byte a row: its x
 ; is a multiple of 8, and the water does not scroll.
@@ -137,12 +133,6 @@ msl_hfrac:      db 0            ; its fraction of a pixel sideways
 ; (cheat_poll) makes every level 1. missile_gone walks the pairs.
 power_tab:
 pw_heart_lvl:   db CFG_POWER_LEVEL, CFG_HEART_ODDS
-pw_double_lvl:  db CFG_DOUBLE_LEVEL, CFG_DOUBLE_ODDS
-                db CFG_SUCTION_LEVEL, CFG_SUCTION_ODDS
-                db CFG_SHOVE_LEVEL, CFG_SHOVE_ODDS
-    IF CFG_NUKE_LEVEL
-                db CFG_NUKE_LEVEL, CFG_NUKE_ODDS
-    ENDIF
 pw_piranha_lvl: db CFG_PIRANHA_LEVEL
         ASSERT pw_piranha_lvl - power_tab == 2 * POWER_KINDS
 msl_gap_min:    db CFG_MISSILE_GAP_MIN  ; this level's wait (score.asm sets
@@ -468,8 +458,6 @@ power_sink:
 
 ; A = msl_kind (not 0). Out: carry clear: not a hit.
 power_take:
-        dec a
-        jr nz,.double
         ld hl,lives
         ld a,(hl)
         cp CFG_LIVES_MAX
@@ -477,20 +465,6 @@ power_take:
         inc (hl)
         ld hl,hud_dirty
         set HUD_HEARTS,(hl)     ; one more heart on row 1
-        jr .done
-.double:
-        dec a
-        jp nz,special_take      ; a special bomb: he carries it (special.asm)
-        inc a
-        ld (double_on),a
-        ld hl,(frame_count)
-        ld de,CFG_DOUBLE_TIME * 50
-        add hl,de
-        ld (double_until),hl
-        call msl_calls_set      ; the clock: main_loop's missile_update calls
-                                ; go through double_tick until it runs out
-        ld hl,hud_dirty
-        set HUD_HEARTS,(hl)     ; the bubble on row 1, beside the hearts
 .done:
 power_done:
         call missile_gone
@@ -542,34 +516,27 @@ cheat_poll:
         HOT
 
 
-; The double shot's clock. While it lasts, main_loop's two calls to
-; missile_update (.msl_uc1, .msl_uc2) come here first, so a game
-; without one pays nothing. When it runs out: the bubble beside the
-; hearts goes, a falling jingle plays, and the calls go back.
-; Corrupts: AF, BC, DE, HL (as missile_update)
-double_tick:
-        ld hl,(frame_count)
-        ld de,(double_until)
-        or a
-        sbc hl,de
-        bit 7,h
-        jp nz,missile_update    ; before double_until
-        call double_end
-        jp missile_update
-
-; The double shot is over: by its clock, or a new game. Corrupts: AF, HL
-double_end:
-        xor a
-        ld (double_on),a
-        ld hl,hud_dirty
-        set HUD_HEARTS,(hl)     ; the bubble on row 1 goes
-        call msl_calls_set      ; special.asm: missile_update, or a bomb's tick
-    IFNDEF NO_SOUND
-        ld hl,snd_tune_down
-        jp snd_tune_start
-    ELSE
+;------------------------------------------------------------------------------
+; power_build - the sinking heart's masked picture (POWER_PICS), from
+; row 1's cell, at start-up: mask then ink a row, the mask the ink's
+; complement, as missile_draw reads them. Corrupts: AF, B, DE, HL
+;------------------------------------------------------------------------------
+        COLD
+power_build:
+        ld hl,lives_heart
+        ld de,POWER_PICS
+        ld b,POWER_KINDS * 8
+.row:   ld a,(hl)
+        inc hl
+        cpl
+        ld (de),a
+        inc de
+        cpl
+        ld (de),a
+        inc de
+        djnz .row
         ret
-    ENDIF
+        HOT
 
         ASSERT CFG_POWER_SPEED >= 1 && CFG_POWER_SPEED <= 255, "CFG_POWER_SPEED is 256ths of a pixel a 1/50 second: 1 to 255"
 
