@@ -84,11 +84,7 @@
         ; to leave that room: a build with the stat line (every test
         ; build) or the soak keeps the piranha alone. Both fish are 16 by
         ; 9, so the draw costs the same whichever is drawn.
-    IFNDEF SOAK
-    IFNDEF STATS
-        DEFINE TWO_FISH
-    ENDIF
-    ENDIF
+        ; Finale: no fish, so no round one (TWO_FISH).
 
         ; Power-ups (missile.asm): a heart for a life, a bubble for the
         ; double shot (two torpedoes out at once, torpedo.asm). Not in the soak, whose script counts its missiles,
@@ -1188,7 +1184,6 @@ data_start:
         INCLUDE "../../gfx/trigon/piranha_raw.asm"
         INCLUDE "../../gfx/diver_raw.asm"
         INCLUDE "../../gfx/trigon/pulsar_raw.asm"
-        INCLUDE "../../gfx/trigon/spinning-wheel_raw.asm"
         PRESHIFT_DATA
         INCLUDE "../../gfx/torpedo.asm"
         INCLUDE "../../gfx/trigon/missile.asm"
@@ -1240,7 +1235,6 @@ data_end:
         DIVER_ART
         FISH_ART
         WHEEL_ART
-        WSPIN_ART
     IFDEF TWO_FISH
         RFISH_ART
     ENDIF
@@ -1286,7 +1280,6 @@ UDG_LENGTH      equ udg_end - udg_start
         ASSERT WHEEL_BOB == 6, "the sine table is drawn for a swing of 6"
         ASSERT WHEEL_TOP_BASE == WHEEL_TOP_Y + CFG_WHEEL_BOB, "the surface spawn is one swing below the score row"
         ASSERT WHEEL_LOW_BASE + CFG_WHEEL_BOB + WHEEL_HEIGHT <= BACK_ROW * 8, "the lowest spawn enters the seaweed"
-        ASSERT WSPIN_BUF_END <= CODE_START, "the spinning wheel has run into the game"
         ASSERT cold_end <= WSPIN_BUF, "the cold block has run into the spinning wheel"
         ASSERT code_end <= DATA_START, "instructions have run into the pictures"
     IFDEF DIVER_JET

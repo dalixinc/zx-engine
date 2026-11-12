@@ -77,8 +77,20 @@ boom_reset:
     IFDEF POWERUPS
         ld (pop_pts),a          ; A = 0: no points waiting to show
     ENDIF
+    IFDEF SOAK
+        ; The soak's script was written round a fish: it keeps one.
         call fish_kind_pick
         jp fish_unhold
+    ELSE
+        ; Finale has no fish. Its place is kept empty: nothing drawn,
+        ; nothing moved, nothing to hit (fish_busy), for the enemy divers
+        ; to take (chunk 3 of the brief).
+        inc a                   ; A = 0 here: 1
+        ld (fish_busy),a
+        ld hl,fish_move_skip    ; a RET in the fish's draw place
+        ld (FISH_DRAW_TO),hl
+        jp fish_hold
+    ENDIF
 
         HOT
 

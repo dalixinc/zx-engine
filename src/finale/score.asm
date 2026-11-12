@@ -53,7 +53,7 @@ level_rows = 0
         ASSERT need >= 1 && need <= 9999, "a level needs 1 to 9999 points"
         ASSERT gmin <= gmax && gmax <= 255 && gmax - gmin + 1 <= 255
         ASSERT haste >= 0 && haste <= 255
-        ASSERT bomb == BOMB_P || bomb == BOMB_W
+        ASSERT bomb == BOMB_P, "Finale has the pulsar only"
         ASSERT ink >= 0 && ink <= 255
         ASSERT bmove == MOVE_BOB || bmove == MOVE_WAVE || bmove == MOVE_HOME
         ; At most a pixel a 1/50 second, half the diver's speed: he can

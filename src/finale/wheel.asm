@@ -498,31 +498,10 @@ wheel_clamp_base:
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 wheel_type:
-        ld a,(level_bomb)
-    IFDEF MEAS_SPIN
-        ld a,BOMB_W             ; measure the spinning wheel at level 1
-    ENDIF
-    IFDEF SHARED_BOMB
-    IFNDEF B2_PASS
-        call bomb_art           ; Trigon: this kind's copies, if not made (twobomb.asm)
-    ENDIF
-    ENDIF
+        ; Finale: the pulsar only.
         ld hl,enemy_wheel
         ld de,wheel_pics
-        ld c,WHEEL_SPIN
-        cp BOMB_W
-        jr nz,.got
-        ld hl,enemy_spin
-        ld de,spin_pics
-        ld c,SPIN_HOLD_SLOW     ; the roll: see SPIN_HOLD_SLOW
-        ld a,(wheel_haste)
-        cp SPIN_MID_HASTE
-        jr c,.got
-        ld c,SPIN_HOLD_MID
-        cp SPIN_FAST_HASTE
-        jr c,.got
-        ld c,SPIN_HOLD_FAST
-.got:   ld a,c
+        ld a,WHEEL_SPIN
         ld (wheel_drift.hold1 + 1),a
         ld (wheel_drift.spin + 1),a
         ld (wheel_drift.hold2 + 1),a
@@ -558,7 +537,6 @@ wheel_type:
 
 ; Each kind's pictures and animation order.
 wheel_pics:     dw wheel_images, wheel_seq
-spin_pics:      dw wspin_images, wspin_seq
     IFNDEF B2_PASS
         HOT
     ENDIF

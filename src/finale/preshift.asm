@@ -43,7 +43,6 @@ DIVER_SHIFTED   equ DIVER_ALL8 / 2
         ASSERT DIVER_WIDE == 0, "the diver's shifts are not all one size"
         PRESHIFT_SIZE FISH_SHIFTED, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW
         PRESHIFT_SIZE WHEEL_SHIFTED, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW
-        PRESHIFT_SIZE WSPIN_SHIFTED, WSPIN_PICS, WSPIN_HEIGHT, WSPIN_WIDE, WSPIN_RAW
 
 ; The pulsar ends at the scroll buffers, the fish below it, the diver
 ; below that. main.asm checks that the data (data_end) stops short of
@@ -63,10 +62,10 @@ FISH_BUF        equ WHEEL_BUF - FISH_SHIFTED
 DIVER_BUF       equ FISH_BUF - DIVER_SHIFTED
 PRESHIFT_START  equ DIVER_BUF
 
-; The spinning wheel is packed against $8000, so the cold block below it
-; (main.asm) has all the room there is.
-WSPIN_BUF_END   equ CODE_START
-WSPIN_BUF       equ WSPIN_BUF_END - WSPIN_SHIFTED
+; Finale has no spinning wheel: its room, $78E0 to $7FFF, is free while
+; the game runs. The cold block still stops below it: the tape's
+; unpacker is there while the game loads (tape.asm).
+WSPIN_BUF       equ $78E0
 
 ; The diver's still pose with the jet's other phase (diver_jet_build):
 ; two more pictures, one per facing, at the top of the free room after
@@ -115,9 +114,6 @@ preshift_jobs:
         PRESHIFT_JOB diver_src, DIVER_BUF, DIVER_PICS, DIVER_HEIGHT, DIVER_WIDE, DIVER_RAW, 1
         PRESHIFT_JOB fish_src, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW, 0
         PRESHIFT_JOB wheel_src, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW, 0
-    IFNDEF SHARED_BOMB                  ; Trigon makes it when its level comes
-        PRESHIFT_JOB wspin_src, WSPIN_BUF, WSPIN_PICS, WSPIN_HEIGHT, WSPIN_WIDE, WSPIN_RAW, 0
-    ENDIF
     IFDEF ENEMY_DIVER
         PRESHIFT_JOB ediver_src, ED_BUF, EDIVER_PICS, EDIVER_HEIGHT, EDIVER_WIDE, EDIVER_RAW, 1
     ENDIF
@@ -519,18 +515,10 @@ jet_shifts:
         ASSERT pst_a == FISH_BUF + FISH_SHIFTED, "the fish's tables and preshift disagree"
         PRESHIFT_TABLES wheel_images, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW
         ASSERT pst_a == WHEEL_BUF + WHEEL_SHIFTED, "the pulsar's tables and preshift disagree"
-        PRESHIFT_TABLES wspin_images, WSPIN_BUF, WSPIN_PICS, WSPIN_HEIGHT, WSPIN_WIDE, WSPIN_RAW
-        ASSERT pst_a == WSPIN_BUF_END, "the spinning wheel's tables and preshift disagree"
-wspin_seq:                      ; the 4 quarter turns, twice: WHEEL_FRAMES steps
-        db 0, 1, 2, 3, 0, 1, 2, 3
         ENDM
 
-        ASSERT WSPIN_FRAMES == 4 && WSPIN_PICS == 4, "wspin_seq lists 4 pictures"
         ASSERT FISH_PICS == 2 * FISH_FRAMES, "the fish has two facings"
         ASSERT DIVER_PICS == 2 * DIVER_FRAMES, "the diver has two facings"
-        ASSERT WSPIN_WIDTH == WHEEL_WIDTH && WSPIN_HEIGHT == WHEEL_HEIGHT, "both bombs share the draw, so they are one size"
-        ASSERT WSPIN_WIDE == WHEEL_WIDE, "both bombs share wheel_shift_bytes"
-        ASSERT WHEEL_FRAMES == 8, "wspin_seq is WHEEL_FRAMES (8) steps, as the pulsar's"
 
 ; The round fish's tables, in the data block (main.asm, before data_end).
         MACRO RFISH_TABLES
