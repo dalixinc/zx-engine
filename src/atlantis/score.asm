@@ -342,7 +342,7 @@ level_up:
     ENDIF
     IFDEF TRIGON
     IFDEF POWERUPS
-        call tp_belt_pop        ; a new belt: "BELT" beside him (theme.asm)
+        call tp_belt_pop        ; a new belt: "BELT" when the banner goes (theme.asm)
     ENDIF
     ENDIF
     IFDEF LANCEGUN
@@ -654,6 +654,11 @@ banner_tick:
         or a
         sbc hl,de
         ret c
+    IFDEF TRIGON
+    IFDEF POWERUPS
+        call tp_belt_due        ; a new belt's "BELT", now (theme.asm)
+    ENDIF
+    ENDIF
     IFDEF TEASER
         call banner_erase
         ld a,(teaser_due)

@@ -363,11 +363,9 @@ tp_belts:
         ASSERT $ - tp_belts == CFG_ENDING_LEVEL, "CFG_BELTS: one belt a level"
 
     IFDEF POWERUPS
-; tp_belt_pop - level_up, after the banner: a new belt (white never is)
-; pops up "BELT" in its colour, in the "+20" box, beside the diver. A
-; burst coming or up shows it when it ends, in its place; a "+20" up is
-; cut short and "BELT" takes its place (pop_step, pop_show). Its clock
-; and clean-up are the "+20"'s. Corrupts: AF, B, DE, HL
+; tp_belt_pop - level_up: a new belt (white never is) is noted, and
+; tp_belt_due pops up "BELT" in its colour when the banner comes down,
+; so the banner never hides it. Corrupts: AF, DE, HL
 tp_belt_pop:
         ld a,(level_n)
         cp CFG_ENDING_LEVEL + 1
@@ -381,8 +379,20 @@ tp_belt_pop:
         cp (hl)
         ret z                   ; the same belt
         ld a,(hl)
+        ld (tp_bdue),a          ; 0 (white): nothing to show
+        ret
+
+; tp_belt_due - banner_tick, as the banner comes down: a belt noted by
+; tp_belt_pop pops up "BELT" beside the diver, in the "+20" box. A burst
+; coming or up shows it when it ends; a "+20" up is cut short and
+; "BELT" takes its place (pop_step, pop_show). Its clock and clean-up
+; are the "+20"'s. Corrupts: AF, B, DE, HL
+tp_belt_due:
+        ld hl,tp_bdue
+        ld a,(hl)
         or a
-        ret z                   ; white: nothing to show
+        ret z
+        ld (hl),0
         ld (tp_pbelt),a         ; not 0: pop_show shows "BELT"
         ld (pop_pts),a          ; not 0: something to show
         ld hl,(boom_hook + 1)

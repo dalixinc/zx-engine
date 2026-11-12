@@ -78,6 +78,7 @@ boom_reset:
         ld (pop_pts),a          ; A = 0: no points waiting to show
       IFDEF TRIGON
         ld (tp_pbelt),a         ; and no "BELT"; its cells are forgotten
+        ld (tp_bdue),a
         ld (tp_pcell + 1),a
       ENDIF
     ENDIF

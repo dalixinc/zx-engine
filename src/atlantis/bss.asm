@@ -105,6 +105,7 @@ bss_ptr = bss_ptr + (size?)
         BSS tp_new_msize, 2
       IFDEF POWERUPS
         ; the belt's pop-up (tp_belt_pop, theme.asm)
+        BSS tp_bdue, 1                  ; a new belt's colour, to pop up when the banner goes
         BSS tp_pbelt, 1                 ; not 0: the next pop-up is "BELT", in this colour
         BSS tp_pcol, 1                  ; the colour its cells were painted
         BSS tp_pcell, 2                 ; their first cell's attribute, high byte 0 = none
