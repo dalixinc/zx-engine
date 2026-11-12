@@ -1,15 +1,18 @@
 @echo off
-rem ATLANTIS and TRIGON - Windows build script
-rem   build.bat           assemble both games: build\atlantis.tap and .sna,
-rem                       build\trigon.tap and .sna (packed with ZX0 if
-rem                       zx0.exe is found, see below; otherwise unpacked)
+rem ATLANTIS, TRIGON and FINALE - Windows build script
+rem   build.bat           assemble the three games: build\atlantis.tap and
+rem                       .sna, build\trigon.tap and .sna, build\finale.tap
+rem                       and .sna (packed with ZX0 if zx0.exe is found, see
+rem                       below; otherwise unpacked)
 rem   build.bat run       build both, then open Atlantis's tape in Fuse
 rem   build.bat run 4x    the same, with Fuse at 4x size (2x, 3x, 4x)
-rem   build.bat runtrigon build both, then open Trigon's tape in Fuse
+rem   build.bat runtrigon build them, then open Trigon's tape in Fuse
+rem   build.bat runfinale build them, then open Finale's tape in Fuse
 rem   build.bat soak      assemble build\atlantis-soak.sna (the self-test)
 rem   build.bat runsoak   assemble the soak, then open it in Fuse
 rem   build.bat trigonsoak    build\trigon-soak.sna; runtrigonsoak opens it
 rem   build.bat trigonseas    build\trigon-sea-black.sna and -dark.sna
+rem   build.bat finalesoak    build\finale-soak.sna; runfinalesoak opens it
 rem   build.bat timing    assemble build\atlantis-timing.sna (timing border)
 rem   build.bat runtiming assemble the timing build, then open it in Fuse
 rem   build.bat demo      assemble build\diver.tap (Engine Demo 1)
@@ -51,11 +54,15 @@ if /i "%1"=="runtiming" goto timing
 if /i "%1"=="trigonsoak"    goto trigonsoak
 if /i "%1"=="runtrigonsoak" goto trigonsoak
 if /i "%1"=="trigonseas"    goto trigonseas
+if /i "%1"=="finalesoak"    goto finalesoak
+if /i "%1"=="runfinalesoak" goto finalesoak
 
-rem ---- the game tapes: Atlantis, then Trigon ----
-call :tape atlantis src\atlantis\main.asm gfx\loading.scr build\loading.zx0 ""
+rem ---- the game tapes: Atlantis, Trigon, then Finale (its own tape.asm) ----
+call :tape atlantis src\atlantis\main.asm gfx\loading.scr build\loading.zx0 "" src\atlantis\tape.asm
 if errorlevel 1 goto failed
-call :tape trigon src\trigon\main.asm gfx\trigon\loading.scr build\trigon-loading.zx0 "-DTRIGON"
+call :tape trigon src\trigon\main.asm gfx\trigon\loading.scr build\trigon-loading.zx0 "-DTRIGON" src\atlantis\tape.asm
+if errorlevel 1 goto failed
+call :tape finale src\finale\finale.asm gfx\finale\loading.scr build\finale-loading.zx0 "-DTRIGON" src\finale\tape.asm
 if errorlevel 1 goto failed
 if /i "%1"=="web" (
     copy /y build\atlantis.sna docs\play\atlantis.sna >nul
@@ -74,9 +81,10 @@ if /i "%1"=="web" (
 )
 if /i "%1"=="run" start "" "%EMU%" --graphics-filter %SIZE% --machine 48 --auto-load --traps --fastload build\atlantis.tap
 if /i "%1"=="runtrigon" start "" "%EMU%" --graphics-filter %SIZE% --machine 48 --auto-load --traps --fastload build\trigon.tap
+if /i "%1"=="runfinale" start "" "%EMU%" --graphics-filter %SIZE% --machine 48 --auto-load --traps --fastload build\finale.tap
 goto done
 
-rem ---- one game's tape: call :tape NAME MAIN.ASM SCREEN.SCR SCREEN.ZX0 "TAPE.ASM FLAGS"
+rem ---- one game's tape: call :tape NAME MAIN.ASM SCREEN.SCR SCREEN.ZX0 "TAPE.ASM FLAGS" TAPE.ASM
 rem main.asm writes build\NAME.sna, the plain tape and the four blocks;
 rem ZX0 packs the screen and the blocks (cold, code, data, UDG), and
 rem tape.asm puts them on build\NAME.tap behind the unpacker.
@@ -90,7 +98,7 @@ for %%B in (cold code data udg) do (
     "%ZX0%" -f build\%1-%%B.bin build\%1-%%B.zx0 >nul
     if errorlevel 1 exit /b 1
 )
-"%SJASM%" %ASMOPTS% %~5 src\atlantis\tape.asm
+"%SJASM%" %ASMOPTS% %~5 %6
 if errorlevel 1 exit /b 1
 echo Built build\%1.tap (packed) and build\%1.sna
 exit /b 0
@@ -105,6 +113,13 @@ exit /b 0
 if errorlevel 1 goto failed
 echo Built build\trigon-soak.sna  (green border and OK after about two minutes)
 if /i "%1"=="runtrigonsoak" start "" "%EMU%" --graphics-filter %SIZE% --machine 48 build\trigon-soak.sna
+goto done
+
+:finalesoak
+"%SJASM%" %ASMOPTS% -DSOAK --lst=build\finale-soak.lst src\finale\finale.asm
+if errorlevel 1 goto failed
+echo Built build\finale-soak.sna  (green border and OK after about two minutes)
+if /i "%1"=="runfinalesoak" start "" "%EMU%" --graphics-filter %SIZE% --machine 48 build\finale-soak.sna
 goto done
 
 :trigonseas
