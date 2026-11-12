@@ -70,13 +70,13 @@ CFG_ANGLER_INK      equ MAGENTA | SEA           ; the round fish
 CFG_PIRANHA_INK     equ RED | SEA
 CFG_MISSILE_INK     equ CFG_DARK_INK | SEA
     ENDIF
-; The seabed, Finale's: green hills behind with blue weed on their tops,
+; The seabed, Finale's: green hills behind with yellow seaweed on them,
 ; and the silos in front in a darker red. Row 21 (the weed) and row 22
 ; (the far hills) are inks on the sea; the silos' dome and tower cells
 ; are painted CFG_SILO_ATTR as they pass (scroll.asm, silo_paint_cells);
 ; the ground row is a whole cell colour, its rocks and the silos' bases
 ; in the ink, the rest in the paper. To tune in play.
-CFG_WEED_INK        equ BLUE    ; the hills' tops
+CFG_WEED_INK        equ YELLOW  ; the seaweed on the hills
 CFG_SAND_INK        equ GREEN   ; the hills behind
 CFG_SILO_ATTR       equ RED | (SEA & ~BRIGHT)                   ; dark red on the sea
     IFNDEF CFG_GROUND_ATTR
