@@ -63,7 +63,35 @@ Measured with power-ups and the Lance on and fire held, 1,024 steps:
 levels 3, 6 and 8, on the seabed and in mid-water, show no late steps,
 at least 10 scanlines to spare, and 1,024 interrupts.
 
+## The Trigon divers (chunk 3)
+
+Red Trigon divers come in from the right and swim left in the fish's old
+place (`src/finale/ediver.asm`): one at once on levels 1 to 3, two from
+level 4. Each comes in one of the level's movements, picked at random:
+straight across, drifting to the player's depth, stopping a while to fire
+twice as often, or diving at his depth. They fire short dashes to the
+left. A shot, or touching one, costs a life. The torpedo, the double
+shot and the Lance each take one of a diver's hits (2, 3 or 4 by level);
+a hit makes him blink, and the last blows him up for 20 points. The bomb
+never comes out with two divers, and a diver waits rather than make a
+third big enemy. The silos fire only from level 5; before that a heart
+can still fall in their turn. Each level's divers are a row of
+`CFG_ED_LEVELS` in `src/finale/config.asm`.
+
+The divers are 16 x 15 (a placeholder cut from Trigon's until Erin's
+arrives at that size): at 24 wide, two of them cost a third more to draw
+each frame.
+
+**The frame budget.** From level 3 (`CFG_ED_25_LEVEL`), while two big
+enemies are out (two divers, or a diver and the bomb), the game drops to
+25 frames a second, at the same game speed, and goes back to 50 half a
+second after one has gone. Below level 3, 50 holds with them. Measured
+with the double shot and the Lance in use, 1,024 steps each, on the
+seabed and in mid-water: no level loses a frame; levels 1 and 2 stay at
+50 throughout; level 3 is at 25 for about half its steps, levels 4 to 8
+for 82 to 97% (two divers are nearly always out there).
+
 ## Still to come
 
-Enemy divers (chunk 3), the level table (chunk 4), Erin's city and the
-bomb drop (chunk 5), and, if room allows, a computer-style font (chunk 6).
+The level table (chunk 4), Erin's city and the bomb drop (chunk 5), and,
+if room allows, a computer-style font (chunk 6).

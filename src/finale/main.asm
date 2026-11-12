@@ -828,6 +828,11 @@ teaser_hook:                    ; level 2's message, once (score.asm)
         jr nz,.meas_sample
         ld hl,(frame_count)    ; end of the warmup: the window starts now
         ld (meas_base),hl
+    IFDEF ENEMY_DIVER
+        ld hl,0
+        ld (ed_n25),hl          ; Finale: count 25's steps in the window only
+        ld (ed_nsw),hl
+    ENDIF
         jp .meas_go
 .meas_sample:
         ; meas_min / meas_max / meas_zeros: the picture frame at 25,
@@ -906,6 +911,15 @@ teaser_hook:                    ; level 2's message, once (score.asm)
         ld hl,(meas_loops)
         ld bc,(3 << 8) | 10
         call print_hex16
+    IFDEF ENEMY_DIVER
+        ; Row 4, Finale: steps at 25 (ed_rate), then the times it went down.
+        ld hl,(ed_n25)
+        ld bc,(4 << 8) | 0
+        call print_hex16
+        ld hl,(ed_nsw)
+        ld bc,(4 << 8) | 5
+        call print_hex16
+    ENDIF
         ld a,GREEN
         out (ULA_PORT),a
 .meas_halt:

@@ -7,9 +7,10 @@
 ; has a record (ED_* offsets, reached through IX): where he is, how many
 ; hits he has left, his movement, and his one shot.
 ;
-; He is a placeholder until Erin draws him: our diver's first frame
-; turned to face left (gfx/trigon/ediver.txt), one picture, drawn at even
-; x like ours, so four shifted copies (480 bytes, below our diver's).
+; He is 16 by 15, a placeholder until Erin's arrives at that size: our
+; diver's first frame turned to face left, cut to its front 16 columns
+; (gfx/finale/ediver.txt). One picture, drawn at even x like ours, so
+; four shifted copies (360 bytes, below our diver's).
 ;
 ; He comes in from the right edge at a random depth and swims left a
 ; pixel each 1/50 second, in one of the level's movements, picked at
@@ -36,12 +37,13 @@
 
     IFDEF ENEMY_DIVER
 
-        INCLUDE "../../gfx/trigon/ediver_raw.asm"
+        INCLUDE "../../gfx/finale/ediver_raw.asm" ; 16 x 15
 
         PRESHIFT_SIZE ED_ALL8, EDIVER_PICS, EDIVER_HEIGHT, EDIVER_WIDE, EDIVER_RAW
 ED_SHIFTED      equ ED_ALL8 / 2         ; even shifts only, as our diver's
 ED_BUF          equ PRESHIFT_START - ED_SHIFTED
         ASSERT EDIVER_WIDE == 0, "the enemy diver's shifts are not all one size"
+        ASSERT EDIVER_WIDTH == 16, "ed_paint and the box-change rule are written for 16 wide"
 
 ED_TOP          equ WHEEL_TOP_Y         ; below the score line
 ED_LOW          equ BACK_ROW * 8 - EDIVER_HEIGHT    ; above the weed
@@ -81,7 +83,8 @@ ED_COOL         equ 21          ; 1/50 seconds until he may fire
 ED_PON          equ 22          ; 1 = his cells are painted
 ED_PAT_AT       equ 23          ; 2 bytes: L column, H row of the painted box
 ED_PSIZE        equ 25          ; 2 bytes: C columns, B rows
-ED_REC          equ 27
+ED_REPAINT      equ 27          ; 1 = his cells may have changed: ed_paint at the next draw
+ED_REC          equ 28
 
 ;------------------------------------------------------------------------------
 ; ed_level - level_style, each level and a new game: the level's row of
@@ -112,7 +115,14 @@ ed_level:
 ; to put back. Corrupts: AF, IX
 ;------------------------------------------------------------------------------
 ed_reset:
-        ld ix,ed_rec0
+        ld a,(ed_forced)
+        or a
+        jr z,.rate
+        xor a
+        ld (ed_forced),a
+        ld a,50
+        call rate_apply         ; the speed he chose, not ed_rate's
+.rate:  ld ix,ed_rec0
         call .one
         ld (ix + ED_WAIT),CFG_ED_FIRST
         ld ix,ed_rec1
@@ -223,6 +233,7 @@ ed_move1:
         srl a
         ld (ix + ED_COOL),a     ; the first shot a little sooner
         ld (ix + ED_ON),1
+        ld (ix + ED_REPAINT),1
         ret
 
 .on:    ld a,(ix + ED_FLASH)
@@ -262,6 +273,16 @@ ed_move1:
         dec hl
         ld (ix + ED_X),l
         ld (ix + ED_X + 1),h
+        ; His box of cells changes only at x & 7 = 7 (a new column) or 1
+        ; (four columns down to three).
+        ld a,l
+        and 7
+        cp 7
+        jr z,.boxed
+        cp 1
+        jr nz,.boxok
+.boxed: ld (ix + ED_REPAINT),1
+.boxok:
         bit 7,h
         jr z,.vert
         ld a,l
@@ -313,11 +334,13 @@ ed_move1:
         cp ED_LOW
         ret nc
         inc (ix + ED_Y)
+        ld (ix + ED_REPAINT),1  ; a new depth: maybe new rows of cells
         ret
 .up:    ld a,(ix + ED_Y)
         cp ED_TOP + 1
         ret c
         dec (ix + ED_Y)
+        ld (ix + ED_REPAINT),1
         ret
 
 ;------------------------------------------------------------------------------
@@ -326,6 +349,7 @@ ed_move1:
 ; Corrupts: AF, BC, DE, HL, IX, IY
 ;------------------------------------------------------------------------------
 ed_restore:
+        call ed_rate            ; 25 or 50, by how many big enemies are out
         ld ix,ed_rec1
         call ed_shot_restore
         ld ix,ed_rec0
@@ -379,7 +403,9 @@ ed_draw1:
         ld a,(ix + ED_FLASH)
         and 2
         jr nz,.off              ; hit: he blinks
-        call ed_paint
+        ld a,(ix + ED_REPAINT)
+        or a
+        call nz,ed_paint        ; only when his cells may have changed
         ld l,(ix + ED_X)
         ld h,(ix + ED_X + 1)
         ld a,l
@@ -484,11 +510,12 @@ ed_shot_draw:
 
 ;------------------------------------------------------------------------------
 ; ed_paint - his cells in CFG_ED_INK: a box of 2 or 3 rows (by his y)
-; and 3 or 4 columns (by his x, clipped at the edges), painted again only
+; and 2 or 3 columns (by his x, clipped at the edges), painted again only
 ; when it changes, the last box given back to the water first.
 ; ed_unpaint - the box back to the water. Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 ed_paint:
+        ld (ix + ED_REPAINT),0
         ld a,(ix + ED_Y)
         ld c,a
         rrca
@@ -526,7 +553,7 @@ ed_paint:
         ld l,a
         ld a,e
         and 6                   ; drawn at even x
-        ld c,3
+        ld c,EDIVER_WIDTH / 8
         jr z,.cols
         inc c
 .cols:  ld a,32
@@ -736,6 +763,89 @@ ed_msl_pick:
         or a
         jp nz,missile_pick
         jp missile_gone
+
+;------------------------------------------------------------------------------
+; ed_rate - each step, before the restores: the frame budget. From level
+; CFG_ED_25_LEVEL, with two big enemies out (two divers, or a diver and
+; the bomb; before that level 50 holds with them) the game drops to 25
+; frames a second, the speed of the game the same (rate_apply), and goes
+; back to 50 ED_HOLD 1/50 seconds after one has gone, so it does not
+; flicker between the two. Only from 50 the player chose: at 25 it stays.
+; Not while he dies or the banner holds the game still (their own freezes
+; set the jumps). Corrupts: AF, B, HL
+;------------------------------------------------------------------------------
+ED_HOLD         equ 25                  ; half a second
+ed_rate:
+    IFDEF MEASURE
+        ld a,(step_ticks)
+        dec a
+        jr z,.m50
+        ld hl,(ed_n25)
+        inc hl
+        ld (ed_n25),hl          ; steps at 25, for the report
+.m50:
+    ENDIF
+        ld a,(hud_dirty)
+        bit HUD_BANNER,a
+        ret nz
+        ld a,(death_t)
+        or a
+        ret nz
+        ld a,(level_n)
+        cp CFG_ED_25_LEVEL
+        ld a,0                  ; before it: never two (50 holds there)
+        jr c,.count
+        ld a,(wheel_phase)
+        or a
+        jr z,.nobomb
+        ld a,1
+.nobomb:
+        ld hl,ed_rec0 + ED_ON
+        add a,(hl)
+        ld hl,ed_rec1 + ED_ON
+        add a,(hl)
+.count: cp 2
+        jr c,.calm
+        ld a,ED_HOLD
+        ld (ed_hold),a
+        ld a,(ed_forced)
+        or a
+        ret nz                  ; at 25 already
+        ld a,(game_rate)
+        cp 50
+        ret nz                  ; he plays at 25 anyway
+        ld a,1
+        ld (ed_forced),a
+    IFDEF MEASURE
+        ld hl,(ed_nsw)
+        inc hl
+        ld (ed_nsw),hl          ; times it went down to 25
+    ENDIF
+        ld a,25
+        jp rate_apply
+.calm:  ld a,(ed_forced)
+        or a
+        ret z
+        ld hl,ed_hold
+        ld a,(step_ticks)
+        ld b,a
+        ld a,(hl)
+        sub b
+        jr c,.back
+        jr z,.back
+        ld (hl),a
+        ret
+.back:  xor a
+        ld (ed_forced),a
+        ld a,50
+        jp rate_apply
+
+ed_forced:      db 0            ; 1 = ed_rate put the game at 25
+ed_hold:        db 0            ; 1/50 seconds of calm before it goes back
+    IFDEF MEASURE
+ed_n25:         dw 0            ; steps at 25
+ed_nsw:         dw 0            ; times down to 25
+    ENDIF
 
 ed_count:       db 1            ; the level's row (ed_level), in this order
 ed_hits:        db 2

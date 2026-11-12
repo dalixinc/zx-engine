@@ -1,0 +1,23 @@
+; ediver.txt - PLACEHOLDER for Finale's Trigon diver, 16 x 15: Trigon's
+; placeholder (our diver turned to face left) cut to its front 16
+; columns, helmet, body and jet, so the 16-wide size is measured now.
+; Erin is drawing the real one at this size; it drops in here.
+; One frame, one facing (mirror off). tools/gfx2raw.py makes
+; gfx/finale/ediver_raw.asm from it.
+mirror off
+frame 0  facing left
+..####..........
+.###########....
+#---####..#####.
+#----###.#######
+#----#-#.#######
+#---####.-------
+.###############
+..##############
+...#############
+...###...#######
+...##...........
+.#####-###......
+-#####-###......
+-#####-###......
+.#####-###......
