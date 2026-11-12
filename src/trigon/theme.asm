@@ -415,21 +415,24 @@ tbp_new:
         MACRO TP_DATA
     IFDEF POWERUPS
 ;------------------------------------------------------------------------------
-; tp_pop_word - pop_show, with tp_pbelt set: "BELT" in place of the
-; points, just right of the diver (a burst's box is moved there, and
-; photographed again: nothing is drawn in it yet), and its two cells in
-; the belt's colour (tp_pop_unpaint gives them back). Corrupts: AF, BC,
-; DE, HL
+; tp_pop_word - pop_show, with tp_pbelt set: "+BELT" in place of the
+; points, three characters right of the diver (a burst's box is moved
+; there, and photographed again: nothing is drawn in it yet), and its two
+; cells in the belt's colour (tp_pop_unpaint gives them back). Five 3x5
+; glyphs need 19 pixels and the box is 16, so "+BELT" is one picture,
+; its E and L two pixels wide (tp_belt_bits). Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 tp_pop_word:
         ld a,(diver_x)
-        add a,24 + 4            ; just right of him, the nearest byte
+        add a,48 + 4            ; three characters right of him, the nearest byte
+        jr c,tpw_edge
         rrca
         rrca
         rrca
         and 31
         cp 31
         jr c,tpw_col
+tpw_edge:
         ld a,30
 tpw_col:
         ld (boom_col),a
@@ -438,11 +441,8 @@ tpw_col:
         and $F8                 ; a character row's top
         ld (boom_y),a
         call boom_photo
-        ld hl,POP_B | (POP_E << 8)
-        ld (pop_glyph),hl
-        ld hl,POP_L | (POP_T << 8)
-        ld (pop_glyph + 2),hl
         ld hl,(boom_addr)       ; a character row's top: its attributes
+        push hl
         ld a,h
         rrca
         rrca
@@ -458,7 +458,31 @@ tpw_col:
         ld (hl),a
         xor a
         ld (tp_pbelt),a
-        jp pop_draw
+        pop hl
+        ld a,h
+        add a,POP_ROW
+        ld h,a
+        ld de,tp_belt_bits
+        ld b,5
+tpw_row:
+        ld a,(de)
+        ld (hl),a
+        inc de
+        inc l
+        ld a,(de)
+        ld (hl),a
+        inc de
+        dec l
+        inc h
+        djnz tpw_row
+        jp pop_clock
+; "+BELT", 16 x 5.
+tp_belt_bits:
+        db %00001100,%11010111
+        db %01001010,%10010010
+        db %11101100,%11010010
+        db %01001010,%10010010
+        db %00001100,%11011010
 
     ENDIF
 ;------------------------------------------------------------------------------

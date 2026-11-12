@@ -150,7 +150,7 @@ colour: white for levels 1 and 2, yellow for 3 and 4, cyan for 5 and 6,
 green for 7 and 8, purple for 9 and 10, blue for 11 and 12, red for 13
 and 14, brown (the Spectrum's dark yellow) for 15 to 18, and black for
 19 and 20, shown as flashing white (`CFG_BELTS`). A belt only ever goes
-up. Each new one pops up "BELT" beside him, in its colour, for three
+up. Each new one pops up "+BELT" just right of him, in its colour, for three
 seconds, as the "LEVEL n" banner comes down (so the banner never hides
 it), in the box the points use ("+20"), and replaces any points
 showing then (`tp_belt_pop`). White is the

@@ -831,7 +831,6 @@ pop_show:
 .small: ld (hl),b
         dec hl
         ld (hl),a
-pop_draw:                       ; pop_glyph's four glyphs, drawn
         ld hl,(boom_addr)
         ld a,h
         add a,POP_ROW
@@ -856,6 +855,7 @@ pop_draw:                       ; pop_glyph's four glyphs, drawn
         ld a,b
         cp 5
         jr c,.row
+pop_clock:                      ; drawn: the clock and the hook
         ld hl,(frame_count)
         ld de,CFG_POP_TIME
         add hl,de
