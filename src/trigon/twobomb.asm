@@ -32,6 +32,7 @@ level_bmove     equ tb_bmove            ; wave's row of TB_TABLE, not
 level_hunt      equ tb_hunt             ; the level's
         INCLUDE "../atlantis/wheel.asm"
         INCLUDE "../atlantis/level.asm"
+        INCLUDE "moves.asm"     ; its own copy of the new movements
         ENDMODULE
         UNDEFINE B2_PASS
 

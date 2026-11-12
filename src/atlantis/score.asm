@@ -55,7 +55,11 @@ level_rows = 0
         ASSERT haste >= 0 && haste <= 255
         ASSERT bomb == BOMB_P || bomb == BOMB_W
         ASSERT ink >= 0 && ink <= 255
+    IFDEF TRIGON
+        ASSERT bmove == MOVE_BOB || bmove == MOVE_WAVE || bmove == MOVE_HOME || bmove == MOVE_ZIG || bmove == MOVE_STOP || bmove == MOVE_ZING
+    ELSE
         ASSERT bmove == MOVE_BOB || bmove == MOVE_WAVE || bmove == MOVE_HOME
+    ENDIF
         ; At most a pixel a 1/50 second, half the diver's speed: he can
         ; always swim clear, and the bomb's colour keeps its cheap path.
         ASSERT bmove != MOVE_HOME || (hunt >= 1 && hunt <= 128), "a hunter's hunt is 1 to 128"

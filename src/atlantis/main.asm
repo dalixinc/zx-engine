@@ -1233,6 +1233,7 @@ data_start:
         ; code is; and the shared bomb copies' rebuild. The ending and
         ; the level tables are in the hot code (src/trigon/theme.asm).
         TP_DATA                 ; the paint's box helpers (src/trigon/theme.asm)
+        INCLUDE "../trigon/moves.asm"  ; the bomb's new movements
         INCLUDE "../trigon/twobomb.asm"
         INCLUDE "../trigon/lance.asm"
     ENDIF
