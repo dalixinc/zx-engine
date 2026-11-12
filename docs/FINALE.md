@@ -34,7 +34,7 @@ version is `src/finale/VERSION`.
   the enemy divers), the second bomb, the spinning wheel (the pulsar is
   the one bomb), the bombs' newer movements, the belts and "+BELT", the
   special bombs and the bubble, and the level 2 and 4 messages.
-- **The world:** a black sea; dark magenta hills and ground with yellow seaweed on their
+- **The world:** a black sea; dark blue hills and ground with yellow seaweed on their
   tops; the silos in front with yellow domes and dark red towers, their cells
   painted as they pass. Every colour is a setting in
   `src/finale/config.asm`, to tune in play.
