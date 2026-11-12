@@ -196,8 +196,8 @@ TRIGON_THEME = {
     },
     "title_inks": [YELLOW | BRIGHT, RED | BRIGHT, RED | BRIGHT, MAGENTA | BRIGHT],
 }
-# Finale's: Trigon's dark world without the fish, the weed yellow, as
-# the game's, and the title in two tones.
+# Finale's: Trigon's dark world without the fish, the weed yellow and
+# the sand dark blue, as the game's, and the title in two tones.
 FINALE_THEME = dict(TRIGON_THEME)
 FINALE_THEME.update({
     "word": "FINALE",
@@ -206,6 +206,7 @@ FINALE_THEME.update({
     "remap": {
         CYAN | BRIGHT: BLUE | BRIGHT, CYAN: BLUE, BLUE | BRIGHT: BLACK, BLUE: BLACK,
         GREEN | BRIGHT: YELLOW | BRIGHT, GREEN: YELLOW,
+        YELLOW | BRIGHT: BLUE, YELLOW: BLUE,      # the sand: the game's dark blue
     },
     "title_inks": [YELLOW | BRIGHT, YELLOW | BRIGHT, RED | BRIGHT, RED | BRIGHT],
 })

@@ -79,7 +79,7 @@ CFG_MISSILE_INK     equ CFG_DARK_INK | SEA
 ; in the ink, the rest in the paper. To tune in play.
 CFG_WEED_INK        equ YELLOW  ; the seaweed on the hills
 CFG_SAND_ATTR       equ BLUE | (SEA & ~BRIGHT)                  ; the hills behind: dark blue
-CFG_SILO_ATTR       equ RED | (SEA & ~BRIGHT)                   ; the towers: dark red on the sea
+CFG_SILO_ATTR       equ BLUE | (SEA & ~BRIGHT)                  ; the towers: dark blue, as the hills
 CFG_SILO_TOP_ATTR   equ YELLOW | SEA                            ; the domes: the seaweed's yellow
     IFNDEF CFG_GROUND_ATTR
 CFG_GROUND_ATTR     equ RED | (BLUE << 3)       ; dark red rocks and bases on dark blue
