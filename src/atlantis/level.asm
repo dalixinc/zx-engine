@@ -76,11 +76,36 @@ WAVE_LOW_BASE   equ BACK_ROW * 8 - WHEEL_HEIGHT - CFG_BOMB_WAVE_AMP
 ; than the bob's path. Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 wheel_wave:
+    IFDEF TRIGON
+        ld a,(@mv_wspd)         ; the level's speed along it (moves.asm)
+      IFNDEF B2_PASS
+        jr wheel_wgo
+; wheel_zig - update_wheel's MOVE_ZIG (Trigon, the first bomb): the
+; level's wave at CFG_ZIG_SPEED, too steep to follow, so the pixel-a-1/50
+; cap below makes it straight diagonals with sharp turns. Corrupts: as
+; wheel_wave
+wheel_zig:
+        ld a,CFG_ZIG_SPEED
+wheel_wgo:
+      ENDIF
+        ld c,a                  ; kept to .adv: nothing between corrupts C
+    ENDIF
         ld a,(wheel_phase)
         or a
         jp z,wheel_drift.waiting
         ld a,(wheel_x + 1)
         dec a                   ; x is 256 only on a new bomb's first step
+    IFDEF TRIGON
+        call z,mv_wave_new      ; the level's wave (src/trigon/moves.asm)
+        ld a,(step_ticks)
+        ld b,a
+        ld a,(wheel_wave_p)
+.adv:   add a,c
+        djnz .adv
+        ld (wheel_wave_p),a
+        srl a                   ; 0..127
+        ld hl,MV_WAVE_TAB       ; this level's heights
+    ELSE
         call z,wheel_wave_new
         ld a,(step_ticks)
         ld b,a
@@ -90,6 +115,7 @@ wheel_wave:
         ld (wheel_wave_p),a
         srl a                   ; 0..127
         ld hl,bomb_wave_tab
+    ENDIF
         add a,l
         ld l,a
         jr nc,.in
@@ -102,8 +128,21 @@ wheel_wave:
         inc a
         cp 3                    ; within a pixel of the last?
         jr c,.near
+    IFDEF TRIGON
+        ; Further: a pixel towards it each 1/50 second, so the colour
+        ; keeps its one-pixel path (a steep wave runs straight).
+        ld a,(wheel_y)
+        cp b
+        ld a,(step_ticks)
+        jr c,.capd              ; below it: down
+        neg
+.capd:  ld hl,wheel_y
+        add a,(hl)
+        ld b,a
+    ELSE
         ld a,1
         ld (wheel_odd),a
+    ENDIF
 .near:  ld a,b
         ld (wheel_y),a
         ld a,(step_ticks)
@@ -114,6 +153,7 @@ wheel_wave:
 ; A new bomb: the start of the wave, and a middle the wave fits round.
 ; The bomb is still off the right edge, so a middle that moves here was
 ; never seen. Corrupts: AF
+    IFNDEF TRIGON               ; Trigon's is mv_wave_new (src/trigon/moves.asm)
 wheel_wave_new:
         xor a
         ld (wheel_wave_p),a
@@ -126,6 +166,7 @@ wheel_wave_new:
         ld a,WAVE_LOW_BASE
 .low:   ld (wheel_base),a
         ret
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; wheel_home - update_wheel's kind 2: the drift, hunting the diver's depth
@@ -274,6 +315,9 @@ level_style:
         ld de,level_look
         ld bc,LEVEL_LOOK
         ldir
+    IFDEF TRIGON
+        call mv_level           ; the level's movements (src/trigon/moves.asm)
+    ENDIF
     IFDEF TWO_BOMBS
         call tb_level           ; the level's two-bomb waves (src/trigon/twobomb.asm)
     ENDIF

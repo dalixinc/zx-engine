@@ -295,6 +295,16 @@ CFG_POP_TIME         equ 150
 ; The beam stays TIME 1/50 seconds; then the Lance cannot charge for REST
 ; 1/25 seconds (a press is a torpedo only). A
 ; thing it burns scores PTS_LANCE (0 to 99).
+; A falling power-up's ink on the sea (src/trigon/theme.asm, tp_kinds;
+; the bubble stays white), and row 1: the hearts in CFG_LIVES_INK (WHITE
+; leaves them white) and, with CFG_HELD_INK 1, the carried bomb in its.
+CFG_HEART_INK        equ RED
+CFG_FALL_SUCTION_INK equ CYAN
+CFG_FALL_SHOVE_INK   equ GREEN
+CFG_FALL_NUKE_INK    equ YELLOW
+CFG_LIVES_INK        equ RED
+CFG_HELD_INK         equ 1
+
 CFG_LANCE_LEVEL      equ 4
 CFG_LANCE_FULL       equ 96      ; about 2 seconds for the whole width
 CFG_LANCE_MIN        equ 24      ; about half a second: 8 bytes, 64 pixels
@@ -383,6 +393,42 @@ MOVE_BOB            equ 0       ; bomb: the small bob
 MOVE_STRAIGHT       equ 0       ; fish: straight across
 MOVE_WAVE           equ 1       ; either: the wave
 MOVE_HOME           equ 2       ; bomb: the bob, drifting to the diver's depth
+MOVE_ZIG            equ 3       ; bomb: straight diagonals between two lines (moves.asm)
+MOVE_STOP           equ 4       ; bomb: stop-start, dashing and stopping dead
+MOVE_ZING           equ 5       ; bomb: the zinger, cruising, then darting at him
+
+; The new movements (src/trigon/moves.asm), the first bomb's only. The
+; zigzag runs along the level's wave at _ZIG_SPEED (the wave's own is 2),
+; too fast to follow, so it goes in straight diagonals. Stop-start, in
+; time with the clock, dashes for _SS_BEAT 1/50 seconds at twice its
+; pace, then stops dead for as long (a power of two). The zinger darts
+; once it is _ZING_DIST pixels right of the diver. A bomb that takes
+; MOVE_HOME as its level's second movement (CFG_MOVES) without a hunt
+; of its own hunts at CFG_ALT_HUNT (1 to 128).
+CFG_ZIG_SPEED       equ 6
+CFG_SS_BEAT         equ 64
+CFG_ZING_DIST       equ 64
+CFG_ALT_HUNT        equ 96
+        ASSERT CFG_ZIG_SPEED >= 1 && CFG_ZIG_SPEED <= 32
+        ASSERT CFG_SS_BEAT >= 4 && CFG_SS_BEAT <= 128 && (CFG_SS_BEAT & (CFG_SS_BEAT - 1)) == 0
+        ASSERT CFG_ZING_DIST >= 8 && CFG_ALT_HUNT >= 1 && CFG_ALT_HUNT <= 128
+
+; A level's movements, a row a level from CFG_MV_FIRST, in order; the
+; levels before it play as the old game; past the last row, the last
+; row again (moves.asm, mv_level).
+;   alt      a second movement, which each bomb takes instead of its own
+;            half the time, at random; MV_NONE: always its own (the
+;            second bomb takes only MOVE_BOB, MOVE_WAVE or MOVE_HOME)
+;   amp      the wave's height, and the zigzag's (4 to 48; the old 16)
+;   speed    how far along the wave each 1/50 second (the old 2)
+;   flags    MV_RANDOM: a waving bomb starts anywhere on its wave
+; Up or down, a bomb never moves more than a pixel a 1/50 second.
+CFG_MV_FIRST        equ 11
+MV_NONE             equ 255
+MV_RANDOM           equ 1
+        MACRO CFG_MOVES
+        ;       alt      amp speed flags
+        ENDM
 BORDER_BEAT         equ $FF     ; the heartbeat's round of colours
 CFG_L2_INK          equ RED | SEA
 CFG_L3_INK          equ MAGENTA | SEA

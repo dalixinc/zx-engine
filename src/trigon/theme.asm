@@ -107,16 +107,48 @@ trigon_paint:
         sbc hl,bc
         jr z,.msl
 .fdiff: set 0,e
-        ; The missile, up in the water only (not a power-up, not in its
-        ; hatch, not down in the seabed's rows).
+        ; The missile, up in the water only (not in its hatch, not down
+        ; in the seabed's rows), and a falling power-up in its kind's
+        ; colour. tp_new_mon is the colour: a new one repaints as a move does.
 .msl:   xor a
         ld (tp_new_mon),a
+    IFDEF POWERUPS
+        ; Flying, it is the missile (kind 0); sinking, a power-up. Its
+        ; colour by kind (tp_kinds), the bubble none. Inline: this runs
+        ; every step, and a call cost late steps at level 6.
         ld a,(msl_phase)
         cp MSL_FLY
-        jr nz,.mcmp
-    IFDEF POWERUPS
+        jr c,.mcmp              ; waiting, or in its hatch
         ld a,(msl_kind)
+        add a,low tp_kinds
+        ld l,a
+        ld h,high tp_kinds
+        ld a,(hl)
         or a
+        jr z,.mcmp
+        ld (.mink + 1),a
+        ; A sinking power-up covers other cells only at y & 7 = 0 or 1
+        ; (power_sink moves it a pixel at a time, so a paint every other
+        ; 1/50 second still sees one of them). Between, its box is the
+        ; one last worked out: keep its colour and skip the work.
+        ld c,a
+        ld a,l
+        cp low tp_kinds
+        jr z,.mbox              ; the missile: its box each step
+        ld a,c
+        ld hl,tp_msl_on
+        cp (hl)
+        jr nz,.mbox             ; a new power-up: its box now
+        ld a,(msl_y)
+        and 6
+        jr z,.mbox
+        ld a,c
+        ld (tp_new_mon),a       ; the same cells, the same colour
+        jr .bomb
+.mbox:
+    ELSE
+        ld a,(msl_phase)
+        cp MSL_FLY
         jr nz,.mcmp
     ENDIF
         ld a,(msl_y)
@@ -148,7 +180,11 @@ trigon_paint:
         ld l,a
         ld (tp_new_mat),hl
         ld (tp_new_msize),bc
-        ld a,1
+    IFDEF POWERUPS
+.mink:  ld a,0                  ; its colour, written above
+    ELSE
+        ld a,CFG_MISSILE_INK
+    ENDIF
         ld (tp_new_mon),a
 .mcmp:  ld a,(tp_new_mon)
         ld hl,tp_msl_on
@@ -317,7 +353,7 @@ tp_msl_water:
         ld a,WATER_ATTR
         jr tp_msl_box
 tp_msl_paint:
-        ld a,CFG_MISSILE_INK
+        ld a,(tp_msl_on)        ; its colour (trigon_paint, .msl)
 tp_msl_box:
         ld hl,(tp_msl_at)
         ld bc,(tp_msl_size)
@@ -332,6 +368,38 @@ tp_msl_new:
         ld hl,(tp_new_msize)
         ld (tp_msl_size),hl
         jr tp_msl_paint
+
+    IFDEF POWERUPS
+; The slot's colours by kind: the missile's, then the power-ups' (the
+; bubble's 0: unpainted). trigon_paint reads it within one page.
+tp_kinds:       db CFG_MISSILE_INK, CFG_HEART_INK | SEA, 0, CFG_FALL_SUCTION_INK | SEA, CFG_FALL_SHOVE_INK | SEA, CFG_FALL_NUKE_INK | SEA
+        ASSERT MSL_KIND_MISSILE == 0 && MSL_KIND_HEART == 1 && MSL_KIND_DOUBLE == 2 && MSL_KIND_SUCTION == 3 && MSL_KIND_SHOVE == 4 && MSL_KIND_NUKE == 5, "tp_kinds is in kind order"
+        ASSERT high tp_kinds == high (tp_kinds + 5), "tp_kinds crosses a page"
+        ASSERT CFG_MISSILE_INK != 0
+        ; trigon_paint tells a new power-up by its colour: no missile's.
+        ASSERT CFG_MISSILE_INK != CFG_HEART_INK | SEA && CFG_MISSILE_INK != CFG_FALL_SUCTION_INK | SEA
+        ASSERT CFG_MISSILE_INK != CFG_FALL_SHOVE_INK | SEA && CFG_MISSILE_INK != CFG_FALL_NUKE_INK | SEA
+        ASSERT CFG_POWER_SPEED <= 256, "power_sink: a pixel a 1/50 second at most"
+      IF CFG_HELD_INK
+; tp_held - lives_draw: A = the carried bomb's kind (0 = none): its cell
+; on row 1 in its colour, or the water's. Keeps A. Corrupts: F, HL
+tp_held:
+        push af
+        or a
+        jr z,tp_held_none       ; none (tp_kinds' 0 is the missile)
+        add a,low tp_kinds
+        ld l,a
+        ld h,high tp_kinds
+        ld a,(hl)
+        jr tp_held_set
+tp_held_none:
+        ld a,WATER_ATTR
+tp_held_set:
+        ld (ATTRS + LIVES_ROW * 32 + LIVES_COL - 4),a
+        pop af
+        ret
+      ENDIF
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; The diver's belt (CFG_BELTS): from the level whose belt is not white,
