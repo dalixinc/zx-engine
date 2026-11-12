@@ -140,16 +140,27 @@ The fish crosses the water once, right to left, and goes; the next
 wave, a fish or two bombs, follows after the usual pause. It is not
 shot for leaving, and scores nothing.
 
-They score as Atlantis does. Hearts come from level 1, the double shot
-and suction from level 2, shove from level 3, the Lance from level 4.
+They score as Atlantis does. Hearts come from level 1, the double
+shot's bubble and suction from level 2, shove from level 3. The belts
+bring the rest (below).
 Each level from 2 to 20 has a code (in the message for level 2, under
 the banner from level 3).
 
-**Belts.** The diver earns a belt every two levels, and swims in its
-colour: white for levels 1 and 2, yellow for 3 and 4, cyan for 5 and 6,
-green for 7 and 8, purple for 9 and 10, blue for 11 and 12, red for 13
-and 14, brown (the Spectrum's dark yellow) for 15 to 18, and black for
-19 and 20, shown as flashing white (`CFG_BELTS`). A belt only ever goes
+**Belts.** The diver earns a belt by finishing levels 4, 8, 12 and
+16, swims in its colour (`CFG_BELTS`), and keeps its power for good:
+
+| Levels | Belt | His fire |
+|---|---|---|
+| 1 to 4 | none (white) | the single shot |
+| 5 to 8 | yellow | the double shot, always |
+| 9 to 12 | green | the single shot and the Lance |
+| 13 to 16 | blue | the double shot and the Lance |
+| 17 to 20 | black, shown as flashing white | the double shot and the Lance, and more |
+
+The belts' double shot is the bubble's (two torpedoes out at once) with
+no clock: each level `tp_belt_level` points `double_live` at a byte that
+is never 0, so it costs no step anything. A bubble taken meanwhile only
+shows its cell on row 1. A belt only ever goes
 up. Each new one pops up "+BELT" just right of him, in its colour, for
 three seconds, as the "LEVEL n" banner comes down (so the banner never
 hides it), in the box the points use ("+20"), replacing any points
@@ -317,7 +328,7 @@ blocks room for more levels.
 
 ## The Lance laser
 
-From level 4 the diver has a second weapon on the fire key
+From level 9, the green belt, the diver has a second weapon on the fire key
 (`src/trigon/lance.asm`, `CFG_LANCE_*` in `src/trigon/config.asm`):
 
 - **A tap** fires a torpedo, as always.
@@ -335,8 +346,8 @@ From level 4 the diver has a second weapon on the fire key
   with a quick falling "pew" (`CFG_LANCE_PEW`, about 980 Hz down to
   390 Hz in 0.16 seconds; lower notes come out as clicks, as the beeper
   only plays in each step's spare time).
-- **Reaching level 4** shows a message in the level panel: "LANCE
-  LASER: HOLD FIRE, LET GO".
+- **Reaching level 9** shows a message in the level panel: "LANCE:
+  HOLD FIRE, LET GO".
 
 **Drawing it:** the sea is empty pixels, so the beam's two rows (always
 in one row of cells) need nothing kept from under them: drawn once and
