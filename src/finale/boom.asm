@@ -89,6 +89,9 @@ boom_reset:
         ld (fish_busy),a
         ld hl,fish_move_skip    ; a RET in the fish's draw place
         ld (FISH_DRAW_TO),hl
+      IFDEF ENEMY_DIVER
+        call ed_reset           ; the Trigon divers wait to come (ediver.asm)
+      ENDIF
         jp fish_hold
     ENDIF
 

@@ -58,7 +58,7 @@ TRI_GFX   := gfx/diver_raw.asm gfx/torpedo.asm gfx/trigon/piranha_raw.asm \
              gfx/trigon/round-fish_raw.asm gfx/trigon/pulsar_raw.asm \
              gfx/trigon/spinning-wheel_raw.asm gfx/trigon/missile.asm
 FIN_SRC   := $(wildcard src/finale/*.asm) $(SHARED)
-FIN_GFX   := gfx/diver_raw.asm gfx/torpedo.asm gfx/trigon/pulsar_raw.asm gfx/trigon/missile.asm
+FIN_GFX   := gfx/diver_raw.asm gfx/torpedo.asm gfx/trigon/pulsar_raw.asm gfx/trigon/missile.asm gfx/trigon/ediver_raw.asm
 ZX0       := build/zx0
 CC        ?= cc
 

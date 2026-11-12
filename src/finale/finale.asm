@@ -47,10 +47,6 @@
 loading_screen:
         INCBIN "../../gfx/finale/loading.scr"
         ASSERT $ - loading_screen == 6912, "a Spectrum screen is 6912 bytes"
-    IFDEF ENEMY_DIVER
-        ; The enemy diver experiment (ediver.asm): a snapshot only.
-        SAVESNA  "build/finale-ediver.sna", entry
-    ELSE
     IFDEF SEA_SNA
         IF CFG_SEA == BLACK
         SAVESNA  "build/finale-sea-black.sna", entry
@@ -80,7 +76,6 @@ loading_screen:
         EXPORT udg_end
         EXPORT entry
         SAVESNA  "build/finale.sna", entry
-    ENDIF
     ENDIF
     ENDIF
     ENDIF

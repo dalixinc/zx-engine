@@ -84,7 +84,12 @@
         ; to leave that room: a build with the stat line (every test
         ; build) or the soak keeps the piranha alone. Both fish are 16 by
         ; 9, so the draw costs the same whichever is drawn.
-        ; Finale: no fish, so no round one (TWO_FISH).
+        ; Finale: no fish, so no round one (TWO_FISH). The Trigon divers
+        ; take the fish's place (ediver.asm); the soak, written round a
+        ; fish, keeps it instead.
+    IFNDEF SOAK
+        DEFINE ENEMY_DIVER
+    ENDIF
 
         ; Power-ups (missile.asm): a heart for a life, a bubble for the
         ; double shot (two torpedoes out at once, torpedo.asm). Not in the soak, whose script counts its missiles,
@@ -437,7 +442,7 @@ main_loop:
         rla
         call c,missile_restore
     IFDEF ENEMY_DIVER
-        call ed_restore         ; drawn after the fish (src/trigon/ediver.asm)
+        call ed_restore         ; the Trigon divers and their shots (ediver.asm)
     ENDIF
     IFDEF TWO_BOMBS
 .tb_c1:  call tb_restore         ; drawn after the fish (src/trigon/twobomb.asm)
@@ -556,7 +561,7 @@ fish_draw_call:
         call fish_draw_fast
     ENDIF
     IFDEF ENEMY_DIVER
-        call ed_draw            ; Trigon's enemy diver, an experiment
+        call ed_draw            ; the Trigon divers, then their shots (ediver.asm)
     ENDIF
     IFDEF TWO_BOMBS
 .tb_c2:  call tb_draw            ; the second bomb, in the fish's place
@@ -1102,7 +1107,6 @@ wheel_first:    db 0
         INCLUDE "interlude.asm"  ; the city, after the last Atlantis level
     IFDEF TRIGON
         INCLUDE "theme.asm" ; the fish's and the missile's colours
-        INCLUDE "ediver.asm" ; the enemy diver, -DENEMY_DIVER only
     IFDEF CODE_GATE
         COLD
         INCLUDE "gate.asm"  ; the Trigon code on the menu
@@ -1211,15 +1215,15 @@ data_start:
       ENDIF
     ENDIF
     ENDIF
-    IFDEF ENEMY_DIVER
-        ED_DATA                 ; the enemy diver's tables (src/trigon/ediver.asm)
-    ENDIF
     IFDEF TRIGON
         ; The second bomb's code, in the data block: uncontended, as the
         ; code is; and the shared bomb copies' rebuild. The ending and
         ; the level tables are in the hot code (src/trigon/theme.asm).
         TP_DATA                 ; the paint's box helpers (src/trigon/theme.asm)
         INCLUDE "lance.asm"
+        ; The Trigon divers (ENEMY_DIVER): their code in the data block,
+        ; uncontended, as the code is.
+        INCLUDE "ediver.asm"
     ENDIF
     IFDEF CITY_SHOW
 city_pix_zx0:                   ; Erin's city, a whole screen, packed:

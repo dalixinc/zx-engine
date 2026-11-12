@@ -100,7 +100,12 @@ bss_ptr = bss_ptr + (size?)
         BSS pop_glyph, 4                ; a power's points: the pop-up's four glyphs (boom.asm)
     ENDIF
     IFDEF ENEMY_DIVER
-        BSS ed_bg, BG_DATA + EDIVER_BYTES * EDIVER_HEIGHT  ; Trigon's enemy diver (experiment)
+        ; the Trigon divers (ediver.asm): their pictures' backgrounds, and
+        ; their records (ED_* offsets)
+        BSS ed_bg, BG_DATA + EDIVER_BYTES * EDIVER_HEIGHT
+        BSS ed2_bg, BG_DATA + EDIVER_BYTES * EDIVER_HEIGHT
+        BSS ed_rec0, ED_REC
+        BSS ed_rec1, ED_REC
     ENDIF
 
 BSS_END         equ bss_ptr
