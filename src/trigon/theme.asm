@@ -332,6 +332,17 @@ tp_belt_level:
 
     IFDEF POWERUPS
 ;------------------------------------------------------------------------------
+; tp_banner_end - banner_tick, as the "LEVEL n" banner comes down: the
+; speed's jumps back (rate_apply: a death meanwhile keeps its freeze;
+; with nothing frozen it changes nothing), then a new belt's "+BELT".
+; Corrupts: AF, B, DE, HL
+;------------------------------------------------------------------------------
+tp_banner_end:
+        ld a,(game_rate)
+        call rate_apply
+        jp tp_belt_due
+
+;------------------------------------------------------------------------------
 ; tp_pop_unpaint - the "BELT" cells back to the water, those still in its
 ; colour, then forgotten. In the cold block: it runs only when a
 ; burst or a pop-up starts or ends. Keeps BC. Corrupts: AF, HL
@@ -414,6 +425,18 @@ tbp_new:
 
         MACRO TP_DATA
     IFDEF POWERUPS
+;------------------------------------------------------------------------------
+; tp_level_new - level_up, after the banner: nothing moves while it is up
+; (the death's freeze: each step only draws, at 50, with the border,
+; sound, bursts and pop-ups going on; tp_banner_end thaws it), and a new
+; belt is noted. Corrupts: AF, DE, HL
+;------------------------------------------------------------------------------
+tp_level_new:
+        call death_freeze
+        ld hl,step_moved        ; no death_step: only the drawing
+        ld (step_jp_move+1),hl
+        jp tp_belt_pop
+
 ;------------------------------------------------------------------------------
 ; tp_pop_word - pop_show, with tp_pbelt set: "+BELT" in place of the
 ; points, three characters right of the diver (a burst's box is moved
