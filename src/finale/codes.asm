@@ -32,22 +32,22 @@
 ;==============================================================================
 
     IFDEF TRIGON
-; Trigon's own keys: its codes are nothing like Atlantis's, so a code
-; from one game opens nothing in the other.
-CODE_KEY_SUM    equ $2C6F1      ; the checksum's key, 19 bits
-CODE_KEY_MIX    equ $4D93A7     ; the last XOR, 24 bits
+; Finale's own keys: its codes are nothing like Atlantis's or Trigon's,
+; so a code from one game opens nothing in another.
+CODE_KEY_SUM    equ $17D2B      ; the checksum's key, 19 bits
+CODE_KEY_MIX    equ $2E84F1     ; the last XOR, 24 bits
     ELSE
 CODE_KEY_SUM    equ $5A3C9      ; the checksum's key, 19 bits
 CODE_KEY_MIX    equ $B7E21D     ; the last XOR, 24 bits
     ENDIF
 CODE_LEN        equ 6
 
-; The Trigon code: the Atlantis ending shows it (interlude.asm), and
-; Trigon's menu asks for it before level 1 (src/trigon/). Not a level
-; code: it has letters (N) that code_alpha has not, so it is never one.
-; Kept out of docs/ and the README: notes/LEVEL-CODES-LIST.md.
+; The Finale code: Trigon's ending shows it, and Finale's menu asks for
+; it before level 1 (gate.asm). Not a level code: it has letters (N, I)
+; that code_alpha has not, so it is never one. Kept out of docs/ and the
+; README: notes/LEVEL-CODES-LIST.md.
         MACRO GATE_WORD
-        db "KRAKEN"
+        db "CINDER"
         ENDM
 
 ; The table, in the data block: code_alpha, then 3 bytes a level, top

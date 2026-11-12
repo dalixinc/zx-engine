@@ -557,6 +557,8 @@ shift_rows_left:
 ;------------------------------------------------------------------------------
 SILO_SCR21      equ $50A0       ; screen byte of row 21, top line, column 0
 SILO_ATTR21     equ ATTRS + BACK_ROW * 32
+SILO_ATTR22     equ SILO_ATTR21 + 32    ; Finale: the towers' row too
+        ASSERT high SILO_ATTR22 == high (SILO_ATTR22 + 31)
         ASSERT (SILO_SCR21 & 31) == 0 && (SILO_ATTR21 & 31) == 0
         ASSERT (BACK_BUF & 255) == 0, "silo_unstamp walks the weed rows with L alone"
 
@@ -898,6 +900,10 @@ silo_cells_update:
         add hl,de
         pop de
         ld (hl),a
+        ld a,l
+        add a,32
+        ld l,a
+        ld (hl),SAND_ATTR       ; the tower's cell below: the hills' again
         inc de
         djnz .old
 .paint: ld a,(silo_new_n)
@@ -911,7 +917,8 @@ silo_cells_update:
         ldir
         ; fall through
 
-; Green on blue on every cell in silo_cells. Corrupts: AF, B, DE, HL
+; Finale: the silo's colour on every cell in silo_cells, the dome's in
+; row 21 and the tower's below it. Corrupts: AF, B, DE, HL
 silo_paint_cells:
         ld a,(silo_cells_n)
         or a
@@ -922,7 +929,10 @@ silo_paint_cells:
 .cell:  ld a,(de)
         or low SILO_ATTR21
         ld l,a
-        ld (hl),WEED_ATTR
+        ld (hl),SILO_ATTR
+        add a,32
+        ld l,a
+        ld (hl),SILO_ATTR
         inc de
         djnz .cell
         ret

@@ -93,7 +93,7 @@ level_rows = level_rows + 1
     IFNDEF IDLE_HOLD
     IFNDEF MEASURE
     IFNDEF SOAK
-        DEFINE TEASER
+        ; Finale: no level messages (TEASER).
     ENDIF
     ENDIF
     ENDIF

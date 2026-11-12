@@ -610,12 +610,21 @@ soak_check_attrs:
         call nz,soak_fail
     ENDIF
 .rows_sand:
-        ; Sand and ground are painted once and never touched again.
+        ; Sand and ground are painted once and never touched again, but
+        ; for Finale's silo towers, whose cells in the sand row are the
+        ; silos' colour while one stands there (silo_paint_cells).
         ld b,SAND_ROW
-        ld e,SAND_ATTR
-        call soak_row_is_attr
-        ld a,6
-        call nz,soak_fail
+        ld c,0
+        call attr_addr
+        ld b,32
+.sand:  ld a,(hl)
+        cp SAND_ATTR
+        jr z,.sandok
+        cp SILO_ATTR
+        jp nz,.bad6
+.sandok:
+        inc hl
+        djnz .sand
         ld b,GROUND_ROW
         ld e,GROUND_ATTR
         call soak_row_is_attr
@@ -653,6 +662,8 @@ soak_check_attrs:
         pop hl
         ld a,e
         cp WEED_ATTR
+        jr z,.green
+        cp SILO_ATTR            ; Finale: a dome's cell, in the silos' colour
         jr z,.green
         cp WATER_ATTR
         jr nz,.bad              ; some third colour

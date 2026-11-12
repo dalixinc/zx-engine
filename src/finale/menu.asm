@@ -242,7 +242,7 @@ menu_print_score:
 ;------------------------------------------------------------------------------
 TITLE_ROW       equ 2
     IFDEF TRIGON
-TITLE_LEN       equ 6           ; TRIGON
+TITLE_LEN       equ 6           ; FINALE
     ELSE
 TITLE_LEN       equ 8           ; ATLANTIS
     ENDIF

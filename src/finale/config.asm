@@ -70,17 +70,22 @@ CFG_ANGLER_INK      equ MAGENTA | SEA           ; the round fish
 CFG_PIRANHA_INK     equ RED | SEA
 CFG_MISSILE_INK     equ CFG_DARK_INK | SEA
     ENDIF
-; The seabed: the weed (and the silos' domes, which stand in its row)
-; is an ink on the sea, and the ground row is a whole cell colour, its
-; rocks and the silos' bases in the ink, the rest in the paper.
-CFG_WEED_INK        equ RED     ; Erin's ominous plants (cyan was 0.2.0's)
+; The seabed, Finale's: green hills behind with blue weed on their tops,
+; and the silos in front in a darker red. Row 21 (the weed) and row 22
+; (the far hills) are inks on the sea; the silos' dome and tower cells
+; are painted CFG_SILO_ATTR as they pass (scroll.asm, silo_paint_cells);
+; the ground row is a whole cell colour, its rocks and the silos' bases
+; in the ink, the rest in the paper. To tune in play.
+CFG_WEED_INK        equ BLUE    ; the hills' tops
+CFG_SAND_INK        equ GREEN   ; the hills behind
+CFG_SILO_ATTR       equ RED | (SEA & ~BRIGHT)                   ; dark red on the sea
     IFNDEF CFG_GROUND_ATTR
-CFG_GROUND_ATTR     equ CFG_BRIGHT_SEA | BLACK | (YELLOW << 3)   ; as Atlantis's (red was tried)
+CFG_GROUND_ATTR     equ RED | (YELLOW << 3)     ; dark red rocks and bases on dark yellow
     ENDIF
 
 ; TRIGON on the menu: the tall letters' top halves and bottom halves.
-CFG_TITLE_INK       equ RED
-CFG_TITLE_LOW_INK   equ MAGENTA
+CFG_TITLE_INK       equ YELLOW
+CFG_TITLE_LOW_INK   equ RED
 
 ; --- Lives ---------------------------------------------------------------------
 ; How many times the wheel bomb can hit the diver. The last hit ends the

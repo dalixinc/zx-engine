@@ -126,15 +126,15 @@ story_attr:     db 0            ; text_attr as it was, for the menu's next visit
     IFDEF TRIGON
 ; Trigon's, after the Atlantis ending, broken by hand for 30 columns.
 story_text:
-        db "You have reached Trigon.", STORY_PARA
-        db "The Empire's power source", STORY_NL
-        db "lies deep in these waters,", STORY_NL
-        db "and its guards know you are", STORY_NL
-        db "here.", STORY_PARA
-        db "Fight your way down to it.", STORY_NL
-        db "Set the neutron bomb, and get", STORY_NL
-        db "out alive.", STORY_PARA
-        db "Atlantis is counting on you.", 0
+        ; Finale's (wording for Dalix to approve). 30 letters a line at most.
+        db "This is it.", STORY_PARA
+        db "You carry the bomb. Trigon", STORY_NL
+        db "will throw everything at you.", STORY_PARA
+        db "Get through, drop the bomb", STORY_NL
+        db "into the Trigon power", STORY_NL
+        db "generator, destroy the city,", STORY_NL
+        db "and break the blockade on", STORY_NL
+        db "Atlantis.", 0
     ELSE
 ; The words, as Quartus wrote them, broken by hand for 30 columns.
 story_text:

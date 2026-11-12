@@ -65,11 +65,13 @@ BANNER_ATTR     equ BRIGHT | BLUE | (YELLOW << 3)
 ; Level 2's message (score.asm): white on black, the code in yellow.
 TEASE_ATTR      equ BRIGHT | WHITE | (BLACK << 3)
 TEASE_CODE_ATTR equ BRIGHT | YELLOW | (BLACK << 3)
-SAND_ATTR       equ YELLOW | SEA
     IFDEF TRIGON
+SAND_ATTR       equ CFG_SAND_INK | SEA
+SILO_ATTR       equ CFG_SILO_ATTR       ; Finale: the domes and towers
 WEED_ATTR       equ CFG_WEED_INK | SEA
 GROUND_ATTR     equ CFG_GROUND_ATTR
     ELSE
+SAND_ATTR       equ YELLOW | SEA
 WEED_ATTR       equ GREEN | SEA
 GROUND_ATTR     equ BRIGHT | BLACK | (YELLOW << 3)
     ENDIF

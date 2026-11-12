@@ -14,9 +14,6 @@
 
     IFDEF TRIGON_END
 
-        MACRO FINALE_WORD
-        db "CINDER"
-        ENDM
 
 ; level_up: the next level would be CFG_ENDING_LEVEL + 1. Never returns.
 tg_ending:
@@ -51,12 +48,11 @@ tg_ending:
 TG_END_ATTR     equ BRIGHT | WHITE | (BLACK << 3)
 TG_CODE_ATTR    equ BRIGHT | YELLOW | (BLACK << 3)
 ; Each line: row, column, colour, the words, 0. A row of 0 ends them.
+; Finale's placeholder: chunk 5 of the brief puts the city of Trigon
+; and the bomb drop before it.
 tg_end_text:
-        db 7, 7, TG_END_ATTR, "TRIGON HAS FALLEN", 0
-        db 10, 10, TG_END_ATTR, "FINALE CODE", 0
-        db 12, (32 - CODE_LEN) / 2, TG_CODE_ATTR
-        FINALE_WORD
-        db 0
+        db 7, 5, TG_END_ATTR, "THE BLOCKADE IS BROKEN", 0
+        db 10, 8, TG_CODE_ATTR, "ATLANTIS IS FREE", 0
         db 18, 10, TG_END_ATTR, "PRESS A KEY", 0
         db 0
 
