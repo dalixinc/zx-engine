@@ -66,7 +66,7 @@ BANNER_ATTR     equ BRIGHT | BLUE | (YELLOW << 3)
 TEASE_ATTR      equ BRIGHT | WHITE | (BLACK << 3)
 TEASE_CODE_ATTR equ BRIGHT | YELLOW | (BLACK << 3)
     IFDEF TRIGON
-SAND_ATTR       equ CFG_SAND_INK | SEA
+SAND_ATTR       equ CFG_SAND_ATTR       ; Finale: a whole attribute (not bright)
 SILO_ATTR       equ CFG_SILO_ATTR       ; Finale: the towers
 SILO_TOP_ATTR   equ CFG_SILO_TOP_ATTR   ; and the domes
 WEED_ATTR       equ CFG_WEED_INK | SEA
