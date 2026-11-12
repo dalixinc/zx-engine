@@ -1,0 +1,121 @@
+;==============================================================================
+; layout.asm - Atlantis seabed
+;
+; Character rows are 0..23, top to bottom. Everything above row 21 is open
+; water. The seabed is three bands, two scroll speeds:
+;
+;   row 21   seaweed, 8 pixels. Part of the SLOW layer. Green ink on blue
+;            paper, and only in the cells a plant actually occupies.
+;            Scrolls with the sand (1 pixel every 2 frames). A silo's
+;            dome stands in this row, and its cells are green on blue too.
+;   row 22   yellow sand, 8 pixels. The rest of the slow layer. Yellow ink
+;            on blue paper, every column, painted once and never scrolled.
+;            A silo's tower stands in this row, in this row's colours.
+;   row 23   black ground, 8 pixels. The FAST layer. Black ink on yellow
+;            paper, every column, painted once. Scrolls 1 pixel a frame.
+;            Rocks stay inside these 8 pixels. A silo's base is here.
+;
+; The slow layer is one 16-pixel buffer (weed on top of sand) so the plant
+; cannot drift off the dune it was planted on. The fast layer's buffer is
+; only the 8-pixel ground. The silo's tower and dome are stamped on after
+; the copy; a second full-width buffer for them does not fit in the frame.
+; See docs/SCROLLING.md.
+;==============================================================================
+
+WATER_TOP_ROW   equ 0           ; open water from the top of the screen
+BACK_ROW        equ 21          ; first row of the seabed (the seaweed)
+SAND_ROW        equ 22
+GROUND_ROW      equ 23
+
+; Slow buffer: 8 weed rows + 8 sand rows. Fast buffer: 8 ground rows.
+BACK_PX         equ 16
+GROUND_PX       equ 8
+SILO_H          equ 24          ; base, tower and dome: up to the top of the weed row
+ROCK_H          equ 6           ; a rock stays inside the ground row
+
+; One past the last pixel on the screen. clamp_to_terrain subtracts the
+; black column's height from this, so a silo of 24 stops the diver 24
+; pixels above the bottom, which is the top of row 21.
+NEAR_BOTTOM     equ 24 * 8
+
+; The sea: its paper, and the bright bit every cell on it shares. Each
+; colour on the water below is an ink on it. Trigon's is a setting
+; (src/trigon/config.asm, CFG_SEA): black, or a dark blue.
+    IFDEF TRIGON
+SEA             equ CFG_BRIGHT_SEA | (CFG_SEA << 3)
+    ELSE
+SEA             equ BRIGHT | (BLUE << 3)
+    ENDIF
+WATER_ATTR      equ WHITE | SEA
+; The title word on row 2. Same ink and paper as the sand, but it is
+; not the sand: it is the eight letters printed at column 12. The wheel
+; puts this byte back when it moves off those cells.
+    IFDEF TRIGON
+TITLE_ATTR      equ CFG_TITLE_INK | SEA
+TITLE_LOW_ATTR  equ CFG_TITLE_LOW_INK | SEA
+    ELSE
+TITLE_ATTR      equ YELLOW | SEA
+TITLE_LOW_ATTR  equ BLACK | SEA         ; the title's bottom halves
+    ENDIF
+; GAME OVER on the menu. White on red stands out from the yellow title.
+GAME_OVER_ATTR  equ BRIGHT | WHITE | (RED << 3)
+; The "LEVEL n" banner's blocks (score.asm): yellow cells on the blue sea.
+; A sprite crossing one is drawn in blue on the yellow.
+BANNER_ATTR     equ BRIGHT | BLUE | (YELLOW << 3)
+; Level 2's message (score.asm): white on black, the code in yellow.
+TEASE_ATTR      equ BRIGHT | WHITE | (BLACK << 3)
+TEASE_CODE_ATTR equ BRIGHT | YELLOW | (BLACK << 3)
+    IFDEF TRIGON
+SAND_ATTR       equ CFG_SAND_ATTR       ; Finale: a whole attribute (not bright)
+SILO_ATTR       equ CFG_SILO_ATTR       ; Finale: the towers
+SILO_TOP_ATTR   equ CFG_SILO_TOP_ATTR   ; and the domes
+WEED_ATTR       equ CFG_WEED_INK | SEA
+GROUND_ATTR     equ CFG_GROUND_ATTR
+    ELSE
+SAND_ATTR       equ YELLOW | SEA
+WEED_ATTR       equ GREEN | SEA
+GROUND_ATTR     equ BRIGHT | BLACK | (YELLOW << 3)
+    ENDIF
+
+; The fish keeps the demo's depth. main.asm DEFINEs ATLANTIS so fish.asm
+; does not recompute this from WATER_TOP_ROW (that would be pixel row 20,
+; on top of the title).
+FISH_SWIM_Y     equ 76
+
+; Pixel buffers. Ordinary RAM, not screen RAM, so the rotate is not slowed
+; by the ULA. Built by scroll_init, not stored on the tape.
+;   back    16*32 = 512 bytes at $F000
+;   ground   8*32 = 256 bytes at $F200
+;   $F300 is the first free byte. The row table at $FA00 is well clear.
+SCROLL_BASE     equ $F000
+BACK_BUF        equ SCROLL_BASE
+GROUND_BUF      equ BACK_BUF + BACK_PX * 32
+SCROLL_BUF_END  equ GROUND_BUF + GROUND_PX * 32
+
+; The run-time buffers (bss.asm) start at SCROLL_BUF_END and must stop
+; here: the tape's BASIC is assembled at BSS_LIMIT (loader.asm), as
+; scratch, and both checks use this one number.
+BSS_LIMIT       equ $F900
+
+; Room the stack needs below STACK_TOP. A soak run went 20 bytes deep
+; ($FDE9); 128 leaves room for the menu's paths, which it does not walk.
+; main.asm checks that the row table stops below it.
+STACK_NEED      equ 128
+ROW_TABLE_END   equ ROW_TABLE + 192 * 2
+
+; The seabed's sloped column tops (scroll.asm, slope_build): 16 columns
+; of 8 bytes for the ground, then the same for the sand, built at
+; start-up between the row table and the stack's room. slope_copy adds
+; an offset to the low byte only, so neither table may cross a page.
+SLOPE_GROUND    equ ROW_TABLE_END
+SLOPE_SAND      equ SLOPE_GROUND + 128
+SLOPE_END       equ SLOPE_SAND + 128
+        ASSERT (SLOPE_GROUND & $FF) + 128 <= 256 && (SLOPE_SAND & $FF) + 128 <= 256, "a slope table crosses a page"
+        ASSERT SLOPE_END <= STACK_TOP - STACK_NEED, "the slope tables run into the stack's room"
+
+; The sinking power-ups' masked pictures (power_build, special.asm), 16
+; bytes a kind, built at start-up after the slope tables. The run-time
+; buffers (bss.asm) have no room left.
+POWER_PICS      equ SLOPE_END
+POWER_PICS_END  equ POWER_PICS + 16 * 5
+        ASSERT POWER_PICS_END <= STACK_TOP - STACK_NEED, "the power-ups' pictures run into the stack's room"

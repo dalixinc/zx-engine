@@ -67,6 +67,28 @@ it. It is `FINALE_WORD` in `src/trigon/ending.asm`. Like KRAKEN it has
 an N, so it never clashes with a level code; no two codes of either
 game share more than three letters in place.
 
+## Finale's level codes
+
+Finale (`src/finale/`) asks for **CINDER** before level 1 (its
+`GATE_WORD`, `src/finale/codes.asm`). Its level codes have their own keys
+(`CODE_KEY_SUM $17D2B`, `CODE_KEY_MIX $2E84F1`), and no Finale code shares
+more than two letters in place with any Atlantis or Trigon code, KRAKEN or
+CINDER.
+
+| Level | Code |
+|---|---|
+| 2 | GJTCUT |
+| 3 | UCGREE |
+| 4 | FUAJTF |
+| 5 | CTJPAP |
+| 6 | LCKSSS |
+| 7 | ARJRJD |
+| 8 | KKFTAU |
+
+Finale's levels start at (placeholders until chunk 4 tunes the table):
+1 at 0, 2 at 300, 3 at 750, 4 at 1,350, 5 at 2,100, 6 at 3,000, 7 at
+4,050, 8 at 5,250. Finishing level 8 (6,550) shows the ending.
+
 ## Targets (spoilers too)
 
 The score each level starts at, which is the score a code starts the

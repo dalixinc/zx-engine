@@ -166,6 +166,12 @@ LETTERS["G"] = [".#############", "##############", "##############"] + \
     ["####.........."] * 4 + ["####....######"] * 2 + ["####......####"] * 4 + \
     ["##############", "##############", ".############."]
 
+# Finale's two more.
+LETTERS["F"] = ["##############"] * 3 + ["####.........."] * 4 + \
+    ["###########..."] * 3 + ["####.........."] * 6
+LETTERS["E"] = ["##############"] * 3 + ["####.........."] * 4 + \
+    ["###########..."] * 3 + ["####.........."] * 3 + ["##############"] * 3
+
 # What differs between the two games' screens. Atlantis's is the default;
 # main() swaps in TRIGON_THEME for --trigon.
 THEME = {
@@ -190,6 +196,20 @@ TRIGON_THEME = {
     },
     "title_inks": [YELLOW | BRIGHT, RED | BRIGHT, RED | BRIGHT, MAGENTA | BRIGHT],
 }
+# Finale's: Trigon's dark world without the fish, the weed yellow and
+# the sand dark blue, as the game's, and the title in two tones.
+FINALE_THEME = dict(TRIGON_THEME)
+FINALE_THEME.update({
+    "word": "FINALE",
+    "version": "src/finale/VERSION",
+    "no_fish": True,
+    "remap": {
+        CYAN | BRIGHT: BLUE | BRIGHT, CYAN: BLUE, BLUE | BRIGHT: BLACK, BLUE: BLACK,
+        GREEN | BRIGHT: YELLOW | BRIGHT, GREEN: YELLOW,
+        YELLOW | BRIGHT: BLUE, YELLOW: BLUE,      # the sand: the game's dark blue
+    },
+    "title_inks": [YELLOW | BRIGHT, YELLOW | BRIGHT, RED | BRIGHT, RED | BRIGHT],
+})
 
 # One ink for each cell row of the title, top to bottom: white hot at
 # the top, through yellow, to red.
@@ -336,10 +356,11 @@ def paint():
     sprite(wheel[2], 150, my - 12, BLACK)
     sprite(wheel[0], 136, 56, BLACK)
 
-    # Fish, in the game's own size.
-    sprite(fish[0][0], 120, 156, fi[0], scale=1)
-    sprite(fish[1][1], 40, 62, fi[1], scale=1, mirror=True)
-    sprite(fish[2][0], 216, 66, fi[2], scale=1, mirror=True)
+    # Fish, in the game's own size (Finale has none).
+    if not THEME.get("no_fish"):
+        sprite(fish[0][0], 120, 156, fi[0], scale=1)
+        sprite(fish[1][1], 40, 62, fi[1], scale=1, mirror=True)
+        sprite(fish[2][0], 216, 66, fi[2], scale=1, mirror=True)
 
     # Trigon's colours over the whole scene (the title comes after).
     remap = THEME["remap"]
@@ -602,6 +623,9 @@ def main():
     if "--trigon" in sys.argv:
         sys.argv.remove("--trigon")
         THEME.update(TRIGON_THEME)
+    if "--finale" in sys.argv:
+        sys.argv.remove("--finale")
+        THEME.update(FINALE_THEME)
     if len(sys.argv) < 2:
         sys.exit(__doc__)
     paint()

@@ -1,0 +1,1466 @@
+;==============================================================================
+; soak.asm - stray-pixel and background-restore check. Not in the tape.
+;
+; Built with -DSOAK (build/atlantis-soak.sna). It plays a scripted dive,
+; and after every restore it checks:
+;
+;   * open water (everything above the seabed except the title rows) is
+;     blank again, apart from the stat digits when those are meant to be
+;     on screen and no sprite is covering them
+;   * rows 21-23 match the bytes copied up on the previous frame, which
+;     is the ground the sprites photographed
+;   * a sprite that was on row 0 photographed water, not the digits
+;   * the diver's top y is never below the black column under him
+;   * row 22 stays yellow-on-blue, row 23 stays black-on-yellow, row 0
+;     stays white-on-blue except where the wheel bomb is painting it
+;     (those cells are the bomb's ink), and a set seaweed pixel is
+;     never left in a water-coloured cell
+;   * row 1 is the hearts for the lives left and water elsewhere, and
+;     the title and the two help lines (rows 2, 4 and 5) still match the
+;     copy taken on the first frame. The wheel flies through them. The
+;     blank-water check skips those rows, so this is what catches a
+;     restore that put the title back in the wrong place.
+;
+; The script holds Up until he is on row 0 and toggles the overlay on and
+; off (including a plain S, which must not toggle). Then it parks the
+; fish on row 0 while he has already sunk clear of it, and toggles again.
+; Then it holds Down for the rest of the run so he rides the sand and at
+; least one silo. When the wheel bomb bobs onto row 0 the chord is
+; pressed twice more so the digits sit on it. 1024 frames.
+; Green border and "OK" means every check passed. A red border and a
+; reason number means it stopped at the first failure; the frame number
+; is next to it.
+;
+; Reasons:
+;   1 open water was not blank
+;   2 the seabed bytes did not match the previous copy
+;   3 his feet are inside the black
+;   4 a sprite on row 0 saved something other than water
+;   5 row 21's colours do not match its pixels
+;   6 row 22 or row 23 changed colour, or row 0 was a colour it
+;     should not be (water, or the bomb's ink on a cell it covers)
+;   7 the overlay did not stay on while the chord was held,
+;     or plain S toggled it, or it did not end off
+;   8 the run never actually rested him on sand and on a silo,
+;     or never checked a sprite photograph on row 0
+;   9 the wheel was never seen clipped on the right, clipped on the
+;     left, crossing the fish, crossing the diver, and under the digits
+;  10 the title, a help line or the hearts changed
+;  11 the menu did not show the title, or key 2 did not settle back
+;     on the start rate
+;  12 Symbol Shift + F did not flip the speed, or F alone flipped it,
+;     or holding the chord flipped it again
+;  13 Symbol Shift + P did not return to the menu, or P alone did,
+;     or starting again did not put the game back to its first frame
+;
+; The run is four phases.
+;   0  the menu. Key 2 is pressed, held, and pressed again, so the
+;      speed leaves the start rate and comes back. A hold must not
+;      flip twice. Key 1 then starts the game.
+;   1  the original 1024 frames.
+;   2  he swims right. F alone does nothing. Symbol Shift + F flips
+;      away from the start rate, a hold does not flip again, and a
+;      second press returns to it.
+;      P alone stays in the game. Symbol Shift + P returns to the menu.
+;   3  the menu is back, the title is on it, and key 1 starts a clean game.
+;==============================================================================
+
+SOAK_FRAMES     equ 1024
+
+soak_frame:     dw 0
+soak_sym:       db $FF          ; $FF = read the keyboard, else 0 or 1
+soak_s:         db $FF
+soak_input:     db $FF          ; $FF = keep read_input's answer
+soak_reason:    db 0
+soak_have_snap: db 0
+soak_maxh:      db 0
+soak_toggles:   db 0
+soak_stats_prev: db 0
+soak_saw_sand:  db 0
+soak_saw_silo:  db 0
+soak_saw_diver_bg: db 0
+soak_saw_fish_bg: db 0
+soak_saw_wheel_right: db 0      ; a pixel of it was off the right edge
+soak_saw_wheel_left: db 0
+soak_saw_wheel_fish: db 0       ; its box overlapped the fish
+soak_saw_wheel_diver: db 0
+soak_saw_wheel_stats: db 0      ; on row 0 while the digits were on
+soak_have_title: db 0
+soak_title_mode: db 0           ; 0 compare, 1 capture
+soak_wx:        dw 0            ; scratch for soak_hit
+soak_wc0:       db 0            ; wheel columns on row 0, inclusive
+soak_wc1:       db 0
+
+; The menu and the two extra chords. Phase 0 is the menu before the
+; 1024 frames. See the note at the top of this file.
+soak_phase:     db 0
+soak_allow_leave: db 0         ; 1 = Symbol Shift + P is allowed to leave
+soak_p2:        db 0            ; which step of the chord test
+soak_menu_step: db 0
+soak_f:         db 0            ; 0 up, 1 down. Not $FF: the soak never
+soak_p:         db 0            ; reads the real keyboard for these
+soak_keys:      db 0            ; the 1-2-3-4-5 row, as a mask
+
+; The two photographs are 768 bytes each. The seabed's sits in the free
+; room after the game's code (soak_photos, main.asm), which the shipping
+; game leaves empty. The title rows' sits just below BSS_LIMIT, above the
+; run-time buffers (bss.asm): the room after the code no longer holds
+; both. Nothing else uses it in a snapshot (the tape's BASIC is
+; assembled there only as scratch).
+SOAK_SNAP       equ soak_photos             ; rows 21-23 after the last blit (main.asm)
+SOAK_TITLE      equ BSS_LIMIT - 3 * 8 * 32  ; rows 2, 4 and 5, taken on frame 1
+SOAK_BUF_END    equ SOAK_TITLE + 3 * 8 * 32
+soak_ox:        db 0
+soak_oy:        db 0
+soak_ow:        db 0
+soak_oh:        db 0
+
+; Called at the top of the frame, before the chords are read.
+; Phase 1 is the 1024-frame dive. Phase 2 is the speed and menu chords.
+; The menu phases are driven by soak_on_menu, not from here.
+soak_begin:
+        ld a,(soak_phase)
+        cp 1
+        jr z,soak_begin_play
+        cp 2
+        jp z,soak_begin_chords
+        ret
+
+; Sets the two stat-line keys and remembers the input byte to force.
+; F and P are held up for the whole dive, so the real keyboard cannot
+; flip the speed or leave for the menu in the middle of the script.
+soak_begin_play:
+        ld hl,(soak_frame)
+        inc hl
+        ld (soak_frame),hl
+
+        xor a
+        ld (soak_sym),a
+        ld (soak_s),a
+        ld (soak_f),a
+        ld (soak_p),a
+        ld (soak_keys),a
+        ld (soak_input),a
+
+        ; Frames count from 1 (we incremented first).
+        ; At 25 each step is two television frames, so the same swim
+        ; is half as many steps. The chord and the dive are scaled.
+        ld a,h
+        or a
+        jr nz,.late
+        ld a,l
+
+    IF CFG_START_RATE = 25
+        cp 80
+    ELSE
+        cp 160
+    ENDIF
+        jr nc,.down
+        ld a,IN_UP
+        ld (soak_input),a
+        jr .chord
+.down:  ld a,IN_DOWN
+        ld (soak_input),a
+
+; Four rising edges: on, off, on, off. At 50 the presses are 120,
+; 160, 210 and 250. At 25 they are 60, 80, 105 and 125.
+.chord: ld a,l
+    IF CFG_START_RATE = 25
+        cp 60
+        jr z,.both
+        cp 61
+        jr c,.fish
+        cp 76
+        jr c,.both
+        cp 80
+        jr z,.both
+        cp 81
+        jr z,.plain_s
+        cp 105
+        jr z,.both
+        cp 106
+        jr c,.fish
+        cp 121
+        jr c,.both
+        cp 125
+        jr z,.both
+    ELSE
+        cp 120
+        jr z,.both
+        cp 121
+        jr c,.fish
+        cp 151
+        jr c,.both
+        cp 160
+        jr z,.both
+        cp 162
+        jr z,.plain_s
+        cp 210
+        jr z,.both
+        cp 211
+        jr c,.fish
+        cp 241
+        jr c,.both
+        cp 250
+        jr z,.both
+    ENDIF
+        jr .fish
+.both:  ld a,1
+        ld (soak_sym),a
+        ld (soak_s),a
+        jr .fish
+.plain_s:
+        ld a,1
+        ld (soak_s),a           ; Symbol Shift stays 0
+        jr .fish
+
+.late:  ld a,IN_DOWN
+        ld (soak_input),a
+        call soak_surface_chord ; two more edges, once the bomb is up top
+
+; 200..279 the fish sits on row 0. 280 puts him back at his real depth.
+; Frame 256 is the point the high byte turns 1, so this is not a one-byte
+; compare.
+.fish:  ld a,(soak_frame + 1)
+        or a
+        jr nz,.fish_hi
+        ld a,(soak_frame)
+    IF CFG_START_RATE = 25
+        cp 100
+        ret c
+        cp 140
+        jr nc,.fish_home
+    ELSE
+        cp 200
+        ret c
+    ENDIF
+        xor a
+        ld (fish_y),a
+        ret
+.fish_hi:
+        ld a,(soak_frame)
+    IF CFG_START_RATE = 50
+        cp 24                   ; 256+24 = 280
+        jr nc,.fish_home
+        xor a
+        ld (fish_y),a
+        ret
+    ENDIF
+.fish_home:
+        ld a,FISH_SWIM_Y
+        ld (fish_y),a
+        ret
+
+; After read_input. $FF would mean "don't override"; the script always sets
+; a real value, including 0.
+; In the dive, fire is also pressed on every 16th frame, so a torpedo is
+; nearly always running: up by the surface, across the fish, through the
+; seabed, and off both edges. The checks after each restore then cover
+; its erase as well. torpedo_hit is not called on this build, so the
+; bombs keep the path the frame numbers above expect.
+soak_apply_input:
+        ld a,(soak_phase)
+        cp 1
+        ld a,(soak_input)
+        jr nz,.store
+        ld b,a
+        ld a,(soak_frame)
+        and 15
+        ld a,b
+        jr nz,.store
+        or IN_FIRE
+.store: ld (input_state),a
+        ret
+
+; After restore + stats_prepare, before anything is drawn.
+soak_after_restore:
+        call soak_check_water
+        call soak_check_bg
+        call soak_check_strips
+        call soak_title_check
+        ret
+
+; After the blit, before a low diver is drawn over it.
+soak_after_blit:
+        call soak_check_attrs
+        call soak_take_snap
+        ret
+
+; After the sprites have moved. The clamp has run.
+soak_after_update:
+        ld a,(soak_phase)
+        cp 2
+        jp z,soak_after_chords
+        cp 1
+        ret nz
+        call soak_check_clamp
+        call soak_note_wheel
+        call soak_count_toggles
+        ld hl,(soak_frame)
+        ld a,h
+        cp SOAK_FRAMES / 256
+        ret nz
+        ld a,l
+        cp SOAK_FRAMES & 255
+        ret nz
+        call soak_finish
+        ret
+
+; --- checks -------------------------------------------------------------------
+
+; Open water must be blank. Row 1 (the hearts) and title rows 2, 4 and
+; 5 are the exception.
+; Row 0 is also an exception when the digits are up and no sprite is on
+; them: prepare left those pixels so the beam can read them.
+soak_check_water:
+        ld b,0                  ; character row
+.row:   ld a,b
+        cp LIVES_ROW
+        jr z,.next
+        cp 2
+        jr z,.next
+        cp 4
+        jr z,.next
+        cp 5
+        jr z,.next
+        cp BACK_ROW
+        jr nc,.done             ; rows 21..23 are the seabed, not water
+        ld a,b
+        or a
+        jr nz,.zero
+        call soak_row0_may_hold_digits
+        jr z,.next              ; Z: digits are allowed, don't require blank
+.zero:  push bc
+        call soak_row_is_blank
+        pop bc
+        ld a,1
+        call nz,soak_fail
+.next:  inc b
+        jr .row
+.done:  ret
+
+; Z set if row 0 is allowed to hold digit pixels right now, so the
+; blank check should skip it. NZ if row 0 must be entirely water.
+; Digits survive prepare only when they are up AND no sprite covers them.
+soak_row0_may_hold_digits:
+        ; Z means the blank check should skip row 0. The line only wipes
+        ; the columns a sprite covers, so the rest of the row still holds
+        ; digits even when a sprite is up there. The photograph check is
+        ; what still requires water under that sprite. The line being off
+        ; means the whole row has to be water.
+        ld a,(stats_dirty)
+        or a
+        jr z,.blank
+        xor a                   ; line is on: skip the whole-row check
+        ret
+.blank: ld a,1
+        or a                    ; NZ: require a blank row
+        ret
+
+; In: B = character row. Out: Z if all 8*32 pixels are 0. Corrupts A, IX, HL, C.
+soak_row_is_blank:
+        ld a,b
+        add a,a
+        add a,a
+        add a,a                 ; pixel y of the top of the row
+        call row_table_entry
+        ld c,8
+.line:  ld l,(ix+0)
+        ld h,(ix+1)
+        ld b,32
+.byte:  ld a,(hl)
+        or a
+        ret nz
+        inc l
+        djnz .byte
+        inc ix
+        inc ix
+        dec c
+        jr nz,.line
+        xor a                   ; Z
+        ret
+
+; A sprite on row 0 must have photographed water, not the digits.
+; Draw order in the water is the higher of the diver and the wheel,
+; then the other, then the fish (main_loop says why). wheel_first still
+; holds the order of the step that took these photographs. The
+; back-most of those that covers row 0 photographed the water. A later
+; one may have photographed the sprite behind it, so only the back-most
+; is checked. A sprite drawn after the seabed copy is far below row 0.
+soak_check_bg:
+        ld a,(wheel_first)
+        or a
+        jr nz,.wheel
+        ld iy,diver_bg
+        call soak_one_bg
+        jr nz,.saw_diver
+        ld iy,wheel_bg
+        call soak_one_bg        ; fails inside if a byte is not water
+        ret nz
+        jr .fish
+.wheel: ld iy,wheel_bg
+        call soak_one_bg
+        ret nz
+        ld iy,diver_bg
+        call soak_one_bg
+        jr nz,.saw_diver
+.fish:  ld iy,fish_bg
+        call soak_one_bg
+        ret z
+        ld a,1
+        ld (soak_saw_fish_bg),a
+        ret
+.saw_diver:
+        ld a,1
+        ld (soak_saw_diver_bg),a
+        ret
+
+; IY -> a background record.
+; Out: Z if this record does not cover row 0 (nothing checked).
+;      NZ if it does, and every saved byte of those rows was 0.
+; Does not return when a byte is not water: the run stops.
+soak_one_bg:
+        ld a,(iy + BG_VALID)
+        or a
+        ret z
+        ld a,(iy + BG_Y)
+        cp 8
+        jr c,.covers
+        xor a                   ; Z: entirely below row 0
+        ret
+.covers:
+        ld c,a                  ; screen y of the first saved row
+        ld b,(iy + BG_HEIGHT)
+        push iy
+        pop hl
+        ld de,BG_DATA
+        add hl,de               ; HL -> saved bytes
+.row:   ld a,c
+        cp 8
+        jr nc,.skip
+        push bc
+        ld b,(iy + BG_BYTES)
+.byte:  ld a,(hl)
+        or a
+        jr nz,.bad
+        inc hl
+        djnz .byte
+        pop bc
+        jr .step
+.skip:  ld a,(iy + BG_BYTES)    ; this row is below row 0: step over it
+        add a,l
+        ld l,a
+        ld a,h
+        adc a,0
+        ld h,a
+.step:  inc c
+        djnz .row
+        ld a,1
+        or a                    ; NZ: the photograph of row 0 was water
+        ret
+.bad:   ld a,4
+        jp soak_fail
+
+soak_check_strips:
+        ld a,(soak_have_snap)
+        or a
+        ret z
+        ld a,BACK_ROW * 8
+        call row_table_entry
+        ld hl,SOAK_SNAP
+        ld c,24
+.line:  ld e,(ix+0)
+        ld d,(ix+1)
+        ld b,32
+.byte:  ld a,(de)
+        cp (hl)
+        jr nz,.bad
+        inc hl
+        inc e
+        djnz .byte
+        inc ix
+        inc ix
+        dec c
+        jr nz,.line
+        ret
+.bad:   ld a,2
+        jp soak_fail
+
+soak_take_snap:
+        ld a,1
+        ld (soak_have_snap),a
+        ld a,BACK_ROW * 8
+        call row_table_entry
+        ld de,SOAK_SNAP
+        ld c,24
+.line:  ld l,(ix+0)
+        ld h,(ix+1)
+        ld b,32
+.byte:  ld a,(hl)
+        ld (de),a
+        inc de
+        inc l
+        djnz .byte
+        inc ix
+        inc ix
+        dec c
+        jr nz,.line
+        ret
+
+    IFDEF TRIGON
+; Trigon paints the fish's cells (src/trigon/theme.asm), and the script
+; takes the fish up to row 0: there, its three painted cells are right.
+; In: A = a row 0 cell, C = its column. Out: Z if it is water, or the
+; fish's paint inside its box. Corrupts: AF
+soak_r0_water:
+        cp WATER_ATTR
+        ret z
+        cp CFG_PIRANHA_INK
+        ret nz
+        push hl
+        ld a,(tp_fish_on)
+        or a
+        jr z,.no
+        ld hl,(tp_fish_at)
+        ld a,h                  ; its top row
+        or a
+        jr nz,.no
+        ld a,c
+        sub l
+        cp 3
+        jr nc,.no
+        xor a                   ; Z: one of its three
+        pop hl
+        ret
+.no:    pop hl
+        or 1                    ; NZ
+        ret
+    ENDIF
+
+soak_check_attrs:
+        ; Row 0 stays water-coloured, except the columns the wheel bomb
+        ; is painting: those are the bomb's ink until it leaves and the
+        ; old byte is put back. The digits do not write attributes.
+        ; The sand and the ground are not part of this exception. The
+        ; bomb's lowest pixel is the last pixel of row 20, so it never
+        ; recolours them.
+        call wheel_attr_box
+        jr z,.row0_water
+        ld a,(wheel_r0)
+        or a
+        jr nz,.row0_water       ; the top of the bomb is below row 0
+        ld a,(wheel_c0)
+        ld (soak_wc0),a
+        ld a,(wheel_c1)
+        ld (soak_wc1),a
+        ld b,0
+        ld c,0
+        call attr_addr
+        ld c,0
+.row0mix:
+        ld a,(soak_wc0)
+        cp c
+        jr z,.row0ink
+        jr nc,.row0sea          ; first column is still to the right of c
+        ld a,c
+        ld e,a
+        ld a,(soak_wc1)
+        cp e
+        jr c,.row0sea           ; c is past the last column
+.row0ink:
+        ld a,(hl)
+        ld e,a
+        ld a,(wheel_ink)
+        cp e
+        jp nz,.bad6
+        jr .row0step
+.row0sea:
+        ld a,(hl)
+    IFDEF TRIGON
+        call soak_r0_water
+    ELSE
+        cp WATER_ATTR
+    ENDIF
+        jp nz,.bad6
+.row0step:
+        inc hl
+        inc c
+        ld a,c
+        cp 32
+        jr nz,.row0mix
+        jr .rows_sand
+.row0_water:
+    IFDEF TRIGON
+        ld b,0
+        ld c,0
+        call attr_addr
+.r0w:   ld a,(hl)
+        call soak_r0_water
+        jp nz,.bad6
+        inc hl
+        inc c
+        ld a,c
+        cp 32
+        jr nz,.r0w
+    ELSE
+        ld b,0
+        ld e,WATER_ATTR
+        call soak_row_is_attr
+        ld a,6
+        call nz,soak_fail
+    ENDIF
+.rows_sand:
+        ; Sand and ground are painted once and never touched again, but
+        ; for Finale's silo towers, whose cells in the sand row are the
+        ; silos' colour while one stands there (silo_paint_cells).
+        ld b,SAND_ROW
+        ld c,0
+        call attr_addr
+        ld b,32
+.sand:  ld a,(hl)
+        cp SAND_ATTR
+        jr z,.sandok
+        cp SILO_ATTR
+        jp nz,.bad6
+.sandok:
+        inc hl
+        djnz .sand
+        ld b,GROUND_ROW
+        ld e,GROUND_ATTR
+        call soak_row_is_attr
+        ld a,6
+        call nz,soak_fail
+        ; Seaweed row: a set pixel must sit in a green cell, a water
+        ; cell must be empty, and a green cell must contain a pixel.
+        ld b,BACK_ROW
+        ld c,0
+        call attr_addr          ; HL -> row 21's attributes
+        push hl                 ; row_table_entry reuses HL
+        ld a,BACK_ROW * 8
+        call row_table_entry
+        pop hl
+        ld c,0                  ; column
+.col:   push hl
+        ld a,(hl)               ; attribute of this column
+        ld e,a
+        ; OR the 8 pixel bytes of this column together
+        push ix
+        ld d,0
+        ld b,8
+.pix:   ld l,(ix+0)
+        ld h,(ix+1)
+        ld a,l
+        add a,c
+        ld l,a
+        ld a,(hl)
+        or d
+        ld d,a
+        inc ix
+        inc ix
+        djnz .pix
+        pop ix
+        pop hl
+        ld a,e
+        cp WEED_ATTR
+        jr z,.green
+        cp SILO_TOP_ATTR        ; Finale: a dome's cell, in its own colour
+        jr z,.green
+        cp WATER_ATTR
+        jr nz,.bad              ; some third colour
+        ld a,d
+        or a
+        jr nz,.bad              ; set pixel in a water cell
+        jr .step
+.green: ld a,d
+        or a
+        jr z,.bad               ; green cell with no plant pixel
+.step:  inc hl
+        inc c
+        ld a,c
+        cp 32
+        jr nz,.col
+        ret
+.bad:   ld a,5
+        jp soak_fail
+.bad6:  ld a,6
+        jp soak_fail
+
+; In: B = row, E = expected attribute. Out: Z if all 32 match.
+soak_row_is_attr:
+        ld c,0
+        push de
+        call attr_addr
+        pop de
+        ld b,32
+.cell:  ld a,(hl)
+        cp e
+        ret nz
+        inc hl
+        djnz .cell
+        xor a
+        ret
+
+soak_check_clamp:
+        call soak_tallest
+        ld a,(soak_maxh)
+        ld b,a
+        ld a,NEAR_BOTTOM - DIVER_HEIGHT
+        sub b
+        ld b,a                  ; B = the lowest legal top y
+        ld a,(diver_y)
+        cp b
+        jr z,.on_it
+        jr c,.ok                ; higher on the screen than the floor
+        ld a,3
+        jp soak_fail
+.on_it: ld a,(soak_maxh)
+        cp SILO_H
+        jr c,.sand
+        ld a,1
+        ld (soak_saw_silo),a
+        jr .ok
+.sand:  ld a,1
+        ld (soak_saw_sand),a
+.ok:    ret
+
+; Tallest front_h under the diver. Same columns as clamp_to_terrain,
+; written out again so a mistake in one of them has a chance to disagree.
+soak_tallest:
+        ld a,(diver_x)
+        ld hl,front_fine
+        add a,(hl)
+        ld l,a
+        rrca
+        rrca
+        rrca
+        and %00011111
+        ld b,a                  ; first column
+        ld a,l
+        add a,DIVER_BYTES * 8 - 1
+        ld c,a
+        ld a,0
+        adc a,0
+        ld h,a
+        ld a,c
+        rrca
+        rrca
+        rrca
+        and %00011111
+        ld c,a
+        ld a,h
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        or c
+        ld c,a                  ; last column, 0..32
+        ld e,0
+.scan:  ld a,b
+        cp 32
+        jr nc,.pending
+        ld a,(front_head)
+        add a,b
+        and 31
+        push bc
+        ld c,a
+        ld b,0
+        ld hl,front_h
+        add hl,bc
+        pop bc
+        ld a,(hl)
+        cp e
+        jr c,.shorter
+        ld e,a
+.shorter:
+        ld a,b
+        cp c
+        jr z,.apply
+        inc b
+        jr .scan
+.pending:
+        ld a,(front_h_pending)
+        cp e
+        jr c,.apply
+        ld e,a
+.apply: ld a,e
+        ld (soak_maxh),a
+        ret
+
+soak_count_toggles:
+        ld a,(stats_on)
+        ld hl,soak_stats_prev
+        cp (hl)
+        ret z
+        ld (hl),a
+        ld hl,soak_toggles
+        inc (hl)
+        ret
+
+; The surface bomb bobs onto row 0 part way through the dive.
+; At 50 frames a second that used to be around frame 650. At 25 the
+; same swim is half as many steps, so the chord follows the bomb
+; instead of a frame number. Two rising edges: on, then off. The run
+; still ends with the overlay off. Not before frame 256, so it does
+; not collide with the chords at the start of the dive.
+; At 25 frames a second the surface bomb is on row 0 at steps
+; 324-333 (it moves two pixels a step). At 50 that is 648-667,
+; the same part of the swim as the old 650 window.
+soak_surface_chord:
+        ld hl,(soak_frame)
+    IF CFG_START_RATE = 25
+        ld de,324
+    ELSE
+        ld de,650
+    ENDIF
+        or a
+        sbc hl,de
+        ret c
+        ld a,h
+        or a
+        ret nz
+        ld a,l
+    IF CFG_START_RATE = 25
+        cp 10
+        jr c,.both
+        cp 14
+        ret c
+        cp 15
+        ret nc
+    ELSE
+        cp 20
+        jr c,.both
+        cp 30
+        ret c
+        cp 31
+        ret nc
+    ENDIF
+.both:  ld a,1
+        ld (soak_sym),a
+        ld (soak_s),a
+        ret
+
+; After the move. Records the situations the run has to have seen.
+; The positions are the ones the next frame will draw.
+soak_note_wheel:
+        ld a,(wheel_phase)
+        or a
+        ret z
+        call soak_note_clip
+        call soak_note_cross
+        ld a,(stats_on)
+        or a
+        ret z
+        call wheel_on_row0
+        ret z
+        ld a,1
+        ld (soak_saw_wheel_stats),a
+        ret
+
+; Right-edge clip is x = 241..255 (some of the 16 pixels still off).
+; Left-edge clip is x = -15..-1. x = -16 has already switched to the
+; pause, and the frame before that was x = -15.
+soak_note_clip:
+        ld hl,(wheel_x)
+        ld a,h
+        or a
+        jr z,.maybe_right
+        bit 7,a
+        ret z                   ; x >= 256, fully off the right
+        ld de,WHEEL_WIDTH - 1
+        add hl,de               ; x + 15. Negative means x < -15.
+        bit 7,h
+        ret nz
+        ld a,1
+        ld (soak_saw_wheel_left),a
+        ret
+.maybe_right:
+        ld a,l
+        cp 256 - WHEEL_WIDTH + 1
+        ret c                   ; 0..240: fully on, or not yet at the edge
+        ld a,1
+        ld (soak_saw_wheel_right),a
+        ret
+
+; Box against the fish, then against the diver. The ranges are half-open
+; on the right and the bottom: sharing an edge pixel counts, sitting in
+; the next pixel along does not.
+soak_note_cross:
+        ld hl,(wheel_x)
+        ld a,(fish_x)
+        ld b,FISH_WIDTH
+        ld c,FISH_HEIGHT
+        ld d,a
+        ld a,(fish_y)
+        ld e,a
+        call soak_hit
+        jr z,.try_diver
+        ld a,1
+        ld (soak_saw_wheel_fish),a
+.try_diver:
+        ld hl,(wheel_x)
+        ld a,(diver_x)
+        ld b,DIVER_WIDTH
+        ld c,DIVER_HEIGHT
+        ld d,a
+        ld a,(diver_y)
+        ld e,a
+        call soak_hit
+        ret z
+        ld a,1
+        ld (soak_saw_wheel_diver),a
+        ret
+
+; In:  HL = wheel x (signed), D = other x, B = other width,
+;      E = other y, C = other height. wheel_y is read from memory.
+; Out: NZ if the rectangles overlap, Z if not.
+; Corrupts: AF, BC, DE, HL
+soak_hit:
+        ld (soak_wx),hl
+        ld a,d
+        ld (soak_ox),a
+        ld a,e
+        ld (soak_oy),a
+        ld a,b
+        ld (soak_ow),a
+        ld a,c
+        ld (soak_oh),a
+
+        ; other x < wheel x + width
+        ld hl,(soak_wx)
+        ld de,WHEEL_WIDTH
+        add hl,de
+        ld a,(soak_ox)
+        ld e,a
+        ld d,0
+        or a
+        sbc hl,de
+        jr z,.no
+        jr c,.no
+
+        ; wheel x < other x + other width
+        ld a,(soak_ox)
+        ld e,a
+        ld a,(soak_ow)
+        add a,e
+        ld e,a
+        ld a,0
+        adc a,0
+        ld d,a                  ; DE = other right, may be 256..279
+        ld hl,(soak_wx)
+        bit 7,h
+        jr nz,.vert             ; a negative x is left of any other right
+        or a
+        sbc hl,de
+        jr nc,.no
+
+.vert:  ; wheel y < other y + other height
+        ld a,(soak_oy)
+        ld e,a
+        ld a,(soak_oh)
+        add a,e                 ; other bottom. Both heights fit in a byte.
+        ld e,a
+        ld a,(wheel_y)
+        cp e
+        jr nc,.no
+        ; other y < wheel y + height
+        ld a,(wheel_y)
+        add a,WHEEL_HEIGHT
+        ld e,a
+        ld a,(soak_oy)
+        cp e
+        jr nc,.no
+        or 1                    ; NZ
+        ret
+.no:    xor a
+        ret
+
+;------------------------------------------------------------------------------
+; Title and help lines. Taken on the first frame, compared after that.
+; Rows 2, 4 and 5. The blank-water check does not look at them.
+;------------------------------------------------------------------------------
+soak_title_check:
+        ld a,(soak_have_title)
+        or a
+        jr nz,.compare
+        ld a,1
+        ld (soak_have_title),a
+        ld (soak_title_mode),a  ; capture
+        jr .rows
+.compare:
+        xor a
+        ld (soak_title_mode),a
+.rows:  call soak_hearts_row
+        jr nz,.bad
+        ld hl,SOAK_TITLE
+        ld a,2
+        call soak_one_title_row
+        jr nz,.bad
+        ld a,4
+        call soak_one_title_row
+        jr nz,.bad
+        ld a,5
+        call soak_one_title_row
+        ret z
+.bad:   ld a,10
+        jp soak_fail
+
+; Row 1 against what score.asm and lives_draw put there: the score line
+; (hud_text, one character a cell, from the font), water up to LIVES_COL,
+; then a heart for each life left, then empty cells. The soak takes no
+; hits and shoots nothing, so the line says SCORE 000000 LEVEL 1 and the
+; hearts are CFG_LIVES, put back by every restore that crossed them.
+; Out: Z if it matched. Corrupts: AF, BC, DE, HL, IX
+soak_hearts_row:
+        ld a,LIVES_ROW * 8
+        call row_table_entry
+        ld de,lives_heart       ; this pixel line of the heart
+        ld c,8
+.line:  ld l,(ix+0)
+        ld h,(ix+1)
+        ld b,0                  ; column
+.byte:  ld a,b
+        cp HUD_LEN
+        jr c,.text
+        sub LIVES_COL
+        jr c,.water
+        push hl
+        ld hl,lives
+        cp (hl)
+        pop hl
+        jr nc,.water
+        ld a,(de)
+        jr .cmp
+.water: xor a
+.cmp:   cp (hl)
+        ret nz
+        inc l
+        inc b
+        ld a,b
+        cp 32
+        jr c,.byte
+        inc de
+        inc ix
+        inc ix
+        dec c
+        jr nz,.line
+        xor a
+        ret
+        ; Column B is a character of the score line. Its font byte for
+        ; this pixel line (8 - C) is the one that should be there.
+.text:  push de
+        push hl
+        ld e,b
+        ld d,0
+        ld hl,hud_text
+        add hl,de
+        ld a,(hl)
+        ld l,a
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld de,FONT_BASE + 8
+        add hl,de
+        ld a,l
+        sub c                   ; + 8 - C: this line of the glyph
+        ld l,a
+        jr nc,.got
+        dec h
+.got:   ld a,(hl)
+        pop hl
+        pop de
+        jr .cmp
+
+; In:  A = character row, HL -> buffer (advanced by 8*32)
+;      soak_title_mode 0 = compare, 1 = capture
+; Out: Z if this row matched, or after a capture. HL stepped on.
+; Corrupts: AF, BC, DE, IX
+soak_one_title_row:
+        push hl
+        add a,a
+        add a,a
+        add a,a                 ; pixel y of the top of the row
+        call row_table_entry
+        pop hl
+        ld c,8
+.line:  ld e,(ix+0)
+        ld d,(ix+1)
+        ld b,32
+.byte:  ld a,(soak_title_mode)
+        or a
+        jr z,.cmp
+        ld a,(de)
+        ld (hl),a
+        jr .step
+.cmp:   ld a,(de)
+        cp (hl)
+        ret nz
+.step:  inc hl
+        inc e                   ; 32 bytes from a 32-aligned row: the last
+        djnz .byte              ; inc wraps, and it is not used again
+        inc ix
+        inc ix
+        dec c
+        jr nz,.line
+        xor a
+        ret
+
+soak_finish:
+        ld a,(soak_toggles)
+        cp 6                    ; the original four, plus on and off at 650/680
+        jr nz,.bad_keys
+        ld a,(stats_on)
+        or a
+        jr nz,.bad_keys         ; the last edge turned it off
+        ld a,(soak_saw_sand)
+        or a
+        jr z,.bad_ride
+        ld a,(soak_saw_silo)
+        or a
+        jr z,.bad_ride
+        ld a,(soak_saw_diver_bg)
+        or a
+        jr z,.bad_ride
+        ld a,(soak_saw_fish_bg)
+        or a
+        jr z,.bad_ride
+        ld a,(soak_saw_wheel_right)
+        or a
+        jr z,.bad_wheel
+        ld a,(soak_saw_wheel_left)
+        or a
+        jr z,.bad_wheel
+        ld a,(soak_saw_wheel_fish)
+        or a
+        jr z,.bad_wheel
+        ld a,(soak_saw_wheel_diver)
+        or a
+        jr z,.bad_wheel
+        ld a,(soak_saw_wheel_stats)
+        or a
+        jr z,.bad_wheel
+        ; The 1024 frames held. The chord test runs next, and the
+        ; green border waits until a new game has started cleanly.
+        ld a,2
+        ld (soak_phase),a
+        xor a
+        ld (soak_p2),a
+        ld (soak_allow_leave),a
+        ret
+.bad_keys:
+        ld a,7
+        jp soak_fail
+.bad_ride:
+        ld a,8
+        jp soak_fail
+.bad_wheel:
+        ld a,9
+        jp soak_fail
+
+; In: A = reason. Prints it and the frame, red border, stops.
+soak_fail:
+        ld (soak_reason),a
+        push af
+        ld a,RED
+        call set_border
+        ld a,BRIGHT | WHITE | (BLUE << 3)
+        ld (text_attr),a
+        ld hl,soak_bad
+        ld bc,(8 << 8) | 8
+        call print_string
+        pop af
+        ld bc,(8 << 8) | 13
+        call print_hex8
+        ld hl,(soak_frame)
+        ld bc,(8 << 8) | 16
+        call print_hex16
+        di
+.stop:  halt
+        jr .stop
+
+;------------------------------------------------------------------------------
+; Phase 2. The 1024 frames have passed. F alone must not change the
+; speed. Symbol Shift + F flips it, a hold does not flip it again, and
+; a second press flips it back. P alone must not leave. Symbol Shift + P
+; must leave. He swims right first, so the restart can be seen to put
+; him back.
+;------------------------------------------------------------------------------
+soak_begin_chords:
+        xor a
+        ld (soak_sym),a
+        ld (soak_s),a
+        ld (soak_f),a
+        ld (soak_p),a
+        ld (soak_input),a
+        ld (soak_allow_leave),a
+        ld a,(soak_p2)
+        cp 5
+        jr z,.f_alone
+        cp 7
+        jr z,.both
+        cp 8
+        jr z,.both
+        cp 9
+        jr z,.both
+        cp 11
+        jr z,.both
+        cp 13
+        jr z,.p_alone
+        cp 15
+        jr z,.leave
+        cp 4
+        ret nc
+        ld a,IN_RIGHT
+        ld (soak_input),a
+        ret
+.f_alone:
+        ld a,1
+        ld (soak_f),a
+        ret
+.both:  ld a,1
+        ld (soak_sym),a
+        ld (soak_f),a
+        ret
+.p_alone:
+        ld a,1
+        ld (soak_p),a
+        ret
+.leave: ld a,1
+        ld (soak_allow_leave),a
+        ld (soak_sym),a
+        ld (soak_p),a
+        ret
+
+soak_after_chords:
+        ld a,(soak_p2)
+        cp 4
+        jr z,.moved
+        cp 5
+        jr z,.want50
+        cp 6
+        jr z,.want50
+        cp 10
+        jr z,.want25
+        cp 7
+        jr c,.step
+        cp 11
+        jr c,.want25
+        cp 15
+        jr z,.stuck
+        cp 16
+        jr nc,.stuck
+        jr .want50
+.moved: ld a,(diver_x)
+        cp 60
+        jr nz,.step
+        ld a,12
+        jp soak_fail
+.want25:
+        ld a,(game_rate)
+    IF CFG_START_RATE = 25
+        cp 50                   ; one flip from the 25 start
+    ELSE
+        cp 25
+    ENDIF
+        jr nz,.bad12
+        ld a,(step_ticks)
+    IF CFG_START_RATE = 25
+        cp 1
+    ELSE
+        cp 2
+    ENDIF
+        jr z,.step
+        jr .bad12
+.want50:
+        ld a,(game_rate)
+    IF CFG_START_RATE = 25
+        cp 25                   ; still the start rate, or flipped back
+    ELSE
+        cp 50
+    ENDIF
+        jr nz,.bad12
+        ld a,(step_ticks)
+    IF CFG_START_RATE = 25
+        cp 2
+    ELSE
+        cp 1
+    ENDIF
+        jr nz,.bad12
+        jr .step
+.stuck: ld a,13
+        jp soak_fail
+.bad12: ld a,12
+        jp soak_fail
+.step:  ld hl,soak_p2
+        inc (hl)
+        ret
+
+;------------------------------------------------------------------------------
+; The menu. Phase 0 before the dive, phase 3 after Symbol Shift + P.
+; Called at the top of the menu loop, before the keys are read, so the
+; mask set here is the mask the menu sees this frame.
+;------------------------------------------------------------------------------
+soak_on_menu:
+        ld a,(soak_phase)
+        cp 3
+        jp z,soak_menu_back
+        or a
+        ret nz
+        ld a,(soak_menu_step)
+        cp 2
+        jr z,.want25
+        cp 3
+        jr z,.want25
+        cp 4
+        jr z,.want25
+        cp 6
+        jr z,.want50
+        cp 7
+        jr z,.want50
+        jr .keys
+.want25:
+        ld a,(game_rate)
+    IF CFG_START_RATE = 25
+        cp 50
+    ELSE
+        cp 25
+    ENDIF
+        jr z,.keys
+        ld a,11
+        jp soak_fail
+.want50:
+        ld a,(game_rate)
+    IF CFG_START_RATE = 25
+        cp 25
+    ELSE
+        cp 50
+    ENDIF
+        jr z,.keys
+        ld a,11
+        jp soak_fail
+.keys:  xor a
+        ld (soak_keys),a
+        ld a,(soak_menu_step)
+        cp 1
+        jr z,.key2
+        cp 2
+        jr z,.key2
+        cp 3
+        jr z,.key2
+        cp 5
+        jr z,.key2
+        cp 7
+        jr z,.key1
+        jr .inc
+.key2:  ld a,2
+        ld (soak_keys),a
+        jr .inc
+.key1:  ld a,1
+        ld (soak_keys),a
+.inc:   ld hl,soak_menu_step
+        inc (hl)
+        ret
+
+; Back on the menu. The title has to be there, then key 1 starts again.
+soak_menu_back:
+        ld a,(soak_menu_step)
+        or a
+        jr nz,.press
+        ld b,TITLE_ROW
+        ld c,TITLE_COL
+        call char_addr
+        ld c,8
+        xor a
+.glyph: or (hl)
+        inc h
+        dec c
+        jr nz,.glyph
+        or a
+        jr nz,.titled
+        ld a,11
+        jp soak_fail
+.titled:
+        xor a
+        ld (soak_keys),a
+        ld hl,soak_menu_step
+        inc (hl)
+        ret
+.press: ld a,1
+        ld (soak_keys),a
+        ret
+
+; The second start. game_reset has just put everything back, and
+; interrupts are still off so the frame counter is still zero.
+; Does not return: green and OK, or red and reason 13.
+soak_check_restart:
+        ld a,(diver_x)
+        cp 60
+        jp nz,.bad
+        ld a,(diver_y)
+        cp 110
+        jp nz,.bad
+        ld a,(fish_x)
+        cp 180
+        jp nz,.bad
+        ld a,(fish_y)
+        cp FISH_SWIM_Y
+        jp nz,.bad
+        ld a,(fish_facing)
+        cp FACE_LEFT
+        jp nz,.bad
+        ld hl,(wheel_x)
+        ld de,256
+        or a
+        sbc hl,de
+        jp nz,.bad
+        ld a,(wheel_y)
+        cp 36
+        jp nz,.bad
+        ld a,(wheel_base)
+        cp 36
+        jp nz,.bad
+        ld a,(wheel_seed)
+        cp 42
+        jp nz,.bad
+        ld a,(wheel_phase)
+        cp WHEEL_FLY
+        jp nz,.bad
+        ld a,(wheel_bob_i)
+        or a
+        jp nz,.bad
+        ld a,(wheel_frame)
+        or a
+        jp nz,.bad
+        ld a,(stats_on)
+        or a
+        jp nz,.bad
+        ld hl,(frame_count)
+        ld a,h
+        or l
+        jp nz,.bad
+        ld a,(game_rate)
+        cp CFG_START_RATE
+        jp nz,.bad
+        ld a,(step_ticks)
+    IF CFG_START_RATE = 25
+        cp 2
+    ELSE
+        cp 1
+    ENDIF
+        jp nz,.bad
+        ld a,GREEN
+        call set_border
+        ld a,BRIGHT | WHITE | (BLUE << 3)
+        ld (text_attr),a
+        ld hl,soak_ok
+        ld bc,(8 << 8) | 12
+        call print_string
+        di
+.hang:  halt
+        jr .hang
+.bad:   ld a,13
+        jp soak_fail
+
+soak_ok:        db "OK",0
+soak_bad:       db "FAIL",0
