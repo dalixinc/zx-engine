@@ -417,17 +417,7 @@ tb_level:
         ret
     ENDIF
 
-        MACRO TB_ROW share?, ink?, bmove?, hunt?
-        ASSERT share? >= 0 && share? <= 255
-        ASSERT bmove? == MOVE_BOB || bmove? == MOVE_WAVE || bmove? == MOVE_HOME
-        ASSERT bmove? != MOVE_HOME || (hunt? >= 1 && hunt? <= 128), "a hunter's hunt is 1 to 128"
-        ASSERT bmove? == MOVE_HOME || hunt? == 0, "only MOVE_HOME hunts: hunt 0"
-        db share?, ink?, bmove?, hunt?
-        ENDM
-tb_table:
-        TB_TABLE
-TB_ROWS         equ ($ - tb_table) / 4
-        ASSERT TB_ROWS >= 1
+; tb_table, TB_TABLE's rows: in the hot code (src/trigon/theme.asm).
 
 ;------------------------------------------------------------------------------
 ; tb_toggle - the menu's option 3: two bombs at 25, or at the game's own

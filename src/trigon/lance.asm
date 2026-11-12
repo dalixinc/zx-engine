@@ -10,7 +10,7 @@
 ; for CFG_LANCE_TIME 1/50 seconds and blows up what it touches: the
 ; bomb, the second bomb, the fish, a silo's missile (not a power-up),
 ; each for CFG_PTS_LANCE, shown as a power's points are (pop_add).
-; Then it waits CFG_LANCE_REST 1/25 seconds (3 seconds) before it can
+; Then it waits CFG_LANCE_REST 1/25 seconds (1 second) before it can
 ; charge again; a press meanwhile is a torpedo only.
 ;
 ; How it costs nothing before then: main_loop's two "CALL NZ,
