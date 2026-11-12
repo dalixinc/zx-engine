@@ -284,7 +284,14 @@ wheel_drift:
         jr c,.spawn
         ld (wheel_delay),a
         ret
-.spawn: call wheel_next_height  ; a new middle, from the shift register
+.spawn:
+    IFDEF ENEMY_DIVER
+      IFNDEF B2_PASS
+        call ed_both_out        ; Finale: the bomb waits while both divers are out
+        ret nz
+      ENDIF
+    ENDIF
+        call wheel_next_height  ; a new middle, from the shift register
         ld hl,256               ; left pixel just past the right edge
         ld (wheel_x),hl
         xor a

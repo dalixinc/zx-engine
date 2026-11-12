@@ -43,7 +43,9 @@
         ; The jet's second still picture (preshift.asm, diver_jet_build).
         ; The soak's code fills the room it would take.
     IFNDEF SOAK
-        DEFINE DIVER_JET
+    IFNDEF MEASURE              ; Finale: its measurements need the room for
+        DEFINE DIVER_JET        ; their code (the same size of picture: no cost)
+    ENDIF
     ENDIF
 
         INCLUDE "../constants.asm"
@@ -84,7 +86,12 @@
         ; to leave that room: a build with the stat line (every test
         ; build) or the soak keeps the piranha alone. Both fish are 16 by
         ; 9, so the draw costs the same whichever is drawn.
-        ; Finale: no fish, so no round one (TWO_FISH).
+        ; Finale: no fish, so no round one (TWO_FISH). The Trigon divers
+        ; take the fish's place (ediver.asm); the soak, written round a
+        ; fish, keeps it instead.
+    IFNDEF SOAK
+        DEFINE ENEMY_DIVER
+    ENDIF
 
         ; Power-ups (missile.asm): a heart for a life, a bubble for the
         ; double shot (two torpedoes out at once, torpedo.asm). Not in the soak, whose script counts its missiles,
@@ -437,7 +444,7 @@ main_loop:
         rla
         call c,missile_restore
     IFDEF ENEMY_DIVER
-        call ed_restore         ; drawn after the fish (src/trigon/ediver.asm)
+        call ed_restore         ; the Trigon divers and their shots (ediver.asm)
     ENDIF
     IFDEF TWO_BOMBS
 .tb_c1:  call tb_restore         ; drawn after the fish (src/trigon/twobomb.asm)
@@ -556,7 +563,7 @@ fish_draw_call:
         call fish_draw_fast
     ENDIF
     IFDEF ENEMY_DIVER
-        call ed_draw            ; Trigon's enemy diver, an experiment
+        call ed_draw            ; the Trigon divers, then their shots (ediver.asm)
     ENDIF
     IFDEF TWO_BOMBS
 .tb_c2:  call tb_draw            ; the second bomb, in the fish's place
@@ -823,6 +830,11 @@ teaser_hook:                    ; level 2's message, once (score.asm)
         jr nz,.meas_sample
         ld hl,(frame_count)    ; end of the warmup: the window starts now
         ld (meas_base),hl
+    IFDEF ENEMY_DIVER
+        ld hl,0
+        ld (ed_n25),hl          ; Finale: count 25's steps in the window only
+        ld (ed_nsw),hl
+    ENDIF
         jp .meas_go
 .meas_sample:
         ; meas_min / meas_max / meas_zeros: the picture frame at 25,
@@ -901,6 +913,15 @@ teaser_hook:                    ; level 2's message, once (score.asm)
         ld hl,(meas_loops)
         ld bc,(3 << 8) | 10
         call print_hex16
+    IFDEF ENEMY_DIVER
+        ; Row 4, Finale: steps at 25 (ed_rate), then the times it went down.
+        ld hl,(ed_n25)
+        ld bc,(4 << 8) | 0
+        call print_hex16
+        ld hl,(ed_nsw)
+        ld bc,(4 << 8) | 5
+        call print_hex16
+    ENDIF
         ld a,GREEN
         out (ULA_PORT),a
 .meas_halt:
@@ -1102,7 +1123,6 @@ wheel_first:    db 0
         INCLUDE "interlude.asm"  ; the city, after the last Atlantis level
     IFDEF TRIGON
         INCLUDE "theme.asm" ; the fish's and the missile's colours
-        INCLUDE "ediver.asm" ; the enemy diver, -DENEMY_DIVER only
     IFDEF CODE_GATE
         COLD
         INCLUDE "gate.asm"  ; the Trigon code on the menu
@@ -1211,15 +1231,15 @@ data_start:
       ENDIF
     ENDIF
     ENDIF
-    IFDEF ENEMY_DIVER
-        ED_DATA                 ; the enemy diver's tables (src/trigon/ediver.asm)
-    ENDIF
     IFDEF TRIGON
         ; The second bomb's code, in the data block: uncontended, as the
         ; code is; and the shared bomb copies' rebuild. The ending and
         ; the level tables are in the hot code (src/trigon/theme.asm).
         TP_DATA                 ; the paint's box helpers (src/trigon/theme.asm)
         INCLUDE "lance.asm"
+        ; The Trigon divers (ENEMY_DIVER): their code in the data block,
+        ; uncontended, as the code is.
+        INCLUDE "ediver.asm"
     ENDIF
     IFDEF CITY_SHOW
 city_pix_zx0:                   ; Erin's city, a whole screen, packed:
@@ -1239,7 +1259,8 @@ data_end:
         RFISH_ART
     ENDIF
     IFDEF ENEMY_DIVER
-        EDIVER_ART
+        EDBLUE_ART
+        EDRED_ART
     ENDIF
         HOT
 DATA_LENGTH     equ data_end - data_start
@@ -1291,7 +1312,7 @@ UDG_LENGTH      equ udg_end - udg_start
     ENDIF
         ASSERT data_end <= PRESHIFT_START, "pictures have run into the diver's, the fish's and the pulsar's shifted copies"
     IFDEF ENEMY_DIVER
-        ASSERT data_end <= ED_BUF, "pictures have run into the enemy diver's shifted copies"
+        ASSERT code_end <= ED_BUF_RED, "instructions have run into the red diver's pictures"
     ENDIF
         ASSERT COLD_START - 1 == 24575, "the BASIC's CLEAR 24575 (loader.asm) must sit just below the cold block"
         ASSERT SCROLL_BUF_END <= ROW_TABLE, "scroll buffers run into the row table"
@@ -1342,12 +1363,12 @@ hot_top = JET_BUF
 hot_top = RFISH_BUF
         ENDIF
     ENDIF
-data_top = PRESHIFT_START
     IFDEF ENEMY_DIVER
-        IF ED_BUF < data_top
-data_top = ED_BUF
+        IF ED_BUF_RED < hot_top
+hot_top = ED_BUF_RED
         ENDIF
     ENDIF
+data_top = PRESHIFT_START
 cold_top        equ WSPIN_BUF
 
         ; Trigon writes its own files (src/trigon/main.asm).

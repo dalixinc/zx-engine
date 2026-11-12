@@ -277,6 +277,9 @@ level_style:
     IFDEF LANCEGUN
         call lance_level        ; is the Lance his yet? (lance.asm)
     ENDIF
+    IFDEF ENEMY_DIVER
+        call ed_level           ; the Trigon divers' row (ediver.asm)
+    ENDIF
     IFDEF DOUBLE_SHOT
         ; The double shot from CFG_DOUBLE_LEVEL: given, not caught.
         ld a,(level_n)

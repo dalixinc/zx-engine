@@ -72,9 +72,9 @@ LIVES_SCREEN    equ SCREEN + LIVES_ROW * 32 + LIVES_COL
 ;      routines (ground_hit, fish_hit, missile_hit) say the same.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
-    IFDEF TWO_BOMBS
-HIT_NO_BOMB     equ tb_hit_none ; Trigon: the second bomb, then the fish
-HIT_MISSED      equ tb_hit_miss
+    IFDEF ENEMY_DIVER
+HIT_NO_BOMB     equ ed_touch    ; Finale: the divers and their shots
+HIT_MISSED      equ ed_touch
     ELSE
 HIT_NO_BOMB     equ fish_hit
 HIT_MISSED      equ fish_cheap
@@ -141,6 +141,9 @@ DIVER_START_Y   equ 110             ; game_reset puts him here too
 diver_hurt:
         xor a
         ld (diver_touch),a
+    IFDEF MEASURE
+        ret                     ; Finale's measurements: nothing hurts him (carry clear)
+    ENDIF
     IFDEF TRIGON
     IFDEF POWERUPS
     IF CFG_GOD_MODE

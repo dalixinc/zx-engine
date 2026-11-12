@@ -411,7 +411,12 @@ lance_hits:
         call tb_boom
         call lance_pts
     ENDIF
-.fish:  ld a,(fish_busy)
+.fish:
+    IFDEF ENEMY_DIVER
+        call ed_lance           ; Finale: the divers
+        jr .msl
+    ENDIF
+        ld a,(fish_busy)
         or a
         jr nz,.msl
         ld a,(fish_x)

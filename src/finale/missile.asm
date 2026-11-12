@@ -378,7 +378,15 @@ missile_pick:
 missile_or_power:
         ld a,(msl_next)
         or a
+    IFDEF ENEMY_DIVER
+      IFNDEF MEAS_MISSILE
+        jp z,ed_msl_pick        ; Finale: missiles only where the level has them
+      ELSE
         jp z,missile_pick
+      ENDIF
+    ELSE
+        jp z,missile_pick
+    ENDIF
         ld (msl_kind),a
         xor a
         ld (msl_next),a

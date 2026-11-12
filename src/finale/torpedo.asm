@@ -441,8 +441,8 @@ torpedo_spent:
 ; main_loop calls this only while a torpedo is running.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
-    IFDEF TWO_BOMBS
-TORP_NOT_BOMB   equ tb_torpedo  ; Trigon: the second bomb, then the fish
+    IFDEF ENEMY_DIVER
+TORP_NOT_BOMB   equ ed_torp     ; Finale: the divers
     ELSE
 TORP_NOT_BOMB   equ torpedo_fish
     ENDIF
