@@ -30,6 +30,22 @@ rem is the unpacked tape, which loads the same game, only more slowly.
 setlocal
 cd /d "%~dp0"
 
+rem The make targets' spellings work too: run-trigon, run-finale.
+if /i "%~1"=="run-trigon" ( call "%~f0" runtrigon %2 & exit /b )
+if /i "%~1"=="run-finale" ( call "%~f0" runfinale %2 & exit /b )
+
+rem An unknown command says so, instead of quietly building everything.
+rem (Plain batch, no FIND: a Git Bash PATH can put Unix find first.)
+set "OK="
+for %%C in (run runtrigon runfinale web demo soak runsoak timing runtiming trigonsoak runtrigonsoak trigonseas finalesoak runfinalesoak) do if /i "%~1"=="%%C" set "OK=1"
+if not "%~1"=="" if not defined OK (
+    echo Unknown command: %1
+    echo Commands: run runtrigon runfinale web demo soak runsoak timing runtiming
+    echo           trigonsoak runtrigonsoak trigonseas finalesoak runfinalesoak
+    endlocal
+    exit /b 1
+)
+
 if "%SJASM%"=="" if exist "windows-tools\sjasmplus\sjasmplus.exe" set "SJASM=%~dp0windows-tools\sjasmplus\sjasmplus.exe"
 if "%SJASM%"=="" for /r "windows-tools" %%F in (sjasmplus.exe) do if exist "%%F" set "SJASM=%%F"
 if "%SJASM%"=="" set "SJASM=sjasmplus.exe"
