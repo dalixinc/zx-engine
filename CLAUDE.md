@@ -38,7 +38,7 @@ make -B && make soak && make run EMU="fuse -g 3x"
 
 `-B` forces a full rebuild, which also regenerates `gfx/*.asm` (needs Python 3). `make soak` only assembles `build/atlantis-soak.sna`. To see its result, run it with `fuse -g 3x --machine 48 build/atlantis-soak.sna`.
 
-Windows: `build.bat` / `build.bat run` / `build.bat demo`.
+Windows: `build.bat` (all three games) / `build.bat run` / `runtrigon` / `runfinale` / `build.bat demo`.
 
 The tapes (`build/atlantis.tap`, `build/diver.tap`) are **not tracked** any more: `make` builds them, and `.gitignore` ignores them. `build/*.png` is still committed. To check that Engine Demo 1 is unchanged, compare a fresh `make demo` with the last committed copy: `git show fc5fe34^:build/diver.tap | cmp - build/diver.tap`. `SAVETAP` paths are relative to the cwd.
 
