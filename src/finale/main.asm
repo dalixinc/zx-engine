@@ -43,7 +43,9 @@
         ; The jet's second still picture (preshift.asm, diver_jet_build).
         ; The soak's code fills the room it would take.
     IFNDEF SOAK
-        DEFINE DIVER_JET
+    IFNDEF MEASURE              ; Finale: its measurements need the room for
+        DEFINE DIVER_JET        ; their code (the same size of picture: no cost)
+    ENDIF
     ENDIF
 
         INCLUDE "../constants.asm"
@@ -1257,7 +1259,8 @@ data_end:
         RFISH_ART
     ENDIF
     IFDEF ENEMY_DIVER
-        EDIVER_ART
+        EDBLUE_ART
+        EDRED_ART
     ENDIF
         HOT
 DATA_LENGTH     equ data_end - data_start
@@ -1309,7 +1312,7 @@ UDG_LENGTH      equ udg_end - udg_start
     ENDIF
         ASSERT data_end <= PRESHIFT_START, "pictures have run into the diver's, the fish's and the pulsar's shifted copies"
     IFDEF ENEMY_DIVER
-        ASSERT data_end <= ED_BUF, "pictures have run into the enemy diver's shifted copies"
+        ASSERT code_end <= ED_BUF_RED, "instructions have run into the red diver's pictures"
     ENDIF
         ASSERT COLD_START - 1 == 24575, "the BASIC's CLEAR 24575 (loader.asm) must sit just below the cold block"
         ASSERT SCROLL_BUF_END <= ROW_TABLE, "scroll buffers run into the row table"
@@ -1360,12 +1363,12 @@ hot_top = JET_BUF
 hot_top = RFISH_BUF
         ENDIF
     ENDIF
-data_top = PRESHIFT_START
     IFDEF ENEMY_DIVER
-        IF ED_BUF < data_top
-data_top = ED_BUF
+        IF ED_BUF_RED < hot_top
+hot_top = ED_BUF_RED
         ENDIF
     ENDIF
+data_top = PRESHIFT_START
 cold_top        equ WSPIN_BUF
 
         ; Trigon writes its own files (src/trigon/main.asm).

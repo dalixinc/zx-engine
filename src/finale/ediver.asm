@@ -7,10 +7,17 @@
 ; has a record (ED_* offsets, reached through IX): where he is, how many
 ; hits he has left, his movement, and his one shot.
 ;
-; He is 16 by 15, a placeholder until Erin's arrives at that size: our
-; diver's first frame turned to face left, cut to its front 16 columns
-; (gfx/finale/ediver.txt). One picture, drawn at even x like ours, so
-; four shifted copies (360 bytes, below our diver's).
+; Erin's art: two kinds, 16 by 15, facing left (gfx/finale/ediver_blue.txt
+; and ediver_red.txt): the blue standard diver and the red, tougher one.
+; Four pictures each: apart, halfway, glide (the kick goes 0, 1, 2, 1, a
+; picture each ED_KICK 1/50 seconds) and firing (ED_FIRE_POSE 1/50
+; seconds as he fires). Drawn at even x like ours, so four shifted copies
+; of each picture: the blue's in the fish's old room (Finale's game
+; never makes the fish's), the red's just below the jet's pictures, at
+; the top of the code's room (both uncontended: in contended RAM at
+; $78E0 the red's draw lost frames at level 5).
+; On a level with one diver he is the row's kind; with two, one of each.
+; Their shot is Erin's 6 x 2, four pixels over six.
 ;
 ; He comes in from the right edge at a random depth and swims left a
 ; pixel each 1/50 second, in one of the level's movements, picked at
@@ -37,13 +44,30 @@
 
     IFDEF ENEMY_DIVER
 
-        INCLUDE "../../gfx/finale/ediver_raw.asm" ; 16 x 15
+        INCLUDE "../../gfx/finale/ediver_blue_raw.asm"
+        INCLUDE "../../gfx/finale/ediver_red_raw.asm"
+; Both kinds are one size: the code uses the blue's names for it.
+EDIVER_WIDTH    equ EDBLUE_WIDTH
+EDIVER_HEIGHT   equ EDBLUE_HEIGHT
+EDIVER_BYTES    equ EDBLUE_BYTES
+        ASSERT EDRED_WIDTH == EDBLUE_WIDTH && EDRED_HEIGHT == EDBLUE_HEIGHT && EDRED_PICS == EDBLUE_PICS
+        ASSERT EDBLUE_PICS == 4, "apart, halfway, glide, firing"
 
-        PRESHIFT_SIZE ED_ALL8, EDIVER_PICS, EDIVER_HEIGHT, EDIVER_WIDE, EDIVER_RAW
-ED_SHIFTED      equ ED_ALL8 / 2         ; even shifts only, as our diver's
-ED_BUF          equ PRESHIFT_START - ED_SHIFTED
-        ASSERT EDIVER_WIDE == 0, "the enemy diver's shifts are not all one size"
+        PRESHIFT_SIZE ED_ALL8, EDBLUE_PICS, EDBLUE_HEIGHT, EDBLUE_WIDE, EDBLUE_RAW
+ED_SHIFTED      equ ED_ALL8 / 2         ; one kind's, even shifts only, as our diver's
+ED_BUF_BLUE     equ FISH_BUF            ; the fish's old room
+    IFDEF DIVER_JET
+ED_BUF_RED      equ JET_BUF - ED_SHIFTED ; below the jet's, above the code: uncontended
+    ELSE
+ED_BUF_RED      equ DATA_START - ED_SHIFTED ; a measurement: where the jet's would be
+    ENDIF
+        ASSERT ED_SHIFTED <= FISH_SHIFTED, "the blue diver's pictures do not fit the fish's room"
+        ASSERT EDBLUE_WIDE == 0 && EDRED_WIDE == 0, "the enemy diver's shifts are not all one size"
         ASSERT EDIVER_WIDTH == 16, "ed_paint and the box-change rule are written for 16 wide"
+ED_KICK         equ 6                   ; 1/50 seconds a kick picture
+ED_FIRE_POSE    equ 8                   ; 1/50 seconds of the firing picture
+ED_BLUE         equ 0
+ED_RED          equ 1
 
 ED_TOP          equ WHEEL_TOP_Y         ; below the score line
 ED_LOW          equ BACK_ROW * 8 - EDIVER_HEIGHT    ; above the weed
@@ -56,7 +80,8 @@ ED_GUN_Y        equ 7                   ; his shot's row, down from his top
 ED_FIRE_MIN     equ 40                  ; he fires with his left edge
 ED_FIRE_MAX     equ 200                 ; between these (shot column <= 24)
 ED_FLASH_TIME   equ 12                  ; 1/50 seconds a hit blinks him
-ED_INK          equ CFG_ED_INK | SEA
+ED_INK_BLUE     equ CFG_ED_BLUE_INK | SEA
+ED_INK_RED      equ CFG_ED_RED_INK | SEA
 
 ED_P_STRAIGHT   equ 0
 ED_P_DRIFT      equ 1
@@ -84,7 +109,11 @@ ED_PON          equ 22          ; 1 = his cells are painted
 ED_PAT_AT       equ 23          ; 2 bytes: L column, H row of the painted box
 ED_PSIZE        equ 25          ; 2 bytes: C columns, B rows
 ED_REPAINT      equ 27          ; 1 = his cells may have changed: ed_paint at the next draw
-ED_REC          equ 28
+ED_KIND         equ 28          ; ED_BLUE or ED_RED
+ED_ANIM         equ 29          ; 1/50 seconds left of this kick picture
+ED_FIRE         equ 30          ; 1/50 seconds of the firing picture left
+ED_KSTEP        equ 31          ; the kick's step, 0 to 3 (ed_kick: its picture)
+ED_REC          equ 32
 
 ;------------------------------------------------------------------------------
 ; ed_level - level_style, each level and a new game: the level's row of
@@ -100,13 +129,15 @@ ed_level:
         ld e,a
         add a,a
         add a,a
-        add a,e                 ; 5 bytes a row
+        add a,e                 ; * 3
+        add a,a                 ; * 6
+        add a,e                 ; 7 bytes a row
         ld e,a
         ld d,0
         ld hl,ed_tab
         add hl,de
         ld de,ed_count
-        ld bc,5
+        ld bc,ED_ROW_LEN
         ldir
         ret
 
@@ -166,10 +197,25 @@ ed_rng:
 ed_move:
         ld ix,ed_rec0
         call ed_move1
+        call ed_paint_if
         ld a,(ed_count)
         cp 2
         ret c
         ld ix,ed_rec1
+        call ed_move1
+        ; fall through
+; His cells' colours, when they may have changed: here, with the moves,
+; not in the draw, so at 25 they are in the idle frame and the picture
+; frame keeps its time (level 5 lost frames with them there).
+ed_paint_if:
+        ld a,(ix + ED_ON)
+        or a
+        ret z
+        ld a,(ix + ED_REPAINT)
+        or a
+        ret z
+        jp ed_paint
+
 ed_move1:
         ; His shot first: it flies on whatever he does.
         ld a,(ix + ED_SHOT)
@@ -188,7 +234,7 @@ ed_move1:
 .noshot:
         ld a,(ix + ED_ON)
         or a
-        jr nz,.on
+        jp nz,.on
         dec (ix + ED_WAIT)
         ret nz
         ; Never three big sprites: with the bomb and the other diver both
@@ -214,8 +260,25 @@ ed_move1:
         sub 64
 .depth: add a,ED_TOP
         ld (ix + ED_Y),a
-        ld a,(ed_hits)
-        ld (ix + ED_HITS),a
+        ; His kind: with two, the first blue and the second red; alone,
+        ; the level's.
+        ld a,(ed_count)
+        cp 2
+        ld a,(ed_solo)
+        jr c,.kind
+        push ix
+        pop hl
+        ld a,l
+        cp low ed_rec1
+        ld a,ED_BLUE
+        jr nz,.kind
+        inc a                   ; ED_RED
+.kind:  ld (ix + ED_KIND),a
+        or a
+        ld a,(ed_hblue)
+        jr z,.hits
+        ld a,(ed_hred)
+.hits:  ld (ix + ED_HITS),a
 .pick:  call ed_rng
         and 3
         ld c,a
@@ -229,6 +292,9 @@ ed_move1:
         xor a
         ld (ix + ED_TIMER),a
         ld (ix + ED_FLASH),a
+        ld (ix + ED_FIRE),a
+        ld (ix + ED_KSTEP),a
+        ld (ix + ED_ANIM),ED_KICK
         ld a,(ed_gap)
         srl a
         ld (ix + ED_COOL),a     ; the first shot a little sooner
@@ -236,7 +302,20 @@ ed_move1:
         ld (ix + ED_REPAINT),1
         ret
 
-.on:    ld a,(ix + ED_FLASH)
+.on:    dec (ix + ED_ANIM)      ; the kick: a new step each ED_KICK
+        jr nz,.kicked
+        ld (ix + ED_ANIM),ED_KICK
+        ld a,(ix + ED_KSTEP)
+        inc a
+        and 3
+        ld (ix + ED_KSTEP),a
+.kicked:
+        ld a,(ix + ED_FIRE)
+        or a
+        jr z,.nopose
+        dec (ix + ED_FIRE)
+.nopose:
+        ld a,(ix + ED_FLASH)
         or a
         jr z,.noflash
         dec (ix + ED_FLASH)
@@ -321,6 +400,7 @@ ed_move1:
         add a,ED_GUN_Y
         ld (ix + ED_SY),a
         ld (ix + ED_SHOT),1
+        ld (ix + ED_FIRE),ED_FIRE_POSE
         ld a,(ed_gap)
         ld (ix + ED_COOL),a
         ret
@@ -403,9 +483,6 @@ ed_draw1:
         ld a,(ix + ED_FLASH)
         and 2
         jr nz,.off              ; hit: he blinks
-        ld a,(ix + ED_REPAINT)
-        or a
-        call nz,ed_paint        ; only when his cells may have changed
         ld l,(ix + ED_X)
         ld h,(ix + ED_X + 1)
         ld a,l
@@ -419,9 +496,20 @@ ed_draw1:
         or a
         jr nz,.off
         call fast_save
-        xor a                   ; the one picture
-        ld hl,ediver_images
-        call sprite_image
+        ; The picture: firing, or the kick's 0, 1, 2, 1.
+        ld a,(ix + ED_FIRE)
+        or a
+        ld a,3
+        jr nz,.pic
+        ld a,(ix + ED_KSTEP)
+        cp 3
+        jr nz,.pic
+        ld a,1                  ; steps 0, 1, 2, 3 are pictures 0, 1, 2, 1
+.pic:   ld hl,ed_blue_images
+        bit 0,(ix + ED_KIND)
+        jr z,.img
+        ld hl,ed_red_images
+.img:   call sprite_image
         call fast_pick
         ; Clipped at an edge: as the bomb's draw (wheel_draw).
         ld a,(spr_skip2)
@@ -441,7 +529,8 @@ ed_draw1:
 .off:   ld (iy + BG_VALID),0
         ret
 
-; His shot: a 6-pixel dash, two rows, ORed on with what it covers kept.
+; His shot: Erin's 6 x 2 (.####. over ######), ORed on with what it
+; covers kept.
 ; It is fired with its column at most 24, so its two bytes stay in the row.
 ed_shot_draw:
         ld a,(ix + ED_SHOT)
@@ -482,7 +571,7 @@ ed_shot_draw:
         ld l,a
         adc a,high ed_shot_pat
         sub l
-        ld h,a                  ; HL = the dash at this shift, two bytes
+        ld h,a                  ; HL = its top row at this shift, two bytes
         ld a,(de)
         ld (ix + ED_SSAVE),a
         or (hl)
@@ -493,7 +582,9 @@ ed_shot_draw:
         ld (ix + ED_SSAVE + 1),a
         or (hl)
         ld (de),a
-        dec hl
+        ld a,l
+        add a,15                ; its bottom row's two bytes (ed_shot_low)
+        ld l,a
         ld a,(bc)
         ld (ix + ED_SSAVE + 2),a
         or (hl)
@@ -587,7 +678,10 @@ ed_paint:
         ld (ix + ED_PSIZE),c
         ld (ix + ED_PSIZE + 1),b
         ld (ix + ED_PON),1
-        ld a,ED_INK
+        bit 0,(ix + ED_KIND)
+        ld a,ED_INK_BLUE
+        jp z,tp_box
+        ld a,ED_INK_RED
         jp tp_box
 
 ed_unpaint:
@@ -848,14 +942,26 @@ ed_nsw:         dw 0            ; times down to 25
     ENDIF
 
 ed_count:       db 1            ; the level's row (ed_level), in this order
-ed_hits:        db 2
+ed_hblue:       db 2            ; a blue diver's hits
+ed_hred:        db 3            ; a red one's
+ed_solo:        db ED_BLUE      ; the kind on a level with one
 ed_pats:        db 1
 ed_gap:         db 120
 ed_missiles:    db 0
 ed_seed:        db 57           ; never 0
 
-; The dash at each of the 8 shifts, two bytes.
+; The shot at each of the 8 shifts, two bytes: its top row (.####.),
+; then, 16 bytes on, its bottom row (######).
 ed_shot_pat:
+        db %01111000, %00000000
+        db %00111100, %00000000
+        db %00011110, %00000000
+        db %00001111, %00000000
+        db %00000111, %10000000
+        db %00000011, %11000000
+        db %00000001, %11100000
+        db %00000000, %11110000
+ed_shot_low:
         db %11111100, %00000000
         db %01111110, %00000000
         db %00111111, %00000000
@@ -864,30 +970,39 @@ ed_shot_pat:
         db %00000111, %11100000
         db %00000011, %11110000
         db %00000001, %11111000
-        ASSERT high ed_shot_pat == high (ed_shot_pat + 15)
+        ASSERT high ed_shot_pat == high (ed_shot_pat + 31), "ed_shot_draw steps L only"
+        ASSERT ed_shot_low == ed_shot_pat + 16
 
 ; The levels' rows (config.asm, CFG_ED_LEVELS).
-        MACRO ED_ROW count?, hits?, pats?, gap?, missiles?
+        MACRO ED_ROW count?, hblue?, hred?, solo?, pats?, gap?, missiles?
         ASSERT count? >= 1 && count? <= 2, "CFG_ED_LEVELS: one or two divers"
-        ASSERT hits? >= 1 && hits? <= 9
+        ASSERT hblue? >= 1 && hblue? <= 9 && hred? >= 1 && hred? <= 9
+        ASSERT solo? == ED_BLUE || solo? == ED_RED
         ASSERT pats? >= 1 && pats? <= 15, "CFG_ED_LEVELS: at least one movement"
         ASSERT gap? >= 10 && gap? <= 255
         ASSERT missiles? == 0 || missiles? == 1
-        db count?, hits?, pats?, gap?, missiles?
+        db count?, hblue?, hred?, solo?, pats?, gap?, missiles?
         ENDM
+ED_ROW_LEN      equ 7
+        ASSERT ed_missiles == ed_count + ED_ROW_LEN - 1, "ed_level copies a row onto ed_count..ed_missiles"
 ed_tab:
         CFG_ED_LEVELS
-ED_ROWS         equ ($ - ed_tab) / 5
+ED_ROWS         equ ($ - ed_tab) / ED_ROW_LEN
         ASSERT ED_ROWS >= 1
 
 ; The pointer tables, with the code in the data block: the odd shifts point
 ; at the even ones, as our diver's do (PRESHIFT_EVEN).
         MACRO ED_DATA
-ediver_images:
-        PRESHIFT_INDEX ed_shifts, EDIVER_PICS
-ed_shifts:
-        PRESHIFT_EVEN ED_BUF, EDIVER_PICS, EDIVER_HEIGHT, EDIVER_RAW
-        ASSERT pst_a == ED_BUF + ED_SHIFTED, "the enemy diver's tables and preshift disagree"
+ed_blue_images:
+        PRESHIFT_INDEX ed_blue_shifts, EDBLUE_PICS
+ed_blue_shifts:
+        PRESHIFT_EVEN ED_BUF_BLUE, EDBLUE_PICS, EDBLUE_HEIGHT, EDBLUE_RAW
+        ASSERT pst_a == ED_BUF_BLUE + ED_SHIFTED, "the blue diver's tables and preshift disagree"
+ed_red_images:
+        PRESHIFT_INDEX ed_red_shifts, EDRED_PICS
+ed_red_shifts:
+        PRESHIFT_EVEN ED_BUF_RED, EDRED_PICS, EDRED_HEIGHT, EDRED_RAW
+        ASSERT pst_a == ED_BUF_RED + ED_SHIFTED, "the red diver's tables and preshift disagree"
         ENDM
         ED_DATA                 ; here, in the data block with the code
 

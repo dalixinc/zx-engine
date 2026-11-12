@@ -455,16 +455,18 @@ CFG_FISH_WAVE_SPEED  equ 3
 ; comes CFG_ED_FIRST 1/50 seconds into a game, the second (on a level with
 ; two) CFG_ED_GAP after him; one gone (off the left, or blown up) comes
 ; again CFG_ED_GAP later. The last hit scores CFG_ED_PTS (0 to 99) in the
-; "+20" pop-up. Their cells are CFG_ED_INK on the sea.
+; "+20" pop-up. Their cells are their kind's ink on the sea: the blue
+; standard diver and the red, tougher one (Erin's two).
 CFG_ED_FIRST         equ 50
 CFG_ED_GAP           equ 90
 CFG_ED_PTS           equ 20
-CFG_ED_INK           equ RED
+CFG_ED_BLUE_INK      equ BLUE
+CFG_ED_RED_INK       equ RED
 ; From this level, two big enemies out at once (two divers, or a diver
 ; and the bomb) drop the game to 25 frames a second until half a second
 ; after one has gone (ediver.asm, ed_rate): the frame cannot hold them at
-; 50 with the double shot and the Lance. Below it, 50 holds.
-CFG_ED_25_LEVEL      equ 3
+; 50 with the double shot (from level 2) and the Lance. Below it, 50 holds.
+CFG_ED_25_LEVEL      equ 2
         ASSERT CFG_ED_FIRST >= 1 && CFG_ED_FIRST + CFG_ED_GAP <= 255 && CFG_ED_GAP >= 1
         ASSERT CFG_ED_PTS >= 1 && CFG_ED_PTS <= 99
 ; Their movements, for a level's row: any mix of these.
@@ -474,22 +476,24 @@ ED_M_STOP            equ 4      ; stops a while, firing twice as often
 ED_M_DIVE            equ 8      ; dives straight at the player's depth
 ED_M_ALL             equ 15
 ; A row a level, in order; past the last, the last again.
-;   count     divers out at once (1 or 2)
-;   hits      hits each takes to blow up
+;   count     divers out at once (1 or 2): with two, one blue, one red
+;   blue      hits a blue diver takes to blow up
+;   red       hits a red one takes (the tougher)
+;   alone     the kind on a level with one: ED_BLUE or ED_RED
 ;   moves     the movements they come in, picked at random each time
 ;   gap       1/50 seconds between his shots (half that while stopped)
 ;   missiles  1: the silos fire on this level; 0: they do not (a
 ;             heart may still fall in their turn)
         MACRO CFG_ED_LEVELS
-        ;       count hits moves                                gap missiles
-        ED_ROW  1,    2,   ED_M_STRAIGHT,                       120, 0      ; 1
-        ED_ROW  1,    2,   ED_M_STRAIGHT | ED_M_DRIFT,          100, 0      ; 2
-        ED_ROW  1,    3,   ED_M_DRIFT | ED_M_STOP,              90,  0      ; 3: the Lance
-        ED_ROW  2,    3,   ED_M_STRAIGHT | ED_M_DRIFT | ED_M_STOP, 90, 0    ; 4: two at once
-        ED_ROW  2,    3,   ED_M_DRIFT | ED_M_DIVE,              80,  1      ; 5: missiles start
-        ED_ROW  2,    3,   ED_M_ALL,                            60,  1      ; 6
-        ED_ROW  2,    4,   ED_M_ALL,                            50,  1      ; 7
-        ED_ROW  2,    4,   ED_M_ALL,                            50,  1      ; 8: the last fight
+        ;       count blue red alone    moves                                   gap missiles
+        ED_ROW  1,    2,   3,  ED_BLUE, ED_M_STRAIGHT,                          120, 0  ; 1
+        ED_ROW  1,    2,   3,  ED_BLUE, ED_M_STRAIGHT | ED_M_DRIFT,             100, 0  ; 2
+        ED_ROW  1,    2,   3,  ED_RED,  ED_M_DRIFT | ED_M_STOP,                 90,  0  ; 3: the Lance
+        ED_ROW  2,    2,   3,  ED_BLUE, ED_M_STRAIGHT | ED_M_DRIFT | ED_M_STOP, 90,  0  ; 4: two at once
+        ED_ROW  2,    2,   3,  ED_BLUE, ED_M_DRIFT | ED_M_DIVE,                 80,  1  ; 5: missiles start
+        ED_ROW  2,    3,   4,  ED_BLUE, ED_M_ALL,                               60,  1  ; 6
+        ED_ROW  2,    3,   4,  ED_BLUE, ED_M_ALL,                               50,  1  ; 7
+        ED_ROW  2,    3,   4,  ED_BLUE, ED_M_ALL,                               50,  1  ; 8: the last fight
         ENDM
 
 ; How long the "LEVEL n" banner stays up, in 1/50 seconds. 100 is two

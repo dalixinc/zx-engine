@@ -58,7 +58,7 @@ TRI_GFX   := gfx/diver_raw.asm gfx/torpedo.asm gfx/trigon/piranha_raw.asm \
              gfx/trigon/round-fish_raw.asm gfx/trigon/pulsar_raw.asm \
              gfx/trigon/spinning-wheel_raw.asm gfx/trigon/missile.asm
 FIN_SRC   := $(wildcard src/finale/*.asm) $(SHARED)
-FIN_GFX   := gfx/diver_raw.asm gfx/torpedo.asm gfx/trigon/pulsar_raw.asm gfx/trigon/missile.asm gfx/finale/ediver_raw.asm
+FIN_GFX   := gfx/diver_raw.asm gfx/torpedo.asm gfx/trigon/pulsar_raw.asm gfx/trigon/missile.asm gfx/finale/ediver_blue_raw.asm gfx/finale/ediver_red_raw.asm
 ZX0       := build/zx0
 CC        ?= cc
 
@@ -219,9 +219,11 @@ gfx/trigon/missile.asm: gfx/trigon/missile.txt tools/gfx2asm.py
 	$(PYTHON) tools/gfx2asm.py $< $@ missile
 gfx/trigon/ediver_raw.asm: gfx/trigon/ediver.txt tools/gfx2raw.py tools/gfx2asm.py
 	$(PYTHON) tools/gfx2raw.py $< $@ ediver 1
-# Finale's Trigon diver, 16 wide (src/finale/ediver.asm).
-gfx/finale/ediver_raw.asm: gfx/finale/ediver.txt tools/gfx2raw.py tools/gfx2asm.py
-	$(PYTHON) tools/gfx2raw.py $< $@ ediver 1
+# Finale's Trigon divers, Erin's blue and red, 16 wide (src/finale/ediver.asm).
+gfx/finale/ediver_blue_raw.asm: gfx/finale/ediver_blue.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ edblue 1
+gfx/finale/ediver_red_raw.asm: gfx/finale/ediver_red.txt tools/gfx2raw.py tools/gfx2asm.py
+	$(PYTHON) tools/gfx2raw.py $< $@ edred 1
 
 # The loading screen, drawn from the same sprites. Committed, like the
 # .asm above, so the tape builds without Python.
