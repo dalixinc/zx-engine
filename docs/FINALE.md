@@ -89,7 +89,10 @@ blue's in the fish's old room, the red's at the top of the code's room,
 both in uncontended memory.
 
 Their colours are painted with their moves, not their draws, so at 25
-they fall in the idle frame, and painted again every 8 frames: the bomb,
+they fall in the idle frame. When a diver moves into new cells, the new
+ones are painted at once, but the ones he leaves go back to the water
+only after he has been drawn in his new place, so no part of him shows
+white for a frame. They are painted again every 8 frames: the bomb,
 a heart, missiles and the Lance give cells back to the water as they
 pass, and a diver over one would show white.
 
