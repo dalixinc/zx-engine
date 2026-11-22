@@ -269,10 +269,10 @@ CFG_DOUBLE_COOLDOWN  equ 10
 ;   nuke      clears them all, from CFG_NUKE_LEVEL (0 leaves it out of the build)
 CFG_SUCTION_LEVEL    equ 2
 CFG_SHOVE_LEVEL      equ 3
-CFG_NUKE_LEVEL       equ 6       ; from level 6, the swarm (0 leaves it out of the build)
+CFG_NUKE_LEVEL       equ 17      ; from level 17, the top belt's (0 leaves it out of the build)
 CFG_SUCTION_ODDS     equ 11      ; about one turn in 23: the escape, twice as
 CFG_SHOVE_ODDS       equ 5       ; common as the throw (one in 51), which kills
-CFG_NUKE_ODDS        equ 8
+CFG_NUKE_ODDS        equ 16      ; about one turn in 16
 ; How long the pull or the throw lasts, in 1/50 seconds, and how far
 ; they move each 1/50 second, in pixels.
 CFG_SPECIAL_TIME     equ 24
@@ -305,7 +305,7 @@ CFG_FALL_NUKE_INK    equ YELLOW
 CFG_LIVES_INK        equ RED
 CFG_HELD_INK         equ 1
 
-CFG_LANCE_LEVEL      equ 4
+CFG_LANCE_LEVEL      equ 9       ; the third belt's (CFG_BELTS)
 CFG_LANCE_FULL       equ 96      ; about 2 seconds for the whole width
 CFG_LANCE_MIN        equ 24      ; about half a second: 8 bytes, 64 pixels
 CFG_LANCE_TIME       equ 8
@@ -594,27 +594,31 @@ CFG_GOD_MODE         equ 1
 ; cells are painted (src/trigon/theme.asm). WHITE is the sea's own, so
 ; nothing is painted. BELT_DIM is the ink without BRIGHT; WHITE | FLASH
 ; flashes. A belt only ever goes up: a new one pops up "BELT" beside him
-; in its colour (tp_belt_pop).
+; in its colour (tp_belt_pop). A belt is earned by finishing levels 4,
+; 8, 12 and 16, and each gives a power for good: the double shot from
+; level 5 (tp_belt_level), the Lance instead from level 9
+; (CFG_LANCE_LEVEL), both from level 13, and from level 17 the nuke can
+; fall too (CFG_NUKE_LEVEL).
         MACRO CFG_BELTS
+        BELT WHITE              ; 1 to 4: none, the single shot
         BELT WHITE
         BELT WHITE
+        BELT WHITE
+        BELT YELLOW             ; 5 to 8: the double shot
         BELT YELLOW
         BELT YELLOW
-        BELT CYAN
-        BELT CYAN
+        BELT YELLOW
+        BELT GREEN              ; 9 to 12: the single shot and the Lance
         BELT GREEN
         BELT GREEN
-        BELT MAGENTA            ; purple
-        BELT MAGENTA
-        BELT BLUE               ; 11, 12
+        BELT GREEN
+        BELT BLUE               ; 13 to 16: the double shot and the Lance
         BELT BLUE
-        BELT RED                ; 13, 14
-        BELT RED
-        BELT_DIM YELLOW         ; 15 to 18: brown, the Spectrum's dark yellow
-        BELT_DIM YELLOW
-        BELT_DIM YELLOW
-        BELT_DIM YELLOW
-        BELT WHITE | FLASH      ; 19, 20: black, white flashing
+        BELT BLUE
+        BELT BLUE
+        BELT WHITE | FLASH      ; 17 to 20: black, white flashing; the nuke too
+        BELT WHITE | FLASH
+        BELT WHITE | FLASH
         BELT WHITE | FLASH
         ENDM
 

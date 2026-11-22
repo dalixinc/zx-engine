@@ -313,8 +313,13 @@ tp_fish_new:
         ENDM
 
         COLD                    ; once a level
-; tb_level, each level: his belt (CFG_BELTS), and everything painted
-; again, so a new ink shows at once. Corrupts: AF, DE, HL
+; tb_level, each level and a new game: his belt (CFG_BELTS), and
+; everything painted again, so a new ink shows at once. With power-ups,
+; the belts' double shot too (CFG_BELTS: levels 5 to 8 and 13 on): it
+; points double_live (torpedo.asm) at its own first byte, LD A,(nn),
+; which is never 0, instead of double_on, so a running torpedo always
+; may hand over to the second slot. A bubble meanwhile changes nothing
+; but its cell on row 1. Corrupts: AF, DE, HL
 tp_belt_level:
         ld a,(level_n)
         cp CFG_ENDING_LEVEL + 1
@@ -326,6 +331,18 @@ tp_belt_level:
         add hl,de
         ld a,(hl)
         ld (tp_belt),a
+    IFDEF POWERUPS
+    IFNDEF MEAS_DOUBLE
+        ld a,e
+        dec a                   ; 4 to 7 and 12 to 19: bit 2 or bit 4
+        and %00010100
+        ld hl,double_on         ; the bubble's alone
+        jr z,.dbl
+        ld hl,double_live       ; the belt's: always
+.dbl:   ld (double_live + 1),hl
+        ASSERT ({double_live} & $FF) == $3A && {double_live + 1} == double_on, "double_live is not LD A,(double_on)"
+    ENDIF
+    ENDIF
         ld a,1
         ld (tp_force),a
         ret
