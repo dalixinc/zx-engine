@@ -406,11 +406,15 @@ CFG_L3_INK          equ MAGENTA | SEA
 CFG_GREEN_INK       equ GREEN | SEA
 CFG_WHITE_INK       equ WHITE | SEA
 
-; Finale's levels: one bomb, the pulsar, on the bob, the wave or
-; hunting, a little faster each level. Placeholders: chunk 4 of the
-; brief tunes them with the enemy divers. The ending follows the last
-; (CFG_ENDING_LEVEL). The fish's columns stay for now; Finale has no
-; fish, so nothing reads them.
+; Finale's ten levels (chunk 4): one bomb, the pulsar, with the enemy
+; divers (CFG_ED_LEVELS below, a row each, in the same order). Each level
+; is a little faster and closer than the last: the bomb's haste and
+; movement, the divers' count, toughness, movements, fire and shot speed,
+; and from level 6 the silos' missiles, coming closer together. Level 10
+; is one short last fight; the ending follows it (CFG_ENDING_LEVEL).
+; A diver blown up scores CFG_ED_PTS (20), so points is about how many
+; divers a level takes, at 20 each, with the bomb and missiles on top.
+; The fish's columns stay; Finale has no fish, so nothing reads them.
 ; The soak plays level 1 and its frame numbers expect Atlantis's level 1
 ; (score.asm asserts it), so a soak build has that row first.
     IFNDEF SOAK
@@ -421,14 +425,28 @@ CFG_WHITE_INK       equ WHITE | SEA
         LEVEL_ROW  200,    CFG_MISSILE_GAP_MIN, CFG_MISSILE_GAP_MAX, 0, BOMB_P, CFG_WHEEL_INK, MOVE_BOB, 0, MOVE_STRAIGHT, 0, BLUE, 1, 2, 10
     ENDIF
         ;          points  gap min  gap max  haste  bomb    ink            bmove      hunt fmove          fspeed border        fish bomb missile
-        LEVEL_ROW  300,    60,      150,     32,    BOMB_P, CFG_WHEEL_INK, MOVE_BOB,  0,   MOVE_STRAIGHT, 0,     BLUE,         1,   2,   10
-        LEVEL_ROW  450,    55,      140,     64,    BOMB_P, CFG_L2_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     RED,          1,   2,   10
-        LEVEL_ROW  600,    50,      130,     96,    BOMB_P, CFG_L3_INK,    MOVE_HOME, 64,  MOVE_STRAIGHT, 0,     MAGENTA,      1,   2,   10
-        LEVEL_ROW  750,    45,      120,     112,   BOMB_P, CFG_GREEN_INK, MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     GREEN,        1,   2,   10
-        LEVEL_ROW  900,    40,      110,     128,   BOMB_P, CFG_L2_INK,    MOVE_HOME, 96,  MOVE_STRAIGHT, 0,     CYAN,         1,   2,   10
-        LEVEL_ROW  1050,   35,      100,     144,   BOMB_P, CFG_WHITE_INK, MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     YELLOW,       1,   2,   10
-        LEVEL_ROW  1200,   30,      90,      160,   BOMB_P, CFG_L3_INK,    MOVE_HOME, 128, MOVE_STRAIGHT, 0,     WHITE,        1,   2,   10
-        LEVEL_ROW  1300,   30,      80,      176,   BOMB_P, CFG_L2_INK,    MOVE_HOME, 128, MOVE_STRAIGHT, 0,     RED,          1,   2,   10
+        ; 1, the opening fight: a quicker bob than before, and the diver
+        ; drifts to you as well as crossing
+        LEVEL_ROW  240,    70,      150,     48,    BOMB_P, CFG_WHEEL_INK, MOVE_BOB,  0,   MOVE_STRAIGHT, 0,     BLUE,         1,   2,   10
+        ; 2, the double shot: the bomb on the wave, the diver may stop to fire
+        LEVEL_ROW  280,    65,      140,     72,    BOMB_P, CFG_L2_INK,    MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     RED,          1,   2,   10
+        ; 3, the Lance: a red diver alone, the bomb hunting
+        LEVEL_ROW  320,    60,      130,     88,    BOMB_P, CFG_L3_INK,    MOVE_HOME, 64,  MOVE_STRAIGHT, 0,     MAGENTA,      1,   2,   10
+        ; 4, two at once: a blue and a red
+        LEVEL_ROW  360,    55,      125,     104,   BOMB_P, CFG_GREEN_INK, MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     GREEN,        1,   2,   10
+        ; 5, the divers dive at you; the bomb hunts harder
+        LEVEL_ROW  400,    50,      120,     120,   BOMB_P, CFG_L2_INK,    MOVE_HOME, 80,  MOVE_STRAIGHT, 0,     CYAN,         1,   2,   10
+        ; 6, the silos open fire from below; blue divers take 3
+        LEVEL_ROW  440,    50,      120,     136,   BOMB_P, CFG_WHITE_INK, MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     YELLOW,       1,   3,   10
+        ; 7, red divers take 4; everything at once
+        LEVEL_ROW  480,    45,      110,     152,   BOMB_P, CFG_L3_INK,    MOVE_HOME, 96,  MOVE_STRAIGHT, 0,     WHITE,        1,   3,   10
+        ; 8, faster shots, quicker fire, closer missiles
+        LEVEL_ROW  520,    40,      100,     168,   BOMB_P, CFG_GREEN_INK, MOVE_WAVE, 0,   MOVE_STRAIGHT, 0,     MAGENTA,      1,   3,   10
+        ; 9, the guard: the bomb hunting hardest
+        LEVEL_ROW  560,    35,      90,      184,   BOMB_P, CFG_L2_INK,    MOVE_HOME, 128, MOVE_STRAIGHT, 0,     BLUE,         1,   3,   10
+        ; 10, the last fight, short: the toughest divers, diving and
+        ; drifting at you, then the city (CFG_ENDING_LEVEL)
+        LEVEL_ROW  200,    30,      80,      200,   BOMB_P, CFG_WHITE_INK, MOVE_HOME, 128, MOVE_STRAIGHT, 0,     RED,          1,   3,   10
         ENDM
 
 
@@ -485,16 +503,20 @@ ED_M_ALL             equ 15
 ;   gap       1/50 seconds between his shots (half that while stopped)
 ;   missiles  1: the silos fire on this level; 0: they do not (a
 ;             heart may still fall in their turn)
+;   shot      pixels his shot flies each 1/50 second (1 to 5; 3 was the
+;             one speed before chunk 4)
         MACRO CFG_ED_LEVELS
-        ;       count blue red alone    moves                                   gap missiles
-        ED_ROW  1,    2,   3,  ED_BLUE, ED_M_STRAIGHT,                          120, 0  ; 1
-        ED_ROW  1,    2,   3,  ED_BLUE, ED_M_STRAIGHT | ED_M_DRIFT,             100, 0  ; 2
-        ED_ROW  1,    2,   3,  ED_RED,  ED_M_DRIFT | ED_M_STOP,                 90,  0  ; 3: the Lance
-        ED_ROW  2,    2,   3,  ED_BLUE, ED_M_STRAIGHT | ED_M_DRIFT | ED_M_STOP, 90,  0  ; 4: two at once
-        ED_ROW  2,    2,   3,  ED_BLUE, ED_M_DRIFT | ED_M_DIVE,                 80,  1  ; 5: missiles start
-        ED_ROW  2,    3,   4,  ED_BLUE, ED_M_ALL,                               60,  1  ; 6
-        ED_ROW  2,    3,   4,  ED_BLUE, ED_M_ALL,                               50,  1  ; 7
-        ED_ROW  2,    3,   4,  ED_BLUE, ED_M_ALL,                               50,  1  ; 8: the last fight
+        ;       count blue red alone    moves                                   gap missiles shot
+        ED_ROW  1,    2,   3,  ED_BLUE, ED_M_STRAIGHT | ED_M_DRIFT,             100, 0,      2  ; 1
+        ED_ROW  1,    2,   3,  ED_BLUE, ED_M_STRAIGHT | ED_M_DRIFT | ED_M_STOP, 90,  0,      2  ; 2: double shot
+        ED_ROW  1,    2,   3,  ED_RED,  ED_M_DRIFT | ED_M_STOP,                 85,  0,      3  ; 3: the Lance
+        ED_ROW  2,    2,   3,  ED_BLUE, ED_M_STRAIGHT | ED_M_DRIFT | ED_M_STOP, 85,  0,      3  ; 4: two at once
+        ED_ROW  2,    2,   3,  ED_BLUE, ED_M_DRIFT | ED_M_STOP | ED_M_DIVE,     80,  0,      3  ; 5: diving
+        ED_ROW  2,    3,   3,  ED_BLUE, ED_M_ALL,                               70,  1,      3  ; 6: missiles
+        ED_ROW  2,    3,   4,  ED_BLUE, ED_M_ALL,                               65,  1,      3  ; 7
+        ED_ROW  2,    3,   4,  ED_BLUE, ED_M_ALL,                               60,  1,      4  ; 8
+        ED_ROW  2,    3,   4,  ED_BLUE, ED_M_ALL,                               55,  1,      4  ; 9
+        ED_ROW  2,    4,   4,  ED_BLUE, ED_M_DRIFT | ED_M_STOP | ED_M_DIVE,     50,  1,      4  ; 10: the last
         ENDM
 
 ; How long the "LEVEL n" banner stays up, in 1/50 seconds. 100 is two
@@ -506,10 +528,10 @@ CFG_BANNER_CODE_TIME equ 200
 ; Levels with a code (codes.asm): 2 to this. Trigon's codes have their
 ; own keys, so no Atlantis code opens a Trigon level. Level 1's is the
 ; Trigon code (GATE_WORD). Up to 31.
-CFG_CODE_LEVELS      equ 8
-; The last level (8): finishing it ends the game with the Finale code
+CFG_CODE_LEVELS      equ 10
+; The last level (10): finishing it ends the game with the Finale code
 ; (src/trigon/ending.asm). Levels past the table repeat its last row.
-CFG_ENDING_LEVEL     equ 8
+CFG_ENDING_LEVEL     equ 10
 ; 1: the testers' switch (notes/CHEATS.md) also makes the diver unhurt,
 ; to play the levels through. 0 leaves it out of the build altogether.
 CFG_GOD_MODE         equ 1

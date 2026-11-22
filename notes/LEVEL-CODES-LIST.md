@@ -73,7 +73,9 @@ Finale (`src/finale/`) asks for **CINDER** before level 1 (its
 `GATE_WORD`, `src/finale/codes.asm`). Its level codes have their own keys
 (`CODE_KEY_SUM $17D2B`, `CODE_KEY_MIX $2E84F1`), and no Finale code shares
 more than two letters in place with any Atlantis or Trigon code, KRAKEN or
-CINDER.
+CINDER, but for level 9's GUAHCL, which shares three (G, U, L) with
+Atlantis level 19's GULSTL. Each game takes only its own codes, so neither
+opens the other; new keys would change every Finale code.
 
 | Level | Code |
 |---|---|
@@ -84,10 +86,14 @@ CINDER.
 | 6 | LCKSSS |
 | 7 | ARJRJD |
 | 8 | KKFTAU |
+| 9 | GUAHCL |
+| 10 | TDAPAG |
 
-Finale's levels start at (placeholders until chunk 4 tunes the table):
-1 at 0, 2 at 300, 3 at 750, 4 at 1,350, 5 at 2,100, 6 at 3,000, 7 at
-4,050, 8 at 5,250. Finishing level 8 (6,550) shows the ending.
+Finale's ten levels (chunk 4) start at: 1 at 0, 2 at 240, 3 at 520,
+4 at 840, 5 at 1,200, 6 at 1,600, 7 at 2,040, 8 at 2,520, 9 at 3,040,
+10 at 3,600. Finishing level 10 (3,800) shows the ending. A diver blown
+up is 20 points, so a level is about 12 (level 1) to 28 (level 9)
+divers, less the bombs, missiles and Lance kills; level 10 is 10.
 
 ## Targets (spoilers too)
 

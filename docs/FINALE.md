@@ -45,9 +45,9 @@ version is `src/finale/VERSION`.
   bomb-carrying diver arrives, inside his present 24 x 15 box).
 - **Weapons:** the torpedo; the double shot from level 2 and the Lance
   from level 3, given, not caught. The heart is the only power-up.
-- **Levels:** eight placeholder levels, the pulsar on the bob, the wave
-  or hunting, a little faster each time. The banner still freezes the
-  action while it is up. Finishing level 8 shows a placeholder ending.
+- **Levels:** see [the levels (chunk 4)](#the-levels-chunk-4). The
+  banner freezes the action while it is up. Finishing the last level
+  shows a placeholder ending.
 
 ## Room and timing
 
@@ -55,6 +55,7 @@ version is `src/finale/VERSION`.
 |---|---|---|---|
 | Trigon 0.8.0 | 1 | 5 | 8 |
 | Finale base | 1,705 | 1,381 | 2,400 |
+| Finale, chunk 4 | 213 | 886 | 368 |
 
 Free while the game runs as well: `$78E0-$7FFF` (the spinning wheel's
 pictures, 1,824 bytes) and the round fish's 1,728.
@@ -70,16 +71,16 @@ place (`src/finale/ediver.asm`), drawn by Erin: the blue standard diver
 and the red, tougher one, 16 x 15, facing left, kicking through four
 pictures (apart, halfway, glide, halfway) and turning to a firing pose as
 they shoot. One at once on levels 1 to 3 (blue, then red on level 3),
-two from level 4, one of each. Each comes in one of the level's movements, picked at random:
+two from level 4, one of each (the levels, below). Each comes in one of the level's movements, picked at random:
 weaving across on a wave (16 pixels up and down, from a random point on
 it), drifting to the player's depth, stopping a while to fire twice as
 often, or diving at his depth. They fire short dashes to the left
-(Erin's 6 x 2 shot), in their own colour once clear of the diver. A shot, or touching one, costs a life. The
+(Erin's 6 x 2 shot) at the level's speed, in their own colour once clear of the diver. A shot, or touching one, costs a life. The
 torpedo, the double shot and the Lance each take one of a diver's hits:
-a blue diver takes 2 or 3 by level, a red one 3 or 4. A hit makes him
+a blue diver takes 2 to 4 by level, a red one 3 or 4. A hit makes him
 blink, and the last blows him up for 20 points. The bomb
 never comes out with two divers, and a diver waits rather than make a
-third big enemy. The silos fire only from level 5; before that a heart
+third big enemy. The silos fire only from level 6; before that a heart
 can still fall in their turn. Each level's divers are a row of
 `CFG_ED_LEVELS` in `src/finale/config.asm`.
 
@@ -99,7 +100,36 @@ second after one has gone. Measured with the double shot and the Lance
 in use, 1,024 steps each, on the seabed and in mid-water: no level loses
 a frame; levels are at 25 for 55 to 97% of their steps.
 
+## The levels (chunk 4)
+
+Ten levels, each a little harder than the last, in two tables in
+`src/finale/config.asm` that go together row by row: `CFG_LEVELS` (the
+bomb's movement and haste, the silos' wait, the border) and
+`CFG_ED_LEVELS` (the divers: how many, how tough, their movements, how
+often they fire and how fast their shots fly).
+
+| Level | What it brings |
+|---|---|
+| 1 | The opening fight: one blue diver, crossing or drifting to you; the pulsar on a quicker bob |
+| 2 | The double shot. The diver may stop to fire; the bomb on the wave |
+| 3 | The Lance. A red diver alone, quicker shots; the bomb hunting |
+| 4 | Two divers at once, a blue and a red |
+| 5 | The divers dive at you; the bomb hunts harder |
+| 6 | The silos open fire from below; blue divers take 3 hits |
+| 7 | Red divers take 4; every movement |
+| 8 | Faster shots, quicker fire, closer missiles |
+| 9 | The guard: the bomb hunting hardest |
+| 10 | The last fight, short: the toughest divers, diving and drifting at you; then the ending |
+
+Measured with fire held, 1,024 steps a level, on the seabed and in
+mid-water: no level loses a frame and none has more than 2 late steps.
+The game is at 25 frames a second (two big enemies out) for about half
+to 60% of levels 1 to 3, and 77 to 97% from level 4, where two divers
+come at once.
+
 ## Still to come
 
-The level table (chunk 4), Erin's city and the bomb drop (chunk 5), and,
-if room allows, a computer-style font (chunk 6).
+Erin's city and the bomb drop (chunk 5), and, if room allows, a
+computer-style font (chunk 6). Losing the bomb drop, the final
+sequence, will send the diver back to the start of level 9, the level
+before the last (it was level 7 when Finale had eight levels).
