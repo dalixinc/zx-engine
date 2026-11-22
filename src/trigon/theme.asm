@@ -457,9 +457,18 @@ tbp_new:
 ;------------------------------------------------------------------------------
 tp_level_new:
         call death_freeze
-        ld hl,step_moved        ; no death_step: only the drawing
+        ld hl,tp_frozen         ; no death_step: only the drawing
         ld (step_jp_move+1),hl
         jp tp_belt_pop
+
+; The frozen step's moves: none. At 25 a kill that ends a level comes in
+; idle_tick's moves, which put step_ticks back to 2 after it: here it is
+; 1 again, so the next idle frame never runs and nothing moves under the
+; banner (0.9.01 and before went on moving).
+tp_frozen:
+        ld a,1
+        ld (step_ticks),a
+        jp step_moved
 
 ;------------------------------------------------------------------------------
 ; tp_pop_word - pop_show, with tp_pbelt set: "+BELT" in place of the
