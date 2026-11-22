@@ -130,4 +130,6 @@ come at once.
 ## Still to come
 
 Erin's city and the bomb drop (chunk 5), and, if room allows, a
-computer-style font (chunk 6).
+computer-style font (chunk 6). Losing the bomb drop, the final
+sequence, will send the diver back to the start of level 9, the level
+before the last (it was level 7 when Finale had eight levels).
