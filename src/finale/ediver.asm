@@ -29,7 +29,7 @@
 ;   dive       a pixel towards our diver's depth every 1/50 second
 ; He fires to the left, one shot at a time, every ed_gap 1/50 seconds
 ; while he is well on the screen. A shot is a 6-pixel dash, two rows
-; tall, ED_SHOT_SPEED pixels a 1/50 second, drawn with its background
+; tall, the level's ed_sspd pixels a 1/50 second, drawn with its background
 ; saved like the torpedo's. His cells are painted CFG_ED_INK (tp_box,
 ; theme.asm), only when he moves into other cells.
 ;
@@ -75,7 +75,7 @@ ED_RANGE        equ ED_LOW - ED_TOP + 1
         ASSERT ED_RANGE >= 64 && ED_RANGE <= 192
 ED_STOP_X       equ 168                 ; where a stopping diver holds
 ED_STOP_TIME    equ 75                  ; 1/50 seconds he holds there
-ED_SHOT_SPEED   equ 3                   ; pixels a 1/50 second
+ED_SHOT_SPEED   equ 3                   ; pixels a 1/50 second, until ed_level
 ED_GUN_Y        equ 7                   ; his shot's row, down from his top
 ED_FIRE_MIN     equ 40                  ; he fires with his left edge
 ED_FIRE_MAX     equ 200                 ; between these (shot column <= 24)
@@ -135,12 +135,9 @@ ed_level:
         jr c,.row
         ld a,ED_ROWS            ; past the table: its last row again
 .row:   dec a
-        ld e,a
         add a,a
         add a,a
-        add a,e                 ; * 3
-        add a,a                 ; * 6
-        add a,e                 ; 7 bytes a row
+        add a,a                 ; 8 bytes a row
         ld e,a
         ld d,0
         ld hl,ed_tab
@@ -148,6 +145,8 @@ ed_level:
         ld de,ed_count
         ld bc,ED_ROW_LEN
         ldir
+        ld a,(ed_sspd)          ; the shots' speed, into ed_move1's SUB
+        ld (ed_move1.sspd + 1),a
         ret
 
 ;------------------------------------------------------------------------------
@@ -393,7 +392,7 @@ ed_move1:
         or a
         jr z,.noshot
         ld a,(ix + ED_SX)
-        sub ED_SHOT_SPEED
+.sspd:  sub ED_SHOT_SPEED       ; the level's (ed_level writes it)
         jr c,.shotoff
         cp 2
         jr nc,.shotkeep
@@ -1149,6 +1148,7 @@ ed_solo:        db ED_BLUE      ; the kind on a level with one
 ed_pats:        db 1
 ed_gap:         db 120
 ed_missiles:    db 0
+ed_sspd:        db ED_SHOT_SPEED ; pixels a shot flies each 1/50 second
 ed_seed:        db 57           ; never 0
 
 ; The shot at each of the 8 shifts, two bytes: its top row (.####.),
@@ -1176,21 +1176,27 @@ ed_shot_low:
         ASSERT ed_shot_low == ed_shot_pat + 16
 
 ; The levels' rows (config.asm, CFG_ED_LEVELS).
-        MACRO ED_ROW count?, hblue?, hred?, solo?, pats?, gap?, missiles?
+        MACRO ED_ROW count?, hblue?, hred?, solo?, pats?, gap?, missiles?, sspd?
         ASSERT count? >= 1 && count? <= 2, "CFG_ED_LEVELS: one or two divers"
         ASSERT hblue? >= 1 && hblue? <= 9 && hred? >= 1 && hred? <= 9
         ASSERT solo? == ED_BLUE || solo? == ED_RED
         ASSERT pats? >= 1 && pats? <= 15, "CFG_ED_LEVELS: at least one movement"
         ASSERT gap? >= 10 && gap? <= 255
         ASSERT missiles? == 0 || missiles? == 1
-        db count?, hblue?, hred?, solo?, pats?, gap?, missiles?
+        ; Up to 5: the shot is 6 pixels, so it never passes over our
+        ; diver's 24 between two hit tests.
+        ASSERT sspd? >= 1 && sspd? <= 5, "CFG_ED_LEVELS: a shot flies 1 to 5 pixels a 1/50 second"
+        db count?, hblue?, hred?, solo?, pats?, gap?, missiles?, sspd?
         ENDM
-ED_ROW_LEN      equ 7
-        ASSERT ed_missiles == ed_count + ED_ROW_LEN - 1, "ed_level copies a row onto ed_count..ed_missiles"
+ED_ROW_LEN      equ 8
+        ASSERT ed_sspd == ed_count + ED_ROW_LEN - 1, "ed_level copies a row onto ed_count..ed_sspd"
 ed_tab:
         CFG_ED_LEVELS
 ED_ROWS         equ ($ - ed_tab) / ED_ROW_LEN
         ASSERT ED_ROWS >= 1
+        ASSERT ED_ROWS * ED_ROW_LEN <= 256, "ed_level's row offset is one byte"
+        ASSERT ED_ROWS == CFG_ENDING_LEVEL, "CFG_ED_LEVELS: one row a level"
+        ASSERT ({ed_move1.sspd} & $FF) == $D6, "ed_move1.sspd is not SUB n"
 
 ; The pointer tables, with the code in the data block: the odd shifts point
 ; at the even ones, as our diver's do (PRESHIFT_EVEN).
