@@ -16,8 +16,9 @@ rem   build.bat finalesoak    build\finale-soak.sna; runfinalesoak opens it
 rem   build.bat timing    assemble build\atlantis-timing.sna (timing border)
 rem   build.bat runtiming assemble the timing build, then open it in Fuse
 rem   build.bat demo      assemble build\diver.tap (Engine Demo 1)
-rem   build.bat web       build both, then copy each game's .sna and .tap to
-rem                       docs\play\ and docs\play\trigon\ for the web pages
+rem   build.bat web       build them, then copy each game's .sna and .tap to
+rem                       docs\play\, docs\play\trigon\ and docs\play\finale\
+rem                       for the web pages
 rem                       (docs\WEB.md); commit, push
 rem
 rem Tools: uses windows-tools\fuse\fuse.exe and
@@ -93,7 +94,13 @@ if /i "%1"=="web" (
     if errorlevel 1 goto failed
     powershell -NoProfile -ExecutionPolicy Bypass -File tools\webstamp.ps1 -Name trigon -Dir docs\play\trigon
     if errorlevel 1 goto failed
-    echo Copied to docs\play\ and docs\play\trigon\: commit the .sna, .tap and index.html files and push to update the site
+    copy /y build\finale.sna docs\play\finale\finale.sna >nul
+    if errorlevel 1 goto failed
+    copy /y build\finale.tap docs\play\finale\finale.tap >nul
+    if errorlevel 1 goto failed
+    powershell -NoProfile -ExecutionPolicy Bypass -File tools\webstamp.ps1 -Name finale -Dir docs\play\finale
+    if errorlevel 1 goto failed
+    echo Copied to docs\play\, docs\play\trigon\ and docs\play\finale\: commit the .sna, .tap and index.html files and push to update the site
 )
 if /i "%1"=="run" start "" "%EMU%" --graphics-filter %SIZE% --machine 48 --auto-load --traps --fastload build\atlantis.tap
 if /i "%1"=="runtrigon" start "" "%EMU%" --graphics-filter %SIZE% --machine 48 --auto-load --traps --fastload build\trigon.tap
