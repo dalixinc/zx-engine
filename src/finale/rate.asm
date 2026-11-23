@@ -45,6 +45,10 @@ rate_init:
         ld a,CFG_START_RATE
 rate_apply:
         ld (game_rate),a
+    IFNDEF SOAK
+        ld hl,hud_dirty
+        set HUD_RATE,(hl)       ; row 1 shows the speed (hud_rate)
+    ENDIF
         push de
         cp 25
         ld a,1

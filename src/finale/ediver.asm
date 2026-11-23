@@ -69,7 +69,8 @@ ED_FIRE_POSE    equ 8                   ; 1/50 seconds of the firing picture
 ED_BLUE         equ 0
 ED_RED          equ 1
 
-ED_TOP          equ WHEEL_TOP_Y         ; below the score line
+ED_TOP          equ CFG_ED_TOP          ; below the score line, clear of the beam
+        ASSERT ED_TOP >= WHEEL_TOP_Y
 ED_LOW          equ BACK_ROW * 8 - EDIVER_HEIGHT    ; above the weed
 ED_RANGE        equ ED_LOW - ED_TOP + 1
         ASSERT ED_RANGE >= 64 && ED_RANGE <= 192
@@ -683,6 +684,37 @@ ed_shot_restore:
         ret
 
 ;------------------------------------------------------------------------------
+; ed_order - main_loop, before our diver is drawn: are the Trigon divers
+; drawn first (one of them is above him) or just after him and the
+; torpedo? The higher goes first, as with the bomb (wheel_first), so the
+; beam finds each drawn. ed_restore follows the same flag.
+; Out: A = ed_first, $FF and NZ for first, 0 and Z for after.
+; Corrupts: AF, BC
+;------------------------------------------------------------------------------
+ed_order:
+        ld a,(diver_y)
+        ld c,a
+        ld b,0
+        ld a,(ed_rec0 + ED_ON)
+        or a
+        jr z,.next
+        ld a,(ed_rec0 + ED_Y)
+        cp c
+        jr nc,.next
+        dec b
+.next:  ld a,(ed_rec1 + ED_ON)
+        or a
+        jr z,.done
+        ld a,(ed_rec1 + ED_Y)
+        cp c
+        jr nc,.done
+        ld b,$FF
+.done:  ld a,b
+        ld (ed_first),a
+        or a
+        ret
+
+;------------------------------------------------------------------------------
 ; ed_draw - main_loop, in the fish's old place: the divers, then their
 ; shots. Corrupts: AF, BC, DE, HL, IX, IY
 ;------------------------------------------------------------------------------
@@ -1142,13 +1174,25 @@ ed_burst:
 
 ;------------------------------------------------------------------------------
 ; ed_lance - lance_hits: the beam takes one of each diver's hits each
-; time it touches him. Corrupts: AF, BC, DE, HL, IX
+; time it touches him, and burns up any shot of theirs it touches (the
+; next steps put back what it covered, as when one leaves the screen).
+; Corrupts: AF, BC, DE, HL, IX
 ;------------------------------------------------------------------------------
 ed_lance:
         ld ix,ed_rec0
         call .one
         ld ix,ed_rec1
-.one:   ld a,(ix + ED_ON)
+.one:   ld a,(ix + ED_SHOT)
+        or a
+        jr z,.diver
+        ld l,(ix + ED_SX)
+        ld h,0
+        ld a,(ix + ED_SY)
+        ld bc,(2 << 8) | 6      ; Erin's 6 x 2
+        call lance_box
+        jr nc,.diver
+        ld (ix + ED_SHOT),0
+.diver: ld a,(ix + ED_ON)
         or a
         ret z
         ld a,(ix + ED_X + 1)
@@ -1250,6 +1294,7 @@ ed_rate:
         jp rate_apply
 
 ed_forced:      db 0            ; 1 = ed_rate put the game at 25
+ed_first:       db 0            ; $FF = drawn before our diver (ed_order)
 ed_hold:        db 0            ; 1/50 seconds of calm before it goes back
     IFDEF MEASURE
 ed_n25:         dw 0            ; steps at 25

@@ -39,12 +39,18 @@ version is `src/finale/VERSION`.
   painted as they pass. Every colour is a setting in
   `src/finale/config.asm`, to tune in play.
 - **The menu:** FINALE in the tall letters, yellow over red. It asks for
-  the code Trigon's ending gives before level 1.
+  the code Trigon's ending gives before level 1. The last code (typed,
+  or the one GAME OVER showed) is offered on the code's line: Enter
+  takes it, a letter starts a new one.
+- **Row 1:** the score, the level, the Lance's gauge, then a yellow
+  bomb (the one he carries for the generator), the speed (50 or 25
+  frames a second, as it changes) and the hearts.
 - **The story:** a short intro typed before the game.
 - **The diver:** white, no belts (placeholder art until Erin's
   bomb-carrying diver arrives, inside his present 24 x 15 box).
 - **Weapons:** the torpedo; the double shot from level 2 and the Lance
-  from level 3, given, not caught. The heart is the only power-up.
+  from level 3, given, not caught. The Lance's beam also burns up the
+  Trigon divers' shots it touches. The heart is the only power-up.
 - **Levels:** see [the levels (chunk 4)](#the-levels-chunk-4). The
   banner freezes the action while it is up. Finishing the last level
   brings up [Trigon City and the bomb drop](#trigon-city-and-the-bomb-drop-chunk-5).
@@ -57,6 +63,7 @@ version is `src/finale/VERSION`.
 | Finale base | 1,705 | 1,381 | 2,400 |
 | Finale, chunk 4 | 213 | 886 | 368 |
 | Finale 0.1.3, chunk 5 | 158 | 119 | 176 |
+| Finale 0.1.4 | 117 | 66 | 56 |
 
 Chunk 5 also uses the two rooms that were free while the game runs: the
 packed city fills `$77A9-$7FFF` (the spinning wheel's old pictures, and
@@ -94,6 +101,16 @@ can still fall in their turn. Each level's divers are a row of
 Their shifted pictures (1,440 bytes a colour) are made at start-up: the
 blue's in the fish's old room, the red's at the top of the code's room,
 both in uncontended memory.
+
+They swim no higher than pixel row 40 (`CFG_ED_TOP`), three rows under
+the score. Each step erases every sprite and draws it again while the
+beam runs down the picture; a sprite the beam reaches between the two
+is not on that picture. The divers are drawn just after ours and his
+torpedo, or first when one of them is above him (`ed_order`), and erased
+in the reverse order. Drawn last, as they were, a diver in the top third
+was missing from every picture at 50, and higher than row 40 he still
+is when ours is at the top (measured: 16 to 32 vanished, 40 and 48
+never did, firing or not).
 
 Their colours are painted with their moves, not their draws, so at 25
 they fall in the idle frame. When a diver moves into new cells, the new
@@ -133,11 +150,11 @@ often they fire and how fast their shots fly).
 | 10 | The last fight, short: the toughest divers, diving and drifting at you; then Trigon City and the bomb drop |
 
 Measured with fire held, 1,024 steps a level, on the seabed and in
-mid-water (chunk 5: levels 1, 2, 3, 4, 6 and 10): no level loses a
+mid-water (0.1.4: levels 1, 2, 3, 4, 6 and 10): no level loses a
 frame and none has more than 6 late steps (steps that overrun a little
 and catch up). Levels 1 to 3 are at 50 frames a second all the time
 (until chunk 5 they were at 25 for about half to 60% of it); from level
-4, where two divers come at once, the game is at 25 for 77 to 93%.
+4, where two divers come at once, the game is at 25 for 78 to 94%.
 
 ## Trigon City and the bomb drop (chunk 5)
 
@@ -183,5 +200,7 @@ game draws them again.
 
 ## Still to come
 
-If room allows, a computer-style font (chunk 6), and Erin's
-bomb-carrying diver when it comes.
+Torpedoes that hit the divers' shots (to be measured: levels 1 to 3
+have little time to spare), finding more room, then perhaps the special
+bombs, a computer-style font (chunk 6), and Erin's bomb-carrying diver
+when it comes.
