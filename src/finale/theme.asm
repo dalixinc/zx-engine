@@ -580,6 +580,3 @@ LEVEL_COUNT_ROWS equ level_rows
 ; The level codes and the key map (codes.asm).
         LEVEL_CODES
 
-
-; The end of the game (TRIGON_END).
-        INCLUDE "ending.asm"

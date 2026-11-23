@@ -4,13 +4,16 @@ mkcity.py - Erin's Atlantis city as a whole Spectrum screen, for the
 interlude between Atlantis and Trigon (src/atlantis/interlude.asm).
 
 Usage:  python3 tools/mkcity.py gfx/city.scr
+        python3 tools/mkcity.py --finale gfx/finale/city.scr
 
 Reads gfx/city_bitmap.bin (192 x 128 pixels, row by row, 8 pixels a
 byte, left pixel in bit 7) and gfx/city_attrs.bin (24 x 16 cells), from
 Erin's atlantis_spectrum_pack. Writes a 6912-byte screen with the city
 in cell rows 4 to 19 and columns 4 to 27, and the play screen's water
 colour round it. The game unpacks the ZX0 of this straight onto the
-screen, so it needs no buffer. Only Python 3 is needed.
+screen, so it needs no buffer. Only Python 3 is needed. --finale puts
+Finale's black sea round it instead, with white ink for its words: the
+city of its ending (src/finale/city.asm), until Erin's Trigon City.
 """
 
 import sys
@@ -19,6 +22,9 @@ from pathlib import Path
 ROW0, COL0 = 4, 4              # where the city's top left cell goes
 WIDE, HIGH = 24, 16            # its size, in cells
 WATER = 0x40 | (1 << 3) | 7     # BRIGHT, blue paper, white ink: WATER_ATTR
+if sys.argv[1] == "--finale":
+    sys.argv.pop(1)
+    WATER = 0x40 | 7            # BRIGHT, black paper, white ink
 
 bitmap = Path("gfx/city_bitmap.bin").read_bytes()
 attrs = Path("gfx/city_attrs.bin").read_bytes()

@@ -15,7 +15,10 @@
 ;   CODE    "atlantis"  the packed loading screen, then the unpacker
 ;                         and dzx0, ending just below $8000
 ;   CODE    "atlantc"   the packed code, cold block, data and UDG block,
-;                         ending at the ROM's UDGs ($FF48)
+;                         ending at the ROM's UDGs ($FF48); Finale's
+;                         has its city, still packed, at the end, and go
+;                         jumps to the game's city_go, which copies it up
+;                         below $8000 (src/finale/city.asm)
 ;
 ; WHERE. The unpacker must stay out of what it unpacks, and nothing
 ; packed may be overwritten before it has been read. go unpacks in the
@@ -147,7 +150,11 @@ go_first:
         ld (t_game),hl
         jp check
     ELSE
+    IFDEF TRIGON
+        jp city_go              ; Finale: the city up first (city.asm)
+    ELSE
         jp entry
+    ENDIF
     ENDIF
 
         INCLUDE "../../tools/dzx0_standard.asm"
@@ -178,6 +185,19 @@ packed_data:
         INCBIN "../../build/finale-data.zx0"
 packed_udg:
         INCBIN "../../build/finale-udg.zx0"
+        ; Finale's ending, last: cityhi.asm as it is, then the city,
+        ; packed already. Nothing unpacks over the end of the block, and
+        ; the game's city_go copies them to their places before start-up
+        ; can write here (city.asm).
+packed_high:
+        INCBIN "../../build/finale-high.bin"    ; cityhi.asm, not packed
+        ASSERT $ - packed_high == CT_HIGH_LEN, "the tape's cityhi.asm is not the game's"
+packed_city:
+        INCBIN "../../gfx/finale/city_pix.zx0"
+        INCBIN "../../gfx/finale/city_atr.zx0"
+        ASSERT $ - packed_city == CITY_LEN, "the tape's city is not the game's"
+        ASSERT packed_city == UDG_START - CITY_LEN, "city_go copies the city from the end of the block"
+        ASSERT packed_city >= data_end, "the data would be unpacked over the city"
     ELSE
 packed_code:
         INCBIN "../../build/atlantis-code.zx0"

@@ -109,6 +109,18 @@ gfx/city_atr.zx0: gfx/city.scr $(ZX0) | build
 	tail -c 768 $< > build/city_atr.bin
 	$(ZX0) -f build/city_atr.bin $@ >/dev/null
 
+# Finale's city (src/finale/city.asm): the same picture with Finale's
+# black sea round it, until Erin's Trigon City. Committed, as above.
+gfx/finale/city.scr: tools/mkcity.py gfx/city_bitmap.bin gfx/city_attrs.bin
+	$(PYTHON) tools/mkcity.py --finale $@
+
+gfx/finale/city_pix.zx0: gfx/finale/city.scr $(ZX0) | build
+	head -c 6144 $< > build/fcity_pix.bin
+	$(ZX0) -f build/fcity_pix.bin $@ >/dev/null
+gfx/finale/city_atr.zx0: gfx/finale/city.scr $(ZX0) | build
+	tail -c 768 $< > build/fcity_atr.bin
+	$(ZX0) -f build/fcity_atr.bin $@ >/dev/null
+
 build/loading.zx0: gfx/loading.scr $(ZX0)
 	$(ZX0) -f $< $@ >/dev/null
 
@@ -157,13 +169,13 @@ trigon-soak: $(TRI_SRC) $(TRI_GFX) | build
 finale: $(FIN_TAP) $(FIN_SNA)
 
 FIN_BLOCKS := build/finale-cold.bin build/finale-code.bin build/finale-data.bin build/finale-udg.bin
-$(FIN_SNA) $(FIN_BLOCKS) build/finale.exp build/finale-plain.tap &: $(FIN_SRC) $(FIN_GFX) gfx/finale/loading.scr | build
+$(FIN_SNA) $(FIN_BLOCKS) build/finale-high.bin build/finale.exp build/finale-plain.tap &: $(FIN_SRC) $(FIN_GFX) gfx/finale/loading.scr gfx/finale/city_pix.zx0 gfx/finale/city_atr.zx0 | build
 	$(ASM) --nologo --fullpath=off --lst=build/finale.lst --sym=build/finale.sym --exp=build/finale.exp src/finale/finale.asm
 
 build/finale-loading.zx0: gfx/finale/loading.scr $(ZX0)
 	$(ZX0) -f $< $@ >/dev/null
 
-$(FIN_TAP): build/finale.exp build/finale-loading.zx0 $(FIN_BLOCKS:.bin=.zx0) build/finale-code.delta tools/dzx0_standard.asm
+$(FIN_TAP): build/finale.exp build/finale-high.bin build/finale-loading.zx0 $(FIN_BLOCKS:.bin=.zx0) build/finale-code.delta tools/dzx0_standard.asm gfx/finale/city_pix.zx0 gfx/finale/city_atr.zx0
 	$(ASM) --nologo --fullpath=off -DTRIGON -DCODE_DELTA=$$(cat build/finale-code.delta) src/finale/tape.asm
 
 unpack-check-finale: $(FIN_TAP)
