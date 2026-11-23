@@ -230,6 +230,6 @@ game draws them again.
 
 ## Still to come
 
-Perhaps one special bomb or the nuke (costed, not built), a
+Perhaps one of the special bombs (costed, not built), a
 computer-style font (chunk 6), and Erin's bomb-carrying diver when it
 comes.
