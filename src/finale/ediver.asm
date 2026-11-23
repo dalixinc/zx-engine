@@ -222,14 +222,14 @@ ed_rng:
 ;------------------------------------------------------------------------------
 ed_move:
         ld ix,ed_rec0
-        call ed_move1
+.mv0:   call ed_move1           ; ed_throw1 while a shove lasts (special.asm)
         call ed_shot_paint
         call ed_paint_if
         ld a,(ed_count)
         cp 2
         ret c
         ld ix,ed_rec1
-        call ed_move1
+.mv1:   call ed_move1
         call ed_shot_paint
         ; fall through
 ; His cells' colours, when they may have changed: here, with the moves,
@@ -1210,6 +1210,11 @@ ed_burst:
         jp boom_arm
 
 ED_TORP_SKIP    equ ed_torp.divers - ed_torp - 2
+    IFDEF POWERUPS
+        ; Here, not in special.asm: the hot code is assembled first.
+        ASSERT ({ed_move.mv0} & $FF) == $CD && {ed_move.mv0 + 1} == ed_move1, ".mv0 is not CALL ed_move1 (msl_calls_set)"
+        ASSERT ({ed_move.mv1} & $FF) == $CD && {ed_move.mv1 + 1} == ed_move1, ".mv1 is not CALL ed_move1 (msl_calls_set)"
+    ENDIF
 
 ; ed_torp_shot - the torpedo against IX's shot, whose rows meet its
 ; (ed_torp tested them: both are two rows, and within CFG_TORP_SHOT_SLACK

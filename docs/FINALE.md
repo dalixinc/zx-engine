@@ -33,7 +33,7 @@ version is `src/finale/VERSION`.
 - **What came out of Trigon:** the fish (its place is kept empty for
   the enemy divers), the second bomb, the spinning wheel (the pulsar is
   the one bomb), the bombs' newer movements, the belts and "+BELT", the
-  special bombs and the bubble, and the level 2 and 4 messages.
+  suction and the bubble, and the level 2 and 4 messages.
 - **The world:** a black sea; dark blue hills and ground with yellow seaweed on their
   tops; the silos in front with yellow domes and dark blue towers, their cells
   painted as they pass. Every colour is a setting in
@@ -44,7 +44,8 @@ version is `src/finale/VERSION`.
   takes it, a letter starts a new one.
 - **Row 1:** the score, the level, the Lance's gauge, then a yellow
   bomb (the one he carries for the generator), the speed (50 or 25
-  frames a second, as it changes) and the hearts.
+  frames a second, as it changes), the special bomb he carries, if any,
+  and the hearts.
 - **The story:** a short intro typed before the game.
 - **The diver:** white, no belts (placeholder art until Erin's
   bomb-carrying diver arrives, inside his present 24 x 15 box).
@@ -52,8 +53,14 @@ version is `src/finale/VERSION`.
   from level 3, given, not caught. The Lance's beam also burns up the
   Trigon divers' shots it touches, and from level 4 a torpedo that
   meets one takes it out (`CFG_TORP_SHOT_LEVEL`; within two rows above
-  or below counts, `CFG_TORP_SHOT_SLACK`). The heart is the only
-  power-up.
+  or below counts, `CFG_TORP_SHOT_SLACK`).
+- **Power-ups:** the heart, and from level 4 the special bombs
+  (`src/finale/special.asm`), rarer, in the silo missile's place. He
+  carries one at a time, shown on row 1 left of the hearts, and B sets
+  it off: the screen shakes and the divers' shots are gone. Shove (green
+  chevrons) throws the bomb and the divers to the right edge, where they
+  blow up for 20 points each, and blows up a silo's missile. Their
+  levels and shares are settings in `src/finale/config.asm`.
 - **Levels:** see [the levels (chunk 4)](#the-levels-chunk-4). The
   banner freezes the action while it is up. Finishing the last level
   brings up [Trigon City and the bomb drop](#trigon-city-and-the-bomb-drop-chunk-5).
@@ -68,6 +75,7 @@ version is `src/finale/VERSION`.
 | Finale 0.1.3, chunk 5 | 158 | 119 | 176 |
 | Finale 0.1.4 | 117 | 66 | 56 |
 | Finale, after the squeeze | 653 | 440 | 184 |
+| Finale, the special bombs | 211 | 150 | 184 |
 
 **The squeeze** (Quartus's brief after 0.1.4) freed, item by item:
 
@@ -83,7 +91,9 @@ version is `src/finale/VERSION`.
 | The printer buffer: the drop (`ct_try`) and its records, 248 bytes | | 222 | |
 
 The soak, written round a fish, keeps all of the fish. Then the
-torpedo against the divers' shots took 128 of the data block's.
+torpedo against the divers' shots took 128 of the data block's, and the
+special bombs 442 of the hot code's and 290 of the cold block's (the
+shake is in the hot code, as the cold block was too small for it).
 
 The printer buffer (`$5B00`, 8 bytes left) cannot be loaded from tape:
 a 128 in 128 BASIC keeps its paging code there while it loads. Its
@@ -168,7 +178,7 @@ often they fire and how fast their shots fly).
 | 1 | The opening fight: one blue diver, crossing or drifting to you; the pulsar on a quicker bob |
 | 2 | The double shot. The diver may stop to fire; the bomb on the wave |
 | 3 | The Lance. A red diver alone, quicker shots; the bomb hunting |
-| 4 | Two divers at once, a blue and a red |
+| 4 | Two divers at once, a blue and a red; the special bombs may fall |
 | 5 | The divers dive at you; the bomb hunts harder |
 | 6 | The silos open fire from below; blue divers take 3 hits |
 | 7 | Red divers take 4; every movement |
@@ -186,6 +196,13 @@ level 4, where two divers come at once, the game is at 25 for 78 to
 first: called for both shots each time, it gave level 10 in mid-water
 16 late steps.
 
+The special bombs, measured the same way with shove set off every 64
+steps (16 times in 1,024, its points off so the level stays the same):
+levels 4, 7 and 10, on the seabed and in mid-water, lose no frame while
+a throw lasts or as it ends, and show at most one late step. The step
+that sets one off loses a frame 2 to 4 times in 16, but that step holds
+the second-long shake, while the game stands still anyway. Holding one
+costs about 60 T-states a step (B is read only then).
 ## Trigon City and the bomb drop (chunk 5)
 
 Finishing level 10 stops the fight. The screen goes black, and the city
@@ -230,6 +247,5 @@ game draws them again.
 
 ## Still to come
 
-Perhaps one of the special bombs (costed, not built), a
-computer-style font (chunk 6), and Erin's bomb-carrying diver when it
+A computer-style font (chunk 6), and Erin's bomb-carrying diver when it
 comes.

@@ -738,7 +738,7 @@ fish_mv:
         ld a,(input_state)
         and IN_FIRE
 .lf1:   call nz,torpedo_fire    ; Trigon: CALL lance_input once it is his
-.msl_uc1:                      ; patched while the double shot lasts (missile.asm)
+.msl_uc1:                      ; sp_tick while a shove lasts (special.asm)
         call missile_update
     IFNDEF NO_WHEEL
         call update_wheel
@@ -1042,7 +1042,7 @@ fish_mv2:
         ld a,(input_state)
         and IN_FIRE
 .lf2:   call nz,torpedo_fire    ; Trigon: CALL lance_input once it is his
-.msl_uc2:                      ; patched while the double shot lasts (missile.asm)
+.msl_uc2:                      ; sp_tick while a shove lasts (special.asm)
         call missile_update
     IFNDEF NO_WHEEL
         call update_wheel
@@ -1155,6 +1155,7 @@ wheel_first:    db 0
         HOT
         INCLUDE "torpedo.asm"
         INCLUDE "missile.asm"
+        INCLUDE "special.asm"    ; the special bombs: shove and the nuke
         INCLUDE "../fish.asm"
         INCLUDE "../diver.asm"
         ; After the fish and the diver, so the wrappers can call their

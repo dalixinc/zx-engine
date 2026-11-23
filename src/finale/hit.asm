@@ -210,5 +210,22 @@ lives_draw:
         inc l
         djnz .ink
     ENDIF
+        ; The special bomb he carries, left of the hearts, in its colour;
+        ; water when none. A cell is udg_water + 8 * its kind.
+        ld a,(sp_held)
+        call tp_held            ; its colour (theme.asm, TP_DATA)
+        add a,a
+        add a,a
+        add a,a
+        add a,low udg_water
+        ld e,a
+        ld d,high udg_water
+        ld hl,SCREEN + LIVES_ROW * 32 + SP_COL
+        ld b,8
+.held:  ld a,(de)
+        ld (hl),a
+        inc de
+        inc h
+        djnz .held
     ENDIF
         ret
