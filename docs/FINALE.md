@@ -56,13 +56,14 @@ version is `src/finale/VERSION`.
 | Trigon 0.8.0 | 1 | 5 | 8 |
 | Finale base | 1,705 | 1,381 | 2,400 |
 | Finale, chunk 4 | 213 | 886 | 368 |
-| Finale, chunk 5 | 330 | 63 | 176 |
+| Finale 0.1.3, chunk 5 | 158 | 119 | 176 |
 
 Chunk 5 also uses the two rooms that were free while the game runs: the
-packed city fills `$781D-$7FFF` (the spinning wheel's old pictures, and
+packed city fills `$77A9-$7FFF` (the spinning wheel's old pictures, and
 the top of the cold block's room), and the busier half of the ending
 sits above the run-time buffers, where Atlantis keeps the round fish's
-pictures (`$F65A-$F8A1`, 30 bytes left there). See
+pictures (`$F65A-$F8A1`, 30 bytes left there). The ending's words are
+in the hot code, as the cold block is full. See
 [Trigon City and the bomb drop](#trigon-city-and-the-bomb-drop-chunk-5).
 
 Measured with power-ups and the Lance on and fire held, 1,024 steps:
@@ -141,8 +142,9 @@ and catch up). Levels 1 to 3 are at 50 frames a second all the time
 ## Trigon City and the bomb drop (chunk 5)
 
 Finishing level 10 stops the fight. The screen goes black, and the city
-comes on in a circle from the middle, with TRIGON CITY over it, the
-level's jingle, and the power generator flashing at its foot. A second
+comes on in a circle from the middle, with TRIGON CITY over it and the
+level's jingle: Erin's city, the great red T over its gate. The gate is
+the power generator, flashing yellow and red. A second
 later a fresh key, or five seconds, starts the drop.
 
 The diver swims left and right above the city, the bomb under him, and
@@ -162,14 +164,15 @@ Everything is a setting in `src/finale/config.asm`: the city's time,
 the bombs, their speed, the level to go back to, the generator's place
 and colours, and each shield's row, length, speed and direction.
 
-**The picture.** It is the Atlantis city for now, with Finale's black
-sea round it (`tools/mkcity.py --finale`, `gfx/finale/city.scr`): Erin's
-Trigon City drops in the same way when it comes, at 192 x 128 or
-smaller. Packed, it is 2,019 bytes. It is not in the cold block: it
-sits at the top of that room, `$781D-$7FFF`, which nothing uses while
-the game runs. On the tape it rides at the end of the second block, and
-the game copies it up as it starts, before anything can write there. A
-Trigon City of up to about 2,080 bytes packed fits as things stand.
+**The picture** is Erin's Trigon City, 192 x 128, from her Trigo art
+pack (`gfx/finale/trigo_city_bitmap.bin` and `_attrs.bin`), with
+Finale's black sea round it (`tools/mkcity.py --finale`,
+`gfx/finale/city.scr`). Packed, it is 2,135 bytes. It is not in the cold
+block: it sits at the top of that room, `$77A9-$7FFF`, which nothing uses
+while the game runs. On the tape it rides at the end of the second
+block, and the game copies it up as it starts, before anything can
+write there. Her 256 x 128 panorama would pack to about 3,470 bytes,
+some 1,300 more than there is room for.
 
 **The code** runs once a game, so its main part is in the cold block
 (`src/finale/city.asm`). The circle, the shields, the bomb's drawing,
@@ -180,5 +183,5 @@ game draws them again.
 
 ## Still to come
 
-If room allows, a computer-style font (chunk 6), and Erin's Trigon City
-and bomb-carrying diver when they come.
+If room allows, a computer-style font (chunk 6), and Erin's
+bomb-carrying diver when it comes.

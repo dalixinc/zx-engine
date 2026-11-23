@@ -549,20 +549,21 @@ CFG_DROP_TRIES       equ 5
 CFG_DROP_SPEED       equ 2
 CFG_DROP_RETRY_LEVEL equ 9
 ; The generator: its cells on the picture (cell rows and columns of the
-; whole screen; the city is rows 4 to 19, columns 4 to 27).
-CFG_GEN_ROW          equ 16
-CFG_GEN_COL          equ 14
+; whole screen; the city is rows 4 to 19, columns 4 to 27): the red
+; arched door under the great T of Erin's Trigon City.
+CFG_GEN_ROW          equ 13
+CFG_GEN_COL          equ 17
 CFG_GEN_HIGH         equ 2
-CFG_GEN_WIDE         equ 4
+CFG_GEN_WIDE         equ 3
 CFG_GEN_ATTR         equ FLASH | BRIGHT | YELLOW | (RED << 3)
 ; The shields: a row each, the city's width wide; each is a cell row,
 ; its length in cells (of 24), how many 1/50 seconds it takes a cell,
 ; which way it slides (1 right, -1 left) and the cell it starts at.
 CFG_SHIELD_ATTR      equ BRIGHT | MAGENTA | (MAGENTA << 3)
         MACRO CFG_SHIELDS
-        CT_SHIELD 7, 12, 4, 1, 0
-        CT_SHIELD 10, 14, 3, -1, 8
-        CT_SHIELD 13, 12, 5, 1, 16
+        CT_SHIELD 6, 12, 4, 1, 0
+        CT_SHIELD 8, 14, 3, -1, 8
+        CT_SHIELD 10, 12, 5, 1, 16
         ENDM
 ; 1: the testers' switch (notes/CHEATS.md) also makes the diver unhurt,
 ; to play the levels through. 0 leaves it out of the build altogether.

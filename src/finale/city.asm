@@ -278,6 +278,7 @@ ct_hit:
         jp enter_menu           ; it starts the stack again
 
 
+        HOT                     ; the words: the cold block is full
 ; Each line: row, column, colour, the words, 0. A row of 255 ends them.
 ; The city's are black until the circle reaches them.
 ct_words:
@@ -296,6 +297,7 @@ ct_end_words:
         db 11, 8, BRIGHT | YELLOW, "ATLANTIS IS FREE", 0
         db 255
 str_ct_key:     db "PRESS A KEY", 0
+        COLD
 
 ct_tries:       db 0            ; bombs left
 ct_fall:        db 0            ; 0 = he holds it

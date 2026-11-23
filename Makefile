@@ -109,9 +109,9 @@ gfx/city_atr.zx0: gfx/city.scr $(ZX0) | build
 	tail -c 768 $< > build/city_atr.bin
 	$(ZX0) -f build/city_atr.bin $@ >/dev/null
 
-# Finale's city (src/finale/city.asm): the same picture with Finale's
-# black sea round it, until Erin's Trigon City. Committed, as above.
-gfx/finale/city.scr: tools/mkcity.py gfx/city_bitmap.bin gfx/city_attrs.bin
+# Finale's city (src/finale/city.asm): Erin's Trigon City with Finale's
+# black sea round it. Committed, as above.
+gfx/finale/city.scr: tools/mkcity.py gfx/finale/trigo_city_bitmap.bin gfx/finale/trigo_city_attrs.bin
 	$(PYTHON) tools/mkcity.py --finale $@
 
 gfx/finale/city_pix.zx0: gfx/finale/city.scr $(ZX0) | build
