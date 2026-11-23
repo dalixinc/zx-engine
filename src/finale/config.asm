@@ -267,29 +267,27 @@ CFG_DOUBLE_COOLDOWN  equ 10
 ; --- Special bombs (special.asm) ----------------------------------------------
 ; Rarer power-ups, by the same roll, each with its own share of the 256
 ; and its own first level. The diver carries one at a time (a new one
-; replaces it), shown on row 1, and sets it off with the key in
-; special.asm. Both take away a silo missile at once.
-;   suction   pulls the bomb and the fish down towards the seabed, where
-;             they stay, alive: the escape. The missile goes silently.
-;   shove     throws them to the right edge, where they blow up and
-;             score as if shot, and so does the missile
-;   nuke      clears them all, from CFG_NUKE_LEVEL (0 leaves it out of the build)
+; replaces it), shown on row 1 left of the hearts, and sets it off with
+; B. Both shake the screen first, and take the divers' shots away.
+;   shove     throws the bomb and the divers to the right edge, where
+;             they blow up and score as if shot; a silo's missile blows
+;             up at once
+;   nuke      they all go up at once; a silo's missile is taken away
+; Finale has no suction (CFG_SUCTION_* are left for the shared asserts).
 CFG_SUCTION_LEVEL    equ 2
-CFG_SHOVE_LEVEL      equ 3
-CFG_NUKE_LEVEL       equ 0       ; from level 6, the swarm (0 leaves it out of the build)
-CFG_SUCTION_ODDS     equ 11      ; about one turn in 23: the escape, twice as
-CFG_SHOVE_ODDS       equ 5       ; common as the throw (one in 51), which kills
-CFG_NUKE_ODDS        equ 8
-; How long the pull or the throw lasts, in 1/50 seconds, and how far
-; they move each 1/50 second, in pixels.
+CFG_SHOVE_LEVEL      equ 4
+CFG_NUKE_LEVEL       equ 7
+CFG_SUCTION_ODDS     equ 0
+CFG_SHOVE_ODDS       equ 10      ; about one turn in 26
+CFG_NUKE_ODDS        equ 6       ; about one turn in 43
+; How long the throw lasts, in 1/50 seconds, and how far they move each
+; 1/50 second, in pixels.
 CFG_SPECIAL_TIME     equ 24
 CFG_SUCTION_SPEED    equ 6       ; down
 CFG_SHOVE_SPEED      equ 8       ; right
-; What a power scores, 0 to 99, for each thing it clears, in place of
-; the level's points: suction for each enemy it pulls out of the way
-; and the missile it takes away, shove for each one it blows up, the
-; nuke for each one it takes. The total shows in small figures ("+20")
-; where the last burst was, for CFG_POP_TIME television frames (50 a second).
+; What a bomb scores, 0 to 99, for each thing it clears, in place of
+; the level's points. The total shows in small figures ("+20") where
+; the burst was, for CFG_POP_TIME television frames (50 a second).
 CFG_PTS_SUCTION      equ 10
 CFG_PTS_SHOVE        equ 20
 CFG_PTS_NUKE         equ 50
@@ -308,9 +306,9 @@ CFG_POP_TIME         equ 150
 CFG_HEART_INK        equ RED
 CFG_FALL_SUCTION_INK equ CYAN
 CFG_FALL_SHOVE_INK   equ GREEN
-CFG_FALL_NUKE_INK    equ YELLOW
+CFG_FALL_NUKE_INK    equ CYAN    ; not yellow: row 1's generator bomb is yellow
 CFG_LIVES_INK        equ RED
-CFG_HELD_INK         equ 0
+CFG_HELD_INK         equ 1
 
 CFG_LANCE_LEVEL      equ 3
 CFG_LANCE_FULL       equ 96      ; about 2 seconds for the whole width
@@ -331,11 +329,13 @@ CFG_LANCE_INK        equ RED     ; the beam's colour, on the sea's cells it cros
         LASER_NOTE 20, 2
         ENDM
 ; Setting one off flashes the border in its colour and black, two steps
-; each, for this many steps (a chord's flash is CFG_CHORD_FLASH), and
-; plays its own slide (sound.asm). Colours: 5 cyan, 6 yellow.
+; each, for this many steps (a chord's flash is CFG_CHORD_FLASH): shove
+; green, with its rising slide (sound.asm), the nuke white, with the
+; whoosh.
 CFG_SPECIAL_FLASH    equ 24
 CFG_SUCTION_INK      equ 5
-CFG_SHOVE_INK        equ 6
+CFG_SHOVE_INK        equ GREEN
+CFG_NUKE_INK         equ WHITE
 ; The quake: shove and the nuke stop the action for CFG_QUAKE_TIME 1/50
 ; seconds (50 is a second) while the picture shakes up and down by
 ; CFG_QUAKE_SHAKE pixel rows (1 to 8; each jump is held CFG_QUAKE_HOLD

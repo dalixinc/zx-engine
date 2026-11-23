@@ -61,3 +61,19 @@ build altogether (it is in `diver_hurt`, `hit.asm`).
 The testers' switch also gives the Lance laser from level 1 (it is
 Trigon's from `CFG_LANCE_LEVEL`, 4), with its picture on the score line
 at once and no level 4 message.
+
+## Finale
+
+The testers' switch (Symbol Shift + M on the menu) works in Finale too:
+the diver is unhurt (`CFG_GOD_MODE`), and every power-up comes from
+level 1, so shove and the nuke can fall on the first levels.
+
+Finale's special bombs (`src/finale/special.asm`): shove from level 4
+(`CFG_SHOVE_LEVEL`, 10 in 256 of the slot's turns), the nuke from level
+7 (`CFG_NUKE_LEVEL`, 6 in 256). Both shake the screen and take the
+divers' shots away. Shove throws the bomb and the divers to the right
+edge, where they blow up (20 points each); the nuke blows them all up
+at once (50 each) and takes a silo's missile away. The carried one
+shows on row 1 between the speed and the hearts: green chevrons for
+shove, a cyan star for the nuke. Keep the nuke out of `docs/`, the
+README and PR text.
