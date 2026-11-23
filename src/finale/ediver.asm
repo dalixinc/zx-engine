@@ -119,7 +119,10 @@ ED_PSON         equ 34          ; 1 = his shot's cells are painted
 ED_PSAT         equ 35          ; 2 bytes: their first cell's colour byte
 ED_PSW          equ 37          ; their columns, 1 or 2
 ED_PSH          equ 38          ; their rows, 1 or 2
-ED_REC          equ 39
+ED_LEAVE        equ 39          ; 1 = cells he has left wait to go back to the water
+ED_LB           equ 40          ; 4 bytes: those cells' box, L H C B as ED_PAT_AT, ED_PSIZE
+ED_DRAWN        equ 44          ; 1 = drawn since his box changed (ed_draw1)
+ED_REC          equ 45
 ED_WEAVE        equ CFG_BOMB_WAVE_AMP   ; the weave's height: the bomb's wave (bomb_wave_tab)
 ED_WTOP         equ ED_TOP + ED_WEAVE
 ED_WLOW         equ ED_LOW - ED_WEAVE
@@ -172,6 +175,7 @@ ed_reset:
         ld (ed2_bg + BG_VALID),a
         ret
 .one:   xor a
+        ld (ix + ED_LEAVE),a
         ld (ix + ED_ON),a
         ld (ix + ED_SHOT),a
         ld (ix + ED_SVN),a
@@ -222,6 +226,9 @@ ed_paint_if:
         ld a,(ix + ED_ON)
         or a
         ret z
+        ld a,(ix + ED_LEAVE)
+        and (ix + ED_DRAWN)
+        call nz,ed_left         ; drawn in his new cells: the old ones back
         ld a,(ix + ED_REPAINT)
         or a
         jp nz,ed_paint
@@ -680,6 +687,7 @@ ed_draw:
         jp ed_shot_draw
 
 ed_draw1:
+        ld (ix + ED_DRAWN),1    ; his old picture is gone (ed_restore)
         ld a,(ix + ED_ON)
         or a
         jr z,.off
@@ -871,11 +879,36 @@ ed_paint:
         cp b
         ret z                   ; the same cells: nothing to do
 .change:
+        ; The new cells now; the old ones he leaves go back to the water
+        ; only once he has been drawn in his new place (ed_paint_if). The
+        ; moves come after this frame's draw, so his picture is still in
+        ; the old cells until the next: giving them back here showed a
+        ; column or a row of him white for a frame each time his box
+        ; changed, and unpainting before painting flashed a few lines.
         push hl
         push bc
-        call ed_unpaint
+        call ed_ink
+        call tp_box
         pop bc
         pop hl
+        ld a,(ix + ED_LEAVE)
+        or a
+        call nz,ed_leave        ; two changes before a draw: the first's now
+        ld a,(ix + ED_PAT_AT)
+        ld (ix + ED_LB),a
+        ld a,(ix + ED_PAT_AT + 1)
+        ld (ix + ED_LB + 1),a
+        ld a,(ix + ED_PSIZE)
+        ld (ix + ED_LB + 2),a
+        ld a,(ix + ED_PSIZE + 1)
+        ld (ix + ED_LB + 3),a
+        ld (ix + ED_LEAVE),1
+        ld (ix + ED_DRAWN),0
+        ld (ix + ED_PAT_AT),l
+        ld (ix + ED_PAT_AT + 1),h
+        ld (ix + ED_PSIZE),c
+        ld (ix + ED_PSIZE + 1),b
+        ret                     ; ED_PON is still 1
 .new:   ld (ix + ED_PAT_AT),l
         ld (ix + ED_PAT_AT + 1),h
         ld (ix + ED_PSIZE),c
@@ -884,8 +917,78 @@ ed_paint:
         call ed_ink
         jp tp_box
 
+;------------------------------------------------------------------------------
+; ed_leave - the cells he has left (ED_LB) that are not in his box now
+; (H = top row, L = left column, B rows, C columns) back to the water, a
+; cell at a time through tp_box, which leaves the bomb's cells alone.
+; Once he has been drawn in his new place (ed_paint_if). Keeps BC, HL.
+; Corrupts: AF, DE
+;------------------------------------------------------------------------------
+ed_leave:
+        push hl
+        push bc
+        ld a,h
+        ld (ed_nbox),a          ; the new box's first row,
+        add a,b
+        ld (ed_nbox + 1),a      ; one past its last,
+        ld a,l
+        ld (ed_nbox + 2),a      ; its first column
+        add a,c
+        ld (ed_nbox + 3),a      ; and one past its last
+        ld h,(ix + ED_LB + 1)
+        ld b,(ix + ED_LB + 3)
+.row:   ld l,(ix + ED_LB)
+        ld c,(ix + ED_LB + 2)
+.col:   push bc
+        push hl
+        ld de,(ed_nbox)         ; E = first row, D = one past
+        ld a,h
+        cp e
+        jr c,.out
+        cp d
+        jr nc,.out
+        ld de,(ed_nbox + 2)     ; E = first column, D = one past
+        ld a,l
+        cp e
+        jr c,.out
+        cp d
+        jr c,.his               ; in the new box: still his
+.out:   ld bc,$0101
+        ld a,WATER_ATTR
+        call tp_box
+.his:   pop hl
+        pop bc
+        inc l
+        dec c
+        jr nz,.col
+        inc h
+        djnz .row
+        pop bc
+        pop hl
+        ret
+
+; The cells he has left, now that he is drawn elsewhere. Corrupts: AF,
+; BC, DE, HL
+ed_left:
+        ld (ix + ED_LEAVE),0
+        ld l,(ix + ED_PAT_AT)
+        ld h,(ix + ED_PAT_AT + 1)
+        ld c,(ix + ED_PSIZE)
+        ld b,(ix + ED_PSIZE + 1)
+        jp ed_leave
+
 ed_unpaint:
-        ld a,(ix + ED_PON)
+        ld a,(ix + ED_LEAVE)
+        or a
+        jr z,.box
+        ld (ix + ED_LEAVE),0    ; gone: the cells he left go back too
+        ld l,(ix + ED_LB)
+        ld h,(ix + ED_LB + 1)
+        ld c,(ix + ED_LB + 2)
+        ld b,(ix + ED_LB + 3)
+        ld a,WATER_ATTR
+        call tp_box
+.box:   ld a,(ix + ED_PON)
         or a
         ret z
         ld (ix + ED_PON),0
@@ -1149,6 +1252,7 @@ ed_pats:        db 1
 ed_gap:         db 120
 ed_missiles:    db 0
 ed_sspd:        db ED_SHOT_SPEED ; pixels a shot flies each 1/50 second
+ed_nbox:        db 0, 0, 0, 0   ; ed_leave: the new box, rows then columns
 ed_seed:        db 57           ; never 0
 
 ; The shot at each of the 8 shifts, two bytes: its top row (.####.),
