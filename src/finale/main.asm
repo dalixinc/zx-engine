@@ -406,6 +406,10 @@ main_loop:
         ;       diver and the wheel, then the lower one, then the fish.
         ;       The torpedo goes straight after the diver: it is new at
         ;       his height, so it shares his place in the race.
+        ;       The Trigon divers (ENEMY_DIVER) follow the torpedo, or
+        ;       go first, after the missile, when one is above him
+        ;       (ed_order): restored just before the torpedo, or just
+        ;       before that missile.
         ;   on the seabed, after the copy: missile, diver, wheel, torpedo
         ; The beam runs down the picture while this happens. A sprite is
         ; missing from the picture if the beam reaches it after it was
@@ -443,9 +447,6 @@ main_loop:
         ld a,(msl_vn)           ; drawn after the copy, before the diver
         rla
         call c,missile_restore
-    IFDEF ENEMY_DIVER
-        call ed_restore         ; the Trigon divers and their shots (ediver.asm)
-    ENDIF
     IFDEF TWO_BOMBS
 .tb_c1:  call tb_restore         ; drawn after the fish (src/trigon/twobomb.asm)
     ENDIF
@@ -459,6 +460,11 @@ fish_rest_call:
         or a
         call z,wheel_restore
     ENDIF
+    IFDEF ENEMY_DIVER
+        ld a,(ed_first)         ; the Trigon divers, drawn after the
+        or a                    ; torpedo, or first (ed_order)
+        call z,ed_restore
+    ENDIF
         ld a,(torp_vn)          ; 1 or 2: drawn before the copy
         dec a
         cp 2
@@ -470,6 +476,11 @@ fish_rest_call:
     IFNDEF NO_WHEEL
         jr .restored
 .wheel_was_first:
+    IFDEF ENEMY_DIVER
+        ld a,(ed_first)
+        or a
+        call z,ed_restore
+    ENDIF
         ld a,(torp_vn)          ; 1 or 2: drawn before the copy
         dec a
         cp 2
@@ -482,6 +493,11 @@ fish_rest_call:
         or a                    ; but the test keeps the rule simple
         call z,wheel_restore
 .restored:
+    ENDIF
+    IFDEF ENEMY_DIVER
+        ld a,(ed_first)         ; drawn first: put back last but the
+        or a                    ; missile
+        call nz,ed_restore
     ENDIF
         ld a,(msl_vn)           ; 1 or 2: drawn first, up in the water
         dec a
@@ -505,6 +521,14 @@ boom_hook:
         ld a,(msl_phase)
         or a
         call nz,missile_draw_early
+    IFDEF ENEMY_DIVER
+        ; The Trigon divers: first if one is above ours, else just after
+        ; him and the torpedo. Drawn last, as they were, the beam reached
+        ; a diver in the top third after his restore and before his draw,
+        ; and at 50 he was not on the picture at all.
+        call ed_order
+        call nz,ed_draw
+    ENDIF
 
         ; Which half each is drawn in. Once the diver's feet reach the
         ; weed he is drawn after the copy (draw_late), or the copy would
@@ -547,6 +571,11 @@ boom_hook:
         dec a                   ; TORP_HIGH is 1
 .torp_dc1:                     ; patched for the double shot (torpedo.asm, DOUBLE_DATA)
         call z,torpedo_draw
+    IFDEF ENEMY_DIVER
+        ld a,(ed_first)
+        or a
+        call z,ed_draw          ; the Trigon divers, then their shots (ediver.asm)
+    ENDIF
     IFNDEF NO_WHEEL
         ld a,(wheel_first)
         or a
@@ -561,9 +590,6 @@ fish_draw_call:
         call trigon_paint       ; the fish's and the missile's colours, then the fish
     ELSE
         call fish_draw_fast
-    ENDIF
-    IFDEF ENEMY_DIVER
-        call ed_draw            ; the Trigon divers, then their shots (ediver.asm)
     ENDIF
     IFDEF TWO_BOMBS
 .tb_c2:  call tb_draw            ; the second bomb, in the fish's place
@@ -1245,6 +1271,9 @@ data_start:
         ; The Trigon divers (ENEMY_DIVER): their code in the data block,
         ; uncontended, as the code is.
         INCLUDE "ediver.asm"
+    ENDIF
+    IFNDEF SOAK
+        HUD_RATE_CODE           ; row 1's speed and carried bomb (score.asm)
     ENDIF
     IFDEF CITY_SHOW
 city_pix_zx0:                   ; Erin's city, a whole screen, packed:

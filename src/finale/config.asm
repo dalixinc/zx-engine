@@ -480,6 +480,11 @@ CFG_ED_GAP           equ 90
 CFG_ED_PTS           equ 20
 CFG_ED_BLUE_INK      equ BLUE
 CFG_ED_RED_INK       equ RED
+; The highest a diver swims: his top pixel row. Above about 40 the beam
+; can reach him between his restore and his draw while ours is near the
+; top, and at 50 he is not on the picture at all (measured: 16 to 32
+; vanished, 40 and 48 never did, firing or not).
+CFG_ED_TOP           equ 40
 ; From this level, two big enemies out at once (two divers, or a diver
 ; and the bomb) drop the game to 25 frames a second until half a second
 ; after one has gone (ediver.asm, ed_rate): the frame cannot hold them at
@@ -488,6 +493,9 @@ CFG_ED_RED_INK       equ RED
 ; On levels of one diver (1 to 3) the bomb and the diver take turns
 ; (ed_both_out), so there are never two and those levels stay at 50.
 CFG_ED_25_LEVEL      equ 1
+; Row 1, right of the Lance's gauge: the bomb he carries for the
+; generator, in this colour, then the speed, 50 or 25.
+CFG_HUD_BOMB_ATTR    equ BRIGHT | YELLOW
         ASSERT CFG_ED_FIRST >= 1 && CFG_ED_FIRST + CFG_ED_GAP <= 255 && CFG_ED_GAP >= 1
         ASSERT CFG_ED_PTS >= 1 && CFG_ED_PTS <= 99
 ; Their movements, for a level's row: any mix of these.

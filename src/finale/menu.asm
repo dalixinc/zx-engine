@@ -497,6 +497,15 @@ menu_code:
         ld hl,str_code_dots
         call print_string
         ld e,0                  ; letters so far
+        ; The last code, typed or the one GAME OVER showed, is offered:
+        ; Enter takes it, a letter starts a new one, 0 rubs it out.
+        ld a,(code_buf)
+        or a
+        jr z,.key               ; none since the tape loaded
+        ld hl,code_buf
+        ld bc,(CODE_ROW << 8) | CODE_COL
+        call print_string
+        ld e,CODE_LEN
 .key:   push de
         call keys_up            ; the 3, or the last letter, let go
 .wait:  call wait_frame
@@ -505,12 +514,25 @@ menu_code:
         jr z,.wait
         pop de
         cp ' '
-        jr z,.back
+        jp z,.back
         cp '0'
         jr z,.rub
+        cp 13
+        jr z,.enter
         cp 'A'
-        jr c,.key               ; the other digits and Enter
-        ld hl,code_buf
+        jr c,.key               ; the other digits
+        ld c,a
+        ld a,e
+        cp CODE_LEN
+        ld a,c
+        jr c,.add
+        push af                 ; a letter over the offered code: a new one
+        ld hl,str_code_dots
+        ld bc,(CODE_ROW << 8) | CODE_COL
+        call print_string
+        pop af
+        ld e,0
+.add:   ld hl,code_buf
         ld d,0
         add hl,de
         ld (hl),a
@@ -525,6 +547,7 @@ menu_code:
         ld a,e
         cp CODE_LEN
         jr c,.key
+.check:
     IFDEF CITY_SHOW
         call il_menu_code       ; the city's own code: shown, then the menu
     ENDIF
@@ -538,6 +561,10 @@ menu_code:
         ld (start_level),a
         scf
         ret
+.enter: ld a,e
+        cp CODE_LEN
+        jr z,.check
+        jr .key
 .rub:   ld a,e
         or a
         jr z,.key
@@ -551,7 +578,9 @@ menu_code:
         call print_char
         pop de
         jr .key
-.bad:   ld a,GAME_OVER_ATTR
+.bad:   xor a
+        ld (code_buf),a         ; not offered again
+        ld a,GAME_OVER_ATTR
         ld (text_attr),a
         ld hl,str_code_bad
         ld bc,(CODE_ROW << 8) | 4

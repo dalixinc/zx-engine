@@ -118,6 +118,7 @@ hud_dirty:      db 7
 HUD_HEARTS      equ 0
 HUD_TEXT        equ 1
 HUD_BANNER      equ 2
+HUD_RATE        equ 4       ; the speed and the carried bomb (hud_rate); 3 is the Lance's
 
 HUD_SCORE_COL   equ 6
 HUD_LEVEL_COL   equ 20
@@ -207,7 +208,7 @@ score_reset:
         ldir
     ENDIF
     ENDIF
-.go:    ld a,(1 << HUD_HEARTS) | (1 << HUD_TEXT)
+.go:    ld a,(1 << HUD_HEARTS) | (1 << HUD_TEXT) | HUD_RATE_NEW
         ld (hud_dirty),a
         ret
 
@@ -461,6 +462,11 @@ hud_draw:
         bit HUD_LANCE,(hl)
         call nz,lance_hud       ; Trigon's Lance: its gauge and beam (lance.asm)
     ENDIF
+    IFNDEF SOAK
+        ld hl,hud_dirty
+        bit HUD_RATE,(hl)
+        call nz,hud_rate        ; the speed, the carried bomb
+    ENDIF
         ld hl,hud_dirty
         bit HUD_BANNER,(hl)
         ret z
@@ -529,6 +535,59 @@ hud_bcd_pair:
         ld (de),a
         inc de
         ret
+
+    IFNDEF SOAK
+; Row 1, right of the Lance's gauge: the bomb he carries for the
+; generator, then the speed, 50 or 25 (rate_apply asks for it).
+; Corrupts: AF, BC, DE, HL
+HUD_BOMB_COL    equ LANCE_COL + 1
+HUD_RATE_COL    equ HUD_BOMB_COL + 1
+HUD_RATE_NEW    equ 1 << HUD_RATE
+        ASSERT HUD_RATE_COL + 2 < LIVES_COL, "the speed would touch the hearts"
+; In the data block (HUD_RATE_CODE, main.asm): it runs only when the
+; speed changes or a game starts.
+        MACRO HUD_RATE_CODE
+hud_rate:
+        res HUD_RATE,(hl)
+        ld hl,SCREEN + LIVES_ROW * 32 + HUD_BOMB_COL
+        ld de,hud_bomb_art
+        ld b,8
+.hr_art: ld a,(de)
+        ld (hl),a
+        inc de
+        inc h
+        djnz .hr_art
+        ld a,CFG_HUD_BOMB_ATTR
+        ld (ATTRS + LIVES_ROW * 32 + HUD_BOMB_COL),a
+        ld a,(game_rate)
+        cp 25
+        ld de,('5' << 8) | '2'
+        jr z,.hr_digits
+        ld de,('0' << 8) | '5'
+.hr_digits:
+        push de
+        ld a,e
+        ld c,HUD_RATE_COL
+        call hud_glyph
+        pop de
+        ld a,d
+        ld c,HUD_RATE_COL + 1
+        jp hud_glyph
+
+; The bomb: round, its fuse lit.
+hud_bomb_art:
+        db %00000101
+        db %00000010
+        db %00000100
+        db %00111100
+        db %01111110
+        db %01111110
+        db %01111110
+        db %00111100
+        ENDM
+    ELSE
+HUD_RATE_NEW    equ 0
+    ENDIF
 
 ; A = character, C = column of row 1. Eight lines straight from the font.
 ; Corrupts: AF, DE, HL
