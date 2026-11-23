@@ -169,13 +169,13 @@ trigon-soak: $(TRI_SRC) $(TRI_GFX) | build
 finale: $(FIN_TAP) $(FIN_SNA)
 
 FIN_BLOCKS := build/finale-cold.bin build/finale-code.bin build/finale-data.bin build/finale-udg.bin
-$(FIN_SNA) $(FIN_BLOCKS) build/finale-high.bin build/finale-pb.bin build/finale.exp build/finale-plain.tap &: $(FIN_SRC) $(FIN_GFX) gfx/finale/loading.scr gfx/finale/city_pix.zx0 gfx/finale/city_atr.zx0 | build
+$(FIN_SNA) $(FIN_BLOCKS) build/finale-high.bin build/finale-pb.bin build/finale-font.bin build/finale.exp build/finale-plain.tap &: $(FIN_SRC) $(FIN_GFX) gfx/finale/loading.scr gfx/finale/city_pix.zx0 gfx/finale/city_atr.zx0 | build
 	$(ASM) --nologo --fullpath=off --lst=build/finale.lst --sym=build/finale.sym --exp=build/finale.exp src/finale/finale.asm
 
 build/finale-loading.zx0: gfx/finale/loading.scr $(ZX0)
 	$(ZX0) -f $< $@ >/dev/null
 
-$(FIN_TAP): build/finale.exp build/finale-high.bin build/finale-pb.bin build/finale-loading.zx0 $(FIN_BLOCKS:.bin=.zx0) build/finale-code.delta tools/dzx0_standard.asm gfx/finale/city_pix.zx0 gfx/finale/city_atr.zx0
+$(FIN_TAP): build/finale.exp build/finale-high.bin build/finale-pb.bin build/finale-font.bin build/finale-loading.zx0 $(FIN_BLOCKS:.bin=.zx0) build/finale-code.delta tools/dzx0_standard.asm gfx/finale/city_pix.zx0 gfx/finale/city_atr.zx0
 	$(ASM) --nologo --fullpath=off -DTRIGON -DCODE_DELTA=$$(cat build/finale-code.delta) src/finale/tape.asm
 
 unpack-check-finale: $(FIN_TAP)

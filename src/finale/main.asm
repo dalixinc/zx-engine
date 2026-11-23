@@ -91,6 +91,9 @@
         ; fish, keeps it instead.
     IFNDEF SOAK
         DEFINE ENEMY_DIVER
+        ; The computer-style letters (font.asm), in the fish's old room
+        ; the divers leave free; the soak keeps its fish and the ROM's.
+        DEFINE FIN_FONT
     ENDIF
 
         ; Power-ups (missile.asm): a heart for a life, a bubble for the
@@ -1133,7 +1136,7 @@ wheel_first:    db 0
         INCLUDE "../interrupts.asm"
         INCLUDE "../screen.asm"
         COLD
-        INCLUDE "../text.asm"    ; the menu's and the message's words only
+        INCLUDE "text.asm"       ; the menu's and the message's words only
         HOT
         INCLUDE "../input.asm"
         INCLUDE "../sprite.asm"
@@ -1370,6 +1373,19 @@ CITY_ORG        equ CODE_START - CITY_LEN
         ORG BSS_END
         INCLUDE "cityhi.asm"
         DISPLAY "finale ending ", ct_high, " to ", ct_high_end, ", room ", /D, BSS_LIMIT - CT_DX - 64
+    ENDIF
+
+    IFDEF FIN_FONT
+        ; The letters, at the end of the fish's old room: the blue diver's
+        ; pictures take the rest (ediver.asm), and preshift writes only
+        ; those. On the plain tape the data block runs on over them; the
+        ; packed tape's city_go copies them here.
+FONT_RUN        equ ED_BUF_BLUE + ED_SHIFTED
+        ORG FONT_RUN
+        INCLUDE "font.asm"
+        ASSERT FONT_RUN + FONT_LEN <= WHEEL_BUF, "the letters run into the bomb's pictures"
+        ASSERT ED_BUF_BLUE == FISH_BUF && WHEEL_BUF == FISH_BUF + FISH_SHIFTED
+        DISPLAY "finale font ", FONT_RUN, " to ", FONT_RUN + FONT_LEN, ", room ", /D, WHEEL_BUF - FONT_RUN - FONT_LEN
     ENDIF
 
         ; The one-cell pictures and the title's letters, in the ROM's UDG

@@ -592,6 +592,56 @@ HUD_RATE_NEW    equ 0
 ; A = character, C = column of row 1. Eight lines straight from the font.
 ; Corrupts: AF, DE, HL
 hud_glyph:
+    IFDEF FIN_FONT
+        call font_glyph         ; DE -> its six rows
+        ld a,low (SCREEN + LIVES_ROW * 32)
+        add a,c
+        ld l,a
+        ld h,high (SCREEN + LIVES_ROW * 32)
+        ; fall through
+; glyph_put - DE -> a letter's six rows (font_glyph), HL -> the top line
+; of its cell: an empty line, the six, an empty line. Corrupts: AF, DE, H
+glyph_put:
+        ld (hl),0
+        inc h
+        DUP 6
+        ld a,(de)
+        ld (hl),a
+        inc de
+        inc h
+        EDUP
+        ld (hl),0
+        ret
+
+; font_glyph - A = a character: DE -> its six rows in Finale's letters
+; (font.asm, at FONT_RUN). Lowercase is drawn as capitals; the space, and
+; anything the font has no letter for, as the empty slot; the apostrophe
+; from the slot of '<'. Keeps BC. Corrupts: AF, HL
+FONT_FIRST      equ '+'
+FONT_GLYPHS     equ 'Z' - FONT_FIRST + 1
+font_glyph:
+        cp 'a'
+        jr c,.upper
+        sub 'a' - 'A'
+.upper: cp "'"
+        jr nz,.slot
+        ld a,'<'
+.slot:  sub FONT_FIRST
+        cp FONT_GLYPHS
+        jr c,.in
+        ld a,';' - FONT_FIRST   ; the empty slot
+.in:    ld l,a
+        ld h,0
+        add hl,hl
+        ld d,h
+        ld e,l
+        add hl,hl
+        add hl,de               ; six bytes a letter
+        ld de,FONT_RUN
+        add hl,de
+        ex de,hl
+        ret
+    ELSE
         ld l,a
         ld h,0
         add hl,hl
@@ -611,6 +661,7 @@ hud_glyph:
         inc h
         EDUP
         ret
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; The banner. Block letters three cells wide and five high, a gap of one

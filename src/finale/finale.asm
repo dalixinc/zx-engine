@@ -70,6 +70,7 @@ loading_screen:
         SAVEBIN  "build/finale-udg.bin", udg_start, UDG_LENGTH
         SAVEBIN  "build/finale-high.bin", ct_high, CT_HIGH_LEN ; as it is: the tape's last but the city
         SAVEBIN  "build/finale-pb.bin", PB_SRC, PB_LEN         ; the printer buffer's, before it
+        SAVEBIN  "build/finale-font.bin", FONT_RUN, FONT_LEN   ; the letters, before that
         ; What tape.asm needs to know: --exp=build/finale.exp
         EXPORT hot_top
         EXPORT data_top
@@ -85,6 +86,8 @@ loading_screen:
         EXPORT CT_HIGH_LEN
         EXPORT PB_LEN
         EXPORT PB_SRC
+        EXPORT FONT_RUN
+        EXPORT FONT_LEN
         SAVESNA  "build/finale.sna", entry
     ENDIF
     ENDIF
