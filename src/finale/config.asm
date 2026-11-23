@@ -248,6 +248,12 @@ CFG_MSL_HOME_PTS     equ 15
 ; CFG_DOUBLE_LEVEL); otherwise a missile.
 CFG_POWER_LEVEL      equ 1       ; hearts from this level
 CFG_DOUBLE_LEVEL     equ 2       ; the double shot's bubble from this level
+; Finale gives the double shot, not a bubble: from CFG_DOUBLE_LEVEL, off
+; again on CFG_DOUBLE_OFF and after, while the Lance is new, and back
+; from CFG_DOUBLE_BACK with the Lance (level.asm, level_style).
+CFG_DOUBLE_OFF       equ 3
+CFG_DOUBLE_BACK      equ 5
+        ASSERT CFG_DOUBLE_LEVEL <= CFG_DOUBLE_OFF && CFG_DOUBLE_OFF <= CFG_DOUBLE_BACK
 ; The fish: before this level every fish is the round one; from it, one
 ; fish in four is the piranha (boom.asm, fish_kind_pick).
 CFG_PIRANHA_LEVEL    equ 2

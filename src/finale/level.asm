@@ -283,11 +283,19 @@ level_style:
         call ed_level           ; the Trigon divers' row (ediver.asm)
     ENDIF
     IFDEF DOUBLE_SHOT
-        ; The double shot from CFG_DOUBLE_LEVEL: given, not caught.
+        ; The double shot from CFG_DOUBLE_LEVEL: given, not caught. It
+        ; goes while the Lance is new (CFG_DOUBLE_OFF up to before
+        ; CFG_DOUBLE_BACK), then both are his.
         ld a,(level_n)
+        ld b,0
         cp CFG_DOUBLE_LEVEL
-        sbc a,a                 ; $FF below it, 0 from it
-        inc a                   ; 0 below it, 1 from it
+        jr c,.dbl               ; before it: none
+        cp CFG_DOUBLE_OFF
+        jr c,.dbl_on
+        cp CFG_DOUBLE_BACK
+        jr c,.dbl               ; the Lance's first levels: none
+.dbl_on: inc b
+.dbl:   ld a,b
         ld (double_on),a
     ENDIF
         ; The fish's movement is the next fish's: the one swimming keeps

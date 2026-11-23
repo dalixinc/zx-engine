@@ -674,7 +674,10 @@ torpedo_reset:
     IFDEF DOUBLE_SHOT
         ld (t2_on),a
         ld (t2_vn),a
-        ld (double_on),a
+        ; double_on is left alone: game_reset's score_reset has just
+        ; set it for the starting level (level_style), and clearing it
+        ; here left a level code's game, or the drop's level 9, without
+        ; the double shot until the next level.
       IFDEF POWERUPS
         call special_reset      ; no special bomb held or thrown
         xor a
