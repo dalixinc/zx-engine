@@ -189,6 +189,11 @@ packed_udg:
         ; packed already. Nothing unpacks over the end of the block, and
         ; the game's city_go copies them to their places before start-up
         ; can write here (city.asm).
+packed_pb:
+        INCBIN "../../build/finale-pb.bin"      ; the printer buffer's routines, not packed
+        ASSERT $ - packed_pb == PB_LEN, "the tape's printer buffer routines are not the game's"
+        ASSERT packed_pb >= data_end, "the data would be unpacked over the printer buffer's routines"
+        ASSERT PB_SRC + PB_LEN <= packed_pb, "city_go's copy of them would land on the tape's"
 packed_high:
         INCBIN "../../build/finale-high.bin"    ; cityhi.asm, not packed
         ASSERT $ - packed_high == CT_HIGH_LEN, "the tape's cityhi.asm is not the game's"

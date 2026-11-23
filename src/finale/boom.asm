@@ -125,6 +125,7 @@ fish_unhold:
         ld (fish_mv2+1),hl
         ret
 
+    IFNDEF ENEMY_DIVER              ; Finale's game has no fish (boom_reset)
 ; The fish stays where it was drawn. Four attribute passes, yellow then
 ; red, then the fish is gone. It is still restored and drawn every step
 ; in its usual places, held still. Leaving it on the screen undrawn and
@@ -250,6 +251,8 @@ fish_wait_step:
         ld (FISH_DRAW_TO),hl
         call fish_kind_pick
         jp fish_unhold
+
+    ENDIF
 
     IFNDEF TRIGON
 ; The lines a straight fish starts on from CFG_FISH_VARY_LEVEL: the
@@ -379,6 +382,7 @@ boom_at_diver:
         add a,(DIVER_HEIGHT - BOOM_ROWS) / 2
         jr boom_arm
 
+    IFNDEF ENEMY_DIVER
 boom_at_fish:
     IFNDEF NO_SOUND
         call snd_fish_start
@@ -396,6 +400,8 @@ boom_at_fish:
         ld l,a
         ld h,0
         ld a,(fish_y)
+
+    ENDIF
 
 ; In: HL = pixel x (may be off the left), A = pixel y
 ; This runs while the sprites are on the screen, so it draws nothing and
@@ -454,6 +460,18 @@ boom_armed:
         or a                    ; not a lost life
         ret
 
+    IFDEF ENEMY_DIVER
+; Finale's game has no fish: boom_reset holds its place for the Trigon
+; divers, and the hit tests go to them (hit.asm, torpedo.asm), so all a
+; fish could start never runs. What is still called is empty: no fish
+; burst to end, no fish beside the bomb (carry clear), no height to set.
+fish_aside:
+        or a
+boom_show_fish:
+fish_set_y:
+fish_wave:
+        ret
+    ELSE
 boom_show_fish:
         ld a,(boom_fish)
         or a
@@ -560,6 +578,7 @@ torpedo_fish_y:
         or a
         jp z,boom_at_fish       ; bomb is away: the full burst
         jp fish_flash_begin
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; boom_step - main_loop's stats_prepare call while a burst is up. The

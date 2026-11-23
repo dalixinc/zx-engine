@@ -181,6 +181,27 @@ cold_ptr = $
         ORG hot_ptr
         ENDM
 
+        ; The printer buffer ($5B00, 256 bytes; docs/MEMORY.md): cold code
+        ; that runs only after start-up. It cannot come from the tape (a
+        ; 128 in 128 BASIC keeps its paging code there while it loads), so
+        ; its bytes sit in the scroll buffers, which are built later, and
+        ; boot copies them up once IM2 is set. The packed tape brings them
+        ; there too (city_go). From COLD: PBUF ... PB_COLD.
+PB_RUN          equ $5B00
+PB_SRC          equ SCROLL_BASE
+pb_lpos = PB_RUN
+        MACRO PBUF
+cold_ptr = $
+        ORG PB_SRC + pb_lpos - PB_RUN
+        DISP pb_lpos
+        ENDM
+
+        MACRO PB_COLD
+pb_lpos = $
+        ENT
+        ORG cold_ptr
+        ENDM
+
         ORG CODE_START
 code_start:
 
@@ -201,6 +222,12 @@ boot:
         ld (hl),0
         ldir
         call im2_init
+    IFDEF TRIGON_END
+        ld hl,PB_SRC            ; the printer buffer's routines, now
+        ld de,PB_RUN            ; that the ROM's paging code is not
+        ld bc,PB_LEN            ; needed (PBUF, above)
+        ldir
+    ENDIF
         call build_row_table
         call slope_build        ; the seabed's sloped tops (scroll.asm)
         call preshift_all       ; the diver's, the fish's and the bombs' shifted pictures
@@ -1287,7 +1314,9 @@ data_end:
         ; cold block: the data block keeps only what play reads.
         COLD
         DIVER_ART
+    IFNDEF ENEMY_DIVER                  ; Finale's game has no fish
         FISH_ART
+    ENDIF
         WHEEL_ART
     IFDEF TWO_FISH
         RFISH_ART
@@ -1304,6 +1333,12 @@ DATA_LENGTH     equ data_end - data_start
         ; The cold block: COLD_START up to here. Loaded as its own CODE
         ; block, before the instructions.
 cold_end        equ cold_ptr
+    IFDEF TRIGON_END
+PB_LEN          equ pb_lpos - PB_RUN
+        ASSERT PB_LEN >= 1 && PB_LEN <= 256, "the printer buffer holds 256 bytes"
+        ASSERT PB_SRC + PB_LEN <= BSS_START, "the printer buffer's bytes would reach the run-time buffers"
+        DISPLAY "finale printer buffer ", PB_LEN, " bytes, room ", 256 - PB_LEN
+    ENDIF
 COLD_LENGTH     equ cold_end - COLD_START
         DISPLAY "atlantis cold_end ", cold_end
 

@@ -67,6 +67,9 @@ trigon_paint:
         jr nz,.fish
 .all:   set 2,e
         ; The fish: drawing (not bursting, flashing or waiting)?
+    IFDEF ENEMY_DIVER
+.fish:  xor a                   ; Finale's game has no fish
+    ELSE
 .fish:  ld hl,(tp_real)
         push de
         ld de,fish_draw_fast
@@ -95,6 +98,7 @@ trigon_paint:
         jr z,.fnone
     ENDIF
         ld a,CFG_PIRANHA_INK
+    ENDIF
 .fnone: ld (tp_new_fink),a      ; 0 = no fish painted
         ld hl,tp_fish_ink
         cp (hl)

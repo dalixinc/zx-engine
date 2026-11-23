@@ -151,6 +151,11 @@ ed_level:
         ldir
         ld a,(ed_sspd)          ; the shots' speed, into ed_move1's SUB
         ld (ed_move1.sspd + 1),a
+        ld a,(level_n)          ; torpedo against shots from this level
+        cp CFG_TORP_SHOT_LEVEL
+        sbc a,a                 ; $FF below it, 0 from it
+        and ED_TORP_SKIP
+        ld (ed_torp + 1),a      ; the JR's distance
         ret
 
 ;------------------------------------------------------------------------------
@@ -1106,6 +1111,38 @@ ed_touch1:
 ; Out: carry if one was hit (the torpedo is spent). Corrupts: AF, BC, DE, HL, IX
 ;------------------------------------------------------------------------------
 ed_torp:
+        ; From CFG_TORP_SHOT_LEVEL the torpedo meets their shots first:
+        ; below it this JR skips that (ed_level patches its distance to 0
+        ; from it), so levels 1 to 3 pay one jump.
+        jr .divers
+        ; The rows first, inline: most steps no shot is near the
+        ; torpedo's, and this is in the heavy step at 50.
+        ld a,(torp_y)
+        add a,1 + CFG_TORP_SHOT_SLACK
+        ld c,a
+        ld a,(ed_rec0 + ED_SHOT)
+        or a
+        jr z,.shot1
+        ld a,(ed_rec0 + ED_SY)
+        neg
+        add a,c                 ; torpedo - shot, moved: 0 .. 2 slack + 2 meet
+        cp 3 + 2 * CFG_TORP_SHOT_SLACK
+        jr nc,.shot1
+        ld ix,ed_rec0
+        call ed_torp_shot
+        ret c
+.shot1: ld a,(ed_rec1 + ED_SHOT)
+        or a
+        jr z,.divers
+        ld a,(ed_rec1 + ED_SY)
+        neg
+        add a,c
+        cp 3 + 2 * CFG_TORP_SHOT_SLACK
+        jr nc,.divers
+        ld ix,ed_rec1
+        call ed_torp_shot
+        ret c
+.divers:
         ld ix,ed_rec0
         call ed_torp1
         ret c
@@ -1171,6 +1208,39 @@ ed_burst:
         add hl,de               ; the burst is 16 wide, over his middle
         ld a,(ix + ED_Y)
         jp boom_arm
+
+ED_TORP_SKIP    equ ed_torp.divers - ed_torp - 2
+
+; ed_torp_shot - the torpedo against IX's shot, whose rows meet its
+; (ed_torp tested them: both are two rows, and within CFG_TORP_SHOT_SLACK
+; rows more each way counts, as a near miss reads as a hit). Across, the
+; torpedo (7 wide) and the shot (6) close by at most 8 pixels a 1/50
+; second (4 each), less than the 12 they overlap over, so they cannot
+; pass through each other. Both go if they meet.
+; Out: carry set if they met. Corrupts: AF, DE, HL
+ed_torp_shot:
+        ld l,(ix + ED_SX)
+        ld h,0
+        ld de,(torp_x)
+        or a
+        sbc hl,de               ; shot - torpedo
+        ld de,TORPEDO_WIDTH - 1
+        add hl,de               ; -6 .. 5 overlaps: 0 .. 11
+        ld a,h
+        or a
+        ret nz
+        ld a,l
+        cp TORPEDO_WIDTH + ED_SHOT_W - 1
+        ret nc
+        ld (ix + ED_SHOT),0     ; gone: the next steps put back what it covered
+        call torpedo_spent
+    IFNDEF NO_SOUND
+        call snd_missile_start
+    ENDIF
+        scf
+        ret
+ED_SHOT_W       equ 6           ; Erin's shot, 6 x 2
+        ASSERT TORP_SPEED + 4 < TORPEDO_WIDTH + ED_SHOT_W - 1, "a torpedo and a shot could pass through each other"
 
 ;------------------------------------------------------------------------------
 ; ed_lance - lance_hits: the beam takes one of each diver's hits each

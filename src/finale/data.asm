@@ -250,7 +250,9 @@ wheel_bob:
         WAVE_8 amp, -49, -43, -37, -31, -25, -19, -12, -6
         ENDM
 bomb_wave_tab:  WAVE_TABLE CFG_BOMB_WAVE_AMP
+    IFNDEF ENEMY_DIVER              ; Finale's game has no fish
 fish_wave_tab:  WAVE_TABLE CFG_FISH_WAVE_AMP
+    ENDIF
 
 ; Eight heights for the middle of the bob. Entry 0 is the first bomb,
 ; before any random number: deep enough to meet the diver on the way
@@ -294,12 +296,6 @@ enemy_wheel:
         db CFG_WHEEL_WOBBLE
         db 0
         db CFG_WHEEL_INK
-enemy_spin:                     ; the spinning wheel (wspin.asm): its ink
-        db CFG_WHEEL_BOB
-        db CFG_WHEEL_BOB_SPEED
-        db CFG_WHEEL_WOBBLE
-        db 0
-        db CFG_SPIN_INK
 
     IFDEF POWERUPS
 ; A power's points (boom.asm, pop_show): 3x5 glyphs, five rows each, in

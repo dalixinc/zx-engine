@@ -414,8 +414,7 @@ lance_hits:
 .fish:
     IFDEF ENEMY_DIVER
         call ed_lance           ; Finale: the divers
-        jr .msl
-    ENDIF
+    ELSE
         ld a,(fish_busy)
         or a
         jr nz,.msl
@@ -434,6 +433,7 @@ lance_hits:
         call boom_at_fish
         jr .msl
 .flash: call fish_flash_begin
+    ENDIF
 .msl:   ld a,(msl_phase)
         or a
         ret z

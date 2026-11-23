@@ -50,7 +50,10 @@ version is `src/finale/VERSION`.
   bomb-carrying diver arrives, inside his present 24 x 15 box).
 - **Weapons:** the torpedo; the double shot from level 2 and the Lance
   from level 3, given, not caught. The Lance's beam also burns up the
-  Trigon divers' shots it touches. The heart is the only power-up.
+  Trigon divers' shots it touches, and from level 4 a torpedo that
+  meets one takes it out (`CFG_TORP_SHOT_LEVEL`; within two rows above
+  or below counts, `CFG_TORP_SHOT_SLACK`). The heart is the only
+  power-up.
 - **Levels:** see [the levels (chunk 4)](#the-levels-chunk-4). The
   banner freezes the action while it is up. Finishing the last level
   brings up [Trigon City and the bomb drop](#trigon-city-and-the-bomb-drop-chunk-5).
@@ -64,6 +67,30 @@ version is `src/finale/VERSION`.
 | Finale, chunk 4 | 213 | 886 | 368 |
 | Finale 0.1.3, chunk 5 | 158 | 119 | 176 |
 | Finale 0.1.4 | 117 | 66 | 56 |
+| Finale, after the squeeze | 653 | 440 | 184 |
+
+**The squeeze** (Quartus's brief after 0.1.4) freed, item by item:
+
+| Item | Hot | Cold | Data |
+|---|---|---|---|
+| The fish's wave table (the game has no fish) | | | 128 |
+| The fish's picture tables | | | 64 |
+| The fish's raw art | | 144 | |
+| The spinning wheel's settings (`enemy_spin`, 5 bytes: an alignment gap took them) | | | 0 |
+| Suction's and shove's tunes | 46 | | |
+| The fish's code: flash, wait, hits, wave, the Lance's fish test | 453 | 8 | 64 |
+| `trigon_paint`'s fish part (also a little time each step) | 37 | | |
+| The printer buffer: the drop (`ct_try`) and its records, 248 bytes | | 222 | |
+
+The soak, written round a fish, keeps all of the fish. Then the
+torpedo against the divers' shots took 128 of the data block's.
+
+The printer buffer (`$5B00`, 8 bytes left) cannot be loaded from tape:
+a 128 in 128 BASIC keeps its paging code there while it loads. Its
+routines are assembled to run there with their bytes in the scroll
+buffers, which are built later, and start-up copies them up once it
+has taken the interrupts. The packed tape brings them at the end of the
+second block, before cityhi.asm.
 
 Chunk 5 also uses the two rooms that were free while the game runs: the
 packed city fills `$77A9-$7FFF` (the spinning wheel's old pictures, and
@@ -150,11 +177,14 @@ often they fire and how fast their shots fly).
 | 10 | The last fight, short: the toughest divers, diving and drifting at you; then Trigon City and the bomb drop |
 
 Measured with fire held, 1,024 steps a level, on the seabed and in
-mid-water (0.1.4: levels 1, 2, 3, 4, 6 and 10): no level loses a
-frame and none has more than 6 late steps (steps that overrun a little
-and catch up). Levels 1 to 3 are at 50 frames a second all the time
-(until chunk 5 they were at 25 for about half to 60% of it); from level
-4, where two divers come at once, the game is at 25 for 78 to 94%.
+mid-water (after the squeeze: levels 1, 2, 3, 4, 6 and 10): no level
+loses a frame and none has more than 6 late steps (steps that overrun a
+little and catch up). Levels 1 to 3 are at 50 frames a second all the
+time (until chunk 5 they were at 25 for about half to 60% of it); from
+level 4, where two divers come at once, the game is at 25 for 78 to
+94%. The torpedo's test against the shots tests their rows inline
+first: called for both shots each time, it gave level 10 in mid-water
+16 late steps.
 
 ## Trigon City and the bomb drop (chunk 5)
 
@@ -200,7 +230,6 @@ game draws them again.
 
 ## Still to come
 
-Torpedoes that hit the divers' shots (to be measured: levels 1 to 3
-have little time to spare), finding more room, then perhaps the special
-bombs, a computer-style font (chunk 6), and Erin's bomb-carrying diver
-when it comes.
+Perhaps one of the special bombs (costed, not built), a
+computer-style font (chunk 6), and Erin's bomb-carrying diver when it
+comes.
