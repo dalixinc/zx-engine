@@ -338,7 +338,12 @@ ct_bomb_art:                    ; the bomb, 8 x 8, its fins up
 ;------------------------------------------------------------------------------
 CT_TAPE_HIGH    equ UDG_START - CITY_LEN - CT_HIGH_LEN  ; where the tape leaves them
 CT_TAPE_PB      equ CT_TAPE_HIGH - PB_LEN               ; and, before them, the printer buffer's
+CT_TAPE_FONT    equ CT_TAPE_PB - FONT_LEN               ; and the letters
 city_go:
+        ld hl,CT_TAPE_FONT      ; the letters, first: the printer
+        ld de,FONT_RUN          ; buffer's copy lands lower than they
+        ld bc,FONT_LEN          ; were (font.asm)
+        ldir
         ld hl,CT_TAPE_PB        ; the printer buffer's routines to where
         ld de,PB_SRC            ; boot copies them from (main.asm)
         ld bc,PB_LEN

@@ -264,6 +264,13 @@ CFG_DOUBLE_TIME      equ 30      ; seconds of the double shot
 ; pixels apart.
 CFG_DOUBLE_COOLDOWN  equ 10
 
+; --- The letters (font.asm) -----------------------------------------------------
+; Finale's computer-style font, for every word and number on the screen
+; but the title's tall letters, the banner's blocks and the points'
+; small figures: 1 bold (two-pixel uprights), 2 thin.
+CFG_FONT_LOOK        equ 1
+        ASSERT CFG_FONT_LOOK == 1 || CFG_FONT_LOOK == 2
+
 ; --- Special bombs (special.asm) ----------------------------------------------
 ; Rarer power-ups, by the same roll, each with its own share of the 256
 ; and its own first level. The diver carries one at a time (a new one

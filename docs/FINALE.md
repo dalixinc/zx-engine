@@ -46,6 +46,11 @@ version is `src/finale/VERSION`.
   bomb (the one he carries for the generator), the speed (50 or 25
   frames a second, as it changes), the special bomb he carries, if any,
   and the hearts.
+- **The letters:** Finale's own computer-style font, capitals, digits
+  and the few signs its words use (`src/finale/font.asm`, two looks:
+  `CFG_FONT_LOOK` 1 bold, 2 thin), for every word and number but the
+  title's tall letters, the banner's blocks and the points' small
+  figures. Lowercase prints as capitals. See [the letters](#the-letters).
 - **The story:** a short intro typed before the game.
 - **The diver:** white, no belts (placeholder art until Erin's
   bomb-carrying diver arrives, inside his present 24 x 15 box).
@@ -76,6 +81,7 @@ version is `src/finale/VERSION`.
 | Finale 0.1.4 | 117 | 66 | 56 |
 | Finale, after the squeeze | 653 | 440 | 184 |
 | Finale, the special bombs | 211 | 150 | 184 |
+| Finale, the letters | 188 | 152 | 184 |
 
 **The squeeze** (Quartus's brief after 0.1.4) freed, item by item:
 
@@ -245,7 +251,23 @@ the words and the picture's unpacker are above the run-time buffers
 picture's colours wait in the seabed's buffers while it is up; the next
 game draws them again.
 
+## The letters
+
+48 letters, `+` to `Z` in ASCII order, six rows each: the middle six
+lines of the cell, as the ROM's capitals use (the top and bottom lines
+are drawn empty). The space and the apostrophe take two slots no word
+uses. They cost no block room: they live in the end of the fish's old
+picture room that the blue diver's 1,440 bytes leave free (`$EB50`,
+288 bytes, exactly 48 letters), where the plain tape's data block and
+the snapshot already reach, and the packed tape's `city_go` copies them
+up. The code that draws them (`font_glyph`, `glyph_put`) took 23 bytes
+of the hot code; `print_char` got shorter, so the cold block gained 2.
+The test builds' hex readouts and the soak keep the ROM's font.
+
+Row 1's letters are drawn only when they change, as before. Measured as
+above, levels 1, 4 and 10, seabed and mid-water: the same late steps
+and interrupts as 0.1.5, and the least spare at most a scanline less.
+
 ## Still to come
 
-A computer-style font (chunk 6), and Erin's bomb-carrying diver when it
-comes.
+Erin's bomb-carrying diver when it comes.
