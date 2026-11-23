@@ -173,6 +173,13 @@ snd_tune_power:
 ; The double shot run out: the other way down, G5, E5, C5, and G4 held.
 snd_tune_down:
         db 10, 3, 12, 3, 15, 3, 20, 10, 0
+    IFDEF POWERUPS
+; Shove (special.asm): a slide up, from 260 Hz to about 1,560 Hz, and the
+; top note held. The first note of a tune is counted down before it
+; plays, so it is short.
+snd_tune_shove:
+        db 30, 2, 24, 2, 19, 2, 15, 2, 12, 2, 10, 2, 8, 2, 7, 2, 6, 2, 5, 4, 0
+    ENDIF
 
 
 ; The torpedo's laser (CFG_LASER). A tune counts down a note before it

@@ -44,7 +44,7 @@ MSL_KIND_SUCTION equ 3          ; the special bombs (special.asm): carried,
 MSL_KIND_SHOVE  equ 4           ; then set off
 MSL_KIND_NUKE   equ 5
 ; How many kinds the roll has: the nuke is left out when its level is 0.
-POWER_KINDS     equ 1           ; Finale: the heart only
+POWER_KINDS     equ 5           ; Finale: the heart, shove and the nuke (no bubble, no suction)
 ; It sinks from below the hearts and is gone above the weed, so it is
 ; always drawn before the seabed copy, and always one byte a row: its x
 ; is a multiple of 8, and the water does not scroll.
@@ -133,6 +133,10 @@ msl_hfrac:      db 0            ; its fraction of a pixel sideways
 ; (cheat_poll) makes every level 1. missile_gone walks the pairs.
 power_tab:
 pw_heart_lvl:   db CFG_POWER_LEVEL, CFG_HEART_ODDS
+                db 1, 0         ; Finale: no bubble (the double shot is given)
+                db 1, 0         ; and no suction
+                db CFG_SHOVE_LEVEL, CFG_SHOVE_ODDS
+                db CFG_NUKE_LEVEL, CFG_NUKE_ODDS
 pw_piranha_lvl: db CFG_PIRANHA_LEVEL
         ASSERT pw_piranha_lvl - power_tab == 2 * POWER_KINDS
 msl_gap_min:    db CFG_MISSILE_GAP_MIN  ; this level's wait (score.asm sets
@@ -466,6 +470,8 @@ power_sink:
 
 ; A = msl_kind (not 0). Out: carry clear: not a hit.
 power_take:
+        dec a
+        jp nz,special_take      ; shove or the nuke: he carries it (special.asm)
         ld hl,lives
         ld a,(hl)
         cp CFG_LIVES_MAX
@@ -525,8 +531,8 @@ cheat_poll:
 
 
 ;------------------------------------------------------------------------------
-; power_build - the sinking heart's masked picture (POWER_PICS), from
-; row 1's cell, at start-up: mask then ink a row, the mask the ink's
+; power_build - the sinking power-ups' masked pictures (POWER_PICS), from
+; row 1's cells, at start-up: mask then ink a row, the mask the ink's
 ; complement, as missile_draw reads them. Corrupts: AF, B, DE, HL
 ;------------------------------------------------------------------------------
         COLD
