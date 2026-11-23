@@ -485,6 +485,8 @@ CFG_ED_RED_INK       equ RED
 ; after one has gone (ediver.asm, ed_rate): the frame cannot hold them at
 ; 50 with the weaving divers' colours, the double shot (from level 2) and
 ; the Lance. Below it, 50 holds (none, now: level 1 lost 2 frames in 1,024).
+; On levels of one diver (1 to 3) the bomb and the diver take turns
+; (ed_both_out), so there are never two and those levels stay at 50.
 CFG_ED_25_LEVEL      equ 1
         ASSERT CFG_ED_FIRST >= 1 && CFG_ED_FIRST + CFG_ED_GAP <= 255 && CFG_ED_GAP >= 1
         ASSERT CFG_ED_PTS >= 1 && CFG_ED_PTS <= 99
@@ -529,9 +531,40 @@ CFG_BANNER_CODE_TIME equ 200
 ; own keys, so no Atlantis code opens a Trigon level. Level 1's is the
 ; Trigon code (GATE_WORD). Up to 31.
 CFG_CODE_LEVELS      equ 10
-; The last level (10): finishing it ends the game with the Finale code
-; (src/trigon/ending.asm). Levels past the table repeat its last row.
+; The last level (10): finishing it brings up Trigon City and the bomb
+; drop (city.asm). Levels past the table repeat its last row.
 CFG_ENDING_LEVEL     equ 10
+
+; --- Trigon City and the bomb drop (city.asm) -------------------------------
+; The city comes on in a circle, then waits CFG_CITY_TIME 1/50 seconds
+; (or a fresh key). Then the drop: he swims above the city, the bomb
+; under him, and fire lets it go. It falls CFG_DROP_SPEED pixels a 1/50
+; second through the shields, bars that slide across the city, into
+; the power generator. A shield stops it, and so does the bottom of the
+; city: CFG_DROP_TRIES bombs in all. With none left the game starts
+; again at CFG_DROP_RETRY_LEVEL, with that level's score, as its code
+; would.
+CFG_CITY_TIME        equ 250
+CFG_DROP_TRIES       equ 5
+CFG_DROP_SPEED       equ 2
+CFG_DROP_RETRY_LEVEL equ 9
+; The generator: its cells on the picture (cell rows and columns of the
+; whole screen; the city is rows 4 to 19, columns 4 to 27): the red
+; arched door under the great T of Erin's Trigon City.
+CFG_GEN_ROW          equ 13
+CFG_GEN_COL          equ 17
+CFG_GEN_HIGH         equ 2
+CFG_GEN_WIDE         equ 3
+CFG_GEN_ATTR         equ FLASH | BRIGHT | YELLOW | (RED << 3)
+; The shields: a row each, the city's width wide; each is a cell row,
+; its length in cells (of 24), how many 1/50 seconds it takes a cell,
+; which way it slides (1 right, -1 left) and the cell it starts at.
+CFG_SHIELD_ATTR      equ BRIGHT | MAGENTA | (MAGENTA << 3)
+        MACRO CFG_SHIELDS
+        CT_SHIELD 6, 12, 4, 1, 0
+        CT_SHIELD 8, 14, 3, -1, 8
+        CT_SHIELD 10, 12, 5, 1, 16
+        ENDM
 ; 1: the testers' switch (notes/CHEATS.md) also makes the diver unhurt,
 ; to play the levels through. 0 leaves it out of the build altogether.
 CFG_GOD_MODE         equ 1

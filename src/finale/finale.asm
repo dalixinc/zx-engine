@@ -57,14 +57,18 @@ loading_screen:
         EMPTYTAP "build/finale-plain.tap"
         SAVETAP  "build/finale-plain.tap", BASIC, "finale", basic_start, BASIC_LENGTH, 10
         SAVETAP  "build/finale-plain.tap", CODE, "finale", loading_screen, 6912
-        SAVETAP  "build/finale-plain.tap", CODE, "finalem", COLD_START, COLD_LENGTH
+        ; The cold block runs on to $8000 here, with the city (city.asm).
+        SAVETAP  "build/finale-plain.tap", CODE, "finalem", COLD_START, CODE_START - COLD_START
         SAVETAP  "build/finale-plain.tap", CODE, "finalec", code_start, CODE_LENGTH
-        SAVETAP  "build/finale-plain.tap", CODE, "finaled", data_start, DATA_LENGTH
+        ; The data block runs on past the buffers here, to the end of
+        ; cityhi.asm (city.asm).
+        SAVETAP  "build/finale-plain.tap", CODE, "finaled", data_start, ct_high_end - data_start
         SAVETAP  "build/finale-plain.tap", CODE, "finaleu", udg_start, UDG_LENGTH
         SAVEBIN  "build/finale-cold.bin", COLD_START, COLD_LENGTH
         SAVEBIN  "build/finale-code.bin", code_start, CODE_LENGTH
         SAVEBIN  "build/finale-data.bin", data_start, DATA_LENGTH
         SAVEBIN  "build/finale-udg.bin", udg_start, UDG_LENGTH
+        SAVEBIN  "build/finale-high.bin", ct_high, CT_HIGH_LEN ; as it is: the tape's last but the city
         ; What tape.asm needs to know: --exp=build/finale.exp
         EXPORT hot_top
         EXPORT data_top
@@ -75,6 +79,9 @@ loading_screen:
         EXPORT udg_start
         EXPORT udg_end
         EXPORT entry
+        EXPORT city_go
+        EXPORT CITY_LEN
+        EXPORT CT_HIGH_LEN
         SAVESNA  "build/finale.sna", entry
     ENDIF
     ENDIF

@@ -47,7 +47,7 @@ version is `src/finale/VERSION`.
   from level 3, given, not caught. The heart is the only power-up.
 - **Levels:** see [the levels (chunk 4)](#the-levels-chunk-4). The
   banner freezes the action while it is up. Finishing the last level
-  shows a placeholder ending.
+  brings up [Trigon City and the bomb drop](#trigon-city-and-the-bomb-drop-chunk-5).
 
 ## Room and timing
 
@@ -56,9 +56,15 @@ version is `src/finale/VERSION`.
 | Trigon 0.8.0 | 1 | 5 | 8 |
 | Finale base | 1,705 | 1,381 | 2,400 |
 | Finale, chunk 4 | 213 | 886 | 368 |
+| Finale 0.1.3, chunk 5 | 158 | 119 | 176 |
 
-Free while the game runs as well: `$78E0-$7FFF` (the spinning wheel's
-pictures, 1,824 bytes) and the round fish's 1,728.
+Chunk 5 also uses the two rooms that were free while the game runs: the
+packed city fills `$77A9-$7FFF` (the spinning wheel's old pictures, and
+the top of the cold block's room), and the busier half of the ending
+sits above the run-time buffers, where Atlantis keeps the round fish's
+pictures (`$F65A-$F8A1`, 30 bytes left there). The ending's words are
+in the hot code, as the cold block is full. See
+[Trigon City and the bomb drop](#trigon-city-and-the-bomb-drop-chunk-5).
 
 Measured with power-ups and the Lance on and fire held, 1,024 steps:
 levels 3, 6 and 8, on the seabed and in mid-water, show no late steps,
@@ -80,7 +86,8 @@ torpedo, the double shot and the Lance each take one of a diver's hits:
 a blue diver takes 2 to 4 by level, a red one 3 or 4. A hit makes him
 blink, and the last blows him up for 20 points. The bomb
 never comes out with two divers, and a diver waits rather than make a
-third big enemy. The silos fire only from level 6; before that a heart
+third big enemy. On the levels of one diver (1 to 3), he and the bomb
+take turns: one big enemy at a time. The silos fire only from level 6; before that a heart
 can still fall in their turn. Each level's divers are a row of
 `CFG_ED_LEVELS` in `src/finale/config.asm`.
 
@@ -99,9 +106,10 @@ pass, and a diver over one would show white.
 **The frame budget.** On every level (`CFG_ED_25_LEVEL` 1), while two big
 enemies are out (two divers, or a diver and the bomb), the game drops to
 25 frames a second, at the same game speed, and goes back to 50 half a
-second after one has gone. Measured with the double shot and the Lance
-in use, 1,024 steps each, on the seabed and in mid-water: no level loses
-a frame; levels are at 25 for 55 to 97% of their steps.
+second after one has gone. Levels 1 to 3 never have two, as the diver
+and the bomb take turns, so they stay at 50. At 50 a diver and the bomb
+together leave no time to spare, and over a third of the steps run
+late, which would tear; the turns cost about 12 bytes.
 
 ## The levels (chunk 4)
 
@@ -122,17 +130,58 @@ often they fire and how fast their shots fly).
 | 7 | Red divers take 4; every movement |
 | 8 | Faster shots, quicker fire, closer missiles |
 | 9 | The guard: the bomb hunting hardest |
-| 10 | The last fight, short: the toughest divers, diving and drifting at you; then the ending |
+| 10 | The last fight, short: the toughest divers, diving and drifting at you; then Trigon City and the bomb drop |
 
 Measured with fire held, 1,024 steps a level, on the seabed and in
-mid-water: no level loses a frame and none has more than 2 late steps.
-The game is at 25 frames a second (two big enemies out) for about half
-to 60% of levels 1 to 3, and 77 to 97% from level 4, where two divers
-come at once.
+mid-water (chunk 5: levels 1, 2, 3, 4, 6 and 10): no level loses a
+frame and none has more than 6 late steps (steps that overrun a little
+and catch up). Levels 1 to 3 are at 50 frames a second all the time
+(until chunk 5 they were at 25 for about half to 60% of it); from level
+4, where two divers come at once, the game is at 25 for 77 to 93%.
+
+## Trigon City and the bomb drop (chunk 5)
+
+Finishing level 10 stops the fight. The screen goes black, and the city
+comes on in a circle from the middle, with TRIGON CITY over it and the
+level's jingle: Erin's city, the great red T over its gate. The gate is
+the power generator, flashing yellow and red. A second
+later a fresh key, or five seconds, starts the drop.
+
+The diver swims left and right above the city, the bomb under him, and
+fire lets it go. It falls through the shields, three bars that slide
+across the city at their own speeds, into the generator. A shield stops
+it (a red flash), and so does the bottom of the city. There are five
+bombs, counted under the city.
+
+- **Into the generator:** a white blast grows from it over the whole
+  screen, then the dark, then "TRIGON CITY FALLS / THE BLOCKADE IS
+  BROKEN / ATLANTIS IS FREE" until a key, the high score, and the menu.
+- **No bombs left:** "The bombs are spent. Back to level 9", then the
+  game starts again at the start of level 9, as its code would (with
+  that level's score and full lives). The high score counts first.
+
+Everything is a setting in `src/finale/config.asm`: the city's time,
+the bombs, their speed, the level to go back to, the generator's place
+and colours, and each shield's row, length, speed and direction.
+
+**The picture** is Erin's Trigon City, 192 x 128, from her Trigo art
+pack (`gfx/finale/trigo_city_bitmap.bin` and `_attrs.bin`), with
+Finale's black sea round it (`tools/mkcity.py --finale`,
+`gfx/finale/city.scr`). Packed, it is 2,135 bytes. It is not in the cold
+block: it sits at the top of that room, `$77A9-$7FFF`, which nothing uses
+while the game runs. On the tape it rides at the end of the second
+block, and the game copies it up as it starts, before anything can
+write there. Her 256 x 128 panorama would pack to about 3,470 bytes,
+some 1,300 more than there is room for.
+
+**The code** runs once a game, so its main part is in the cold block
+(`src/finale/city.asm`). The circle, the shields, the bomb's drawing,
+the words and the picture's unpacker are above the run-time buffers
+(`src/finale/cityhi.asm`), copied there from the tape the same way. The
+picture's colours wait in the seabed's buffers while it is up; the next
+game draws them again.
 
 ## Still to come
 
-Erin's city and the bomb drop (chunk 5), and, if room allows, a
-computer-style font (chunk 6). Losing the bomb drop, the final
-sequence, will send the diver back to the start of level 9, the level
-before the last (it was level 7 when Finale had eight levels).
+If room allows, a computer-style font (chunk 6), and Erin's
+bomb-carrying diver when it comes.

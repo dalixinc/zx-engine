@@ -184,10 +184,17 @@ ed_reset:
         ld (ix + ED_FLASH),a
         ret
 
-; Out: NZ if both divers are out (the bomb waits). Corrupts: AF, HL
+; Out: NZ if the bomb must wait: both divers are out, or, on a level of
+; one, he is (so levels 1 to 3 never have two big enemies, and hold 50
+; frames a second). Corrupts: AF, HL
 ed_both_out:
+        ld a,(ed_count)
+        dec a
         ld a,(ed_rec0 + ED_ON)
-        ld hl,ed_rec1 + ED_ON
+        jr nz,.two
+        or a
+        ret
+.two:   ld hl,ed_rec1 + ED_ON
         and (hl)
         ret
 
@@ -415,15 +422,20 @@ ed_move1:
         dec (ix + ED_WAIT)
         ret nz
         ; Never three big sprites: with the bomb and the other diver both
-        ; out, he waits (a step at a time) for one of them to go.
+        ; out, he waits (a step at a time) for one of them to go. On a
+        ; level of one diver, he waits for the bomb: one big enemy at a
+        ; time, so the game stays at 50 (ed_rate).
         ld a,(wheel_phase)
         or a
         jr z,.come
+        ld a,(ed_count)
+        dec a
+        jr z,.wait
         ld a,(ed_rec0 + ED_ON)
         ld hl,ed_rec1 + ED_ON
         or (hl)                 ; he is not out, so this is the other
         jr z,.come
-        inc (ix + ED_WAIT)
+.wait:  inc (ix + ED_WAIT)
         ret
 .come:
         ; He comes: just off the right edge, at a random depth, in one of

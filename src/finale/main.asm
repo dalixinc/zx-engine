@@ -133,7 +133,7 @@
         DEFINE LANCEGUN         ; the Lance laser, from CFG_LANCE_LEVEL (lance.asm)
     ENDIF
     IFDEF TYPEWRITER
-        DEFINE TRIGON_END       ; the end: the Finale code (ending.asm)
+        DEFINE TRIGON_END       ; the end: the city and the bomb drop (city.asm)
     ENDIF
     ENDIF
 
@@ -1128,6 +1128,11 @@ wheel_first:    db 0
         INCLUDE "gate.asm"  ; the Trigon code on the menu
         HOT
     ENDIF
+    IFDEF TRIGON_END
+        COLD
+        INCLUDE "city.asm"  ; the end: Trigon City and the bomb drop
+        HOT
+    ENDIF
     ENDIF
 
     IFDEF SLACK_LINES
@@ -1273,8 +1278,34 @@ cold_end        equ cold_ptr
 COLD_LENGTH     equ cold_end - COLD_START
         DISPLAY "atlantis cold_end ", cold_end
 
+    IFDEF TRIGON_END
+        ; Finale's city (city.asm), packed, at the top of the cold
+        ; block's room, up to the code: free while the game runs. The tape
+        ; carries it at the end of its second block (tape.asm), and
+        ; city_go puts it here.
+        ORG CITY_ORG
+city_pix_zx0:
+        INCBIN "../../gfx/finale/city_pix.zx0"
+city_atr_zx0:
+        INCBIN "../../gfx/finale/city_atr.zx0"
+city_end:
+CITY_LEN        equ city_end - city_pix_zx0
+CITY_ORG        equ CODE_START - CITY_LEN
+        ASSERT city_end == CODE_START
+        ASSERT cold_end <= CITY_ORG, "the cold block has run into the city"
+        DISPLAY "finale city ", CITY_ORG, " to ", city_end
+    ENDIF
+
         INCLUDE "bss.asm"       ; after the pictures: it needs their sizes
         DISPLAY "atlantis bss ", BSS_START, " to ", BSS_END
+
+    IFDEF TRIGON_END
+        ; The busier half of Finale's ending, above the run-time buffers
+        ; (cityhi.asm): copied up by city_go from the tape.
+        ORG BSS_END
+        INCLUDE "cityhi.asm"
+        DISPLAY "finale ending ", ct_high, " to ", ct_high_end, ", room ", /D, BSS_LIMIT - CT_DX - 64
+    ENDIF
 
         ; The one-cell pictures and the title's letters, in the ROM's UDG
         ; area (udg.asm). Its own tape block, unpacked last.
@@ -1369,7 +1400,11 @@ hot_top = ED_BUF_RED
         ENDIF
     ENDIF
 data_top = PRESHIFT_START
+    IFDEF TRIGON_END
+cold_top        equ CITY_ORG        ; the city above it (city.asm)
+    ELSE
 cold_top        equ WSPIN_BUF
+    ENDIF
 
         ; Trigon writes its own files (src/trigon/main.asm).
     IFNDEF TRIGON

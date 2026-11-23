@@ -282,7 +282,7 @@ level_up:
     IFDEF TRIGON_END
         ld a,(level_n)
         cp CFG_ENDING_LEVEL + 1
-        jp z,tg_ending          ; Trigon is done: the Finale code (ending.asm)
+        jp z,ct_city            ; Finale is done: the city and the bomb drop
     ENDIF
     IF CFG_LEVEL_LIVES
         ; Back up to CFG_LEVEL_LIVES if he has fewer: a new level only.
