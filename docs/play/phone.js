@@ -243,6 +243,7 @@
     if (attr) return attr;
     var path = (window.location.pathname || "").replace(/\/+$/, "");
     if (/\/trigon$/i.test(path) || /\/trigon\/index\.html$/i.test(path)) return "trigon";
+    if (/\/finale$/i.test(path) || /\/finale\/index\.html$/i.test(path)) return "finale";
     return "atlantis";
   }
 
@@ -263,9 +264,10 @@
     var stage = document.getElementById("stage");
     if (!stage || document.getElementById("phone-app")) return game;
 
-    var title = game === "trigon" ? "TRIGON" : "ATLANTIS";
-    var otherHref = game === "trigon" ? "../" : "trigon/";
-    var otherName = game === "trigon" ? "Atlantis" : "Trigon";
+    // Each page links on to the next game; Finale's back to Trigon.
+    var title = { trigon: "TRIGON", finale: "FINALE" }[game] || "ATLANTIS";
+    var otherHref = { trigon: "../", finale: "../trigon/" }[game] || "trigon/";
+    var otherName = { trigon: "Atlantis", finale: "Trigon" }[game] || "Trigon";
 
     var app = document.createElement("div");
     app.id = "phone-app";

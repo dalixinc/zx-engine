@@ -284,14 +284,17 @@ soak: $(ATL_SRC) $(ATL_GFX) | build
 # The web page (docs/play/index.html, JSSpeccy 3) plays the snapshot and
 # offers the tape to download. The copies are committed, because GitHub
 # Pages serves docs/ straight from git.
-web: $(TAP) $(SNA) $(TRI_TAP) $(TRI_SNA)
+web: $(TAP) $(SNA) $(TRI_TAP) $(TRI_SNA) $(FIN_TAP) $(FIN_SNA)
 	cp $(SNA) docs/play/atlantis.sna
 	cp $(TAP) docs/play/atlantis.tap
 	@sh tools/webstamp.sh
 	cp $(TRI_SNA) docs/play/trigon/trigon.sna
 	cp $(TRI_TAP) docs/play/trigon/trigon.tap
 	@sh tools/webstamp.sh trigon docs/play/trigon
-	@echo "docs/play/ and docs/play/trigon/ updated: commit them and push to update the site"
+	cp $(FIN_SNA) docs/play/finale/finale.sna
+	cp $(FIN_TAP) docs/play/finale/finale.tap
+	@sh tools/webstamp.sh finale docs/play/finale
+	@echo "docs/play/, docs/play/trigon/ and docs/play/finale/ updated: commit them and push to update the site"
 
 clean:
 	rm -f build/*.tap build/*.sna build/*.lst build/*.sym build/*.png \

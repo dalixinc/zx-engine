@@ -17,7 +17,15 @@ and it uses Atlantis's copy of JSSpeccy, one folder up: JSSpeccy finds
 its worker, ROMs and tape loaders from its own script's address. `make
 web` copies `build/trigon.sna` and `.tap` there and stamps their hashes
 (`tools/webstamp.sh trigon docs/play/trigon`). `build.bat web` does
-Atlantis only for now.
+the same for all three games.
+
+**Finale**, the third and last game ([FINALE.md](FINALE.md)), has its
+page in the same way, `docs/play/finale/index.html`, at
+**https://dalixinc.github.io/zx-engine/play/finale/**: Finale's title
+and keys (B sets off a special bomb), linked from Trigon's page; `make
+web` copies `build/finale.sna` and `.tap` there (`tools/webstamp.sh
+finale docs/play/finale`). `phone.js` tells the three pages apart by
+their `data-game` and links each phone page on to the next game.
 
 ## 1. The page
 
@@ -200,6 +208,7 @@ A few things to know about the site:
 | `docs/play/atlantis.sna` | what the page plays (`make web`) |
 | `docs/play/atlantis.tap` | the tape, to download (`make web`) |
 | `docs/play/trigon/` | Trigon's page, `trigon.sna`, `trigon.tap` and its own manifest (`make web`) |
+| `docs/play/finale/` | Finale's page, `finale.sna`, `finale.tap` and its own manifest (`make web`) |
 | `tools/webstamp.sh`, `tools/webstamp.ps1` | stamp each file's hash into the page's addresses (`make web`, `build.bat web`) |
 | `docs/play/jsspeccy/` | JSSpeccy 3.2, with `COPYING` and `SOURCE.md` |
 | `docs/index.html` | sends the site's root to `play/` |

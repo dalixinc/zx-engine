@@ -54,8 +54,9 @@ version is `src/finale/VERSION`.
 - **The story:** a short intro typed before the game.
 - **The diver:** white, no belts (placeholder art until Erin's
   bomb-carrying diver arrives, inside his present 24 x 15 box).
-- **Weapons:** the torpedo; the double shot from level 2 and the Lance
-  from level 3, given, not caught. The Lance's beam also burns up the
+- **Weapons:** the torpedo; the double shot on level 2, then the Lance
+  from level 3 in its place, and from level 5 both (`CFG_DOUBLE_LEVEL`,
+  `_OFF`, `_BACK`), given, not caught. The Lance's beam also burns up the
   Trigon divers' shots it touches, and from level 4 a torpedo that
   meets one takes it out (`CFG_TORP_SHOT_LEVEL`; within two rows above
   or below counts, `CFG_TORP_SHOT_SLACK`).
@@ -183,9 +184,9 @@ often they fire and how fast their shots fly).
 |---|---|
 | 1 | The opening fight: one blue diver, crossing or drifting to you; the pulsar on a quicker bob |
 | 2 | The double shot. The diver may stop to fire; the bomb on the wave |
-| 3 | The Lance. A red diver alone, quicker shots; the bomb hunting |
+| 3 | The Lance, in the double shot's place. A red diver alone, quicker shots; the bomb hunting |
 | 4 | Two divers at once, a blue and a red; the special bombs may fall |
-| 5 | The divers dive at you; the bomb hunts harder |
+| 5 | The double shot again, with the Lance. The divers dive at you; the bomb hunts harder |
 | 6 | The silos open fire from below; blue divers take 3 hits |
 | 7 | Red divers take 4; every movement |
 | 8 | Faster shots, quicker fire, closer missiles |
