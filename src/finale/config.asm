@@ -493,6 +493,10 @@ CFG_ED_TOP           equ 40
 ; On levels of one diver (1 to 3) the bomb and the diver take turns
 ; (ed_both_out), so there are never two and those levels stay at 50.
 CFG_ED_25_LEVEL      equ 1
+; From this level a torpedo that meets a diver's shot takes it out, and
+; is spent; within CFG_TORP_SHOT_SLACK pixel rows above or below counts.
+CFG_TORP_SHOT_LEVEL  equ 4
+CFG_TORP_SHOT_SLACK  equ 2
 ; Row 1, right of the Lance's gauge: the bomb he carries for the
 ; generator, in this colour, then the speed, 50 or 25.
 CFG_HUD_BOMB_ATTR    equ BRIGHT | YELLOW

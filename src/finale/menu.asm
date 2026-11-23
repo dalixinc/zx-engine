@@ -694,9 +694,11 @@ game_reset:
 
         ld a,180
         ld (fish_x),a
+    IFNDEF ENEMY_DIVER              ; Finale's game has no fish
         ld a,FISH_SWIM_Y        ; its own depth and hit tests, the wave's middle
         ld (fish_wave.in + 1),a
         call fish_set_y
+    ENDIF
         xor a
         ld (fish_wave_p),a      ; boom_reset gives it the level's mover
         ld a,FACE_LEFT

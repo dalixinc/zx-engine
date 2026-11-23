@@ -121,6 +121,9 @@ ct_city:
         ld (diver_bg),a         ; nothing under him yet
         ld a,CT_DIVER_Y
         ld (diver_y),a
+        jp ct_try
+
+        PBUF                    ; the drop, in the printer buffer (main.asm)
 ct_try:
         ld a,CT_HOLD_Y
         ld (ct_by),a
@@ -238,9 +241,10 @@ ct_try:
         call ct_border
         ld hl,ct_tries
         dec (hl)
-        jr z,ct_fail
+        jp z,ct_fail
         call ct_status
         jp ct_try
+        PB_COLD
 
 ; No bombs left: the words, then the game again at CFG_DROP_RETRY_LEVEL.
 ct_fail:
@@ -298,6 +302,7 @@ ct_end_words:
         db 255
 str_ct_key:     db "PRESS A KEY", 0
         COLD
+        PBUF                    ; its records, there too
 
 ct_tries:       db 0            ; bombs left
 ct_fall:        db 0            ; 0 = he holds it
@@ -321,6 +326,7 @@ ct_bomb_art:                    ; the bomb, 8 x 8, its fins up
         db %01111110
         db %00111100
         ASSERT ct_bomb_art == ct_save + 8, "ct_bomb_io reads the picture 8 past the save"
+        PB_COLD
 
 ;------------------------------------------------------------------------------
 ; city_go - the tape's way in (tape.asm's go jumps here, not to entry):
@@ -331,7 +337,12 @@ ct_bomb_art:                    ; the bomb, 8 x 8, its fins up
 ; The snapshot has both in place already, and starts at entry.
 ;------------------------------------------------------------------------------
 CT_TAPE_HIGH    equ UDG_START - CITY_LEN - CT_HIGH_LEN  ; where the tape leaves them
+CT_TAPE_PB      equ CT_TAPE_HIGH - PB_LEN               ; and, before them, the printer buffer's
 city_go:
+        ld hl,CT_TAPE_PB        ; the printer buffer's routines to where
+        ld de,PB_SRC            ; boot copies them from (main.asm)
+        ld bc,PB_LEN
+        ldir
         ld hl,UDG_START - CITY_LEN
         ld de,city_pix_zx0
         ld bc,CITY_LEN

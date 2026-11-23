@@ -514,8 +514,12 @@ jet_shifts:
         PRESHIFT_EVEN JET_BUF, 2, DIVER_HEIGHT, DIVER_RAW
         ASSERT pst_a == DATA_START, "the jet's tables and preshift disagree"
     ENDIF
+    IFNDEF ENEMY_DIVER
         PRESHIFT_TABLES fish_images, FISH_BUF, FISH_PICS, FISH_HEIGHT, FISH_WIDE, FISH_RAW
         ASSERT pst_a == FISH_BUF + FISH_SHIFTED, "the fish's tables and preshift disagree"
+    ELSE
+fish_images     equ ed_blue_images  ; Finale's game: the fish is never drawn
+    ENDIF
         PRESHIFT_TABLES wheel_images, WHEEL_BUF, WHEEL_PICS, WHEEL_HEIGHT, WHEEL_WIDE, WHEEL_RAW
         ASSERT pst_a == WHEEL_BUF + WHEEL_SHIFTED, "the pulsar's tables and preshift disagree"
         ENDM

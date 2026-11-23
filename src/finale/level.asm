@@ -201,6 +201,7 @@ wheel_home:
         jp wheel_drift
 
     IFNDEF B2_PASS
+    IFNDEF ENEMY_DIVER              ; Finale's game: empty (boom.asm)
 ;------------------------------------------------------------------------------
 ; fish_wave - one 1/50 second of the level 2 fish, in update_fish's place
 ; Across: a pixel, and one more each time the level's haste carries out
@@ -259,6 +260,7 @@ fish_set_y:
         add a,FISH_HEIGHT
         ld (fish_aside_y + 1),a
         ret
+    ENDIF
 
         COLD
 ;------------------------------------------------------------------------------
