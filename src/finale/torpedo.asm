@@ -675,6 +675,10 @@ torpedo_reset:
         ld (t2_on),a
         ld (t2_vn),a
         ld (double_on),a
+      IFDEF POWERUPS
+        call special_reset      ; no special bomb held or thrown
+        xor a
+      ENDIF
         jp torp_two_set         ; A = 0: the plain routines back
     ELSE
         ret

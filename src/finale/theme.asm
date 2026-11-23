@@ -403,7 +403,7 @@ tp_held:
 tp_held_none:
         ld a,WATER_ATTR
 tp_held_set:
-        ld (ATTRS + LIVES_ROW * 32 + LIVES_COL - 4),a
+        ld (ATTRS + LIVES_ROW * 32 + SP_COL),a
         pop af
         ret
       ENDIF
