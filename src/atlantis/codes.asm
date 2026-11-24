@@ -86,6 +86,10 @@ key_map:
 ; code_buf: in bss.asm (zeroed at start-up, not on the tape)  ; six letters and a 0, for print_string
 ; code_in: in bss.asm (zeroed at start-up, not on the tape)  ; a typed code, as 24 bits
 
+    IFNDEF TRIGON
+        HOT                     ; Atlantis's cold block is full: these two
+    ENDIF                       ; make room there for the menu's offered code
+
 ;------------------------------------------------------------------------------
 ; code_text - the letters of a level's code into code_buf
 ; In: A = level, binary, 2 to CFG_CODE_LEVELS. Corrupts: AF, B, DE, HL
@@ -200,6 +204,9 @@ code_level:
         pop bc
         or a
         ret
+    IFNDEF TRIGON
+        COLD
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; key_char - the character of a key that is down, or 0 for none

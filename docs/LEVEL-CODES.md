@@ -55,6 +55,13 @@ code:
 - **A bad code** shows `3  BAD CODE` in red for a second and a half,
   then the option comes back.
 
+**The last code is offered.** Once a code has been typed, or a game has
+reached level 2 or more, option 3 opens with that code already on the
+line (the one typed, or the one GAME OVER or the level banner last
+showed). Enter takes it; a letter starts a new one; `0` rubs it out a
+letter at a time. A bad code is not offered again. Trigon has no room
+for this, so its code line still starts empty.
+
 ![BAD CODE](images/bad-code.png)
 
 **How a code is made.** It's 24 bits, written as six letters of 4 bits
