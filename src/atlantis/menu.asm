@@ -490,7 +490,10 @@ menu_start:
 ; The letters go in on the option's own line. 0 (or Delete, which is
 ; Caps Shift + 0) rubs one out, Space gives up. The sixth letter checks
 ; the code: a good one starts the game (carry set), a bad one says BAD
-; CODE for a moment and puts the option back (carry clear).
+; CODE for a moment and puts the option back (carry clear). In Atlantis
+; the line opens with the last code in it (code_buf: the one typed, or the
+; one GAME OVER or a level's banner showed); Enter takes it, a letter
+; starts a new one. Trigon has no room for that.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 menu_code:
@@ -502,6 +505,17 @@ menu_code:
         ld hl,str_code_dots
         call print_string
         ld e,0                  ; letters so far
+    IFNDEF TRIGON               ; Trigon has no room for it
+        ; The last code, typed or the one GAME OVER showed, is offered:
+        ; Enter takes it, a letter starts a new one, 0 rubs it out.
+        ld a,(code_buf)
+        or a
+        jr z,.key               ; none since the tape loaded
+        ld hl,code_buf
+        ld bc,(CODE_ROW << 8) | CODE_COL
+        call print_string
+        ld e,CODE_LEN
+    ENDIF
 .key:   push de
         call keys_up            ; the 3, or the last letter, let go
 .wait:  call wait_frame
@@ -510,12 +524,33 @@ menu_code:
         jr z,.wait
         pop de
         cp ' '
+    IFDEF TRIGON
         jr z,.back
         cp '0'
         jr z,.rub
         cp 'A'
         jr c,.key               ; the other digits and Enter
-        ld hl,code_buf
+    ELSE
+        jp z,.back
+        cp '0'
+        jr z,.rub
+        cp 13
+        jr z,.enter
+        cp 'A'
+        jr c,.key               ; the other digits
+        ld c,a
+        ld a,e
+        cp CODE_LEN
+        ld a,c
+        jr c,.add
+        push af                 ; a letter over the offered code: a new one
+        ld hl,str_code_dots
+        ld bc,(CODE_ROW << 8) | CODE_COL
+        call print_string
+        pop af
+        ld e,0
+    ENDIF
+.add:   ld hl,code_buf
         ld d,0
         add hl,de
         ld (hl),a
@@ -530,6 +565,7 @@ menu_code:
         ld a,e
         cp CODE_LEN
         jr c,.key
+.check:
     IFDEF CITY_SHOW
         call il_menu_code       ; the city's own code: shown, then the menu
     ENDIF
@@ -556,7 +592,18 @@ menu_code:
         call print_char
         pop de
         jr .key
-.bad:   ld a,GAME_OVER_ATTR
+    IFNDEF TRIGON
+.enter: ld a,e
+        cp CODE_LEN
+        jr z,.check
+        jr .key
+    ENDIF
+.bad:
+    IFNDEF TRIGON
+        xor a
+        ld (code_buf),a         ; not offered again
+    ENDIF
+        ld a,GAME_OVER_ATTR
         ld (text_attr),a
         ld hl,str_code_bad
         ld bc,(CODE_ROW << 8) | 4
