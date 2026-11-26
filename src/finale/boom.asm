@@ -918,7 +918,8 @@ pop_step:
         ld de,(pop_until)
         or a
         sbc hl,de
-        ret c
+        add hl,hl               ; signed (bit 15): "ret c" alone kept the points
+        ret c                   ; up 22 minutes when the clock wrapped under it
         jp boom_end
     ENDIF
 
