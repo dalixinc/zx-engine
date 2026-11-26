@@ -145,7 +145,7 @@ fish_flash_begin:
         ld (fish_busy),a
         ld hl,fish_flash_draw
         ld (FISH_DRAW_TO),hl
-        jp fish_hold
+        jr fish_hold          ; jr: Trigon's hot room
 
 ; In the fish's draw place. Its restore has just run.
 fish_flash_draw:
@@ -169,7 +169,7 @@ fish_flash_draw:
         ld (iy+BG_VALID),0
         ld a,WATER_ATTR
         call fish_paint
-        jp fish_begin_wait
+        jr fish_begin_wait    ; jr: Trigon's hot room
 
 ; A = attribute. Three columns, two rows, the fish's footprint.
 fish_paint:
@@ -898,7 +898,8 @@ pop_step:
         ld de,(pop_until)
         or a
         sbc hl,de
-        ret c
+        add hl,hl               ; signed (bit 15): "ret c" alone kept the points
+        ret c                   ; up 22 minutes when the clock wrapped under it
     IFDEF TRIGON
         call tp_pop_unpaint     ; a "BELT": its cells back to the water
     ENDIF

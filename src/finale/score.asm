@@ -750,7 +750,8 @@ banner_tick:
         ld de,(banner_until)
         or a
         sbc hl,de
-        ret c
+        add hl,hl               ; signed (bit 15): "ret c" alone kept the banner
+        ret c                   ; up 22 minutes when the clock wrapped under it
     IFDEF TRIGON
     IFDEF POWERUPS
         call tp_banner_end      ; the action again (theme.asm)

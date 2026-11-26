@@ -99,11 +99,17 @@ fire_ready:     dw 0            ; frame_count at which the next launch is allowe
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 torpedo_fire:
+        ; Not yet while the clock is 1 to 256 frames short of fire_ready.
+        ; A plain "frame_count < fire_ready" (ret c) broke at the 16-bit
+        ; wrap, about 22 minutes into a game: a launch late in the count
+        ; left fire_ready near 65535, so after the wrap the gun stayed
+        ; shut until the clock came round to it again.
         ld hl,(frame_count)
         ld de,(fire_ready)
         or a
         sbc hl,de
-        ret c                   ; not yet: this costs nothing on frames
+        inc h
+        ret z                   ; not yet: this costs nothing on frames
                                 ; fire is up, because we are not called
         ld a,(input_prev)
         and IN_FIRE
@@ -284,7 +290,7 @@ hit_both:
 .gone:  ld a,(t2_vn)
         or a
         ret nz                  ; still on the screen: put back next frame
-        jp torp_two_set         ; A = 0: one torpedo again
+        jr torp_two_set         ; A = 0: one torpedo again (jr: room)
 
 ; main_loop's restores, patched: the second first, the reverse of the draws.
 restore_low_both:
