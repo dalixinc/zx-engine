@@ -13,6 +13,9 @@
 ;
 ;   SCORE 000000  LEVEL 1       ...
 ;
+; In Atlantis (PROGRESS_BAR) the bottom pixel line of the score's cells
+; is the level's progress bar (bar.asm).
+;
 ; Row 0 stays the debug line's. Row 1 is drawn the way the hearts always
 ; were: straight after the sprite restores, when no sprite is on the
 ; screen, and only when something on it has changed. A sprite that then
@@ -211,7 +214,11 @@ score_reset:
         ldir
     ENDIF
     ENDIF
+    IFDEF PROGRESS_BAR
+.go:    ld a,(1 << HUD_HEARTS) | (1 << HUD_TEXT) | (1 << HUD_BAR)
+    ELSE
 .go:    ld a,(1 << HUD_HEARTS) | (1 << HUD_TEXT)
+    ENDIF
         ld (hud_dirty),a
         ret
 
@@ -222,6 +229,9 @@ score_reset:
 ; In: A = points, one BCD byte. Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 score_add:
+    IFDEF PROGRESS_BAR
+        call bar_add            ; the shot's share of the bar (bar.asm); A kept
+    ENDIF
         ld hl,score
         add a,(hl)
         daa
@@ -384,6 +394,9 @@ level_advance:
 ; its missile gap and bomb haste take over.
 ; Corrupts: AF, BC, DE, HL
 level_enter:
+    IFDEF PROGRESS_BAR
+        call bar_level          ; the bar starts empty (bar.asm); HL kept
+    ENDIF
         ld (level_row),hl
         ld de,level_next
         ld a,(de)
@@ -460,7 +473,18 @@ hud_draw:
         call nz,lives_draw
         ld hl,hud_dirty
         bit HUD_TEXT,(hl)
+    IFDEF PROGRESS_BAR
+        ; The words, or else the bar: on a step that redraws digits the
+        ; bar waits for the next, so their costs never share a frame.
+        jr nz,.words
+        bit HUD_BAR,(hl)
+        call nz,bar_draw        ; bar.asm
+        jr .bar_done
+.words: call hud_text_draw
+.bar_done:
+    ELSE
         call nz,hud_text_draw
+    ENDIF
     IFDEF LANCEGUN
         ld hl,hud_dirty
         bit HUD_LANCE,(hl)
@@ -535,8 +559,15 @@ hud_bcd_pair:
         inc de
         ret
 
-; A = character, C = column of row 1. Eight lines straight from the font.
+; A = character, C = column of row 1. Eight lines straight from the font;
+; seven with the progress bar, which has the eighth (bar.asm): the ROM
+; font's capitals, digits and space have nothing there.
 ; Corrupts: AF, DE, HL
+    IFDEF PROGRESS_BAR
+HUD_GLYPH_LINES equ 7
+    ELSE
+HUD_GLYPH_LINES equ 8
+    ENDIF
 hud_glyph:
         ld l,a
         ld h,0
@@ -550,7 +581,7 @@ hud_glyph:
         add a,c
         ld l,a
         ld h,high (SCREEN + LIVES_ROW * 32)
-        DUP 8
+        DUP HUD_GLYPH_LINES
         ld a,(de)
         ld (hl),a
         inc de
