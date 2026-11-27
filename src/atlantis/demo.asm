@@ -194,16 +194,22 @@ demo_arm:
         ret
 
 ;------------------------------------------------------------------------------
-; demo_label - game_reset, in a demo: DEMO on row 0, which play leaves
-; alone (the sprites photograph it like water).
+; demo_label - game_reset, in a demo: DEMO on DEMO_ROW, which play
+; leaves alone (the sprites photograph it like water). Row 0 without the
+; progress bar; with it, row 2, the water's top.
 ; Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 demo_label:
         ld a,WATER_ATTR
         ld (text_attr),a
         ld hl,str_demo
-        ld bc,(0 << 8) | 7
+        ld bc,(DEMO_ROW << 8) | 7
         jp print_string
+    IFDEF PROGRESS_BAR
+DEMO_ROW        equ 2           ; the water's top: row 0 is the progress bar's
+    ELSE
+DEMO_ROW        equ 0           ; row 0, which play leaves alone
+    ENDIF
 str_demo:       db "DEMO - PRESS ANY KEY",0
 
 demo_on:        db 0            ; 1 = the computer is playing

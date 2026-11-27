@@ -808,10 +808,18 @@ game_reset:
         call rate_arm
         call leave_arm
         call draw_scenery
+    IFDEF PROGRESS_BAR
+        call bar_start          ; row 0: DONE and the bar's colours (bar.asm),
+                                ; over the water draw_scenery has just painted
+    ENDIF
     IFDEF AUTOPLAY
         ld a,(demo_on)
         or a
+    IFDEF PROGRESS_BAR
+        call nz,demo_label      ; DEMO on row 2 (row 0 is the bar's)
+    ELSE
         call nz,demo_label      ; DEMO on row 0
+    ENDIF
     ENDIF
         ; Start the first picture on an interrupt, so the work below
         ; begins while the beam is still in the top border.
