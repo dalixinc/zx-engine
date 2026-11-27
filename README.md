@@ -169,7 +169,10 @@ it away
 (`docs/SPECIAL-BOMBS.md`; `CFG_SUCTION_*`, `CFG_SHOVE_*`,
 `CFG_SPECIAL_TIME`, `CFG_SPECIAL_FLASH` in `config.asm`). The score and the level
 are on row 1, beside the hearts. Each level has a target, and each is
-longer than the last. Reaching it puts up a big "LEVEL n" banner, plays
+longer than the last. A magenta bar along the top row, above the
+score, fills from the left as the level's points come in
+(`src/atlantis/bar.asm`); when it reaches the right-hand edge, the level
+is done. Reaching it puts up a big "LEVEL n" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
 fly a little faster. Level 2 has a yellow bomb on a wave, a faster fish
 on a wave (`docs/LEVEL-2.md`); the fish waves again on
@@ -185,8 +188,8 @@ in a growing circle, with a chime. That is the end of Atlantis: the
 next screen gives the code for **Trigon**, the second game, which is
 loaded from its own tape (`docs/CITY-INTERLUDE.md`).
 
-Level 2 and level 3 each open with a message and the level's code, up
-until a key is pressed; from level 4 the code is under the banner. The
+Level 2 opens with a message and the level's code, up until a key is
+pressed; from level 3 the code is under the banner. The
 game-over screen shows the code of the highest level reached. Typing a
 code on the menu starts a game at that level, with the score that level
 starts at. The codes aren't published: they're in

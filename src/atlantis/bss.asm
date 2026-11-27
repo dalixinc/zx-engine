@@ -117,6 +117,12 @@ bss_ptr = bss_ptr + (size?)
     IFDEF ENEMY_DIVER
         BSS ed_bg, BG_DATA + EDIVER_BYTES * EDIVER_HEIGHT  ; Trigon's enemy diver (experiment)
     ENDIF
+    IFDEF PROGRESS_BAR
+        ; Row 1's level progress bar (bar.asm). Last, so Trigon's list is unchanged.
+        BSS bar_frac, 2                 ; the bar's length, in 256ths of a pixel
+        BSS bar_step, 2                 ; what a point of this level adds to it
+        BSS bar_shown, 1                ; the length on the screen, in pixels; $FF = unknown
+    ENDIF
 
 BSS_END         equ bss_ptr
 BSS_LENGTH      equ BSS_END - BSS_START

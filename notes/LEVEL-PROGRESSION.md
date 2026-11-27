@@ -6,16 +6,16 @@ gives the targets. If the table in `config.asm` changes, update this.
 
 | Level | Points to finish (total at end) | Bomb | Colour | Bomb movement | Bomb speed | Missile wait | Fish | Border | New from this level |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 200 (200) | pulsar | black | small bob | 50 px/s | 1.5–4.0 s | round, straight | cyan | — |
-| 2 | 300 (500) | pulsar | yellow | wave (±16 px) | 55 px/s | 1.4–3.7 s | round, wave, a bit faster | green | **hearts**; "starts now" panel |
-| 3 | 450 (950) | spinning wheel | red | wave | 59 px/s | 1.3–3.4 s | round, straight | yellow | "stay tuned" panel |
-| 4 | 550 (1,500) | spinning wheel | magenta | hunts, 48 | 64 px/s | 1.2–3.1 s | round, wave, 61 px/s | white | **double-shot bubble** |
-| 5 | 650 (2,150) | spinning wheel | green | wave | 69 px/s | 1.1–2.8 s | round, straight | cyan | **suction bomb** |
-| 6 | 750 (2,900) | spinning wheel | cyan | hunts, 88 | 73 px/s | 1.0–2.5 s | wave, 63 px/s; **1 in 4 piranha** | green | **piranhas** |
-| 7 | 850 (3,750) | spinning wheel | yellow | wave | 78 px/s | 0.9–2.2 s | straight; piranhas | yellow | **shove bomb** |
-| 8 | 950 (4,700) | spinning wheel | black | hunts, 128 (max) | 83 px/s | 0.8–1.9 s | wave, 64 px/s; piranhas | white | — |
-| 9 | 1,100 (5,800) | spinning wheel | red | hunts, 128 | 88 px/s | 0.7–1.6 s | wave, 66 px/s; piranhas | cyan | — |
-| 10+ | 1,400 each (7,200 at the end of 10) | spinning wheel | red | hunts, 128 | 88 px/s | 0.7–1.6 s | wave, 66 px/s; piranhas | green | **homing silo missiles** |
+| 1 | 100 (100) | pulsar | black | small bob | 50 px/s | 1.5–4.0 s | round, straight | cyan | — |
+| 2 | 175 (275) | pulsar | yellow | wave (±16 px) | 55 px/s | 1.4–3.7 s | round, wave, a bit faster | green | **hearts**; "starts now" panel |
+| 3 | 300 (575) | spinning wheel | red | wave | 59 px/s | 1.3–3.4 s | round, straight | yellow | — (its code is under the banner; the old "stay tuned" panel went) |
+| 4 | 450 (1,025) | spinning wheel | magenta | hunts, 48 | 64 px/s | 1.2–3.1 s | round, wave, 61 px/s | white | **double-shot bubble** |
+| 5 | 550 (1,575) | spinning wheel | green | wave | 69 px/s | 1.1–2.8 s | round, straight | cyan | **suction bomb** |
+| 6 | 625 (2,200) | spinning wheel | cyan | hunts, 88 | 73 px/s | 1.0–2.5 s | wave, 63 px/s; **1 in 4 piranha** | green | **piranhas** |
+| 7 | 700 (2,900) | spinning wheel | yellow | wave | 78 px/s | 0.9–2.2 s | straight; piranhas | yellow | **shove bomb** |
+| 8 | 800 (3,700) | spinning wheel | black | hunts, 128 (max) | 83 px/s | 0.8–1.9 s | wave, 64 px/s; piranhas | white | — |
+| 9 | 925 (4,625) | spinning wheel | red | hunts, 128 | 88 px/s | 0.7–1.6 s | wave, 66 px/s; piranhas | cyan | — |
+| 10+ | 1,150 each (5,775 at the end of 10) | spinning wheel | red | hunts, 128 | 88 px/s | 0.7–1.6 s | wave, 66 px/s; piranhas | green | **homing silo missiles** |
 
 ## Notes
 
@@ -30,6 +30,36 @@ gives the targets. If the table in `config.asm` changes, update this.
   450 ... 900 -> 950). Level 9 lost its homing missiles, which made it
   easier, so it goes from 1,000 to 1,100. Level 10 is a row of its own:
   homing missiles at 15 put about 40% more on each missile, so 1,400.
+- **Shorter levels (forum feedback, 2026-11-27):** players found the
+  levels too long, the early ones most, before any power-up has come.
+  Old -> new, and the cut:
+
+  | Level | Old | New | Cut |
+  |---|---|---|---|
+  | 1 | 200 | 100 | 50% |
+  | 2 | 300 | 175 | 42% |
+  | 3 | 450 | 300 | 33% |
+  | 4 | 550 | 450 | 18% |
+  | 5 | 650 | 550 | 15% |
+  | 6 | 750 | 625 | 17% |
+  | 7 | 850 | 700 | 18% |
+  | 8 | 950 | 800 | 16% |
+  | 9 | 1,100 | 925 | 16% |
+  | 10+ | 1,400 | 1,150 | 18% |
+
+  Level 2 is 175, not a straight half (150): at 150 level 3 would be
+  double level 2, the one jump in the curve. With 175 each level of the
+  first four is about 1.5 to 1.75 times the last, then the steps shrink
+  to 1.1 to 1.2 (the old table's own shape from level 4 on). Level 10's
+  bigger step is the homing missiles' 15 points: more points a missile,
+  so not more time. All of Atlantis (to the end of level 20) is now
+  17,275 points, where it was 21,200. A formula (say each
+  level 1.15 times the last) would have made levels 4 to 9 uneven
+  against their bombs and missile gaps, which step evenly, so the table
+  keeps its hand-set rows.
+- **The progress bar** (row 0, `src/atlantis/bar.asm`) is the level's
+  points as a share of these targets, so it needs no change when a
+  target does.
 - **Power-ups** sink at about 31 px/s, slower than the diver. A heart
   turns up about one missile turn in 8, a bubble about one in 21 (the
   double shot lasts 30 seconds), a suction bomb about one in 23 and a
