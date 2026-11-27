@@ -2,8 +2,9 @@
 ; bar.asm - the level's progress bar on row 0 (Atlantis only: PROGRESS_BAR)
 ;
 ; Row 0, the empty row above the score line, holds a small word, DONE,
-; and then the bar: a line six pixels tall (a pixel of water above it and
-; below it) from column 3 to the right-hand edge, 232 pixels, filling from
+; and then the bar: a line four pixels tall (two pixels of water above
+; it and below it; DONE is six tall, a pixel past it at each end) from
+; column 3 to the right-hand edge, 232 pixels, filling from
 ; the left in the level's border colour as the level's points come in. It
 ; is full when the level is done; a new level drains it back to empty.
 ;
@@ -34,7 +35,7 @@
 ; crosses the bar photographs it like water and nothing flickers.
 ; bar_shown is the length on the screen. Each step it moves towards
 ; bar_frac's length by at most BAR_RUN pixels, redrawing only the cells
-; it passes (6 pixel lines each, at most 2 cells: about 300 T-states),
+; it passes (4 pixel lines each, at most 2 cells: about 250 T-states),
 ; and hud_dirty's HUD_BAR stays set until it has got there. So a missile's
 ; points slide on over a few steps, and a new level's empty bar drains
 ; away over about half a second, never all in one frame. (24 pixels a
@@ -54,14 +55,16 @@
 BAR_COL         equ 3                   ; the bar's first cell; DONE has 0 to 2
 BAR_CELLS       equ 32 - BAR_COL        ; 29
 BAR_PIXELS      equ BAR_CELLS * 8       ; 232
-BAR_LINE        equ SCREEN + 1 * 256    ; row 0's pixel line 1: the bar's top
-BAR_LINES       equ 6                   ; lines 1 to 6; 0 and 7 stay water
+BAR_LINE        equ SCREEN + 2 * 256    ; row 0's pixel line 2: the bar's top
+BAR_LINES       equ 4                   ; lines 2 to 5; 0, 1, 6 and 7 stay water
+WORD_LINE       equ SCREEN + 1 * 256    ; DONE: lines 1 to 6, a line taller
+WORD_LINES      equ 6                   ; than the bar at each end
 BAR_RUN         equ 8                   ; the most it moves in a step, in pixels
 HUD_BAR         equ 3                   ; hud_dirty: the bar has news
 
         ASSERT BAR_PIXELS <= 255, "the bar's length is one byte"
         ASSERT BAR_PIXELS * 256 <= 65535, "bar_level divides a 16-bit number"
-        ASSERT (BAR_LINE & $FF) == 0, "bar_draw takes the cell's column for the low byte"
+        ASSERT (BAR_LINE & $FF) == 0 && (WORD_LINE & $FF) == 0, "bar_draw takes the cell's column for the low byte"
         ASSERT BAR_RUN <= 8, "bar_draw's notes say a step redraws at most 2 cells"
 
         COLD
@@ -129,8 +132,8 @@ bar_level:
 ;------------------------------------------------------------------------------
 bar_start:
         ld hl,bar_word
-        ld de,BAR_LINE          ; row 0, line 1, column 0
-        ld b,BAR_LINES
+        ld de,WORD_LINE         ; row 0, line 1, column 0
+        ld b,WORD_LINES
 .line:  push bc
         ld bc,3
         ldir                    ; one line of the word, three cells
