@@ -57,7 +57,7 @@ gives the targets. If the table in `config.asm` changes, update this.
   level 1.15 times the last) would have made levels 4 to 9 uneven
   against their bombs and missile gaps, which step evenly, so the table
   keeps its hand-set rows.
-- **The progress bar** (row 1, `src/atlantis/bar.asm`) is the level's
+- **The progress bar** (row 0, `src/atlantis/bar.asm`) is the level's
   points as a share of these targets, so it needs no change when a
   target does.
 - **Power-ups** sink at about 31 px/s, slower than the diver. A heart

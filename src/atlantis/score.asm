@@ -13,8 +13,8 @@
 ;
 ;   SCORE 000000  LEVEL 1       ...
 ;
-; In Atlantis (PROGRESS_BAR) the bottom pixel line of the score's cells
-; is the level's progress bar (bar.asm).
+; In Atlantis (PROGRESS_BAR) row 0 above it is the level's progress bar,
+; in colour (bar.asm), drawn here with the rest.
 ;
 ; Row 0 stays the debug line's. Row 1 is drawn the way the hearts always
 ; were: straight after the sprite restores, when no sprite is on the
@@ -559,15 +559,8 @@ hud_bcd_pair:
         inc de
         ret
 
-; A = character, C = column of row 1. Eight lines straight from the font;
-; seven with the progress bar, which has the eighth (bar.asm): the ROM
-; font's capitals, digits and space have nothing there.
+; A = character, C = column of row 1. Eight lines straight from the font.
 ; Corrupts: AF, DE, HL
-    IFDEF PROGRESS_BAR
-HUD_GLYPH_LINES equ 7
-    ELSE
-HUD_GLYPH_LINES equ 8
-    ENDIF
 hud_glyph:
         ld l,a
         ld h,0
@@ -581,7 +574,7 @@ hud_glyph:
         add a,c
         ld l,a
         ld h,high (SCREEN + LIVES_ROW * 32)
-        DUP HUD_GLYPH_LINES
+        DUP 8
         ld a,(de)
         ld (hl),a
         inc de

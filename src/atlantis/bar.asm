@@ -1,57 +1,53 @@
 ;==============================================================================
-; bar.asm - row 1's level progress bar (Atlantis only: PROGRESS_BAR)
+; bar.asm - the level's progress bar on row 0 (Atlantis only: PROGRESS_BAR)
 ;
-; A one-pixel line under the score line, as long as its 22 cells
-; (176 pixels), filling from the left as the level's points come in:
+; Row 0, the empty row above the score line, is the bar: its 32 cells
+; fill from the left in CFG_BAR_ATTR's colour as the level's points come
+; in, one cell at a time, and the whole row is full when the level is
+; done. A new level empties it.
 ;
-;   SCORE 000420  LEVEL 3
-;   ━━━━━━━━━━━━━━                 two thirds of the way: the line
-;                                    reaches the level's number at the end
+;   row 0   ██████████████░░░░░░░░░░░░░░░░░░    the level, nearly half done
+;   row 1   SCORE 000420  LEVEL 3         ♥♥♥
 ;
-; The part still to get is left empty: dotted, it read as full stops
-; between the words.
+; It is colour only: each cell's attribute (paper), never its pixels.
+; So nothing a sprite photographs or puts back is touched, the score
+; line and the hearts are as they were, and a sprite crossing the bar
+; shows on its colour for a moment, as on the water. (Test builds put
+; the stat line's digits on row 0; they keep showing, in white, over it.)
+; The colour is CFG_BAR_ATTR (config.asm): a colour no level's border
+; uses, so the bar never runs into the border above it.
 ;
-; It is the bottom pixel line of row 1's text cells, which the ROM font
-; leaves empty in its capitals, digits and space, so nothing on the line
-; moves and no colour changes: the bar is in the text's own white ink.
-; hud_glyph draws only the top seven lines of a letter, so a changing
-; digit leaves the bar alone. An empty bar is what the font has there
-; (nothing), so the soak, which scores nothing, checks row 1 unchanged.
-;
-; THE SUM. Each point of a level is worth BAR_PIXELS / need of the bar.
+; THE SUM. Each point of a level is worth BAR_CELLS / need of the bar.
 ; Dividing on every shot would cost the frame too much, so the division
 ; is done once a level (bar_level, from level_enter): bar_step is
-; BAR_PIXELS * 256 / need, rounded up, the pixels a point is worth in
+; BAR_CELLS * 256 / need, rounded up, the cells a point is worth in
 ; 256ths. A shot then only adds bar_step once per point to bar_frac
 ; (bar_add, from score_add); bar_frac's high byte is the bar's length.
 ; Rounding up fills it by the target at the latest; it is clamped at
-; BAR_PIXELS. The level's next row starts it again from empty.
+; BAR_CELLS. The level's next row starts it again from empty.
 ;
-; THE DRAWING is done like the rest of row 1: by hud_draw, straight
-; after the sprite restores, when no sprite is on the screen, so a
-; sprite crossing it photographs it like water and nothing flickers;
-; and only when bar_frac's length differs from what is on the screen
-; (bar_shown). Then only the cells between the old length and the new
-; are written: a shot's points are one cell, or two. A new level or a
-; new game redraws all 22 (bar_shown $FF). On a step that redraws the
-; score's digits, the bar waits for the next step (hud_draw), so the
-; two costs never fall in one frame.
+; THE DRAWING is done like row 1: by hud_draw, straight after the
+; sprite restores, and only when the bar's length in cells differs from
+; what is on the screen (bar_shown). Then only the cells between the old
+; length and the new are written: a shot is usually none or one. A new
+; level or a new game writes all 32 (bar_shown $FF), the empty ones with
+; LDIR (about 700 T-states, once a level). On a step that redraws the
+; score's digits, the bar waits for the next step (hud_draw), so the two
+; costs never fall in one frame.
 ;
 ; WHERE IT LIVES. Every block is nearly full, so it is split by how
 ; often each part runs: bar_level, once a level, in the cold block;
-; bar_add and bar_bin, once a shot, in the hot code; bar_draw and its
-; table in the data block (BAR_CODE, expanded by main.asm), which is
-; not contended either. Its three numbers are in bss.asm.
+; bar_add and bar_bin, once a shot, in the hot code; bar_draw in the
+; data block (BAR_CODE, expanded by main.asm), which is not contended
+; either. Its three numbers are in bss.asm.
 ;==============================================================================
 
-BAR_CELLS       equ HUD_LEN             ; under the score line's cells, 0 to 21
-BAR_PIXELS      equ BAR_CELLS * 8       ; 176
-; The bottom pixel line (7) of row 1, column 0.
-BAR_LINE        equ SCREEN + 7 * 256 + LIVES_ROW * 32
+BAR_CELLS       equ 32                  ; the whole of row 0
+BAR_ROW_ATTRS   equ ATTRS               ; row 0's colours: the cell is the low byte
 HUD_BAR         equ 3                   ; hud_dirty: the bar has news
 
-        ASSERT BAR_PIXELS <= 255, "the bar's length is one byte"
-        ASSERT LIVES_ROW < 8, "the bar's line is worked out for the screen's top third"
+        ASSERT (BAR_ROW_ATTRS & $FF) == 0, "bar_draw takes the cell for the attribute's low byte"
+        ASSERT CFG_BAR_ATTR != WATER_ATTR, "the bar's colour must differ from the water"
 
         COLD
 ;------------------------------------------------------------------------------
@@ -79,10 +75,10 @@ bar_level:
 .hund:  add hl,de
 .count: djnz .hund
         ex de,hl                ; DE = need
-        ; bar_step = (BAR_PIXELS * 256 + need - 1) / need: rounded up,
+        ; bar_step = (BAR_CELLS * 256 + need - 1) / need: rounded up,
         ; so the bar is full by the time the target is reached.
-        ld hl,BAR_PIXELS * 256 - 1
-        add hl,de               ; at most 45055 + 9999: fits
+        ld hl,BAR_CELLS * 256 - 1
+        add hl,de               ; at most 8191 + 9999: fits
         ld a,h                  ; AC = the dividend
         ld c,l
         ld hl,0                 ; the remainder
@@ -101,13 +97,12 @@ bar_level:
         ld (bar_step),hl
         ld hl,0
         ld (bar_frac),hl        ; empty
-        ld a,$FF                ; not what the screen shows: all 22 cells
+        ld a,$FF                ; not what the screen shows: all 32 cells
         ld (bar_shown),a
         ld hl,hud_dirty
         set HUD_BAR,(hl)
         pop hl
         ret
-
         HOT
 
 ;------------------------------------------------------------------------------
@@ -124,13 +119,13 @@ bar_add:
         ld b,a                  ; points, binary
         ld hl,(bar_frac)
         ld de,(bar_step)
-.add:   add hl,de               ; a point's worth, in 256ths of a pixel
+.add:   add hl,de               ; a point's worth, in 256ths of a cell
         jr c,.full
         djnz .add
         ld a,h
-        cp BAR_PIXELS
+        cp BAR_CELLS
         jr c,.keep
-.full:  ld hl,BAR_PIXELS * 256  ; full, and no further
+.full:  ld hl,BAR_CELLS * 256   ; full, and no further
 .keep:  ld (bar_frac),hl
         ld hl,hud_dirty
         set HUD_BAR,(hl)        ; bar_draw works out whether it shows
@@ -157,86 +152,60 @@ bar_bin:
         MACRO BAR_CODE
 
 ;------------------------------------------------------------------------------
-; bar_draw - the bar on row 1, from hud_draw (no sprite on the screen)
-; Writes only the cells between the length on the screen and the new
-; one: one or two for a shot (about 100 T-states a cell). A new level or
-; a new game empties it: all 22 cells cleared in a quick loop (about 530
-; T-states, once a level). Nothing at all if the length is unchanged.
+; bar_draw - the bar on row 0, from hud_draw
+; Colours only the cells between the length on the screen and the new
+; one: below the new length CFG_BAR_ATTR, from it on the water's.
+; Nothing at all if the length in cells is unchanged.
 ; In: HL = hud_dirty. Corrupts: AF, BC, DE, HL
 ;------------------------------------------------------------------------------
 bar_draw:
         res HUD_BAR,(hl)
-        ld a,(bar_frac + 1)     ; the length it should be, 0 to BAR_PIXELS
+        ld a,(bar_frac + 1)     ; the length it should be, 0 to BAR_CELLS
         ld hl,bar_shown
         ld c,(hl)               ; the length on the screen ($FF: unknown)
         cp c
-        ret z                   ; the same pixel: nothing to do
+        ret z                   ; the same cell: nothing to do
         ld (hl),a
         ld b,a                  ; B = new length
-        ; The first cell: the shorter length's.
+        ; Unknown ($FF: a new level or game): the whole row.
+        inc c
+        jr nz,.known
+        xor a
+        ld c,BAR_CELLS
+        jr .from
+        ; Otherwise from the shorter length (A) to the longer (C).
+.known: dec c
         cp c
-        jr c,.lo
+        jr c,.from
         ld a,c
-.lo:    and $F8
-        ld d,a                  ; D = that cell's first pixel
-        rrca
-        rrca
-        rrca
-        add a,low BAR_LINE
-        ld l,a
-        ld h,high BAR_LINE      ; HL = its byte on the screen
-        ; The last cell: the longer length's, but not past the line.
-        ld a,b
-        cp c
-        jr nc,.hi
+        ld c,b
+.from:  ld l,a
+        ld h,high BAR_ROW_ATTRS ; HL = the first cell's colour
         ld a,c
-.hi:    rrca
-        rrca
-        rrca
-        and 31
         cp BAR_CELLS
-        jr c,.end
-        ld a,BAR_CELLS - 1
-.end:   add a,low BAR_LINE
-        ld c,a                  ; C = its byte's low address
-        ; Empty (a new level): those cells cleared, quickly.
-        ld a,b
-        or a
-        jr nz,.cell
-        ld a,c
-        sub l
-        inc a
-        ld b,a                  ; how many
-        xor a
-.clear: ld (hl),a
+        jr c,.to
+        ld a,BAR_CELLS
+.to:    sub l
+        ret z
+        ld c,a                  ; C = how many cells
+        ; The done cells, up to the new length...
+.done:  ld a,l
+        cp b
+        jr nc,.rest
+        ld (hl),CFG_BAR_ATTR
         inc l
-        djnz .clear
+        dec c
+        jr nz,.done
         ret
-        ; Otherwise each cell by how many of its 8 pixels are done.
-.cell:  ld a,b
-        sub d                   ; done pixels from this cell's start
-        jr nc,.some
-        xor a                   ; the bar ends before this cell
-.some:  cp 8
-        jr c,.part
-        ld a,$FF                ; all eight
-        jr .put
-.part:  ld e,a                  ; 0 to 7: that many pixels from the left
-        xor a
+        ; ...and the rest water: the first, then LDIR the others along.
+.rest:  ld (hl),WATER_ATTR
+        dec c
+        ret z
+        ld b,0
+        ld d,h
+        ld e,l
         inc e
-        jr .count
-.pixel: scf
-        rra
-.count: dec e
-        jr nz,.pixel
-.put:   ld (hl),a
-        ld a,l
-        cp c
-        ret z                   ; that was the last
-        inc l                   ; the next cell along
-        ld a,d
-        add a,8
-        ld d,a
-        jr .cell
+        ldir
+        ret
 
         ENDM
