@@ -46,17 +46,12 @@ str_code_dots:  db "......",0
 str_code_word:  db "CODE ",0
 str_level_sp:   db "LEVEL ",0
 
-; The message for levels 2 and 3 (score.asm, teaser). The level's digit
-; is written into the first line. The second line is level 2's or level
-; 3's, centred.
+; The message for level 2 (score.asm, teaser). The level's digit is
+; written into the first line. The second line is centred.
 str_tease_1:    db "WELL DONE, YOU REACHED LEVEL "
 str_tease_n:    db "2.",0
 str_tease_go:   db "LEVEL 2 STARTS NOW",0
 TEASE_GO_COL    equ (32 - ($ - 1 - str_tease_go)) / 2
-    IFNDEF TRIGON
-str_tease_2:    db "STAY TUNED, MORE IS COMING",0
-TEASE_2_COL     equ (32 - ($ - 1 - str_tease_2)) / 2
-    ENDIF
 str_tease_key:  db "PRESS A KEY",0
         HOT
 

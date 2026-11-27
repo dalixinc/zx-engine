@@ -8,7 +8,7 @@ gives the targets. If the table in `config.asm` changes, update this.
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | 100 (100) | pulsar | black | small bob | 50 px/s | 1.5–4.0 s | round, straight | cyan | — |
 | 2 | 175 (275) | pulsar | yellow | wave (±16 px) | 55 px/s | 1.4–3.7 s | round, wave, a bit faster | green | **hearts**; "starts now" panel |
-| 3 | 300 (575) | spinning wheel | red | wave | 59 px/s | 1.3–3.4 s | round, straight | yellow | "stay tuned" panel |
+| 3 | 300 (575) | spinning wheel | red | wave | 59 px/s | 1.3–3.4 s | round, straight | yellow | — (its code is under the banner; the old "stay tuned" panel went) |
 | 4 | 450 (1,025) | spinning wheel | magenta | hunts, 48 | 64 px/s | 1.2–3.1 s | round, wave, 61 px/s | white | **double-shot bubble** |
 | 5 | 550 (1,575) | spinning wheel | green | wave | 69 px/s | 1.1–2.8 s | round, straight | cyan | **suction bomb** |
 | 6 | 625 (2,200) | spinning wheel | cyan | hunts, 88 | 73 px/s | 1.0–2.5 s | wave, 63 px/s; **1 in 4 piranha** | green | **piranhas** |

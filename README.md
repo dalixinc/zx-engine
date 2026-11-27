@@ -187,8 +187,8 @@ in a growing circle, with a chime. That is the end of Atlantis: the
 next screen gives the code for **Trigon**, the second game, which is
 loaded from its own tape (`docs/CITY-INTERLUDE.md`).
 
-Level 2 and level 3 each open with a message and the level's code, up
-until a key is pressed; from level 4 the code is under the banner. The
+Level 2 opens with a message and the level's code, up until a key is
+pressed; from level 3 the code is under the banner. The
 game-over screen shows the code of the highest level reached. Typing a
 code on the menu starts a game at that level, with the score that level
 starts at. The codes aren't published: they're in

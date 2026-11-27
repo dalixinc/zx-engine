@@ -137,12 +137,12 @@ banner_col:     db 0            ; its first column
 banner_len:     db 0            ; characters in it
 ; banner_chars: in bss.asm (zeroed at start-up, not on the tape)  ; "LEVEL" and the number
 banner_code:    db 0            ; 1 = code_buf goes under it
-teaser_due:     db 0            ; 1 = the level 2 or 3 message, once the banner is down
-    IFDEF TRIGON
-TEASE_LAST      equ 2           ; Trigon: level 2 only; level 3 has its code under the banner
-    ELSE
-TEASE_LAST      equ 3           ; levels 2 to this get the message, with the code in it
-    ENDIF
+teaser_due:     db 0            ; 1 = the level 2 message, once the banner is down
+; Levels 2 to this get the message, with the code in it; later levels
+; have the code under the banner. Both games: level 2 only. (Atlantis's
+; level 3 once said "STAY TUNED, MORE IS COMING", from when there were
+; three levels; it went, and its code went under the banner.)
+TEASE_LAST      equ 2
 
         ASSERT HUD_LEN <= LIVES_COL, "the score line runs into the hearts"
 
@@ -321,8 +321,8 @@ level_up:
         set HUD_TEXT,(hl)
         bit HUD_BANNER,(hl)     ; a banner still up comes down first,
         call nz,banner_erase    ; with its own code line
-        ; The code goes under the banner from level 4. Levels 2 and 3
-        ; have theirs in the message that follows the banner.
+        ; The code goes under the banner from level 3. Level 2 has its
+        ; own in the message that follows the banner.
         xor a
         ld (banner_code),a
         ld a,(level_n)
@@ -334,7 +334,7 @@ level_up:
         jr .show
 .code:
     IFDEF TEASER
-        ; A message still due from level 2 or 3 is for a level now
+        ; A message still due from level 2 is for a level now
         ; passed (only a test that scores very fast gets here).
         push af
         xor a
@@ -810,9 +810,9 @@ banner_glyph:
 
     IFDEF TEASER
 ;------------------------------------------------------------------------------
-; teaser - the message for reaching level 2 or 3, until a key is pressed
-; Level 2's says it starts now; level 3's, the end of level 2 for now,
-; says more is coming. Both give the level's code, then play goes on.
+; teaser - the message for reaching level 2, until a key is pressed
+; It says level 2 starts now and gives its code, then play goes on.
+; (Trigon's Lance has a message of its own here too, at its level.)
 ; banner_tick points main_loop's call to spare_count here for one step,
 ; once level 2's banner is down. So it comes at the end of a step, with
 ; the sprites on the screen, and the picture stays still behind the
@@ -840,18 +840,12 @@ teaser:
         call print_string
         ld hl,str_tease_go      ; level 2: it starts now
         ld bc,((TEASE_ROW + 3) << 8) | TEASE_GO_COL
-        ld a,(level_n)
     IFDEF LANCEGUN
+        ld a,(level_n)
         cp CFG_LANCE_LEVEL
         jr z,.lance             ; Trigon: the Lance is his (lance.asm)
     ENDIF
-    IFNDEF TRIGON               ; Trigon: level 2's only (TEASE_LAST)
-        cp 2
-        jr z,.line2
-        ld hl,str_tease_2       ; level 3: more is coming
-        ld c,TEASE_2_COL
-    ENDIF
-.line2: call print_string
+        call print_string
         ld hl,str_tease_key
         ld bc,((TEASE_ROW + 7) << 8) | 10
         call print_string
