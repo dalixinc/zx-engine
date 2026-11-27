@@ -102,10 +102,13 @@
     IFDEF POWERUPS
         DEFINE DOUBLE_SHOT
     ENDIF
-        ; Row 1's level progress bar (bar.asm): Atlantis only, in every
-        ; build, so the soak and the measurements run it too.
+        ; The level's progress bar on row 0 (bar.asm): Atlantis only,
+        ; and not the soak, whose script checks row 0 is plain water (the
+        ; stat line's row in test builds). The measurements run it.
     IFNDEF TRIGON
+    IFNDEF SOAK
         DEFINE PROGRESS_BAR
+    ENDIF
     ENDIF
         ; The story when 1 starts a game: only where boot goes to the menu.
     IFNDEF SOAK

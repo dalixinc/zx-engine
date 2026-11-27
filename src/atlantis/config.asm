@@ -217,11 +217,6 @@ CFG_FALL_SHOVE_INK   equ GREEN   ; (and CFG_SHOVE_INK)
 CFG_FALL_NUKE_INK    equ YELLOW
 CFG_HELD_INK         equ 1       ; 1: the carried bomb on row 1 in its ink too; 0: white
 CFG_LIVES_INK        equ RED     ; the hearts on row 1 (WHITE leaves them as they were)
-; The level's progress bar (bar.asm): row 0's cells fill from the left in
-; this colour. Magenta, as no level's border is: the bar touches the
-; border at the top of the screen. Keep the water's ink (white), so a
-; sprite crossing it still shows.
-CFG_BAR_ATTR         equ BRIGHT | WHITE | (MAGENTA << 3)
 CFG_DOUBLE_TIME      equ 30      ; seconds of the double shot
 ; The wait between launches while the double shot lasts, in 1/50
 ; seconds (CFG_FIRE_COOLDOWN's, which is longer than most torpedoes

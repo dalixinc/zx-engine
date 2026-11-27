@@ -169,10 +169,11 @@ it away
 (`docs/SPECIAL-BOMBS.md`; `CFG_SUCTION_*`, `CFG_SHOVE_*`,
 `CFG_SPECIAL_TIME`, `CFG_SPECIAL_FLASH` in `config.asm`). The score and the level
 are on row 1, beside the hearts. Each level has a target, and each is
-longer than the last. A magenta bar along the top row, above the
-score, fills from the left as the level's points come in
-(`src/atlantis/bar.asm`); when it reaches the right-hand edge, the level
-is done. Reaching it puts up a big "LEVEL n" banner, plays
+longer than the last. Along the top row, above the score, a thin
+bar after the word DONE fills from the left, in the level's border
+colour, as the level's points come in (`src/atlantis/bar.asm`); when it
+reaches the right-hand edge, the level is done, and the next level's
+bar drains away to start again. Reaching it puts up a big "LEVEL n" banner, plays
 a jingle, and the next level's missiles come more often and its bombs
 fly a little faster. Level 2 has a yellow bomb on a wave, a faster fish
 on a wave (`docs/LEVEL-2.md`); the fish waves again on

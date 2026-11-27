@@ -14,7 +14,7 @@
 ;   SCORE 000000  LEVEL 1       ...
 ;
 ; In Atlantis (PROGRESS_BAR) row 0 above it is the level's progress bar,
-; in colour (bar.asm), drawn here with the rest.
+; after the word DONE (bar.asm), drawn here with the rest.
 ;
 ; Row 0 stays the debug line's. Row 1 is drawn the way the hearts always
 ; were: straight after the sprite restores, when no sprite is on the
@@ -288,6 +288,9 @@ score_add:
 ;------------------------------------------------------------------------------
 level_up:
         call level_advance
+    IFDEF PROGRESS_BAR
+        call bar_paint          ; the bar in the new level's border colour
+    ENDIF
     IFDEF CITY_SHOW
         ld a,(level_n)
         cp CFG_INTERLUDE_LEVEL + 1
