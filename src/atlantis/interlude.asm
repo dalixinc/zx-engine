@@ -311,10 +311,12 @@ il_r:           db 0
 il_in:          dw 0
 il_rim:         dw 0
 il_dy:          dw 0
-; The picture's colours wait here while the circle grows: free room
-; above the data block, below the diver's shifted copies.
-IL_ATTRS        equ data_end
-        ASSERT IL_ATTRS + ATTRS_SIZE <= PRESHIFT_START, "no room above the data for the city's colours"
+; The picture's colours wait here while the circle grows: the seabed's
+; buffers, 768 bytes, as Finale's city does. The city is the game's end:
+; enter_menu (draw_scenery) builds the seabed again before anything reads
+; them, so the data block keeps the room it used to leave free for this.
+IL_ATTRS        equ SCROLL_BASE
+        ASSERT SCROLL_BUF_END - SCROLL_BASE >= ATTRS_SIZE, "the city's colours do not fit the seabed's buffers"
         ASSERT (IL_R_END / 2) * (IL_R_END / 2) * 4 > 31 * 31 + 23 * 23, "the circle stops short of the corners"
 
 str_il_line1:   db "The city holds.", 0

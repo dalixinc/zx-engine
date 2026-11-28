@@ -647,10 +647,13 @@ banner_show:
         rlca
         rlca                    ; the paper
         or BRIGHT | BLUE
-    ELSE
-        ld a,BANNER_ATTR
-    ENDIF
         call banner_paint
+    ELSE
+    IFNDEF BANNER_FREEZE
+        ld a,BANNER_ATTR
+        call banner_paint
+    ENDIF                       ; (with the freeze, bf_on paints it, solid)
+    ENDIF
         ld hl,(frame_count)
         ld de,CFG_BANNER_TIME
         ld a,(banner_code)
@@ -659,6 +662,9 @@ banner_show:
         ld de,CFG_BANNER_CODE_TIME ; longer, to read the code
 .time:  add hl,de
         ld (banner_until),hl
+    IFDEF BANNER_FREEZE
+        call bf_on              ; play stops until it comes down (freeze.asm)
+    ENDIF
         ld hl,hud_dirty
         set HUD_BANNER,(hl)
         ret
@@ -688,8 +694,15 @@ banner_tick:
         call tp_banner_end      ; the action again, and a new belt's "+BELT" (theme.asm)
     ENDIF
     ENDIF
+    IFDEF BANNER_FREEZE
+        call bf_down            ; play again, then banner_erase (freeze.asm)
+    ELSE
     IFDEF TEASER
         call banner_erase
+    ENDIF
+    ENDIF
+    IFDEF TEASER
+.tease:                         ; bf_step comes here too (freeze.asm)
         ld a,(teaser_due)
         or a
         ret z

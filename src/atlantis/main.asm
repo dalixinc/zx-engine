@@ -110,6 +110,19 @@
         DEFINE PROGRESS_BAR
     ENDIF
     ENDIF
+        ; Play stops while a level's banner is up (freeze.asm): Atlantis
+        ; only, not the soak (its script's frames count on the old game),
+        ; and not the builds that leave out the bomb or its colours, whose
+        ; first byte is the freeze's mark.
+    IFNDEF TRIGON
+    IFNDEF SOAK
+    IFNDEF NO_WHEEL
+    IFNDEF NO_INK
+        DEFINE BANNER_FREEZE
+    ENDIF
+    ENDIF
+    ENDIF
+    ENDIF
         ; The story when 1 starts a game: only where boot goes to the menu.
     IFNDEF SOAK
     IFNDEF MEASURE
@@ -1099,6 +1112,9 @@ wheel_first:    db 0
     IFDEF PROGRESS_BAR
         INCLUDE "bar.asm"        ; row 1's level progress bar (BAR_CODE, below)
     ENDIF
+    IFDEF BANNER_FREEZE
+        INCLUDE "freeze.asm"     ; play stops under a level's banner (FREEZE_CODE, below)
+    ENDIF
         COLD
         INCLUDE "codes.asm"      ; before LEVEL_CODES is used
         HOT
@@ -1238,6 +1254,9 @@ data_start:
     ENDIF
     IFDEF PROGRESS_BAR
         BAR_CODE                ; row 1's level progress bar (bar.asm)
+    ENDIF
+    IFDEF BANNER_FREEZE
+        FREEZE_CODE             ; play stops under a level's banner (freeze.asm)
     ENDIF
     IFDEF ENEMY_DIVER
         ED_DATA                 ; the enemy diver's tables (src/trigon/ediver.asm)
