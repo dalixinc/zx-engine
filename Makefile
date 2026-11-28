@@ -42,14 +42,7 @@ SHARED    := src/constants.asm src/interrupts.asm src/screen.asm src/text.asm \
              src/input.asm src/sprite.asm src/fish.asm src/diver.asm \
              src/loader.asm
 DEMO_SRC  := src/main.asm src/layout.asm src/scenery.asm src/scroll.asm $(SHARED)
-ATL_SRC   := src/atlantis/main.asm src/atlantis/layout.asm \
-             src/atlantis/config.asm src/atlantis/data.asm \
-             src/atlantis/scenery.asm src/atlantis/scroll.asm \
-             src/atlantis/stats.asm src/atlantis/rate.asm \
-             src/atlantis/menu.asm src/atlantis/wheel.asm src/atlantis/hit.asm src/atlantis/torpedo.asm \
-             src/atlantis/fastsprite.asm src/atlantis/boom.asm src/atlantis/sound.asm \
-             src/atlantis/silo.asm src/atlantis/missile.asm src/atlantis/score.asm src/atlantis/codes.asm src/atlantis/preshift.asm src/atlantis/bss.asm \
-             src/atlantis/soak.asm src/atlantis/udg.asm src/atlantis/demo.asm src/atlantis/interlude.asm $(SHARED)
+ATL_SRC   := $(wildcard src/atlantis/*.asm) $(SHARED)
 TRI_SRC   := $(ATL_SRC) src/trigon/main.asm src/trigon/config.asm \
              src/trigon/theme.asm src/trigon/gate.asm src/trigon/ediver.asm \
              src/trigon/twobomb.asm src/trigon/lance.asm src/trigon/moves.asm \

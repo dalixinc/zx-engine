@@ -75,8 +75,12 @@ rate_apply:
         ; the game comes back at, and leaves the death as it is.
         ld a,(death_t)
         or a
+    IFDEF BANNER_FREEZE
+        jp bf_rate              ; or a level's banner's freeze (freeze.asm)
+    ELSE
         ret z
         jp death_freeze
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; chords_poll - Symbol Shift + P, F or S, once per step

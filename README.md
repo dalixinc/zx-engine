@@ -174,7 +174,10 @@ bar after the word DONE fills from the left, in the level's border
 colour, as the level's points come in (`src/atlantis/bar.asm`); when it
 reaches the right-hand edge, the level is done, and the next level's
 bar drains away to start again. Reaching it puts up a big "LEVEL n" banner, plays
-a jingle, and the next level's missiles come more often and its bombs
+a jingle, and the game stands still while the banner is up: nothing
+moves, fires, hits or scores, and nothing shows through the banner, so
+it can be read in peace (`src/atlantis/freeze.asm`). Then play goes on
+where it stopped, and the next level's missiles come more often and its bombs
 fly a little faster. Level 2 has a yellow bomb on a wave, a faster fish
 on a wave (`docs/LEVEL-2.md`); the fish waves again on
 every even level from 4, a little faster each time, and from level 9.
@@ -256,6 +259,8 @@ src/atlantis/missile.asm the silos' missiles: arm, fly, hit, their own draw; the
 src/atlantis/special.asm the special bombs: carried, set off with B
 src/atlantis/udg.asm     the one-cell pictures and the title's letters, in the UDG area
 src/atlantis/score.asm   the score, the levels, the line on row 1, the banner
+src/atlantis/bar.asm     the level's progress bar on row 0
+src/atlantis/freeze.asm  play stands still while a level's banner is up
 src/atlantis/codes.asm   the level codes: table, showing one, checking one typed
 src/atlantis/preshift.asm the fish's and both bombs' pictures, shifted at start-up
 src/atlantis/bss.asm     the buffers that start empty, at $F300, not on the tape

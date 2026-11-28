@@ -30,7 +30,11 @@ it does at GAME OVER, without the knell.
   bytes, `gfx/city_pix.zx0`) and the colours (180, `gfx/city_atr.zx0`),
   at the end of the data block. The game's own copy of the ZX0 unpacker
   puts the pixels straight onto the screen under black cells, so they
-  don't show, and the colours in the free room above the data block.
+  don't show, and the colours in the seabed's buffers at `$F000` (768
+  bytes, as Finale's city does): the city is the game's end, and
+  `enter_menu` builds the seabed again before anything reads them.
+  (They waited in the free room above the data block until the level
+  banner's freeze needed that room.)
 - **The circle** (`il_circle`) works in half cells, so the middle of
   the screen is a whole number: a cell's distance is |2x - 31| across
   and |2y - 23| down, and it gets its own colours once the sum of their

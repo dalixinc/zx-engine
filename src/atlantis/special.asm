@@ -78,7 +78,11 @@ sp_poll:
         ld hl,sp_prev
         call rising_edge
         ret z
+    IFDEF BANNER_FREEZE
+        jp bf_fire              ; not under a level's banner (freeze.asm)
+    ELSE
         jp special_fire
+    ENDIF
 
 ;------------------------------------------------------------------------------
 ; sp_tick - in missile_update's place while a bomb moves things: one 1/50

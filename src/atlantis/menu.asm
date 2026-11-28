@@ -95,6 +95,9 @@ enter_menu:
         ld (fish_bg),a
         ld (wheel_bg),a
         ld (wheel_attr_n),a
+    IFDEF BANNER_FREEZE
+        call bf_off             ; a game left under a banner: unfrozen (freeze.asm)
+    ENDIF
     IFDEF TWO_BOMBS
         call tb_reset           ; no second bomb (src/trigon/twobomb.asm)
     ENDIF
