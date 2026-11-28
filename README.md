@@ -154,6 +154,13 @@ shot for 30 seconds: fire again while a torpedo is still running, and
 two are out at once; a bubble beside the hearts shows it, and a
 falling jingle says it has run out (`docs/POWER-UPS.md`; `CFG_POWER_*`,
 `CFG_HEART_ODDS`, `CFG_DOUBLE_*`, `CFG_LIVES_MAX` in `config.asm`).
+From level 4 an oxygen pill, a small magenta capsule, may fall too:
+taken, nothing can hurt the diver for 8 seconds. Bombs, fish and
+missiles pass through him, and the black ground just holds him up.
+The border turns magenta while it lasts and blinks for the last second
+and a half, and the double shot's falling jingle says it is over. Its
+time stands still under a level's banner
+(`src/atlantis/oxygen.asm`; `CFG_O2_*` in `config.asm`).
 Rarer still, from level 5, a special bomb: he carries one at a time
 (its picture shows on row 1, left of the bubble's cell; a new one
 replaces it) and sets it off with B: the border flashes in its colour
@@ -261,6 +268,7 @@ src/atlantis/udg.asm     the one-cell pictures and the title's letters, in the U
 src/atlantis/score.asm   the score, the levels, the line on row 1, the banner
 src/atlantis/bar.asm     the level's progress bar on row 0
 src/atlantis/freeze.asm  play stands still while a level's banner is up
+src/atlantis/oxygen.asm  the oxygen pill: a few seconds of no harm
 src/atlantis/codes.asm   the level codes: table, showing one, checking one typed
 src/atlantis/preshift.asm the fish's and both bombs' pictures, shifted at start-up
 src/atlantis/bss.asm     the buffers that start empty, at $F300, not on the tape

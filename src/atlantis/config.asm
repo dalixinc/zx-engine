@@ -205,6 +205,17 @@ CFG_DOUBLE_LEVEL     equ 4       ; the double shot's bubble from this level
 CFG_PIRANHA_LEVEL    equ 6
 CFG_HEART_ODDS       equ 32      ; about one turn in 8
 CFG_DOUBLE_ODDS      equ 12      ; about one turn in 21
+; The oxygen pill (oxygen.asm): for CFG_O2_TIME seconds nothing hurts
+; him; bombs, fish and missiles pass through him and the black ground
+; holds him up. The border is CFG_O2_BORDER meanwhile, and blinks for
+; the last CFG_O2_WARN 1/50 seconds. Its clock stops under a level's
+; banner and in the quake.
+CFG_O2_LEVEL         equ 4       ; pills from this level
+CFG_O2_ODDS          equ 10      ; about one turn in 25
+CFG_O2_TIME          equ 8       ; seconds
+CFG_O2_WARN          equ 75      ; the blink before the end, 1/50 seconds
+CFG_O2_BORDER        equ MAGENTA
+CFG_FALL_O2_INK      equ MAGENTA ; the falling pill's ink
 CFG_POWER_SPEED      equ 160     ; it sinks this many 256ths of a pixel a 1/50
                                  ; second: 160 is 31 pixels a second, slower than
                                  ; the diver's 50, so he can catch one up (1-255)
@@ -394,8 +405,13 @@ CFG_FISH_WAVE_SPEED  equ 3
 ; pixels apart from row 88 up, never the last fish's line, so no one
 ; torpedo line hits two fish in a row (boom.asm, fish_pick_y). Atlantis
 ; has straight fish on levels 1, 3, 5 and 7, so 5 varies 5 and 7.
+; No higher than row 68: the fish is drawn last of the sprites, and a
+; fish higher up had the beam pass it between its restore and its draw,
+; so it was not on the screen at all, yet still hit. Its draw ends by
+; row 61 in play, and by about row 65 with a burst up every frame; at
+; 68 it is clear (boom.asm asserts the top line).
 CFG_FISH_VARY_LEVEL  equ 5
-CFG_FISH_VARY_SLOTS  equ 7       ; 2 to 8; 7 reaches up to row 28
+CFG_FISH_VARY_SLOTS  equ 3       ; 2 to 3: rows 88, 78 and 68
 
 ; How long the "LEVEL n" banner stays up, in 1/50 seconds. 100 is two
 ; seconds. From level 4 the level's code is under it, and it stays up

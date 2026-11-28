@@ -31,7 +31,14 @@ at once.
     meanwhile (see Timing). While it lasts, a bubble shows on row 1, a
     cell of water left of the hearts. When it runs out the bubble goes
     and a falling jingle plays (G5, E5, C5, G4).
-  - Either plays a short rising jingle.
+  - **The oxygen pill** (Atlantis, from level `CFG_O2_LEVEL`, 4, about
+    one turn in 25) keeps him from harm for `CFG_O2_TIME` seconds (8):
+    bombs, fish and missiles pass through him, and the black ground
+    only holds him up. The border is magenta meanwhile, and blinks for
+    the last second and a half; then the bubble's falling jingle
+    plays. Its clock stops under a level's banner. It is never carried,
+    so it has no cell on row 1 (`src/atlantis/oxygen.asm`).
+  - Each plays a short rising jingle.
 
 ## How it costs so little
 

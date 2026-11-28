@@ -114,5 +114,9 @@ SLOPE_END       equ SLOPE_SAND + 128
 ; bytes a kind, built at start-up after the slope tables. The run-time
 ; buffers (bss.asm) have no room left.
 POWER_PICS      equ SLOPE_END
+    IFDEF O2_PILL
+POWER_PICS_END  equ POWER_PICS + 16 * 6     ; and the oxygen pill
+    ELSE
 POWER_PICS_END  equ POWER_PICS + 16 * 5
+    ENDIF
         ASSERT POWER_PICS_END <= STACK_TOP - STACK_NEED, "the power-ups' pictures run into the stack's room"
