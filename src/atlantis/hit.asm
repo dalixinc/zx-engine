@@ -139,8 +139,13 @@ DIVER_START_Y   equ 110             ; game_reset puts him here too
 ; the ground together cost one life. death_begin does the rest.
 ; Out: carry set (a hit). Corrupts: AF
 diver_hurt:
+    IFDEF O2_PILL
+        jp o2_hurt              ; the pill first (oxygen.asm): it comes back to .hurt
+.hurt:
+    ELSE
         xor a
         ld (diver_touch),a
+    ENDIF
     IFDEF TRIGON
     IFDEF POWERUPS
     IF CFG_GOD_MODE

@@ -43,11 +43,17 @@ MSL_KIND_DOUBLE equ 2           ; the double shot for CFG_DOUBLE_TIME
 MSL_KIND_SUCTION equ 3          ; the special bombs (special.asm): carried,
 MSL_KIND_SHOVE  equ 4           ; then set off
 MSL_KIND_NUKE   equ 5
+MSL_KIND_O2     equ 6           ; the oxygen pill, Atlantis (oxygen.asm)
 ; How many kinds the roll has: the nuke is left out when its level is 0.
+    IFDEF O2_PILL
+POWER_KINDS     equ 6
+        ASSERT CFG_NUKE_LEVEL, "the pill is kind 6, after the nuke"
+    ELSE
     IF CFG_NUKE_LEVEL
 POWER_KINDS     equ 5
     ELSE
 POWER_KINDS     equ 4
+    ENDIF
     ENDIF
 ; It sinks from below the hearts and is gone above the weed, so it is
 ; always drawn before the seabed copy, and always one byte a row: its x
@@ -142,6 +148,9 @@ pw_double_lvl:  db CFG_DOUBLE_LEVEL, CFG_DOUBLE_ODDS
                 db CFG_SHOVE_LEVEL, CFG_SHOVE_ODDS
     IF CFG_NUKE_LEVEL
                 db CFG_NUKE_LEVEL, CFG_NUKE_ODDS
+    ENDIF
+    IFDEF O2_PILL
+                db CFG_O2_LEVEL, CFG_O2_ODDS
     ENDIF
 pw_piranha_lvl: db CFG_PIRANHA_LEVEL
         ASSERT pw_piranha_lvl - power_tab == 2 * POWER_KINDS
@@ -480,7 +489,11 @@ power_take:
         jr .done
 .double:
         dec a
+    IFDEF O2_PILL
+        jp nz,o2_take_if        ; the pill (oxygen.asm), or a special bomb
+    ELSE
         jp nz,special_take      ; a special bomb: he carries it (special.asm)
+    ENDIF
         inc a
         ld (double_on),a
         ld hl,(frame_count)
@@ -943,7 +956,10 @@ POWER_PICS_BASE equ POWER_PICS - 16
 ;------------------------------------------------------------------------------
         MACRO INK_CODE
 ink_tab:        db 0, HEART_ATTR, 0, SUCTION_ATTR, SHOVE_ATTR, NUKE_ATTR ; by MSL_KIND_*, 0 = white
-        ASSERT (ink_tab & $FF) + MSL_KIND_NUKE < 256, "ink_look adds the kind to the low byte"
+    IFDEF O2_PILL
+                db O2_ATTR
+    ENDIF
+        ASSERT (ink_tab & $FF) + MSL_KIND_O2 < 256, "ink_look adds the kind to the low byte"
 ink_cells:      dw 0            ; colour address of its top cell; high byte 0 = none
 ink_now:        db 0            ; the colour it painted
 ink_done:       db 0            ; the cells it painted: bit 0 the top, bit 1 the one below

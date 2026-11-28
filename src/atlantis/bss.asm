@@ -123,6 +123,11 @@ bss_ptr = bss_ptr + (size?)
         BSS bar_step, 2                 ; what a point of this level adds to it
         BSS bar_shown, 1                ; the length on the screen, in pixels; $FF = unknown
     ENDIF
+    IFDEF O2_PILL
+        ; The oxygen pill (oxygen.asm). After the bar's, so Trigon's list is unchanged.
+        BSS o2_on, 1                    ; 1 while a pill keeps him from harm
+        BSS o2_left, 2                  ; 1/50 seconds of it left
+    ENDIF
 
 BSS_END         equ bss_ptr
 BSS_LENGTH      equ BSS_END - BSS_START

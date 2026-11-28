@@ -102,6 +102,13 @@
     IFDEF POWERUPS
         DEFINE DOUBLE_SHOT
     ENDIF
+        ; The oxygen pill (oxygen.asm): a power-up that keeps him from
+        ; harm for a few seconds. Atlantis, with the power-ups.
+    IFDEF POWERUPS
+    IFNDEF TRIGON
+        DEFINE O2_PILL
+    ENDIF
+    ENDIF
         ; The level's progress bar on row 0 (bar.asm): Atlantis only,
         ; and not the soak, whose script checks row 0 is plain water (the
         ; stat line's row in test builds). The measurements run it.
@@ -1114,6 +1121,7 @@ wheel_first:    db 0
     ENDIF
     IFDEF BANNER_FREEZE
         INCLUDE "freeze.asm"     ; play stops under a level's banner (FREEZE_CODE, below)
+        INCLUDE "oxygen.asm"     ; the oxygen pill (O2_CODE, below)
     ENDIF
         COLD
         INCLUDE "codes.asm"      ; before LEVEL_CODES is used
@@ -1257,6 +1265,9 @@ data_start:
     ENDIF
     IFDEF BANNER_FREEZE
         FREEZE_CODE             ; play stops under a level's banner (freeze.asm)
+    ENDIF
+    IFDEF O2_PILL
+        O2_CODE                 ; the oxygen pill (oxygen.asm)
     ENDIF
     IFDEF ENEMY_DIVER
         ED_DATA                 ; the enemy diver's tables (src/trigon/ediver.asm)

@@ -170,7 +170,10 @@ sp_tick:
 ; msl_calls_set - main_loop's two missile_update calls (.msl_uc1, .msl_uc2)
 ; to sp_tick while a bomb moves things, else to double_tick while the
 ; double shot lasts, else to missile_update itself. Corrupts: AF, HL
+; (With the oxygen pill it is oxygen.asm's, in the data block, which has
+; the pill's clock too.)
 ;------------------------------------------------------------------------------
+    IFNDEF O2_PILL
 msl_calls_set:
         ld hl,sp_tick
         ld a,(sp_left)
@@ -184,6 +187,7 @@ msl_calls_set:
 .set:   ld (fish_mv.msl_uc1 + 1),hl
         ld (fish_mv2.msl_uc2 + 1),hl
         ret
+    ENDIF
         ASSERT ({fish_mv.msl_uc1} & $FF) == $CD && {fish_mv.msl_uc1 + 1} == missile_update, ".msl_uc1 is not CALL missile_update"
         ASSERT ({fish_mv2.msl_uc2} & $FF) == $CD && {fish_mv2.msl_uc2 + 1} == missile_update, ".msl_uc2 is not CALL missile_update"
         ASSERT ({main_loop.chord_call} & $FF) == $CD && {main_loop.chord_call + 1} == chords_poll, ".chord_call is not CALL chords_poll"
@@ -562,6 +566,9 @@ special_reset:
         xor a
         ld (sp_held),a
         ld (sp_left),a
+    IFDEF O2_PILL
+        ld (o2_on),a            ; and no pill (torpedo_reset sets the calls)
+    ENDIF
         ld hl,chords_poll
         jp sp_chords
 
@@ -570,10 +577,16 @@ special_reset:
 ; row 1's cells, at start-up: mask then ink a row, the mask the ink's
 ; complement, as missile_draw reads them. Corrupts: AF, B, DE, HL
 ;------------------------------------------------------------------------------
+; The oxygen pill has no cell on row 1 (the UDG area is full): its
+; picture follows from the data block (o2_build).
 power_build:
         ld hl,lives_heart
         ld de,POWER_PICS
+    IFDEF O2_PILL
+        ld b,MSL_KIND_NUKE * 8
+    ELSE
         ld b,POWER_KINDS * 8
+    ENDIF
 .row:   ld a,(hl)
         inc hl
         cpl
@@ -583,7 +596,11 @@ power_build:
         ld (de),a
         inc de
         djnz .row
+    IFDEF O2_PILL
+        jp o2_build             ; DE = the pill's place, next
+    ELSE
         ret
+    ENDIF
         HOT
 
 ; Suction's end: what it pulled out of the way scores, and the points

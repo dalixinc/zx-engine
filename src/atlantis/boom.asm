@@ -252,6 +252,9 @@ FISH_VARY_STEP  equ FISH_HEIGHT + TORPEDO_HEIGHT - 1
         ASSERT CFG_FISH_VARY_SLOTS >= 2 && CFG_FISH_VARY_SLOTS <= 8
         ASSERT CFG_FISH_VARY_LEVEL >= 1 && CFG_FISH_VARY_LEVEL <= 255
         ASSERT FISH_VARY_LOW - (CFG_FISH_VARY_SLOTS - 1) * FISH_VARY_STEP >= WHEEL_TOP_Y + 8, "the top fish line is on the score row"
+        ; Higher, the beam reaches it between its restore and its draw
+        ; (the fish is drawn last), and it is not seen at all (config.asm).
+        ASSERT FISH_VARY_LOW - (CFG_FISH_VARY_SLOTS - 1) * FISH_VARY_STEP >= 68, "the top fish line is above row 68: the beam hides it"
 
 ;------------------------------------------------------------------------------
 ; fish_pick_y - the height a new fish starts at. Out: A = FISH_SWIM_Y,
